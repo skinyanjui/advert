@@ -7,6 +7,7 @@ export const categories = [
   { id: "services", name: "Services" },
   { id: "business", name: "Business & equipment" },
   { id: "agriculture", name: "Agriculture" },
+  { id: "livestock", name: "Livestock" },
   { id: "fashion", name: "Fashion & beauty" },
   { id: "health", name: "Health & wellness" },
   { id: "education", name: "Education" },

@@ -111,6 +111,8 @@ export function Browse() {
       ? `${cityLabel}, ${countryName(query.country)}`
       : countryName(query.country)
     : "All Africa"
+  const hrefForCategory = (category?: CategoryId) => listingHref(category, undefined, query)
+  const hrefForType = (type?: string) => listingHref(query.category, type, query)
   const closestFirst =
     query.sort === "relevant" &&
     !query.q &&
@@ -128,8 +130,8 @@ export function Browse() {
             total={inCity.length}
             types={types}
             activeType={query.type}
-            onSelect={(category) => update({ category: category ?? null })}
-            onSelectType={(type) => update({ type: type ?? null })}
+            hrefForCategory={hrefForCategory}
+            hrefForType={hrefForType}
           />
         </div>
       </aside>
@@ -154,14 +156,9 @@ export function Browse() {
                     total={inCity.length}
                     types={types}
                     activeType={query.type}
-                    onSelect={(category) => {
-                      update({ category: category ?? null })
-                      if (!category) setSheetOpen(false)
-                    }}
-                    onSelectType={(type) => {
-                      update({ type: type ?? null })
-                      setSheetOpen(false)
-                    }}
+                    hrefForCategory={hrefForCategory}
+                    hrefForType={hrefForType}
+                    onNavigate={() => setSheetOpen(false)}
                   />
                 </div>
               </SheetContent>
@@ -365,6 +362,22 @@ function EmptyResults({
       </div>
     </div>
   )
+}
+
+function listingHref(
+  category: CategoryId | undefined,
+  type: string | undefined,
+  query: { q: string; country?: string; city?: string; sort: string },
+): string {
+  const params = new URLSearchParams()
+  if (query.q) params.set("q", query.q)
+  if (query.country) params.set("country", query.country)
+  if (query.city) params.set("city", query.city)
+  if (type) params.set("type", type)
+  if (query.sort !== "relevant") params.set("sort", query.sort)
+  const qs = params.toString()
+  const path = category ? `/${category}` : "/"
+  return qs ? `${path}?${qs}` : path
 }
 
 function homeOrigin(

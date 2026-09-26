@@ -1,6 +1,7 @@
 "use client"
 
 import {
+  Beef,
   Briefcase,
   Car,
   GraduationCap,
@@ -16,6 +17,7 @@ import {
   Wrench,
   type LucideIcon,
 } from "lucide-react"
+import Link from "next/link"
 
 import { formatCount } from "@/lib/format"
 import { categories, categoryName, type CategoryId } from "@/lib/types"
@@ -31,6 +33,7 @@ export const categoryIcons: Record<CategoryId | "all", LucideIcon> = {
   services: Wrench,
   business: Store,
   agriculture: Leaf,
+  livestock: Beef,
   fashion: Shirt,
   health: HeartPulse,
   education: GraduationCap,
@@ -47,60 +50,67 @@ type CategoryNavProps = {
   active?: CategoryId
   counts: Record<CategoryId, number>
   total: number
-  onSelect: (category?: CategoryId) => void
+  hrefForCategory: (category?: CategoryId) => string
+  hrefForType: (type?: string) => string
+  onNavigate?: () => void
   types?: CategoryTypeChoice[]
   activeType?: string
-  onSelectType?: (type?: string) => void
 }
 
 export function CategoryNav({
   active,
   counts,
   total,
-  onSelect,
+  hrefForCategory,
+  hrefForType,
+  onNavigate,
   types = [],
   activeType,
-  onSelectType,
 }: CategoryNavProps) {
   return (
     <nav aria-label="Categories" className="flex flex-col gap-0.5">
       <CategoryButton
+        href={hrefForCategory(undefined)}
         icon={categoryIcons.all}
         label="All listings"
         count={total}
         active={!active}
-        onClick={() => onSelect(undefined)}
+        onNavigate={onNavigate}
       />
-      {categories.filter((category) => counts[category.id] > 0 || category.id === active).map((category) => (
+      {categories.map((category) => (
         <div key={category.id}>
           <CategoryButton
+            href={hrefForCategory(category.id)}
             icon={categoryIcons[category.id]}
             label={categoryName(category.id)}
             count={counts[category.id]}
             active={active === category.id}
-            onClick={() => onSelect(category.id)}
+            onNavigate={onNavigate}
           />
           {active === category.id && types.length > 0 ? (
             <div className="mt-0.5 mb-1 ml-4 flex flex-col gap-0.5 border-l border-neutral-200 pl-2">
-              {types.map((type) => (
-                <button
-                  key={type.id}
-                  type="button"
-                  onClick={() => onSelectType?.(activeType === type.id ? undefined : type.id)}
-                  aria-current={activeType === type.id ? "page" : undefined}
-                  className={cn(
-                    "flex w-full items-center gap-2 rounded-lg px-2 py-1.5 text-left text-[13px]",
-                    activeType === type.id
-                      ? "bg-neutral-100 font-medium text-neutral-950"
-                      : "text-neutral-600 hover:bg-neutral-50 hover:text-neutral-950",
-                  )}
-                >
-                  <span className="min-w-0 flex-1 truncate">{type.name}</span>
-                  <span className={cn("text-xs tabular-nums", activeType === type.id ? "text-neutral-700" : "text-neutral-400")}>
-                    {formatCount(type.count)}
-                  </span>
-                </button>
-              ))}
+              {types.map((type) => {
+                const selected = activeType === type.id
+                return (
+                  <Link
+                    key={type.id}
+                    href={hrefForType(selected ? undefined : type.id)}
+                    onClick={onNavigate}
+                    aria-current={selected ? "page" : undefined}
+                    className={cn(
+                      "flex w-full items-center gap-2 rounded-lg px-2 py-1.5 text-left text-[13px]",
+                      selected
+                        ? "bg-neutral-100 font-medium text-neutral-950"
+                        : "text-neutral-600 hover:bg-neutral-50 hover:text-neutral-950",
+                    )}
+                  >
+                    <span className="min-w-0 flex-1 truncate">{type.name}</span>
+                    <span className={cn("text-xs tabular-nums", selected ? "text-neutral-700" : "text-neutral-400")}>
+                      {formatCount(type.count)}
+                    </span>
+                  </Link>
+                )
+              })}
             </div>
           ) : null}
         </div>
@@ -110,22 +120,24 @@ export function CategoryNav({
 }
 
 function CategoryButton({
+  href,
   icon: Icon,
   label,
   count,
   active,
-  onClick,
+  onNavigate,
 }: {
+  href: string
   icon: LucideIcon
   label: string
   count: number
   active: boolean
-  onClick: () => void
+  onNavigate?: () => void
 }) {
   return (
-    <button
-      type="button"
-      onClick={onClick}
+    <Link
+      href={href}
+      onClick={onNavigate}
       aria-current={active ? "page" : undefined}
       className={cn(
         "flex w-full items-center gap-2.5 rounded-lg px-2.5 py-2 text-left text-sm transition-colors",
@@ -139,6 +151,6 @@ function CategoryButton({
       <span className={cn("text-xs tabular-nums", active ? "text-neutral-700" : "text-neutral-400")}>
         {formatCount(count)}
       </span>
-    </button>
+    </Link>
   )
 }

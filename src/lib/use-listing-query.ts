@@ -41,57 +41,64 @@ export function useListingQuery() {
   const router = useRouter()
   const pathname = usePathname()
   const searchParams = useSearchParams()
-  const onBoard = pathname === "/"
+  const pathCategory = categoryFromPath(pathname)
+  const onBoard = pathname === "/" || pathCategory !== undefined
 
   const scrollAfterNav = useRef(false)
 
   const query = useMemo<ListingQuery>(() => {
     if (!onBoard) return { q: "", sort: "relevant" }
     const countryParam = searchParams.get("country")
-    const categoryParam = searchParams.get("category")
     const sortParam = searchParams.get("sort")
     return {
       q: searchParams.get("q") ?? "",
       country: canonicalCountry(countryParam),
       city: searchParams.get("city")?.trim() || undefined,
-      category: isCategoryId(categoryParam) ? categoryParam : undefined,
+      category: pathCategory,
       type: searchParams.get("type")?.trim() || undefined,
       sort: isSortId(sortParam) ? sortParam : "relevant",
     }
-  }, [onBoard, searchParams])
+  }, [onBoard, pathCategory, searchParams])
 
   useEffect(() => {
-    if (pathname !== "/") {
+    if (!onBoard) {
       scrollAfterNav.current = false
       return
     }
     const params = new URLSearchParams(searchParams.toString())
+    const requested = params.get("category")
+    if (requested) {
+      params.delete("category")
+      const destination = isCategoryId(requested) ? requested : pathCategory
+      if (!isCategoryId(requested)) params.delete("type")
+      normalizeBoardParams(params, destination)
+      router.replace(boardHref(destination, params), { scroll: false })
+      return
+    }
     if (!params.get("country") && !isBrowsingEverywhere()) {
       const home = readHomePlace()
       const country = canonicalCountry(home?.country)
       if (country) {
         params.set("country", country)
         if (home?.city) params.set("city", home.city)
-        normalizeBoardParams(params)
-        const qs = params.toString()
-        router.replace(qs ? `/?${qs}` : "/", { scroll: false })
+        normalizeBoardParams(params, pathCategory)
+        router.replace(boardHref(pathCategory, params), { scroll: false })
         return
       }
     }
-    if (normalizeBoardParams(params)) {
-      const qs = params.toString()
-      router.replace(qs ? `/?${qs}` : "/", { scroll: false })
+    if (normalizeBoardParams(params, pathCategory)) {
+      router.replace(boardHref(pathCategory, params), { scroll: false })
       return
     }
     if (!scrollAfterNav.current) return
     scrollAfterNav.current = false
     window.scrollTo(0, 0)
-  }, [pathname, router, searchParams])
+  }, [onBoard, pathCategory, pathname, router, searchParams])
 
   const update = useCallback(
     (patch: QueryPatch) => {
       const params = new URLSearchParams(onBoard ? searchParams.toString() : "")
-      normalizeBoardParams(params)
+      let nextCategory = onBoard ? pathCategory : undefined
 
       if ("q" in patch) {
         const next = patch.q?.trim() ?? ""
@@ -114,8 +121,7 @@ export function useListingQuery() {
         else params.delete("city")
       }
       if ("category" in patch) {
-        if (patch.category) params.set("category", patch.category)
-        else params.delete("category")
+        nextCategory = patch.category ?? undefined
         if (!("type" in patch)) params.delete("type")
       }
       if ("type" in patch) {
@@ -128,13 +134,14 @@ export function useListingQuery() {
         else params.delete("sort")
       }
 
-      const qs = params.toString()
-      const href = qs ? `/?${qs}` : "/"
+      params.delete("category")
+      normalizeBoardParams(params, nextCategory)
+      const href = boardHref(nextCategory, params)
       scrollAfterNav.current = (Object.keys(patch) as (keyof QueryPatch)[]).some((key) => key !== "q")
       if (onBoard) router.replace(href, { scroll: false })
       else router.push(href)
     },
-    [onBoard, router, searchParams],
+    [onBoard, pathCategory, router, searchParams],
   )
 
   const clear = useCallback(() => {
@@ -146,7 +153,20 @@ export function useListingQuery() {
   return { query, update, clear }
 }
 
-function normalizeBoardParams(params: URLSearchParams): boolean {
+export function categoryFromPath(pathname: string): CategoryId | undefined {
+  const [segment, extra] = pathname.split("/").filter(Boolean)
+  if (!segment || extra) return undefined
+  return isCategoryId(segment) ? segment : undefined
+}
+
+function boardHref(category: CategoryId | undefined, params: URLSearchParams): string {
+  params.delete("category")
+  const qs = params.toString()
+  const path = category ? `/${category}` : "/"
+  return qs ? `${path}?${qs}` : path
+}
+
+function normalizeBoardParams(params: URLSearchParams, category?: CategoryId): boolean {
   let changed = false
   const rawCountry = params.get("country")
   if (rawCountry) {
@@ -160,14 +180,10 @@ function normalizeBoardParams(params: URLSearchParams): boolean {
       changed = true
     }
   }
-  const rawCategory = params.get("category")
-  if (rawCategory && !isCategoryId(rawCategory)) {
+  if (params.has("category")) {
     params.delete("category")
-    params.delete("type")
     changed = true
   }
-  const categoryParam = params.get("category")
-  const category = isCategoryId(categoryParam) ? categoryParam : undefined
   const rawType = params.get("type")?.trim() ?? ""
   if (rawType) {
     const valid = category ? findSubcategory(category, rawType) : undefined
