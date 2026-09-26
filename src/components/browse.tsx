@@ -38,6 +38,7 @@ import {
   type CategoryId,
   type Listing,
 } from "@/lib/types"
+import { categoryPlan, findSubcategory } from "@/lib/posting"
 import { useClientTime } from "@/lib/use-client-time"
 import { useListingQuery } from "@/lib/use-listing-query"
 
@@ -56,13 +57,12 @@ export function Browse() {
     [listings, query.country, query.q],
   )
 
-  const inCategory = useMemo(
-    () =>
-      query.category
-        ? inCountry.filter((listing) => listing.category === query.category)
-        : inCountry,
-    [inCountry, query.category],
-  )
+  const inCategory = useMemo(() => {
+    const inCategoryOnly = query.category
+      ? inCountry.filter((listing) => listing.category === query.category)
+      : inCountry
+    return query.type ? inCategoryOnly.filter((listing) => listing.subcategory === query.type) : inCategoryOnly
+  }, [inCountry, query.category, query.type])
 
   const cityOptions = useMemo(
     () => (query.country ? citiesIn(inCategory) : []),
@@ -84,13 +84,25 @@ export function Browse() {
     return next
   }, [inCity])
 
+  const types = useMemo(() => {
+    if (!query.category) return []
+    const pool = inCity.filter((listing) => listing.category === query.category)
+    return categoryPlan(query.category).subcategories.flatMap((subcategory) => {
+      const count = pool.filter((listing) => listing.subcategory === subcategory.id).length
+      return count > 0 ? [{ id: subcategory.id, name: subcategory.name, count }] : []
+    })
+  }, [inCity, query.category])
+
   const visible = useMemo(() => {
-    const filtered = query.category
+    const inCategory = query.category
       ? inCity.filter((listing) => listing.category === query.category)
       : inCity
+    const filtered = query.type ? inCategory.filter((listing) => listing.subcategory === query.type) : inCategory
     const preferred = getCountry(query.country ?? "")?.currencies[0]?.code ?? "USD"
     return sortListings(filtered, query.sort, preferred, query.q)
-  }, [inCity, query.category, query.country, query.q, query.sort])
+  }, [inCity, query.category, query.country, query.q, query.sort, query.type])
+
+  const typeName = query.category && query.type ? findSubcategory(query.category, query.type)?.name : undefined
 
   const cityLabel = query.city
     ? (cityOptions.find((city) => fold(city.name) === fold(query.city ?? ""))?.name ?? query.city)
@@ -108,7 +120,10 @@ export function Browse() {
             active={query.category}
             counts={counts}
             total={inCity.length}
+            types={types}
+            activeType={query.type}
             onSelect={(category) => update({ category: category ?? null })}
+            onSelectType={(type) => update({ type: type ?? null })}
           />
         </div>
       </aside>
@@ -131,8 +146,14 @@ export function Browse() {
                     active={query.category}
                     counts={counts}
                     total={inCity.length}
+                    types={types}
+                    activeType={query.type}
                     onSelect={(category) => {
                       update({ category: category ?? null })
+                      if (!category) setSheetOpen(false)
+                    }}
+                    onSelectType={(type) => {
+                      update({ type: type ?? null })
                       setSheetOpen(false)
                     }}
                   />
@@ -142,7 +163,8 @@ export function Browse() {
             <div>
               <p className="text-sm text-neutral-500">
                 <span className="font-medium text-neutral-900">{visible.length}</span>{" "}
-                {visible.length === 1 ? "listing" : "listings"} in {place}
+                {visible.length === 1 ? "listing" : "listings"}
+                {typeName ? ` · ${typeName}` : ""} in {place}
               </p>
               {query.country ? <CountryStrip code={query.country} /> : null}
             </div>
@@ -196,7 +218,11 @@ export function Browse() {
           <EmptyResults
             country={query.country}
             city={cityLabel}
+            category={query.category}
+            type={query.type}
+            typeName={typeName}
             onClearCity={() => update({ city: null })}
+            onClearType={() => update({ type: null })}
             onClear={() => {
               clear()
             }}
@@ -272,24 +298,34 @@ function CityPill({
 function EmptyResults({
   country,
   city,
+  category,
+  type,
+  typeName,
   onClearCity,
+  onClearType,
   onClear,
 }: {
   country?: string
   city?: string
+  category?: string
+  type?: string
+  typeName?: string
   onClearCity: () => void
+  onClearType: () => void
   onClear: () => void
 }) {
   const place = city && country ? `${city}, ${countryName(country)}` : country ? countryName(country) : undefined
   const postParams = new URLSearchParams()
   if (country) postParams.set("country", country)
   if (city) postParams.set("city", city)
+  if (category) postParams.set("category", category)
+  if (type) postParams.set("type", type)
   const postHref = postParams.size > 0 ? `/post?${postParams}` : "/post"
 
   return (
     <div className="rounded-2xl border border-dashed border-neutral-300 bg-white px-6 py-16 text-center">
       <h2 className="text-lg font-semibold tracking-tight">
-        {place ? `No listings in ${place}` : "No listings match"}
+        {typeName ? `No ${typeName.toLowerCase()} listings${place ? ` in ${place}` : ""}` : place ? `No listings in ${place}` : "No listings match"}
       </h2>
       <p className="mx-auto mt-2 max-w-sm text-sm text-neutral-500">
         {city
@@ -297,9 +333,14 @@ function EmptyResults({
           : "Nothing in this country and category fits that search. Clear the filters or try a broader word like “toyota” or “rent”."}
       </p>
       <div className="mt-5 flex flex-wrap items-center justify-center gap-2">
-        {country ? (
+        {country || category ? (
           <Button asChild className="rounded-full">
             <Link href={postHref}>{city ? `Post an ad in ${city}` : "Post an ad"}</Link>
+          </Button>
+        ) : null}
+        {type ? (
+          <Button variant="outline" className="rounded-full" onClick={onClearType}>
+            All types
           </Button>
         ) : null}
         {city ? (

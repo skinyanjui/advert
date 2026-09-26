@@ -64,21 +64,27 @@ export function PostForm() {
 function AdForm({ existing }: { existing: Listing | null }) {
   const router = useRouter()
   const searchParams = useSearchParams()
-  const seeded = existing ? findSubcategory(existing.category, existing.subcategory) : undefined
   const startingCountry = existing
     ? (canonicalCountry(existing.country) ?? "KE")
     : (canonicalCountry(searchParams.get("country")) ?? "KE")
   const startingCity = existing ? existing.city : (searchParams.get("city") ?? "").trim().slice(0, 80)
   const categoryParam = searchParams.get("category")
   const startingCategory = existing?.category ?? (isCategoryId(categoryParam) ? categoryParam : null)
+  const seeded = existing
+    ? findSubcategory(existing.category, existing.subcategory)
+    : startingCategory
+      ? findSubcategory(startingCategory, searchParams.get("type") ?? undefined)
+      : undefined
   const { addListing, updateListing } = useMarketplace()
 
-  const [step, setStep] = useState(existing ? (seeded ? 2 : 1) : 0)
+  const [step, setStep] = useState(seeded ? 2 : existing ? 1 : 0)
   const [category, setCategory] = useState<CategoryId | null>(startingCategory)
   const [subcategoryId, setSubcategoryId] = useState<string | null>(seeded?.id ?? null)
   const [title, setTitle] = useState(existing?.title ?? "")
   const [price, setPrice] = useState(existing ? String(existing.price) : "")
-  const [period, setPeriod] = useState<PricePeriodId>(periodForSuffix(existing?.priceSuffix, seeded?.periods ?? ["fixed"]))
+  const [period, setPeriod] = useState<PricePeriodId>(
+    existing ? periodForSuffix(existing.priceSuffix, seeded?.periods ?? ["fixed"]) : (seeded?.periods[0] ?? "fixed"),
+  )
   const [details, setDetails] = useState<Record<string, string>>({ ...(existing?.details ?? {}) })
   const [country, setCountry] = useState(startingCountry)
   const [currency, setCurrency] = useState(existing?.currency ?? getCountry(startingCountry)?.currencies[0]?.code ?? "USD")

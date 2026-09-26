@@ -37,14 +37,31 @@ export const categoryIcons: Record<CategoryId | "all", LucideIcon> = {
   community: Users,
 }
 
+export type CategoryTypeChoice = {
+  id: string
+  name: string
+  count: number
+}
+
 type CategoryNavProps = {
   active?: CategoryId
   counts: Record<CategoryId, number>
   total: number
   onSelect: (category?: CategoryId) => void
+  types?: CategoryTypeChoice[]
+  activeType?: string
+  onSelectType?: (type?: string) => void
 }
 
-export function CategoryNav({ active, counts, total, onSelect }: CategoryNavProps) {
+export function CategoryNav({
+  active,
+  counts,
+  total,
+  onSelect,
+  types = [],
+  activeType,
+  onSelectType,
+}: CategoryNavProps) {
   return (
     <nav aria-label="Categories" className="flex flex-col gap-0.5">
       <CategoryButton
@@ -55,14 +72,38 @@ export function CategoryNav({ active, counts, total, onSelect }: CategoryNavProp
         onClick={() => onSelect(undefined)}
       />
       {categories.map((category) => (
-        <CategoryButton
-          key={category.id}
-          icon={categoryIcons[category.id]}
-          label={categoryName(category.id)}
-          count={counts[category.id]}
-          active={active === category.id}
-          onClick={() => onSelect(category.id)}
-        />
+        <div key={category.id}>
+          <CategoryButton
+            icon={categoryIcons[category.id]}
+            label={categoryName(category.id)}
+            count={counts[category.id]}
+            active={active === category.id}
+            onClick={() => onSelect(category.id)}
+          />
+          {active === category.id && types.length > 0 ? (
+            <div className="mt-0.5 mb-1 ml-4 flex flex-col gap-0.5 border-l border-neutral-200 pl-2">
+              {types.map((type) => (
+                <button
+                  key={type.id}
+                  type="button"
+                  onClick={() => onSelectType?.(activeType === type.id ? undefined : type.id)}
+                  aria-current={activeType === type.id ? "page" : undefined}
+                  className={cn(
+                    "flex w-full items-center gap-2 rounded-lg px-2 py-1.5 text-left text-[13px]",
+                    activeType === type.id
+                      ? "bg-neutral-100 font-medium text-neutral-950"
+                      : "text-neutral-600 hover:bg-neutral-50 hover:text-neutral-950",
+                  )}
+                >
+                  <span className="min-w-0 flex-1 truncate">{type.name}</span>
+                  <span className={cn("text-xs tabular-nums", activeType === type.id ? "text-neutral-700" : "text-neutral-400")}>
+                    {formatCount(type.count)}
+                  </span>
+                </button>
+              ))}
+            </div>
+          ) : null}
+        </div>
       ))}
     </nav>
   )

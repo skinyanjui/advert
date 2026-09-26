@@ -4,6 +4,7 @@ import { usePathname, useRouter, useSearchParams } from "next/navigation"
 import { useCallback, useEffect, useMemo, useRef } from "react"
 
 import { canonicalCountry } from "@/lib/countries"
+import { findSubcategory } from "@/lib/posting"
 import {
   isCategoryId,
   isSortId,
@@ -17,6 +18,7 @@ export type ListingQuery = {
   country?: CountryId
   city?: string
   category?: CategoryId
+  type?: string
   sort: SortId
 }
 
@@ -25,6 +27,7 @@ type QueryPatch = {
   country?: CountryId | null
   city?: string | null
   category?: CategoryId | null
+  type?: string | null
   sort?: SortId | null
 }
 
@@ -44,6 +47,7 @@ export function useListingQuery() {
       country: canonicalCountry(countryParam),
       city: searchParams.get("city")?.trim() || undefined,
       category: isCategoryId(categoryParam) ? categoryParam : undefined,
+      type: searchParams.get("type")?.trim() || undefined,
       sort: isSortId(sortParam) ? sortParam : "relevant",
     }
   }, [searchParams])
@@ -87,6 +91,12 @@ export function useListingQuery() {
       if ("category" in patch) {
         if (patch.category) params.set("category", patch.category)
         else params.delete("category")
+        if (!("type" in patch)) params.delete("type")
+      }
+      if ("type" in patch) {
+        const next = patch.type?.trim() ?? ""
+        if (next) params.set("type", next)
+        else params.delete("type")
       }
       if ("sort" in patch) {
         if (patch.sort && patch.sort !== "relevant") params.set("sort", patch.sort)
@@ -128,7 +138,21 @@ function normalizeBoardParams(params: URLSearchParams): boolean {
   const rawCategory = params.get("category")
   if (rawCategory && !isCategoryId(rawCategory)) {
     params.delete("category")
+    params.delete("type")
     changed = true
+  }
+  const categoryParam = params.get("category")
+  const category = isCategoryId(categoryParam) ? categoryParam : undefined
+  const rawType = params.get("type")?.trim() ?? ""
+  if (rawType) {
+    const valid = category ? findSubcategory(category, rawType) : undefined
+    if (!valid) {
+      params.delete("type")
+      changed = true
+    } else if (params.get("type") !== valid.id) {
+      params.set("type", valid.id)
+      changed = true
+    }
   }
   const rawSort = params.get("sort")
   if (rawSort && !isSortId(rawSort)) {
