@@ -27,6 +27,7 @@ import {
   primaryCountries,
   type CountryRecord,
 } from "@/lib/countries"
+import { formatPrice } from "@/lib/format"
 import { listingFieldErrors, type FieldErrors as RuleErrors } from "@/lib/listing-rules"
 import { useMarketplace } from "@/lib/marketplace"
 import {
@@ -355,7 +356,7 @@ function AdForm({ existing }: { existing: Listing | null }) {
   const summaryLine = [choiceLine, placeLine].filter(Boolean).join(" · ")
 
   return (
-    <div className="mx-auto grid w-full max-w-[1100px] items-start gap-8 px-4 py-6 md:px-6 md:py-8 lg:grid-cols-[minmax(0,1fr)_300px]">
+    <div className="mx-auto grid w-full max-w-[1100px] items-start gap-8 px-4 pt-6 pb-24 md:px-6 md:py-8 lg:grid-cols-[minmax(0,1fr)_300px]">
       <div>
         <h1 className="text-2xl font-semibold tracking-tight">{existing ? "Edit your ad" : "Post an ad"}</h1>
         {summaryLine ? <p className="mt-1 text-sm text-neutral-500">{summaryLine}</p> : null}
@@ -394,7 +395,7 @@ function AdForm({ existing }: { existing: Listing | null }) {
         </ol>
 
         <form
-          className="mt-6 grid gap-5"
+          className="mt-6 grid gap-5 max-md:[&_input]:scroll-mb-28 max-md:[&_textarea]:scroll-mb-28 max-md:[&_[data-field-error]]:scroll-mb-28"
           data-post-step={step}
           onSubmit={(event) => {
             event.preventDefault()
@@ -488,13 +489,18 @@ function AdForm({ existing }: { existing: Listing | null }) {
 
           {step === 2 && plan && subcategory ? (
             <section className="grid gap-5 rounded-2xl border bg-white p-4 sm:p-5">
+              <div>
+                <h2 className="text-base font-medium">{plan.detailHeading}</h2>
+                <p className="mt-1 text-sm text-neutral-500">{plan.intro}</p>
+              </div>
               <PhotoDrop image={image} invalid={Boolean(errors.image)} onFile={onFile} onClear={() => setImage(null)} />
+              <p className="-mt-3 text-xs text-neutral-500">{plan.photoHint} A photo is optional.</p>
               {errors.image ? (
                 <span data-field-error className="-mt-3 text-xs text-destructive">
                   {errors.image}
                 </span>
               ) : null}
-              <Field label="Title" error={errors.title}>
+              <Field label="Title" required error={errors.title}>
                 <Input
                   value={title}
                   aria-invalid={Boolean(errors.title)}
@@ -507,7 +513,7 @@ function AdForm({ existing }: { existing: Listing | null }) {
                 />
               </Field>
               <div className="grid gap-5 sm:grid-cols-2">
-                <Field label={`${subcategory.priceLabel} (${currency})`} error={errors.price}>
+                <Field label={`${subcategory.priceLabel} (${currency})`} required error={errors.price}>
                   <Input
                     inputMode="decimal"
                     value={price}
@@ -561,7 +567,12 @@ function AdForm({ existing }: { existing: Listing | null }) {
                   </div>
                 ))}
               </div>
-              <Field label={plan.descriptionLabel} error={errors.description}>
+              <Field
+                label={plan.descriptionLabel}
+                required
+                error={errors.description}
+                hint={descriptionHint(description)}
+              >
                 <Textarea
                   value={description}
                   aria-invalid={Boolean(errors.description)}
@@ -579,7 +590,16 @@ function AdForm({ existing }: { existing: Listing | null }) {
 
           {step === 3 && plan ? (
             <section className="grid gap-5 rounded-2xl border bg-white p-4 sm:p-5">
-              <div className="grid gap-5 sm:grid-cols-2">
+              <div>
+                <h2 className="text-base font-medium">Where can people reach you?</h2>
+                <p className="mt-1 text-sm text-neutral-500">{plan.phoneHint}</p>
+              </div>
+              <div className="rounded-xl bg-neutral-50 px-3 py-3">
+                <p className="truncate text-sm font-medium">{title.trim() || "Add a title"}</p>
+                <p className="mt-0.5 text-sm text-neutral-700">{Number(price) > 0 ? formatPrice(preview) : "Add a price"}</p>
+                {choiceLine ? <p className="mt-0.5 truncate text-xs text-neutral-500">{choiceLine}</p> : null}
+              </div>
+              <div className="grid grid-cols-2 gap-3">
                 <Field label="Country">
                   <CountryField
                     country={country}
@@ -592,7 +612,7 @@ function AdForm({ existing }: { existing: Listing | null }) {
                     }}
                   />
                 </Field>
-                <Field label="City" error={errors.city}>
+                <Field label="City" required error={errors.city}>
                   <CityField
                     country={country}
                     city={city}
@@ -604,7 +624,7 @@ function AdForm({ existing }: { existing: Listing | null }) {
                   />
                 </Field>
               </div>
-              <Field label="Phone" error={errors.phone}>
+              <Field label="Phone" required error={errors.phone} hint={plan.safety}>
                 <Input
                   value={phone}
                   aria-invalid={Boolean(errors.phone)}
@@ -625,7 +645,7 @@ function AdForm({ existing }: { existing: Listing | null }) {
             </p>
           ) : null}
 
-          <div className="flex items-center gap-3">
+          <div className="fixed inset-x-0 bottom-0 z-[45] flex items-center gap-3 border-t border-neutral-200 bg-background/95 px-4 py-3 backdrop-blur md:static md:inset-auto md:z-auto md:border-0 md:bg-transparent md:px-0 md:py-0 md:backdrop-blur-none">
             {step === 0 ? (
               <Button type="button" variant="ghost" onClick={() => router.push(existing ? `/listings/${existing.id}` : "/")}>
                 Cancel
@@ -894,7 +914,7 @@ function DetailControl({
   switch (field.kind) {
     case "select":
       return (
-        <Field label={field.label} error={error}>
+        <Field label={field.label} required={field.required} error={error}>
           <ChoiceRow
             value={value}
             options={(field.options ?? []).map((option) => ({ id: option, label: option }))}
@@ -904,7 +924,7 @@ function DetailControl({
       )
     case "text":
       return (
-        <Field label={field.label} error={error}>
+        <Field label={field.label} required={field.required} error={error} hint={field.hint}>
           <Input
             value={value}
             aria-invalid={Boolean(error)}
@@ -969,15 +989,38 @@ function locatedPlace(chosen: ChosenPlace | null, country: string, city: string)
   }
 }
 
-function Field({ label, error, children }: { label: string; error?: string; children: ReactNode }) {
+function descriptionHint(value: string): string {
+  const count = value.trim().length
+  if (count >= 20) return `${count} characters`
+  return `${count} / 20 characters`
+}
+
+function Field({
+  label,
+  error,
+  required,
+  hint,
+  children,
+}: {
+  label: string
+  error?: string
+  required?: boolean
+  hint?: string
+  children: ReactNode
+}) {
   return (
     <div className="grid gap-1.5">
-      <Label>{label}</Label>
+      <Label>
+        {label}
+        {required ? <span className="text-destructive"> *</span> : null}
+      </Label>
       {children}
       {error ? (
         <span data-field-error className="text-xs text-destructive">
           {error}
         </span>
+      ) : hint ? (
+        <span className="text-xs text-neutral-500">{hint}</span>
       ) : null}
     </div>
   )
