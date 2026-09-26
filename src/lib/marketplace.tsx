@@ -5,16 +5,19 @@ import { createContext, useContext, useMemo, useSyncExternalStore } from "react"
 import { seedListings } from "@/lib/catalog"
 import { canonicalCountry } from "@/lib/countries"
 import { acceptListing } from "@/lib/listing-rules"
+import { isBoardMessage, messageError, sampleReply, type BoardMessage } from "@/lib/messages"
 import { isCategoryId, type Listing } from "@/lib/types"
 
 const STORAGE_KEY = "africa-classifieds-v1"
+const messageLimit = 200
 
 type StoredState = {
   posted: Listing[]
   savedIds: string[]
+  messages: BoardMessage[]
 }
 
-const emptyState: StoredState = { posted: [], savedIds: [] }
+const emptyState: StoredState = { posted: [], savedIds: [], messages: [] }
 
 let memory: { raw: string | null; state: StoredState } = {
   raw: null,
@@ -48,7 +51,8 @@ function parseStored(raw: string | null): StoredState {
     const savedIds = Array.isArray(parsed.savedIds)
       ? parsed.savedIds.filter((id): id is string => typeof id === "string")
       : []
-    return { posted, savedIds }
+    const messages = Array.isArray(parsed.messages) ? parsed.messages.filter(isBoardMessage).slice(-messageLimit) : []
+    return { posted, savedIds, messages }
   } catch {
     return emptyState
   }
@@ -122,10 +126,13 @@ type MarketplaceContextValue = {
   listings: Listing[]
   savedIds: string[]
   isSaved: (id: string) => boolean
+  messages: BoardMessage[]
   toggleSaved: (id: string) => void
   addListing: (listing: Listing) => { ok: true } | { ok: false; reason: string }
   updateListing: (listing: Listing) => { ok: true } | { ok: false; reason: string }
   removeListing: (id: string) => void
+  sendMessage: (listingId: string, body: string) => { ok: true } | { ok: false; reason: string }
+  markThreadRead: (listingId: string) => void
 }
 
 const MarketplaceContext = createContext<MarketplaceContextValue | null>(null)
@@ -140,20 +147,21 @@ export function MarketplaceProvider({ children }: { children: React.ReactNode })
       ready,
       listings,
       savedIds: stored.savedIds,
+      messages: stored.messages,
       isSaved: (id: string) => stored.savedIds.includes(id),
       toggleSaved: (id: string) => {
         const current = readSnapshot()
         const savedIds = current.savedIds.includes(id)
           ? current.savedIds.filter((savedId) => savedId !== id)
           : [id, ...current.savedIds]
-        writeStored({ posted: current.posted, savedIds })
+        writeStored({ posted: current.posted, savedIds, messages: current.messages })
       },
       addListing: (listing: Listing) => {
         const accepted = acceptPosted(listing)
         if (!accepted.ok) return accepted
         const current = readSnapshot()
         const posted = [accepted.listing, ...current.posted.filter((item) => item.id !== accepted.listing.id)]
-        const saved = writeStored({ posted, savedIds: current.savedIds })
+        const saved = writeStored({ posted, savedIds: current.savedIds, messages: current.messages })
         if (!saved) {
           return { ok: false, reason: "This browser could not store the ad. Try a smaller photo." }
         }
@@ -167,7 +175,7 @@ export function MarketplaceProvider({ children }: { children: React.ReactNode })
           return { ok: false, reason: "This ad is no longer on this browser." }
         }
         const posted = current.posted.map((item) => (item.id === accepted.listing.id ? accepted.listing : item))
-        const saved = writeStored({ posted, savedIds: current.savedIds })
+        const saved = writeStored({ posted, savedIds: current.savedIds, messages: current.messages })
         if (!saved) {
           return { ok: false, reason: "This browser could not store the ad. Try a smaller photo." }
         }
@@ -178,6 +186,55 @@ export function MarketplaceProvider({ children }: { children: React.ReactNode })
         writeStored({
           posted: current.posted.filter((listing) => listing.id !== id),
           savedIds: current.savedIds.filter((savedId) => savedId !== id),
+          messages: current.messages,
+        })
+      },
+      sendMessage: (listingId: string, body: string) => {
+        const text = body.trim()
+        const error = messageError(text)
+        if (error) return { ok: false, reason: error }
+        const current = readSnapshot()
+        const listing = [...current.posted, ...seedListings].find((item) => item.id === listingId)
+        if (!listing) return { ok: false, reason: "That listing is no longer on the board." }
+        if (listing.mine) return { ok: false, reason: "This is your ad." }
+        const sentAt = new Date().toISOString()
+        const yours: BoardMessage = {
+          id: crypto.randomUUID(),
+          listingId,
+          listingTitle: listing.title,
+          sellerName: listing.sellerName,
+          body: text,
+          sentAt,
+          role: "you",
+          read: true,
+        }
+        const reply: BoardMessage = {
+          id: crypto.randomUUID(),
+          listingId,
+          listingTitle: listing.title,
+          sellerName: listing.sellerName,
+          body: sampleReply(listing.title),
+          sentAt: new Date(Date.now() + 1).toISOString(),
+          role: "sample",
+          read: false,
+        }
+        const saved = writeStored({
+          posted: current.posted,
+          savedIds: current.savedIds,
+          messages: [...current.messages, yours, reply].slice(-messageLimit),
+        })
+        if (!saved) return { ok: false, reason: "This browser could not store the message." }
+        return { ok: true }
+      },
+      markThreadRead: (listingId: string) => {
+        const current = readSnapshot()
+        if (!current.messages.some((message) => message.listingId === listingId && !message.read)) return
+        writeStored({
+          posted: current.posted,
+          savedIds: current.savedIds,
+          messages: current.messages.map((message) =>
+            message.listingId === listingId ? { ...message, read: true } : message,
+          ),
         })
       },
     }

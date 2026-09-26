@@ -36,7 +36,7 @@ import { categoryName, type Listing } from "@/lib/types"
 import { cn } from "@/lib/utils"
 
 export function ListingDetail({ id }: { id: string }) {
-  const { listings, ready, isSaved, toggleSaved } = useMarketplace()
+  const { listings, ready, isSaved, toggleSaved, messages, sendMessage } = useMarketplace()
   const listing = listings.find((item) => item.id === id)
   const [phoneVisible, setPhoneVisible] = useState(false)
   const [messageOpen, setMessageOpen] = useState(false)
@@ -52,6 +52,7 @@ export function ListingDetail({ id }: { id: string }) {
   }
 
   const saved = isSaved(listing.id)
+  const sentCount = messages.filter((item) => item.listingId === listing.id && item.role === "you").length
   const voice = listingVoice(listing)
   const facts = listingFacts(listing)
   const related = relatedListings(listings, listing)
@@ -66,15 +67,15 @@ export function ListingDetail({ id }: { id: string }) {
     }
   }
 
-  function sendMessage() {
-    const text = message.trim()
-    if (text.length < 8) {
-      toast.error("Write a short message first")
+  const submitMessage = () => {
+    const result = sendMessage(listing.id, message)
+    if (!result.ok) {
+      toast.error(result.reason)
       return
     }
     setMessageOpen(false)
     setMessage("")
-    toast.success(`Message sent to ${listing?.sellerName}`)
+    toast.success(`Message saved for ${listing.sellerName}`)
   }
 
   return (
@@ -182,6 +183,13 @@ export function ListingDetail({ id }: { id: string }) {
               <Button className="h-10 rounded-full" onClick={() => setMessageOpen(true)}>
                 {voice.messageLabel}
               </Button>
+              {sentCount > 0 ? (
+                <Button variant="outline" className="h-10 rounded-full" asChild>
+                  <Link href={`/messages?listing=${listing.id}`}>
+                    Your messages ({sentCount})
+                  </Link>
+                </Button>
+              ) : null}
               <Button variant="outline" className="h-10 rounded-full" asChild>
                 <a href={whatsappHref(listing.phone, listing.title)} target="_blank" rel="noreferrer">
                   WhatsApp
@@ -219,7 +227,7 @@ export function ListingDetail({ id }: { id: string }) {
           <DialogHeader>
             <DialogTitle>Message {listing.sellerName}</DialogTitle>
             <DialogDescription>
-              {voice.dialogLead} The reply stays in this browser.
+              {voice.dialogLead} A sample reply is saved with your message on this browser.
             </DialogDescription>
           </DialogHeader>
           <Textarea
@@ -232,7 +240,7 @@ export function ListingDetail({ id }: { id: string }) {
             <Button variant="outline" onClick={() => setMessageOpen(false)}>
               Cancel
             </Button>
-            <Button onClick={sendMessage}>Send</Button>
+            <Button onClick={submitMessage}>Send</Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>

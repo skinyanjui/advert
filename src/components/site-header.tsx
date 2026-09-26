@@ -45,12 +45,13 @@ type NotificationId = (typeof notifications)[number]["id"]
 
 export function SiteHeader() {
   const { query, update } = useListingQuery()
-  const { savedIds } = useMarketplace()
+  const { savedIds, messages } = useMarketplace()
   const [read, setRead] = useState<string[]>([])
   const [locationQuery, setLocationQuery] = useState("")
   const [accountOpen, setAccountOpen] = useState(false)
 
   const unread = notifications.filter((item) => !read.includes(item.id)).length
+  const unreadMessages = messages.filter((item) => item.role === "sample" && !item.read).length
   const locationLabel = query.country ? countryName(query.country) : "All Africa"
   const locationMatches = filterCountries(locationQuery)
 
@@ -165,8 +166,11 @@ export function SiteHeader() {
             </DropdownMenu>
             <DropdownMenu open={accountOpen} onOpenChange={setAccountOpen}>
               <DropdownMenuTrigger asChild>
-                <Button variant="outline" size="icon-lg" className="rounded-full" aria-label="Account menu">
+                <Button variant="outline" size="icon-lg" className="relative rounded-full" aria-label="Account menu">
                   <UserRound />
+                  {unreadMessages > 0 ? (
+                    <span className="absolute top-1.5 right-1.5 size-2 rounded-full bg-rose-500" />
+                  ) : null}
                 </Button>
               </DropdownMenuTrigger>
               <DropdownMenuContent align="end" className="w-52">
@@ -175,6 +179,11 @@ export function SiteHeader() {
                   <span className="block text-xs font-normal text-muted-foreground">Demo account on this browser</span>
                 </DropdownMenuLabel>
                 <DropdownMenuSeparator />
+                <DropdownMenuItem asChild>
+                  <Link href="/messages" onClick={() => setAccountOpen(false)}>
+                    Messages{unreadMessages > 0 ? ` (${unreadMessages})` : ""}
+                  </Link>
+                </DropdownMenuItem>
                 <DropdownMenuItem asChild>
                   <Link href="/saved" onClick={() => setAccountOpen(false)}>
                     Saved ads ({savedIds.length})
