@@ -39,6 +39,11 @@ export function formatPlace(listing: Pick<Listing, "city" | "country">): string 
   return `${listing.city}, ${countryName(listing.country)}`
 }
 
+export function formatDistance(km: number): string | undefined {
+  if (!Number.isFinite(km) || km < 1) return undefined
+  return `${Math.round(km)} km`
+}
+
 export function formatCount(count: number): string {
   if (count < 1000) return String(count)
   const compact = count / 1000

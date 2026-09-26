@@ -23,6 +23,9 @@ import {
   SheetTrigger,
 } from "@/components/ui/sheet"
 import { matchesQuery, sortListings } from "@/lib/board"
+import { distanceKm, listingPoint } from "@/lib/distance"
+import { useHomePlace } from "@/lib/home-place"
+import { resolvePlace } from "@/lib/cities"
 import { useMarketplace } from "@/lib/marketplace"
 import {
   countryName,
@@ -45,7 +48,10 @@ import { useListingQuery } from "@/lib/use-listing-query"
 export function Browse() {
   const { listings } = useMarketplace()
   const { query, update, clear } = useListingQuery()
+  const home = useHomePlace()
   const [sheetOpen, setSheetOpen] = useState(false)
+
+  const origin = useMemo(() => homeOrigin(home, query.country), [home, query.country])
 
   const inCountry = useMemo(
     () =>
@@ -57,16 +63,9 @@ export function Browse() {
     [listings, query.country, query.q],
   )
 
-  const inCategory = useMemo(() => {
-    const inCategoryOnly = query.category
-      ? inCountry.filter((listing) => listing.category === query.category)
-      : inCountry
-    return query.type ? inCategoryOnly.filter((listing) => listing.subcategory === query.type) : inCategoryOnly
-  }, [inCountry, query.category, query.type])
-
   const cityOptions = useMemo(
-    () => (query.country ? citiesIn(inCategory) : []),
-    [inCategory, query.country],
+    () => (query.country ? citiesIn(inCountry) : []),
+    [inCountry, query.country],
   )
 
   const inCity = useMemo(() => {
@@ -99,8 +98,8 @@ export function Browse() {
       : inCity
     const filtered = query.type ? inCategory.filter((listing) => listing.subcategory === query.type) : inCategory
     const preferred = getCountry(query.country ?? "")?.currencies[0]?.code ?? "USD"
-    return sortListings(filtered, query.sort, preferred, query.q)
-  }, [inCity, query.category, query.country, query.q, query.sort, query.type])
+    return sortListings(filtered, query.sort, preferred, query.q, origin)
+  }, [inCity, origin, query.category, query.country, query.q, query.sort, query.type])
 
   const typeName = query.category && query.type ? findSubcategory(query.category, query.type)?.name : undefined
 
@@ -112,6 +111,13 @@ export function Browse() {
       ? `${cityLabel}, ${countryName(query.country)}`
       : countryName(query.country)
     : "All Africa"
+  const closestFirst =
+    query.sort === "relevant" &&
+    !query.q &&
+    !!origin &&
+    !!home &&
+    (!query.country || query.country === home.country) &&
+    (!home.city || !query.city || fold(query.city) !== fold(home.city))
   return (
     <div className="mx-auto flex w-full max-w-[1720px] items-start">
       <aside className="sticky top-[73px] hidden h-[calc(100dvh-73px)] w-60 shrink-0 overflow-y-auto border-r border-neutral-200 bg-white md:block">
@@ -165,6 +171,7 @@ export function Browse() {
                 <span className="font-medium text-neutral-900">{visible.length}</span>{" "}
                 {visible.length === 1 ? "listing" : "listings"}
                 {typeName ? ` · ${typeName}` : ""} in {place}
+                {closestFirst ? " · closest first" : ""}
               </p>
               {query.country ? <CountryStrip code={query.country} /> : null}
             </div>
@@ -230,7 +237,11 @@ export function Browse() {
         ) : (
           <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5">
             {visible.map((listing) => (
-              <ListingCard key={listing.id} listing={listing} />
+              <ListingCard
+                key={listing.id}
+                listing={listing}
+                distanceKm={origin ? distanceKm(origin, listingPoint(listing)) : undefined}
+              />
             ))}
           </div>
         )}
@@ -354,6 +365,22 @@ function EmptyResults({
       </div>
     </div>
   )
+}
+
+function homeOrigin(
+  home: { country: string; city?: string } | null,
+  boardCountry?: string,
+): { lat: number; lng: number } | null {
+  if (!home) return null
+  if (boardCountry && boardCountry !== home.country) return null
+  if (home.city) {
+    const place = resolvePlace(home.country, home.city)
+    return { lat: place.lat, lng: place.lng }
+  }
+  const country = getCountry(home.country)
+  if (!country) return null
+  const capital = resolvePlace(home.country, country.capital)
+  return { lat: capital.lat, lng: capital.lng }
 }
 
 function citiesIn(listings: Listing[]): { name: string; count: number }[] {

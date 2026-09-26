@@ -4,6 +4,12 @@ import { usePathname, useRouter, useSearchParams } from "next/navigation"
 import { useCallback, useEffect, useMemo, useRef } from "react"
 
 import { canonicalCountry } from "@/lib/countries"
+import {
+  clearBrowsingEverywhere,
+  isBrowsingEverywhere,
+  markBrowsingEverywhere,
+  readHomePlace,
+} from "@/lib/home-place"
 import { findSubcategory } from "@/lib/posting"
 import {
   isCategoryId,
@@ -60,6 +66,18 @@ export function useListingQuery() {
       return
     }
     const params = new URLSearchParams(searchParams.toString())
+    if (!params.get("country") && !isBrowsingEverywhere()) {
+      const home = readHomePlace()
+      const country = canonicalCountry(home?.country)
+      if (country) {
+        params.set("country", country)
+        if (home?.city) params.set("city", home.city)
+        normalizeBoardParams(params)
+        const qs = params.toString()
+        router.replace(qs ? `/?${qs}` : "/", { scroll: false })
+        return
+      }
+    }
     if (normalizeBoardParams(params)) {
       const qs = params.toString()
       router.replace(qs ? `/?${qs}` : "/", { scroll: false })
@@ -81,8 +99,13 @@ export function useListingQuery() {
         else params.delete("q")
       }
       if ("country" in patch) {
-        if (patch.country) params.set("country", patch.country)
-        else params.delete("country")
+        if (patch.country) {
+          params.set("country", patch.country)
+          clearBrowsingEverywhere()
+        } else {
+          params.delete("country")
+          markBrowsingEverywhere()
+        }
         if (!("city" in patch)) params.delete("city")
       }
       if ("city" in patch) {

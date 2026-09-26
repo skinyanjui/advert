@@ -17,6 +17,7 @@ import {
 import { Input } from "@/components/ui/input"
 import { useMarketplace } from "@/lib/marketplace"
 import { countries, countryName, fold } from "@/lib/countries"
+import { useHomePlace, writeHomePlace } from "@/lib/home-place"
 import { useListingQuery } from "@/lib/use-listing-query"
 import { cn } from "@/lib/utils"
 
@@ -46,6 +47,7 @@ type NotificationId = (typeof notifications)[number]["id"]
 export function SiteHeader() {
   const { query, update } = useListingQuery()
   const { savedIds, messages } = useMarketplace()
+  const home = useHomePlace()
   const [read, setRead] = useState<string[]>([])
   const [locationQuery, setLocationQuery] = useState("")
   const [accountOpen, setAccountOpen] = useState(false)
@@ -54,6 +56,9 @@ export function SiteHeader() {
   const unreadMessages = messages.filter((item) => item.role === "sample" && !item.read).length
   const locationLabel = query.country ? countryName(query.country) : "All Africa"
   const locationMatches = filterCountries(locationQuery)
+  const homeLabel = home ? placeLabel(home.country, home.city) : undefined
+  const currentLabel = query.country ? placeLabel(query.country, query.city) : undefined
+  const canSaveDefault = !!currentLabel && currentLabel !== homeLabel
 
   return (
     <header className="sticky top-0 z-40">
@@ -93,6 +98,28 @@ export function SiteHeader() {
                   />
                 </div>
                 <DropdownMenuSeparator />
+                {home ? (
+                  <DropdownMenuItem onSelect={() => update({ country: home.country, city: home.city ?? null })}>
+                    <span className="min-w-0 flex-1 truncate">{homeLabel}</span>
+                    <span className="text-[11px] text-neutral-400">Default</span>
+                  </DropdownMenuItem>
+                ) : null}
+                {canSaveDefault ? (
+                  <DropdownMenuItem
+                    className="flex-col items-start gap-0.5"
+                    onSelect={() => {
+                      if (!query.country) return
+                      writeHomePlace({ country: query.country, city: query.city })
+                    }}
+                  >
+                    <span>Save as default</span>
+                    <span className="text-xs font-normal text-neutral-500">{currentLabel}</span>
+                  </DropdownMenuItem>
+                ) : null}
+                {home ? (
+                  <DropdownMenuItem onSelect={() => writeHomePlace(null)}>Clear default</DropdownMenuItem>
+                ) : null}
+                {home || canSaveDefault ? <DropdownMenuSeparator /> : null}
                 <div className="max-h-72 overflow-y-auto">
                   {locationQuery.trim() ? null : (
                     <DropdownMenuItem
@@ -258,6 +285,10 @@ function openNotification(
       return unreachable
     }
   }
+}
+
+function placeLabel(country: string, city?: string) {
+  return city ? `${city}, ${countryName(country)}` : countryName(country)
 }
 
 function filterCountries(query: string) {

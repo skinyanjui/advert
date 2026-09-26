@@ -1,3 +1,4 @@
+import { distanceKm, listingPoint, type GeoPoint } from "@/lib/distance"
 import { fold, countryName } from "@/lib/countries"
 import { hoursAgoOf } from "@/lib/format"
 import { listingSearchBits } from "@/lib/posting"
@@ -63,13 +64,12 @@ export function sortListings(
   sort: SortId,
   preferredCurrency: string,
   query = "",
+  origin?: GeoPoint | null,
 ): Listing[] {
   const copy = [...listings]
   switch (sort) {
     case "relevant":
-      if (!query.trim()) return copy
-      copy.sort((a, b) => relevanceScore(b, query) - relevanceScore(a, query) || hoursAgoOf(a) - hoursAgoOf(b))
-      return copy
+      return sortByRelevance(copy, query, origin)
     case "newest":
       copy.sort((a, b) => hoursAgoOf(a) - hoursAgoOf(b))
       return copy
@@ -82,6 +82,23 @@ export function sortListings(
       return exhaustive
     }
   }
+}
+
+function sortByRelevance(listings: Listing[], query: string, origin?: GeoPoint | null): Listing[] {
+  const words = query.trim()
+  if (!words && !origin) return listings
+  const ranked = listings.map((listing) => ({
+    listing,
+    relevance: words ? relevanceScore(listing, query) : 0,
+    distance: origin ? distanceKm(origin, listingPoint(listing)) : 0,
+    age: hoursAgoOf(listing),
+  }))
+  ranked.sort((a, b) => {
+    if (words && a.relevance !== b.relevance) return b.relevance - a.relevance
+    if (origin && a.distance !== b.distance) return a.distance - b.distance
+    return a.age - b.age
+  })
+  return ranked.map((entry) => entry.listing)
 }
 
 function sortByPrice(listings: Listing[], preferredCurrency: string, direction: "asc" | "desc"): Listing[] {

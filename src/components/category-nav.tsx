@@ -71,7 +71,7 @@ export function CategoryNav({
         active={!active}
         onClick={() => onSelect(undefined)}
       />
-      {categories.map((category) => (
+      {categories.filter((category) => counts[category.id] > 0 || category.id === active).map((category) => (
         <div key={category.id}>
           <CategoryButton
             icon={categoryIcons[category.id]}

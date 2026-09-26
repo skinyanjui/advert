@@ -4,7 +4,7 @@ import { Clock, Heart, MapPin } from "lucide-react"
 import Image from "next/image"
 import Link from "next/link"
 
-import { formatPlace, formatPosted, formatPrice, hoursAgoOf } from "@/lib/format"
+import { formatDistance, formatPlace, formatPosted, formatPrice, hoursAgoOf } from "@/lib/format"
 import { listingMeta } from "@/lib/posting"
 import { useMarketplace } from "@/lib/marketplace"
 import type { Listing } from "@/lib/types"
@@ -14,14 +14,17 @@ export function ListingCard({
   listing,
   linked = true,
   saveable = true,
+  distanceKm,
 }: {
   listing: Listing
   linked?: boolean
   saveable?: boolean
+  distanceKm?: number
 }) {
   const { isSaved, toggleSaved } = useMarketplace()
   const saved = isSaved(listing.id)
   const posted = formatPosted(hoursAgoOf(listing))
+  const away = distanceKm === undefined ? undefined : formatDistance(distanceKm)
   const body = (
     <>
       <div className="relative aspect-[5/4] overflow-hidden bg-neutral-100">
@@ -41,6 +44,11 @@ export function ListingCard({
         {listing.badge === "jobs" ? (
           <span className="absolute top-2 left-2 rounded-full bg-emerald-500 px-2 py-0.5 text-[10px] font-medium text-white">
             Jobs
+          </span>
+        ) : null}
+        {away ? (
+          <span className="absolute bottom-2 left-2 rounded-full bg-white/95 px-2 py-0.5 text-[10px] font-medium text-neutral-800">
+            {away}
           </span>
         ) : null}
       </div>
