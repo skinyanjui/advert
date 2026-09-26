@@ -106,9 +106,6 @@ export function Browse() {
     <div className="mx-auto flex w-full max-w-[1720px] items-start">
       <aside className="sticky top-[73px] hidden h-[calc(100dvh-73px)] w-60 shrink-0 overflow-y-auto border-r border-neutral-200 bg-white md:block">
         <div className="px-3 py-4">
-          <p className="px-2.5 pb-2 text-xs font-medium tracking-wide text-neutral-500 uppercase">
-            Categories
-          </p>
           <CategoryNav
             active={query.category}
             counts={counts}
