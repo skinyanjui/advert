@@ -38,6 +38,7 @@ import {
 } from "@/lib/format"
 import { osmLinks } from "@/lib/map"
 import { useMarketplace } from "@/lib/marketplace"
+import { daysUntilExpiry, isListingExpired, isListingExpiringSoon } from "@/lib/expiry"
 import { listingFacts, listingVoice } from "@/lib/posting"
 import { reportReasons } from "@/lib/reports"
 import { useClientTime } from "@/lib/use-client-time"
@@ -80,7 +81,10 @@ export function ListingDetail({ id }: { id: string }) {
   const related = relatedListings(listings, ad)
   const backSearch = keptSearch(searchParams, ad.subcategory)
   const backHref = backSearch ? `/${ad.category}?${backSearch}` : `/${ad.category}`
-  const contactOpen = !ad.sold && !ad.mine
+  const contactOpen = !ad.sold && !ad.mine && !isListingExpired(ad.expiresAt)
+  const expired = isListingExpired(ad.expiresAt)
+  const expiringSoon = isListingExpiringSoon(ad.expiresAt)
+  const daysLeft = daysUntilExpiry(ad.expiresAt)
 
   async function share() {
     const url = window.location.href
@@ -200,6 +204,13 @@ export function ListingDetail({ id }: { id: string }) {
                 {listing.hidden && listing.mine ? (
                   <p className="mb-1 text-xs font-medium tracking-wide text-amber-700 uppercase">Hidden from the board</p>
                 ) : null}
+                {listing.mine && expired ? (
+                  <p className="mb-1 text-xs font-medium tracking-wide text-neutral-500 uppercase">Expired</p>
+                ) : listing.mine && expiringSoon ? (
+                  <p className="mb-1 text-xs font-medium tracking-wide text-amber-700 uppercase">
+                    Expires in {daysLeft === 1 ? "1 day" : `${daysLeft} days`}
+                  </p>
+                ) : null}
                 <p className="text-2xl font-semibold tracking-tight">{formatPrice(listing)}</p>
                 <h1 className="mt-1 text-xl font-semibold tracking-tight text-neutral-950">
                   {listing.title}
@@ -276,7 +287,7 @@ export function ListingDetail({ id }: { id: string }) {
                 <Button variant="outline" className="h-10 rounded-full" disabled={busy} onClick={() => void onSold()}>
                   {listing.sold ? "Mark available" : "Mark sold"}
                 </Button>
-                {!listing.sold ? (
+                {!listing.sold || expired ? (
                   <Button variant="outline" className="h-10 rounded-full" disabled={busy} onClick={() => void onRenew()}>
                     Renew ad
                   </Button>
@@ -296,9 +307,9 @@ export function ListingDetail({ id }: { id: string }) {
                   </Button>
                 ) : null}
               </>
-            ) : listing.sold ? (
+            ) : listing.sold || expired ? (
               <p className="rounded-xl bg-neutral-50 px-3 py-3 text-sm text-neutral-600">
-                This ad is marked sold. Contact options are closed.
+                {expired ? "This ad has expired. Contact options are closed." : "This ad is marked sold. Contact options are closed."}
               </p>
             ) : (
               <Button className="h-10 rounded-full" onClick={() => setMessageOpen(true)}>

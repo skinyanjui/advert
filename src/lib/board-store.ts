@@ -12,6 +12,8 @@ import {
   reportNoteError,
   type ReportReasonId,
 } from "@/lib/reports"
+import { expiresAtFrom, expiryNoticeDays, isListingExpired } from "@/lib/expiry"
+import { sendEmail } from "@/lib/email"
 import type { Listing } from "@/lib/types"
 
 type Result<T> = { ok: true; value: T } | { ok: false; reason: string }
@@ -22,6 +24,8 @@ type Row = {
   payload: unknown
   hidden_at?: string | null
   hidden_reason?: string | null
+  expires_at?: string | null
+  expiry_reminder_sent_at?: string | null
 }
 const seedIds = new Set(seedListings.map((item) => item.id))
 const listingIdPattern = /^ad-[a-zA-Z0-9-]{1,64}$/
@@ -32,10 +36,18 @@ function unpack(row: Row, owner?: string): Listing | undefined {
     hoursAgo: hoursAgoOf({ hoursAgo: listing.hoursAgo, postedAt: row.posted_at }),
     mine: Boolean(owner) && owner === row.owner_id,
     featured: undefined,
-    hidden: row.hidden_at ? true : undefined }
+    hidden: row.hidden_at ? true : undefined,
+    expiresAt: row.expires_at ?? listing.expiresAt }
 }
 function payload(listing: Listing) {
-  return { ...listing, mine: undefined, featured: undefined, hidden: undefined, sold: listing.sold === true ? true : undefined }
+  return {
+    ...listing,
+    mine: undefined,
+    featured: undefined,
+    hidden: undefined,
+    expiresAt: undefined,
+    sold: listing.sold === true ? true : undefined,
+  }
 }
 function photoPath(image: string) {
   const base = `${process.env.SUPABASE_URL ?? process.env.NEXT_PUBLIC_SUPABASE_URL}/storage/v1/object/public/listing-photos/`
@@ -70,7 +82,7 @@ export async function listBoard(owner: string): Promise<BoardState> {
   const [posted, saved, messages] = await Promise.all([
     db
       .from("board_listings")
-      .select("id,owner_id,posted_at,payload,hidden_at,hidden_reason")
+      .select("id,owner_id,posted_at,payload,hidden_at,hidden_reason,expires_at")
       .order("posted_at", { ascending: false })
       .limit(500),
     db.from("board_saves").select("listing_id").eq("owner_id", owner).order("created_at", { ascending: false }),
@@ -82,8 +94,8 @@ export async function listBoard(owner: string): Promise<BoardState> {
     posted: (posted.data ?? []).flatMap((row) => {
       const item = unpack(row as Row, owner)
       if (!item) return []
-      // Hidden ads stay visible only to the owner (My ads / direct edit).
-      if (item.hidden && !item.mine) return []
+      // Hidden/expired ads stay visible only to the owner (My ads / renew).
+      if ((item.hidden || isListingExpired(item.expiresAt)) && !item.mine) return []
       return [item]
     }),
     savedIds: (saved.data ?? []).map((row) => row.listing_id),
@@ -179,8 +191,15 @@ export async function createListing(owner: string, input: unknown): Promise<Resu
   const photo = await storePhoto(listing.image, owner)
   if (!photo.ok) return photo
   const postedAt = new Date().toISOString()
-  const stored = { ...accepted.listing, image: photo.value, postedAt }
-  const { error } = await boardDb().from("board_listings").insert({ id: listing.id, owner_id: owner, posted_at: postedAt, payload: payload(stored) })
+  const expiresAt = expiresAtFrom(postedAt)
+  const stored = { ...accepted.listing, image: photo.value, postedAt, expiresAt }
+  const { error } = await boardDb().from("board_listings").insert({
+    id: listing.id,
+    owner_id: owner,
+    posted_at: postedAt,
+    expires_at: expiresAt,
+    payload: payload(stored),
+  })
   if (error) {
     if (photo.value !== listing.image) await removePhoto(photo.value)
     if (error.code === "23505") return { ok: false, reason: "That listing is already on the board." }
@@ -192,7 +211,7 @@ export async function updateListing(owner: string, id: string, input: unknown): 
   const listing = cleanListing(input)
   if (!listing || listing.id !== id || seedIds.has(id)) return { ok: false, reason: "That ad could not be read." }
   const db = boardDb()
-  const { data: row, error: readError } = await db.from("board_listings").select("id,owner_id,posted_at,payload,hidden_at,hidden_reason").eq("id", id).maybeSingle()
+  const { data: row, error: readError } = await db.from("board_listings").select("id,owner_id,posted_at,payload,hidden_at,hidden_reason,expires_at").eq("id", id).maybeSingle()
   check(readError)
   if (!row) return { ok: false, reason: "This ad is no longer on the board." }
   if (row.owner_id !== owner) return { ok: false, reason: "This ad is not yours." }
@@ -204,7 +223,7 @@ export async function updateListing(owner: string, id: string, input: unknown): 
   const stored = { ...accepted.listing, id, image: photo.value, postedAt: row.posted_at,
     hoursAgo: hoursAgoOf({ hoursAgo: 0, postedAt: row.posted_at }) }
   const { data, error } = await db.from("board_listings").update({ payload: payload(stored) })
-    .eq("id", id).eq("owner_id", owner).select("id,owner_id,posted_at,payload,hidden_at,hidden_reason")
+    .eq("id", id).eq("owner_id", owner).select("id,owner_id,posted_at,payload,hidden_at,hidden_reason,expires_at")
   if (error || !data?.length) {
     if (photo.value !== listing.image) await removePhoto(photo.value)
     check(error)
@@ -220,7 +239,7 @@ async function ownedRow(owner: string, id: string): Promise<Result<Row>> {
   if (!listingIdPattern.test(id) || seedIds.has(id)) return { ok: false, reason: "That ad could not be read." }
   const { data: row, error } = await boardDb()
     .from("board_listings")
-    .select("id,owner_id,posted_at,payload,hidden_at,hidden_reason")
+    .select("id,owner_id,posted_at,payload,hidden_at,hidden_reason,expires_at")
     .eq("id", id)
     .maybeSingle()
   check(error)
@@ -237,7 +256,7 @@ export async function setListingSold(owner: string, id: string, sold: boolean): 
   const stored = { ...current, id, sold: sold ? true : undefined, postedAt: owned.value.posted_at,
     hoursAgo: hoursAgoOf({ hoursAgo: 0, postedAt: owned.value.posted_at }) }
   const { data, error } = await boardDb().from("board_listings").update({ payload: payload(stored) })
-    .eq("id", id).eq("owner_id", owner).select("id,owner_id,posted_at,payload,hidden_at,hidden_reason")
+    .eq("id", id).eq("owner_id", owner).select("id,owner_id,posted_at,payload,hidden_at,hidden_reason,expires_at")
   check(error)
   if (!data?.length) return { ok: false, reason: "This ad is no longer on the board." }
   const updated = unpack(data[0] as Row, owner)
@@ -252,10 +271,16 @@ export async function renewListing(owner: string, id: string): Promise<Result<Li
   if (!current) return { ok: false, reason: "That ad could not be read." }
   if (current.sold) return { ok: false, reason: "Mark the ad as available before renewing it." }
   const postedAt = new Date().toISOString()
-  const stored = { ...current, id, sold: undefined, postedAt, hoursAgo: 0 }
+  const expiresAt = expiresAtFrom(postedAt)
+  const stored = { ...current, id, sold: undefined, postedAt, hoursAgo: 0, expiresAt }
   const { data, error } = await boardDb().from("board_listings")
-    .update({ posted_at: postedAt, payload: payload(stored) })
-    .eq("id", id).eq("owner_id", owner).select("id,owner_id,posted_at,payload,hidden_at,hidden_reason")
+    .update({
+      posted_at: postedAt,
+      expires_at: expiresAt,
+      expiry_reminder_sent_at: null,
+      payload: payload(stored),
+    })
+    .eq("id", id).eq("owner_id", owner).select("id,owner_id,posted_at,payload,hidden_at,hidden_reason,expires_at")
   check(error)
   if (!data?.length) return { ok: false, reason: "This ad is no longer on the board." }
   const updated = unpack(data[0] as Row, owner)
@@ -314,7 +339,7 @@ export async function createMessage(viewerId: string, listingId: string, body: s
   const db = boardDb()
   const { data: row, error } = await db
     .from("board_listings")
-    .select("id,owner_id,posted_at,payload,hidden_at,hidden_reason")
+    .select("id,owner_id,posted_at,payload,hidden_at,hidden_reason,expires_at")
     .eq("id", listingId)
     .maybeSingle()
   check(error)
@@ -323,6 +348,7 @@ export async function createMessage(viewerId: string, listingId: string, body: s
   if (row.hidden_at) return { ok: false, reason: "That listing is no longer on the board." }
   const listing = unpack(row as Row)
   if (!listing) return { ok: false, reason: "That listing is no longer on the board." }
+  if (isListingExpired(listing.expiresAt)) return { ok: false, reason: "That listing has expired." }
   if (listing.sold) return { ok: false, reason: "This ad is marked sold." }
 
   const { data: existing, error: existingError } = await db
@@ -604,7 +630,7 @@ export async function createReport(
 
   const { data: row, error } = await db
     .from("board_listings")
-    .select("id,owner_id,posted_at,payload,hidden_at,hidden_reason")
+    .select("id,owner_id,posted_at,payload,hidden_at,hidden_reason,expires_at")
     .eq("id", listingId)
     .maybeSingle()
   check(error)
@@ -613,6 +639,7 @@ export async function createReport(
 
   const listing = unpack(row as Row)
   if (!listing) return { ok: false, reason: "That listing is no longer on the board." }
+  if (isListingExpired(listing.expiresAt)) return { ok: false, reason: "That listing has expired." }
 
   const { error: insertError } = await db.from("board_reports").insert({
     id: crypto.randomUUID(),
@@ -664,7 +691,7 @@ export async function listPendingReports(): Promise<BoardReport[]> {
   const listingIds = [...new Set(reports.map((row) => row.listing_id as string))]
   const { data: listings, error: listingError } = await db
     .from("board_listings")
-    .select("id,owner_id,posted_at,payload,hidden_at,hidden_reason")
+    .select("id,owner_id,posted_at,payload,hidden_at,hidden_reason,expires_at")
     .in("id", listingIds)
   check(listingError)
   const byId = new Map((listings ?? []).map((row) => [row.id as string, row as Row]))
@@ -803,5 +830,79 @@ export async function removeListingForReport(adminId: string, reportId: string):
 
   return { ok: true, value: true }
 }
+
+export type ExpiryReminderSummary = {
+  considered: number
+  sent: number
+  skippedNoEmail: number
+  failed: number
+}
+
+/** Daily cron: email signed-in owners whose ads expire within 7 days (once per renew cycle). */
+export async function sendExpiryReminders(): Promise<ExpiryReminderSummary> {
+  const db = boardDb()
+  const now = new Date()
+  const soon = new Date(now.getTime() + expiryNoticeDays * 24 * 60 * 60 * 1000).toISOString()
+  const { data: rows, error } = await db
+    .from("board_listings")
+    .select("id,owner_id,posted_at,payload,expires_at,expiry_reminder_sent_at")
+    .is("expiry_reminder_sent_at", null)
+    .gt("expires_at", now.toISOString())
+    .lte("expires_at", soon)
+    .limit(200)
+  check(error)
+
+  let sent = 0
+  let skippedNoEmail = 0
+  let failed = 0
+  for (const row of rows ?? []) {
+    const listing = unpack(row as Row)
+    if (!listing || listing.sold) continue
+    const { data: profile, error: profileError } = await db
+      .from("board_profiles")
+      .select("email")
+      .eq("user_id", row.owner_id)
+      .maybeSingle()
+    check(profileError)
+    const email = typeof profile?.email === "string" ? profile.email.trim() : ""
+    if (!email.includes("@")) {
+      skippedNoEmail++
+      continue
+    }
+    const days = Math.max(
+      1,
+      Math.ceil((new Date(row.expires_at as string).getTime() - now.getTime()) / 86_400_000),
+    )
+    const result = await sendEmail({
+      to: email,
+      subject: `Your ad “${listing.title}” expires in ${days} day${days === 1 ? "" : "s"}`,
+      text: [
+        `Your africa classifieds ad “${listing.title}” expires in ${days} day${days === 1 ? "" : "s"}.`,
+        "Renew it from My ads to keep it on the board for another 60 days.",
+        "",
+        "If you did not post this ad, you can ignore this message.",
+      ].join("\n"),
+    })
+    if (!result.ok) {
+      failed++
+      continue
+    }
+    const { error: markError } = await db
+      .from("board_listings")
+      .update({ expiry_reminder_sent_at: now.toISOString() })
+      .eq("id", row.id)
+      .is("expiry_reminder_sent_at", null)
+    check(markError)
+    sent++
+  }
+
+  return {
+    considered: rows?.length ?? 0,
+    sent,
+    skippedNoEmail,
+    failed,
+  }
+}
+
 
 

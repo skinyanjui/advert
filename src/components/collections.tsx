@@ -19,6 +19,7 @@ import {
 } from "@/components/ui/dialog"
 import { useMarketplace } from "@/lib/marketplace"
 import { unreadMessageCount } from "@/lib/messages"
+import { daysUntilExpiry, isListingExpired, isListingExpiringSoon } from "@/lib/expiry"
 import type { Listing } from "@/lib/types"
 
 export function SavedPage() {
@@ -43,6 +44,8 @@ export function MyAdsPage() {
   const mine = listings.filter((listing) => listing.mine)
   const unread = unreadMessageCount(messages.filter((item) => item.viewerIsSeller))
   const unreadByListing = unreadByListingId(messages)
+  const expiring = mine.filter((listing) => isListingExpiringSoon(listing.expiresAt))
+  const expired = mine.filter((listing) => isListingExpired(listing.expiresAt))
   const postHref = postAdHref(useRememberedPlace())
   const [pendingId, setPendingId] = useState<string | null>(null)
   const [busyId, setBusyId] = useState<string | null>(null)
@@ -111,7 +114,25 @@ export function MyAdsPage() {
         }}
         actionHref={postHref}
         actionLabel="Post an ad"
-        banner={<KeepAdsBanner />}
+        banner={
+          <>
+            <KeepAdsBanner />
+            {expired.length > 0 ? (
+              <p className="mt-3 rounded-2xl border border-neutral-300 bg-neutral-50 px-4 py-3 text-sm text-neutral-800">
+                {expired.length === 1
+                  ? "1 ad has expired and is off the board. Renew it to publish again for 60 days."
+                  : `${expired.length} ads have expired and are off the board. Renew them to publish again for 60 days.`}
+              </p>
+            ) : null}
+            {expiring.length > 0 ? (
+              <p className="mt-3 rounded-2xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-950">
+                {expiring.length === 1
+                  ? `“${expiring[0]?.title}” expires in ${daysUntilExpiry(expiring[0]?.expiresAt) ?? "a few"} days. Renew it from the card below.`
+                  : `${expiring.length} ads expire within 7 days. Renew them so they stay on the board.`}
+              </p>
+            ) : null}
+          </>
+        }
       />
       <Dialog open={!!pending} onOpenChange={(open) => !open && setPendingId(null)}>
         <DialogContent>
@@ -186,9 +207,21 @@ function Collection({
         <div className="mt-6 grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5">
           {cards.map((listing) => {
             const unread = unreadByListing?.get(listing.id) ?? 0
+            const expired = isListingExpired(listing.expiresAt)
+            const expiringSoon = isListingExpiringSoon(listing.expiresAt)
+            const daysLeft = daysUntilExpiry(listing.expiresAt)
             return (
               <div key={listing.id} className="flex flex-col gap-2">
                 <ListingCard listing={listing} />
+                {expired || expiringSoon ? (
+                  <p className={`text-xs ${expired ? "text-neutral-600" : "text-amber-800"}`}>
+                    {expired
+                      ? "Expired — renew to put it back on the board"
+                      : daysLeft === 1
+                        ? "Expires tomorrow"
+                        : `Expires in ${daysLeft} days`}
+                  </p>
+                ) : null}
                 {onRemove ? (
                   <div className="flex flex-wrap items-center gap-1">
                     <Button variant="ghost" className="self-start" asChild>
@@ -204,7 +237,7 @@ function Collection({
                     {listing.hidden ? (
                       <span className="self-center px-2 text-xs text-amber-700">Hidden</span>
                     ) : null}
-                    {onSold ? (
+                    {onSold && !expired ? (
                       <Button
                         variant="ghost"
                         className="self-start"
@@ -214,7 +247,7 @@ function Collection({
                         {listing.sold ? "Mark available" : "Mark sold"}
                       </Button>
                     ) : null}
-                    {onRenew && !listing.sold ? (
+                    {onRenew && (!listing.sold || expired) ? (
                       <Button
                         variant="ghost"
                         className="self-start"
