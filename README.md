@@ -77,3 +77,5 @@ embeds; no request goes to the public Nominatim autocomplete API.
 Sample photos come from Unsplash, Pexels, and Wikimedia Commons. The Toyota HiAce photo is by Lawrence Ruiz and the diesel generator photo is by Biswarup Ganguly, both CC BY-SA via Wikimedia Commons.
 # advert
 # advert
+
+Production `adverts` is linked to `skinyanjui/advert` on `main` and its dedicated Supabase project is attached only to the Production environment. Each update to `main` creates a Production deployment. The webhook secret is a Vercel Secret scoped to Production; after changing environment variables, redeploy for the new value to take effect. Reference tables are readable through RLS, while snapshot imports use the server-only key.
