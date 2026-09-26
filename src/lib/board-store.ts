@@ -269,7 +269,9 @@ export async function renewListing(owner: string, id: string): Promise<Result<Li
   if (!owned.ok) return owned
   const current = cleanListing(owned.value.payload)
   if (!current) return { ok: false, reason: "That ad could not be read." }
-  if (current.sold) return { ok: false, reason: "Mark the ad as available before renewing it." }
+  if (current.sold && !isListingExpired(owned.value.expires_at ?? undefined)) {
+    return { ok: false, reason: "Mark the ad as available before renewing it." }
+  }
   const postedAt = new Date().toISOString()
   const expiresAt = expiresAtFrom(postedAt)
   const stored = { ...current, id, sold: undefined, postedAt, hoursAgo: 0, expiresAt }
