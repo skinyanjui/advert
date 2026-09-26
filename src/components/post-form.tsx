@@ -29,6 +29,7 @@ import {
 } from "@/lib/countries"
 import { formatPrice } from "@/lib/format"
 import { listingFieldErrors, type FieldErrors as RuleErrors } from "@/lib/listing-rules"
+import { useAuth } from "@/lib/auth"
 import { useMarketplace } from "@/lib/marketplace"
 import {
   categoryPlan,
@@ -77,6 +78,7 @@ function AdForm({ existing }: { existing: Listing | null }) {
       ? findSubcategory(startingCategory, searchParams.get("type") ?? undefined)
       : undefined
   const { addListing, updateListing } = useMarketplace()
+  const auth = useAuth()
 
   const [step, setStep] = useState(seeded ? 2 : startingCategory ? 1 : 0)
   const [category, setCategory] = useState<CategoryId | null>(startingCategory)
@@ -345,6 +347,14 @@ function AdForm({ existing }: { existing: Listing | null }) {
       return
     }
     toast.success(existing ? "Changes saved" : "Your ad is live")
+    if (!existing && !auth.signedIn && auth.configured) {
+      toast("Sign in to keep this ad if you clear cookies", {
+        action: {
+          label: "Sign in",
+          onClick: () => router.push("/sign-in"),
+        },
+      })
+    }
     router.push(`/listings/${listing.id}`)
   }
 

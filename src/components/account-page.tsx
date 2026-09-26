@@ -4,15 +4,18 @@ import { ChevronRight, MapPin } from "lucide-react"
 import Link from "next/link"
 
 import { postAdHref } from "@/lib/active-place"
+import { KeepAdsPrompt } from "@/components/sign-in-form"
 import { ThemeChoices } from "@/components/theme-choices"
 import { useRememberedPlace } from "@/lib/use-remembered-place"
 import { Button } from "@/components/ui/button"
+import { useAuth } from "@/lib/auth"
 import { countryName } from "@/lib/countries"
 import { useHomePlace, writeHomePlace } from "@/lib/home-place"
 import { useMarketplace } from "@/lib/marketplace"
 import { messageThreads } from "@/lib/messages"
 
 export function AccountPage() {
+  const auth = useAuth()
   const { ready, listings, savedIds, messages } = useMarketplace()
   const home = useHomePlace()
   const unread = messages.filter((item) => item.role === "sample" && !item.read).length
@@ -24,11 +27,38 @@ export function AccountPage() {
   return (
     <div className="mx-auto w-full max-w-3xl px-4 py-8 md:px-6">
       <h1 className="text-2xl font-semibold tracking-tight">Profile</h1>
-      <p className="mt-1 text-sm text-neutral-500">
-        Demo profile for this browser. Ads, saves, and messages are tied to a signed cookie — clearing it loses access.
-      </p>
+      {auth.signedIn ? (
+        <p className="mt-1 text-sm text-neutral-500">
+          Signed in as {auth.email}. Your ads, saves, and messages stay with this account.
+        </p>
+      ) : (
+        <p className="mt-1 text-sm text-neutral-500">
+          Guest on this browser. Sign in to keep ads after clearing cookies or on another device.
+        </p>
+      )}
+
+      {!auth.signedIn ? <KeepAdsPrompt className="mt-4 rounded-2xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-950" /> : null}
 
       <section className="mt-6 rounded-2xl border border-neutral-200 bg-white p-4">
+        <p className="text-sm font-medium">Account</p>
+        {auth.signedIn ? (
+          <div className="mt-3 flex flex-wrap items-center gap-2">
+            <p className="min-w-0 flex-1 truncate text-sm text-neutral-600">{auth.email}</p>
+            <Button variant="outline" className="rounded-full" onClick={() => void auth.signOut()}>
+              Sign out
+            </Button>
+          </div>
+        ) : (
+          <div className="mt-3">
+            <p className="text-sm text-neutral-600">Email code sign-in. No password.</p>
+            <Button asChild className="mt-3 rounded-full">
+              <Link href="/sign-in">Sign in</Link>
+            </Button>
+          </div>
+        )}
+      </section>
+
+      <section className="mt-4 rounded-2xl border border-neutral-200 bg-white p-4">
         <p className="text-sm font-medium">Appearance</p>
         <ThemeChoices className="mt-3" />
       </section>
@@ -59,7 +89,11 @@ export function AccountPage() {
       <ul className="mt-4 grid gap-2">
         <ProfileLink href="/messages" title="Messages" detail={messageDetail(threads.length, unread)} />
         <ProfileLink href="/saved" title="Saved ads" detail={countDetail(savedIds.length, "saved ad", "saved ads")} />
-        <ProfileLink href="/my-ads" title="My ads" detail={countDetail(mine, "ad posted from this browser", "ads posted from this browser")} />
+        <ProfileLink
+          href="/my-ads"
+          title="My ads"
+          detail={countDetail(mine, auth.signedIn ? "ad on your account" : "ad on this browser", auth.signedIn ? "ads on your account" : "ads on this browser")}
+        />
         <ProfileLink href={postHref} title="Post an ad" detail="Cars, houses, jobs, and everything else on the board." />
       </ul>
     </div>

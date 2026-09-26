@@ -7,6 +7,7 @@ const pages = [
   { href: "/", label: "All listings" },
   ...categories.map((category) => ({ href: `/${category.id}`, label: category.name })),
   { href: "/post", label: "Post ad" },
+  { href: "/sign-in", label: "Sign in" },
   { href: "/account", label: "Profile" },
   { href: "/messages", label: "Messages" },
   { href: "/saved", label: "Saved" },
@@ -33,7 +34,11 @@ export function SiteFooter() {
         <div className="flex flex-col gap-2 md:flex-row md:items-center md:justify-between">
         <p>africa classifieds · sample listings for a pan-African board.</p>
         <p className="max-w-xl md:text-right">
-          Countries are ISO 3166 from an open snapshot. Cities and zones are GeoNames and IANA. Currency and language names are Unicode CLDR. Maps use OpenStreetMap. Photos: Unsplash, Pexels, and Wikimedia Commons (Toyota HiAce by Lawrence Ruiz; generator by Biswarup Ganguly, CC BY-SA). Ads, saves, and messages are stored in the database and tied to this browser session.
+          Countries are ISO 3166 from an open snapshot. Cities and zones are GeoNames and IANA. Currency and
+          language names are Unicode CLDR. Maps use OpenStreetMap. Photos: Unsplash, Pexels, and Wikimedia
+          Commons (Toyota HiAce by Lawrence Ruiz; generator by Biswarup Ganguly, CC BY-SA). Ads, saves, and
+          messages are stored in the database. Guests use a browser session; sign in with email to keep them
+          across devices.
         </p>
         </div>
       </div>

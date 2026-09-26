@@ -1,5 +1,5 @@
 import { fail, ok } from "@/lib/api"
-import { mutationOwner } from "@/lib/board-session"
+import { resolveMutationOwner } from "@/lib/board-session"
 import { deleteListing, renewListing, setListingSold, updateListing } from "@/lib/board-store"
 
 export const dynamic = "force-dynamic"
@@ -8,12 +8,12 @@ export const runtime = "nodejs"
 type Context = { params: Promise<{ id: string }> }
 
 export async function PATCH(request: Request, context: Context) {
-  const owner = mutationOwner(request)
+  const owner = await resolveMutationOwner(request)
   if (!owner) return fail("A valid browser session is required.", 403)
   const { id } = await context.params
   try {
     const body: unknown = await request.json()
-    const result = await patchListing(owner, id, body)
+    const result = await patchListing(owner.id, id, body)
     if (!result.ok) return fail(result.reason, result.reason === "This ad is not yours." ? 403 : 400)
     return ok({ listing: result.value })
   } catch {
@@ -22,11 +22,11 @@ export async function PATCH(request: Request, context: Context) {
 }
 
 export async function DELETE(request: Request, context: Context) {
-  const owner = mutationOwner(request)
+  const owner = await resolveMutationOwner(request)
   if (!owner) return fail("A valid browser session is required.", 403)
   const { id } = await context.params
   try {
-    const result = await deleteListing(owner, id)
+    const result = await deleteListing(owner.id, id)
     if (!result.ok) return fail(result.reason, result.reason === "This ad is not yours." ? 403 : 400)
     return ok({})
   } catch {

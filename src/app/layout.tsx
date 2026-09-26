@@ -6,6 +6,7 @@ import { HeaderFallback, SiteHeader } from "@/components/site-header"
 import { SiteFooter } from "@/components/site-footer"
 import { ThemeSync } from "@/components/theme-choices"
 import { Toaster } from "@/components/ui/sonner"
+import { AuthProvider } from "@/lib/auth"
 import { MarketplaceProvider } from "@/lib/marketplace"
 import { themeBootScript } from "@/lib/theme"
 
@@ -37,12 +38,14 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
         <script dangerouslySetInnerHTML={{ __html: themeBootScript }} />
         <ThemeSync />
         <MarketplaceProvider>
-          <Suspense fallback={<HeaderFallback />}>
-            <SiteHeader />
-          </Suspense>
-          <main className="flex-1">{children}</main>
-          <SiteFooter />
-          <Toaster />
+          <AuthProvider>
+            <Suspense fallback={<HeaderFallback />}>
+              <SiteHeader />
+            </Suspense>
+            <main className="flex-1">{children}</main>
+            <SiteFooter />
+            <Toaster />
+          </AuthProvider>
         </MarketplaceProvider>
       </body>
     </html>

@@ -1,10 +1,11 @@
 "use client"
 
 import Link from "next/link"
-import { useState } from "react"
+import { useState, type ReactNode } from "react"
 import { toast } from "sonner"
 
 import { ListingCard } from "@/components/listing-card"
+import { KeepAdsPrompt } from "@/components/sign-in-form"
 import { postAdHref } from "@/lib/active-place"
 import { useRememberedPlace } from "@/lib/use-remembered-place"
 import { Button } from "@/components/ui/button"
@@ -86,7 +87,7 @@ export function MyAdsPage() {
     <>
       <Collection
         title="My ads"
-        description="Ads from this browser session. Clearing cookies loses access to them — there is no account recovery yet."
+        description="Ads you own on this account or browser. Sign in to keep them after clearing cookies."
         emptyTitle="You have not posted an ad"
         emptyBody="Post something for sale, for rent, or a job. It appears at the top of the board."
         listings={mine}
@@ -102,6 +103,7 @@ export function MyAdsPage() {
         }}
         actionHref={postHref}
         actionLabel="Post an ad"
+        banner={<KeepAdsBanner />}
       />
       <Dialog open={!!pending} onOpenChange={(open) => !open && setPendingId(null)}>
         <DialogContent>
@@ -137,6 +139,7 @@ function Collection({
   onRenew,
   actionHref = "/",
   actionLabel = "Browse listings",
+  banner,
 }: {
   title: string
   description: string
@@ -149,6 +152,7 @@ function Collection({
   onRenew?: (id: string) => void
   actionHref?: string
   actionLabel?: string
+  banner?: ReactNode
 }) {
   const { listings: all } = useMarketplace()
   const cards = listings
@@ -159,6 +163,7 @@ function Collection({
     <div className="mx-auto w-full max-w-[1720px] px-4 py-8 md:px-6">
       <h1 className="text-2xl font-semibold tracking-tight">{title}</h1>
       <p className="mt-1 text-sm text-neutral-500">{description}</p>
+      {banner}
       {cards.length === 0 ? (
         <div className="mt-8 rounded-2xl border border-dashed border-neutral-300 bg-white px-6 py-16 text-center">
           <h2 className="text-lg font-semibold tracking-tight">{emptyTitle}</h2>
@@ -208,6 +213,10 @@ function Collection({
       )}
     </div>
   )
+}
+
+function KeepAdsBanner() {
+  return <KeepAdsPrompt className="mt-4 rounded-2xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-950" />
 }
 
 function PageSkeleton({ title }: { title: string }) {
