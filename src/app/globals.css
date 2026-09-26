@@ -138,6 +138,11 @@
   details:not([open]) > [data-header-panel] {
     display: none;
   }
+  button:not(:disabled),
+  summary,
+  [role="radio"] {
+    cursor: pointer;
+  }
 }
 
 /* Surfaces are written with neutral utilities. Dark mode remaps those colors

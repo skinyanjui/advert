@@ -77,7 +77,7 @@ function AdForm({ existing }: { existing: Listing | null }) {
       : undefined
   const { addListing, updateListing } = useMarketplace()
 
-  const [step, setStep] = useState(seeded ? 2 : existing ? 1 : 0)
+  const [step, setStep] = useState(seeded ? 2 : startingCategory ? 1 : 0)
   const [category, setCategory] = useState<CategoryId | null>(startingCategory)
   const [subcategoryId, setSubcategoryId] = useState<string | null>(seeded?.id ?? null)
   const [title, setTitle] = useState(existing?.title ?? "")
@@ -266,12 +266,18 @@ function AdForm({ existing }: { existing: Listing | null }) {
 
   function goNext() {
     if (step === 0) {
-      if (!category) return
+      if (!category) {
+        showErrors({ form: "Choose a category." })
+        return
+      }
       moveTo(1)
       return
     }
     if (step === 1) {
-      if (!subcategory) return
+      if (!subcategory) {
+        showErrors({ form: "Choose a type." })
+        return
+      }
       moveTo(2)
       return
     }
@@ -345,13 +351,14 @@ function AdForm({ existing }: { existing: Listing | null }) {
   }, [existing])
 
   const placeLine = [city.trim(), countryName(country)].filter(Boolean).join(", ")
-  const typeLine = category && subcategory ? `${categoryName(category)} · ${subcategory.name}` : null
+  const choiceLine = [category ? categoryName(category) : null, subcategory?.name].filter(Boolean).join(" · ")
+  const summaryLine = [choiceLine, placeLine].filter(Boolean).join(" · ")
 
   return (
     <div className="mx-auto grid w-full max-w-[1100px] items-start gap-8 px-4 py-6 md:px-6 md:py-8 lg:grid-cols-[minmax(0,1fr)_300px]">
       <div>
         <h1 className="text-2xl font-semibold tracking-tight">{existing ? "Edit your ad" : "Post an ad"}</h1>
-        {typeLine || placeLine ? <p className="mt-1 text-sm text-neutral-500">{typeLine ?? placeLine}</p> : null}
+        {summaryLine ? <p className="mt-1 text-sm text-neutral-500">{summaryLine}</p> : null}
 
         <ol className="mt-6 grid grid-cols-4 gap-2" aria-label="Posting steps">
           {steps.map((label, index) => {
@@ -363,7 +370,7 @@ function AdForm({ existing }: { existing: Listing | null }) {
                   type="button"
                   disabled={!open}
                   onClick={() => openStep(index)}
-                  className="flex w-full min-w-0 flex-col items-start gap-2 text-left disabled:cursor-default"
+                  className="flex w-full min-w-0 cursor-pointer flex-col items-start gap-2 text-left disabled:cursor-default"
                   aria-current={current ? "step" : undefined}
                 >
                   <span
@@ -397,40 +404,53 @@ function AdForm({ existing }: { existing: Listing | null }) {
           }}
         >
           {step === 0 ? (
-            <div className="grid grid-cols-2 gap-2 sm:grid-cols-3">
-              {postingPlans().map((item) => {
-                const Icon = categoryIcons[item.id]
-                const selected = category === item.id
-                return (
-                  <button
-                    key={item.id}
-                    type="button"
-                    aria-pressed={selected}
-                    onClick={() => chooseCategory(item.id)}
-                    className={cn(
-                      "flex items-center gap-2.5 rounded-2xl border bg-white px-3 py-3 text-left text-sm transition-colors",
-                      selected
-                        ? "border-neutral-950 shadow-sm"
-                        : "border-neutral-200 hover:border-neutral-400",
-                    )}
-                  >
-                    <span
+            <div className="grid gap-3">
+              <div>
+                <h2 className="text-base font-medium">What are you listing?</h2>
+                <p className="text-sm text-neutral-500">Choose a category. The type comes next.</p>
+              </div>
+              <div aria-label="Category" className="grid grid-cols-2 gap-2 sm:grid-cols-3">
+                {postingPlans().map((item) => {
+                  const Icon = categoryIcons[item.id]
+                  const selected = category === item.id
+                  return (
+                    <button
+                      key={item.id}
+                      type="button"
+                      aria-pressed={selected}
+                      onClick={() => chooseCategory(item.id)}
                       className={cn(
-                        "flex size-9 shrink-0 items-center justify-center rounded-xl",
-                        selected ? "bg-neutral-950 text-white" : "bg-neutral-100 text-neutral-700",
+                        "flex min-h-14 w-full cursor-pointer items-center gap-2.5 rounded-2xl border bg-white px-3 py-3 text-left text-sm transition-colors",
+                        "hover:border-neutral-400 hover:bg-neutral-50 active:bg-neutral-100",
+                        "focus-visible:border-neutral-950 focus-visible:ring-3 focus-visible:ring-neutral-950/20 focus-visible:outline-none",
+                        "[&_svg]:pointer-events-none",
+                        selected ? "border-neutral-950 bg-neutral-50 shadow-sm" : "border-neutral-200",
                       )}
                     >
-                      <Icon className="size-4" />
-                    </span>
-                    <span className="min-w-0 leading-tight">{categoryName(item.id)}</span>
-                  </button>
-                )
-              })}
+                      <span
+                        className={cn(
+                          "flex size-9 shrink-0 items-center justify-center rounded-xl",
+                          selected ? "bg-neutral-950 text-white" : "bg-neutral-100 text-neutral-700",
+                        )}
+                      >
+                        <Icon className="size-4" />
+                      </span>
+                      <span className="min-w-0 flex-1 leading-tight">{categoryName(item.id)}</span>
+                      {selected ? <Check className="size-4 shrink-0" /> : null}
+                    </button>
+                  )
+                })}
+              </div>
             </div>
           ) : null}
 
-          {step === 1 && plan ? (
-            <div className="grid gap-2">
+          {step === 1 && plan && category ? (
+            <div className="grid gap-3">
+              <div>
+                <h2 className="text-base font-medium">{categoryName(category)}</h2>
+                <p className="text-sm text-neutral-500">{plan.prompt}</p>
+              </div>
+              <div aria-label={plan.prompt} className="grid gap-2">
               {plan.subcategories.map((item) => {
                 const selected = subcategoryId === item.id
                 return (
@@ -440,8 +460,11 @@ function AdForm({ existing }: { existing: Listing | null }) {
                     aria-pressed={selected}
                     onClick={() => chooseSubcategory(item)}
                     className={cn(
-                      "flex items-center justify-between gap-3 rounded-2xl border bg-white px-4 py-3 text-left transition-colors",
-                      selected ? "border-neutral-950 shadow-sm" : "border-neutral-200 hover:border-neutral-400",
+                      "flex w-full cursor-pointer items-center justify-between gap-3 rounded-2xl border bg-white px-4 py-3 text-left transition-colors",
+                      "hover:border-neutral-400 hover:bg-neutral-50 active:bg-neutral-100",
+                      "focus-visible:border-neutral-950 focus-visible:ring-3 focus-visible:ring-neutral-950/20 focus-visible:outline-none",
+                      "[&_svg]:pointer-events-none",
+                      selected ? "border-neutral-950 bg-neutral-50 shadow-sm" : "border-neutral-200",
                     )}
                   >
                     <span className="min-w-0">
@@ -459,6 +482,7 @@ function AdForm({ existing }: { existing: Listing | null }) {
                   </button>
                 )
               })}
+              </div>
             </div>
           ) : null}
 
@@ -615,7 +639,6 @@ function AdForm({ existing }: { existing: Listing | null }) {
               <Button
                 type="submit"
                 className="h-10 rounded-full bg-neutral-950 px-5 text-white hover:bg-neutral-800"
-                disabled={(step === 0 && !category) || (step === 1 && !subcategory)}
               >
                 Continue
               </Button>
