@@ -99,12 +99,7 @@ export function moreCountries(): CountryRecord[] {
 }
 
 export function currencyLabel(code: string): string {
-  try {
-    const label = new Intl.DisplayNames(["en"], { type: "currency" }).of(code)
-    return label && label !== code ? label : code
-  } catch {
-    return getCountryCurrencyName(code) ?? code
-  }
+  return getCountryCurrencyName(code) ?? code
 }
 
 function getCountryCurrencyName(code: string): string | undefined {
@@ -116,13 +111,7 @@ function getCountryCurrencyName(code: string): string | undefined {
 }
 
 export function languageLabel(code: string, fallback: string): string {
-  try {
-    const label = new Intl.DisplayNames(["en"], { type: "language" }).of(code)
-    if (label && label.toLowerCase() !== code.toLowerCase()) return label
-  } catch {
-    return fallback
-  }
-  return fallback
+  return fallback || code
 }
 
 export function formatLocalTime(timeZone: string, date = new Date()): string {

@@ -258,7 +258,7 @@ function CountryStrip({ code }: { code: string }) {
   const languageText = extra > 0 ? `${shown.join(", ")} +${extra}` : shown.join(", ")
   const facts = [
     country.capital,
-    localTime ?? country.timezone,
+    localTime,
     country.timezone,
     currency ? `${currency.code} · ${currencyLabel(currency.code)}` : "",
     languageText,
