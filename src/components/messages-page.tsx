@@ -57,16 +57,16 @@ export function MessagesPage() {
         {missing ? (
           <p className="mt-4 text-sm text-neutral-500">This conversation is not on this browser.</p>
         ) : null}
-        <div className="mt-6 grid gap-4 lg:grid-cols-[280px_minmax(0,1fr)]">
-          <ul className={visible && !wide ? "hidden" : "grid gap-2"}>
+        <div className="mt-6 grid min-w-0 gap-4 lg:grid-cols-[280px_minmax(0,1fr)]">
+          <ul className={visible && !wide ? "hidden" : "grid min-w-0 gap-2 overflow-hidden"}>
             {threads.map((thread) => {
               const active = visible?.listingId === thread.listingId
               const preview = thread.messages[thread.messages.length - 1]
               return (
-                <li key={thread.listingId}>
+                <li key={thread.listingId} className="min-w-0">
                   <Link
                     href={`/messages?listing=${thread.listingId}`}
-                    className={`block rounded-2xl border px-3 py-3 ${
+                    className={`block min-w-0 overflow-hidden rounded-2xl border px-3 py-3 ${
                       active ? "border-neutral-950 bg-white" : "border-neutral-200 bg-white hover:border-neutral-400"
                     }`}
                   >
@@ -134,7 +134,7 @@ function MessageBubble({ role, body, sentAt }: { role: MessageRole; body: string
     case "you":
       return (
         <li className="ml-auto max-w-[85%] rounded-2xl bg-neutral-950 px-3 py-2 text-sm text-white">
-          <p className="leading-6">{body}</p>
+          <p className="leading-6 break-words">{body}</p>
           <p className="mt-1 text-[11px] text-neutral-300">{when}</p>
         </li>
       )
@@ -142,7 +142,7 @@ function MessageBubble({ role, body, sentAt }: { role: MessageRole; body: string
       return (
         <li className="max-w-[85%] rounded-2xl bg-neutral-100 px-3 py-2 text-sm text-neutral-900">
           <p className="text-[11px] font-medium text-neutral-500">Sample reply</p>
-          <p className="mt-1 leading-6">{body}</p>
+          <p className="mt-1 leading-6 break-words">{body}</p>
           <p className="mt-1 text-[11px] text-neutral-500">{when}</p>
         </li>
       )
