@@ -5,6 +5,7 @@ import Image from "next/image"
 import Link from "next/link"
 
 import { formatDistance, formatPlace, formatPosted, formatPrice, hoursAgoOf } from "@/lib/format"
+import { isListingExpired } from "@/lib/expiry"
 import { listingMeta } from "@/lib/posting"
 import { useMarketplace } from "@/lib/marketplace"
 import type { Listing } from "@/lib/types"
@@ -50,6 +51,10 @@ export function ListingCard({
         ) : listing.hidden ? (
           <span className="absolute top-2 left-2 rounded-full bg-amber-700 px-2 py-0.5 text-[10px] font-medium text-white">
             Hidden
+          </span>
+        ) : isListingExpired(listing.expiresAt) ? (
+          <span className="absolute top-2 left-2 rounded-full bg-neutral-600 px-2 py-0.5 text-[10px] font-medium text-white">
+            Expired
           </span>
         ) : listing.badge === "jobs" ? (
           <span className="absolute top-2 left-2 rounded-full bg-emerald-500 px-2 py-0.5 text-[10px] font-medium text-white">

@@ -69,6 +69,8 @@ export type Listing = {
   sold?: boolean
   /** Moderators hid the ad (reports or admin); dropped from browse. */
   hidden?: boolean
+  /** ISO timestamp when the ad leaves browse/search unless renewed. */
+  expiresAt?: string
   mine?: boolean
 }
 

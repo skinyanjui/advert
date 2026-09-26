@@ -25,6 +25,7 @@ import {
 import { postAdHref } from "@/lib/active-place"
 import { matchesQuery, sortListings } from "@/lib/board"
 import { distanceKm, listingPoint } from "@/lib/distance"
+import { isListingExpired } from "@/lib/expiry"
 import { useHomePlace } from "@/lib/home-place"
 import { resolvePlace } from "@/lib/cities"
 import { useMarketplace } from "@/lib/marketplace"
@@ -53,6 +54,7 @@ export function Browse() {
         (listing) =>
           !listing.sold &&
           !listing.hidden &&
+          !isListingExpired(listing.expiresAt) &&
           (!query.country || listing.country === query.country) &&
           matchesQuery(listing, query.q),
       ),
