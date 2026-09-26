@@ -12,13 +12,14 @@ import { useAuth } from "@/lib/auth"
 import { countryName } from "@/lib/countries"
 import { useHomePlace, writeHomePlace } from "@/lib/home-place"
 import { useMarketplace } from "@/lib/marketplace"
-import { messageThreads } from "@/lib/messages"
+import { messageThreads, unreadMessageCount } from "@/lib/messages"
 
 export function AccountPage() {
   const auth = useAuth()
   const { ready, listings, savedIds, messages } = useMarketplace()
   const home = useHomePlace()
-  const unread = messages.filter((item) => item.role === "sample" && !item.read).length
+  const unread = unreadMessageCount(messages)
+  const sellerUnread = unreadMessageCount(messages.filter((item) => item.viewerIsSeller))
   const threads = messageThreads(messages)
   const mine = listings.filter((listing) => listing.mine).length
   const homeLabel = home ? (home.city ? `${home.city}, ${countryName(home.country)}` : countryName(home.country)) : null
@@ -92,7 +93,7 @@ export function AccountPage() {
         <ProfileLink
           href="/my-ads"
           title="My ads"
-          detail={countDetail(mine, auth.signedIn ? "ad on your account" : "ad on this browser", auth.signedIn ? "ads on your account" : "ads on this browser")}
+          detail={myAdsDetail(mine, sellerUnread, auth.signedIn)}
         />
         <ProfileLink href={postHref} title="Post an ad" detail="Cars, houses, jobs, and everything else on the board." />
       </ul>
@@ -126,4 +127,14 @@ function messageDetail(threads: number, unread: number): string {
 function countDetail(count: number, singular: string, plural: string): string {
   if (count === 0) return `No ${plural} yet`
   return count === 1 ? `1 ${singular}` : `${count} ${plural}`
+}
+
+function myAdsDetail(mine: number, sellerUnread: number, signedIn: boolean): string {
+  const base = countDetail(
+    mine,
+    signedIn ? "ad on your account" : "ad on this browser",
+    signedIn ? "ads on your account" : "ads on this browser",
+  )
+  if (sellerUnread === 0) return base
+  return `${base} · ${sellerUnread === 1 ? "1 unread message" : `${sellerUnread} unread messages`}`
 }

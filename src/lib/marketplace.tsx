@@ -251,13 +251,13 @@ function toggleSaved(id: string) {
   })()
 }
 
-async function sendMessage(listingId: string, body: string): Promise<StoreResult> {
+async function sendMessage(listingId: string, body: string, conversationId?: string): Promise<StoreResult> {
   await ensureLoaded()
   try {
     const response = await fetch("/api/messages", {
       method: "POST",
       headers: requestHeaders(),
-      body: JSON.stringify({ listingId, body }),
+      body: JSON.stringify(conversationId ? { conversationId, body } : { listingId, body }),
     })
     if (!response.ok) return { ok: false, reason: await readFailure(response, "The board database did not store the message.") }
     const payload = (await response.json()) as { messages?: unknown }
@@ -270,11 +270,13 @@ async function sendMessage(listingId: string, body: string): Promise<StoreResult
   }
 }
 
-function markThreadRead(listingId: string) {
-  if (!memory.messages.some((message) => message.listingId === listingId && !message.read)) return
+function markThreadRead(conversationId: string) {
+  if (!memory.messages.some((message) => message.conversationId === conversationId && !message.read && !message.fromMe)) {
+    return
+  }
   const previous = memory.messages
   const messages: BoardMessage[] = memory.messages.map((message) =>
-    message.listingId === listingId ? { ...message, read: true } : message,
+    message.conversationId === conversationId ? { ...message, read: true } : message,
   )
   memory = { ...memory, messages, ready: true }
   emit()
@@ -283,7 +285,7 @@ function markThreadRead(listingId: string) {
       const response = await fetch("/api/messages", {
         method: "PATCH",
         headers: requestHeaders(),
-        body: JSON.stringify({ listingId }),
+        body: JSON.stringify({ conversationId }),
       })
       if (!response.ok) throw new Error("read")
     } catch {
@@ -305,8 +307,8 @@ type MarketplaceContextValue = {
   removeListing: (id: string) => Promise<StoreResult>
   setListingSold: (id: string, sold: boolean) => Promise<StoreResult>
   renewListing: (id: string) => Promise<StoreResult>
-  sendMessage: (listingId: string, body: string) => Promise<StoreResult>
-  markThreadRead: (listingId: string) => void
+  sendMessage: (listingId: string, body: string, conversationId?: string) => Promise<StoreResult>
+  markThreadRead: (conversationId: string) => void
   reloadBoard: () => Promise<void>
 }
 

@@ -17,6 +17,7 @@ import { searchCitiesAnywhere } from "@/lib/cities"
 import { countries, countryName, fold, moreCountries, primaryCountries } from "@/lib/countries"
 import { clearBrowsingEverywhere, markBrowsingEverywhere, useHomePlace, writeHomePlace } from "@/lib/home-place"
 import { useMarketplace } from "@/lib/marketplace"
+import { unreadMessageCount } from "@/lib/messages"
 import { categoryFromPath, useListingQuery, type ListingQuery } from "@/lib/use-listing-query"
 import { cn } from "@/lib/utils"
 
@@ -53,7 +54,8 @@ export function SiteHeader() {
   const auth = useAuth()
   const [read, setRead] = useState<string[]>([])
   const unread = notifications.filter((item) => !read.includes(item.id)).length
-  const unreadMessages = messages.filter((item) => item.role === "sample" && !item.read).length
+  const unreadMessages = unreadMessageCount(messages)
+  const sellerUnread = unreadMessageCount(messages.filter((item) => item.viewerIsSeller))
   const locationLabel = query.country ? countryName(query.country) : "All Africa"
   const remembered = useRememberedPlace()
   const postHref = postAdHref(query.country ? { country: query.country, city: query.city } : remembered)
@@ -147,7 +149,9 @@ export function SiteHeader() {
                   Messages{unreadMessages > 0 ? ` (${unreadMessages})` : ""}
                 </MenuLink>
                 <MenuLink href="/saved">Saved ads ({savedIds.length})</MenuLink>
-                <MenuLink href="/my-ads">My ads</MenuLink>
+                <MenuLink href="/my-ads">
+                  My ads{sellerUnread > 0 ? ` (${sellerUnread} unread)` : ""}
+                </MenuLink>
                 <MenuLink href={postHref}>Post an ad</MenuLink>
                 {auth.signedIn ? (
                   <button
