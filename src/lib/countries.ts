@@ -78,6 +78,14 @@ export function countryName(code: string): string {
   return getCountry(code)?.name ?? code
 }
 
+export function fold(value: string): string {
+  return value
+    .normalize("NFD")
+    .replace(/\p{M}/gu, "")
+    .toLowerCase()
+    .trim()
+}
+
 export function primaryCountries(): CountryRecord[] {
   return primaryOrder.flatMap((code) => {
     const country = byCode.get(code)

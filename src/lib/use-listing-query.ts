@@ -15,6 +15,7 @@ import {
 export type ListingQuery = {
   q: string
   country?: CountryId
+  city?: string
   category?: CategoryId
   sort: SortId
 }
@@ -22,6 +23,7 @@ export type ListingQuery = {
 type QueryPatch = {
   q?: string
   country?: CountryId | null
+  city?: string | null
   category?: CategoryId | null
   sort?: SortId | null
 }
@@ -38,6 +40,7 @@ export function useListingQuery() {
     return {
       q: searchParams.get("q") ?? "",
       country: canonicalCountry(countryParam),
+      city: searchParams.get("city")?.trim() || undefined,
       category: isCategoryId(categoryParam) ? categoryParam : undefined,
       sort: isSortId(sortParam) ? sortParam : "relevant",
     }
@@ -55,6 +58,12 @@ export function useListingQuery() {
       if ("country" in patch) {
         if (patch.country) params.set("country", patch.country)
         else params.delete("country")
+        if (!("city" in patch)) params.delete("city")
+      }
+      if ("city" in patch) {
+        const next = patch.city?.trim() ?? ""
+        if (next) params.set("city", next)
+        else params.delete("city")
       }
       if ("category" in patch) {
         if (patch.category) params.set("category", patch.category)

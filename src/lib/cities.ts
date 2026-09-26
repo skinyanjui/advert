@@ -1,6 +1,8 @@
 import citiesData from "@/data/cities.json"
 
-import { getCountry } from "@/lib/countries"
+import { fold, getCountry } from "@/lib/countries"
+
+export { fold }
 
 export type CityRecord = {
   id: number
@@ -32,14 +34,6 @@ for (const city of cities) {
   const key = `${city.country}|${fold(city.name)}`
   const existing = byName.get(key)
   if (!existing || city.pop > existing.pop) byName.set(key, city)
-}
-
-export function fold(value: string): string {
-  return value
-    .normalize("NFD")
-    .replace(/\p{M}/gu, "")
-    .toLowerCase()
-    .trim()
 }
 
 export function searchCities(country: string, query: string, limit = 8): CityRecord[] {

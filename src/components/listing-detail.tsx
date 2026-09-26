@@ -3,7 +3,7 @@
 import { ArrowLeft, Clock, Heart, MapPin, Share2 } from "lucide-react"
 import Image from "next/image"
 import Link from "next/link"
-import { useEffect, useState, useSyncExternalStore } from "react"
+import { useEffect, useState } from "react"
 import { toast } from "sonner"
 
 import { ListingCard } from "@/components/listing-card"
@@ -18,12 +18,7 @@ import {
 } from "@/components/ui/dialog"
 import { Textarea } from "@/components/ui/textarea"
 import { resolvePlace } from "@/lib/cities"
-import {
-  currencyLabel,
-  formatLocalTime,
-  getCountry,
-  languageLabel,
-} from "@/lib/countries"
+import { currencyLabel, getCountry, languageLabel } from "@/lib/countries"
 import {
   formatPlace,
   formatPosted,
@@ -33,6 +28,7 @@ import {
   whatsappHref,
 } from "@/lib/format"
 import { useMarketplace } from "@/lib/marketplace"
+import { useClientTime } from "@/lib/use-client-time"
 import { categoryName, type Listing } from "@/lib/types"
 import { cn } from "@/lib/utils"
 
@@ -262,14 +258,6 @@ function PlacePanel({ listing }: { listing: Listing }) {
         </div>
       ) : null}
     </section>
-  )
-}
-
-function useClientTime(timeZone: string): string | null {
-  return useSyncExternalStore(
-    () => () => {},
-    () => formatLocalTime(timeZone),
-    () => null,
   )
 }
 

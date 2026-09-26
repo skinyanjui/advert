@@ -16,7 +16,7 @@ import {
 } from "@/components/ui/dropdown-menu"
 import { Input } from "@/components/ui/input"
 import { useMarketplace } from "@/lib/marketplace"
-import { countries, countryName, moreCountries, primaryCountries } from "@/lib/countries"
+import { countries, countryName, fold, moreCountries, primaryCountries } from "@/lib/countries"
 import { useListingQuery } from "@/lib/use-listing-query"
 import { cn } from "@/lib/utils"
 
@@ -45,9 +45,11 @@ export function SiteHeader() {
   const { query, update } = useListingQuery()
   const { savedIds } = useMarketplace()
   const [read, setRead] = useState<string[]>([])
+  const [locationQuery, setLocationQuery] = useState("")
 
   const unread = notifications.filter((item) => !read.includes(item.id)).length
   const locationLabel = query.country ? countryName(query.country) : "All Africa"
+  const locationMatches = filterCountries(locationQuery)
 
   return (
     <header className="sticky top-0 z-40">
@@ -59,7 +61,11 @@ export function SiteHeader() {
             <SearchField value={query.q} onChange={(value) => update({ q: value })} />
           </div>
           <div className="ml-auto flex items-center gap-2">
-            <DropdownMenu>
+            <DropdownMenu
+              onOpenChange={(open) => {
+                if (!open) setLocationQuery("")
+              }}
+            >
               <DropdownMenuTrigger asChild>
                 <Button
                   variant="outline"
@@ -70,19 +76,36 @@ export function SiteHeader() {
                   <ChevronDown className="size-4 text-neutral-400" />
                 </Button>
               </DropdownMenuTrigger>
-              <DropdownMenuContent align="end" className="max-h-80 w-52 overflow-y-auto">
-                <DropdownMenuItem onSelect={() => update({ country: null })}>
-                  All Africa
-                </DropdownMenuItem>
+              <DropdownMenuContent align="end" className="w-64">
+                <div className="p-1" onKeyDown={(event) => event.stopPropagation()}>
+                  <Input
+                    value={locationQuery}
+                    onChange={(event) => setLocationQuery(event.target.value)}
+                    placeholder="Country, capital, or code"
+                    aria-label="Search countries"
+                    className="h-8"
+                  />
+                </div>
                 <DropdownMenuSeparator />
-                {countries.map((country) => (
-                  <DropdownMenuItem
-                    key={country.code}
-                    onSelect={() => update({ country: country.code })}
-                  >
-                    {country.name}
-                  </DropdownMenuItem>
-                ))}
+                <div className="max-h-72 overflow-y-auto">
+                  {locationQuery.trim() ? null : (
+                    <DropdownMenuItem onSelect={() => update({ country: null })}>
+                      All Africa
+                    </DropdownMenuItem>
+                  )}
+                  {locationMatches.map((country) => (
+                    <DropdownMenuItem
+                      key={country.code}
+                      onSelect={() => update({ country: country.code })}
+                    >
+                      <span className="min-w-0 flex-1 truncate">{country.name}</span>
+                      <span className="text-[11px] text-neutral-400">{country.code}</span>
+                    </DropdownMenuItem>
+                  ))}
+                  {locationMatches.length === 0 ? (
+                    <p className="px-2 py-3 text-xs text-neutral-500">No country matches.</p>
+                  ) : null}
+                </div>
               </DropdownMenuContent>
             </DropdownMenu>
             <Button asChild className="h-10 rounded-full bg-neutral-950 px-3 text-white hover:bg-neutral-800 sm:px-4">
@@ -183,6 +206,13 @@ function CountryTabs({
   const primary = primaryCountries()
   const more = moreCountries()
   const moreActive = more.find((country) => country.code === active)
+  const [moreQuery, setMoreQuery] = useState("")
+  const moreMatches = filterCountries(moreQuery).filter((country) =>
+    more.some((item) => item.code === country.code),
+  )
+  const primaryHit = filterCountries(moreQuery).find((country) =>
+    primary.some((item) => item.code === country.code),
+  )
 
   return (
     <div className="flex items-center gap-1 overflow-x-auto pb-3 [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
@@ -198,7 +228,11 @@ function CountryTabs({
           {country.name}
         </CountryPill>
       ))}
-      <DropdownMenu>
+      <DropdownMenu
+        onOpenChange={(open) => {
+          if (!open) setMoreQuery("")
+        }}
+      >
         <DropdownMenuTrigger asChild>
           <button
             type="button"
@@ -213,15 +247,43 @@ function CountryTabs({
             <ChevronDown className="size-3.5" />
           </button>
         </DropdownMenuTrigger>
-        <DropdownMenuContent align="start" className="max-h-80 w-60 overflow-y-auto">
-          {more.map((country) => (
-            <DropdownMenuItem key={country.code} onSelect={() => onSelect(country.code)}>
-              {country.name}
-            </DropdownMenuItem>
-          ))}
+        <DropdownMenuContent align="start" className="w-60">
+          <div className="p-1" onKeyDown={(event) => event.stopPropagation()}>
+            <Input
+              value={moreQuery}
+              onChange={(event) => setMoreQuery(event.target.value)}
+              placeholder="Search countries"
+              aria-label="Search more countries"
+              className="h-8"
+            />
+          </div>
+          <DropdownMenuSeparator />
+          <div className="max-h-72 overflow-y-auto">
+            {moreMatches.map((country) => (
+              <DropdownMenuItem key={country.code} onSelect={() => onSelect(country.code)}>
+                {country.name}
+              </DropdownMenuItem>
+            ))}
+            {moreMatches.length === 0 ? (
+              <p className="px-2 py-3 text-xs text-neutral-500">
+                {primaryHit ? `${primaryHit.name} is in the row above.` : "No country matches."}
+              </p>
+            ) : null}
+          </div>
         </DropdownMenuContent>
       </DropdownMenu>
     </div>
+  )
+}
+
+function filterCountries(query: string) {
+  const needle = fold(query)
+  if (!needle) return countries
+  return countries.filter(
+    (country) =>
+      fold(country.name).includes(needle) ||
+      country.code.toLowerCase() === needle ||
+      fold(country.capital).includes(needle),
   )
 }
 
