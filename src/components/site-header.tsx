@@ -39,7 +39,9 @@ const notifications = [
     body: "Fresh farmland listings around Arusha.",
     time: "1d",
   },
-]
+] as const
+
+type NotificationId = (typeof notifications)[number]["id"]
 
 export function SiteHeader() {
   const { query, update } = useListingQuery()
@@ -135,7 +137,10 @@ export function SiteHeader() {
                   <DropdownMenuItem
                     key={item.id}
                     className="items-start gap-3 py-2"
-                    onSelect={() => setRead((current) => (current.includes(item.id) ? current : [...current, item.id]))}
+                    onSelect={() => {
+                      setRead((current) => (current.includes(item.id) ? current : [...current, item.id]))
+                      openNotification(item.id, update)
+                    }}
                   >
                     <span className="mt-1 size-2 shrink-0 rounded-full bg-neutral-900" />
                     <span className="min-w-0">
@@ -182,18 +187,50 @@ export function SiteHeader() {
 }
 
 function SearchField({ value, onChange }: { value: string; onChange: (value: string) => void }) {
+  const [draft, setDraft] = useState(value)
+  const [focused, setFocused] = useState(false)
+
   return (
     <div className="relative">
       <Search className="pointer-events-none absolute top-1/2 left-3.5 size-4 -translate-y-1/2 text-neutral-400" />
       <Input
-        value={value}
-        onChange={(event) => onChange(event.target.value)}
+        value={focused ? draft : value}
+        onFocus={() => {
+          setDraft(value)
+          setFocused(true)
+        }}
+        onBlur={() => setFocused(false)}
+        onChange={(event) => {
+          setDraft(event.target.value)
+          onChange(event.target.value)
+        }}
         placeholder="Search for cars, houses, jobs, electronics and more..."
         aria-label="Search listings"
         className="h-11 rounded-full border-transparent bg-neutral-100 pr-4 pl-10 text-sm shadow-none focus-visible:border-neutral-300 focus-visible:bg-white focus-visible:ring-neutral-200"
       />
     </div>
   )
+}
+
+function openNotification(
+  id: NotificationId,
+  update: ReturnType<typeof useListingQuery>["update"],
+) {
+  switch (id) {
+    case "land-cruiser":
+      update({ q: "Land Cruiser", category: null, country: null, city: null })
+      return
+    case "jobs":
+      update({ q: "", category: "jobs", country: null, city: null })
+      return
+    case "farm":
+      update({ q: "farm", category: null, country: "TZ", city: null })
+      return
+    default: {
+      const unreachable: never = id
+      return unreachable
+    }
+  }
 }
 
 function filterCountries(query: string) {
