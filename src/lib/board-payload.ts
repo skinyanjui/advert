@@ -40,6 +40,7 @@ export function cleanListing(value: unknown): Listing | undefined {
     timezone: cleanText(value.timezone),
     postedAt: cleanText(value.postedAt),
     meta: cleanText(value.meta),
+    sold: value.sold === true ? true : undefined,
   }
 }
 

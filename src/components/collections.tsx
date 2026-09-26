@@ -2,6 +2,7 @@
 
 import Link from "next/link"
 import { useState } from "react"
+import { toast } from "sonner"
 
 import { ListingCard } from "@/components/listing-card"
 import { postAdHref } from "@/lib/active-place"
@@ -16,6 +17,7 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog"
 import { useMarketplace } from "@/lib/marketplace"
+import type { Listing } from "@/lib/types"
 
 export function SavedPage() {
   const { ready, listings, savedIds } = useMarketplace()
@@ -35,23 +37,69 @@ export function SavedPage() {
 }
 
 export function MyAdsPage() {
-  const { ready, listings, removeListing } = useMarketplace()
+  const { ready, listings, removeListing, setListingSold, renewListing } = useMarketplace()
   const mine = listings.filter((listing) => listing.mine)
   const postHref = postAdHref(useRememberedPlace())
   const [pendingId, setPendingId] = useState<string | null>(null)
+  const [busyId, setBusyId] = useState<string | null>(null)
   const pending = mine.find((listing) => listing.id === pendingId)
 
   if (!ready) return <PageSkeleton title="My ads" />
+
+  async function onSold(listing: Listing) {
+    setBusyId(listing.id)
+    const next = !listing.sold
+    const result = await setListingSold(listing.id, next)
+    setBusyId(null)
+    if (!result.ok) {
+      toast.error(result.reason)
+      return
+    }
+    toast.success(next ? "Marked as sold" : "Marked as available")
+  }
+
+  async function onRenew(listing: Listing) {
+    setBusyId(listing.id)
+    const result = await renewListing(listing.id)
+    setBusyId(null)
+    if (!result.ok) {
+      toast.error(result.reason)
+      return
+    }
+    toast.success("Ad renewed — it is back at the top of the board")
+  }
+
+  async function onRemove() {
+    if (!pendingId) return
+    setBusyId(pendingId)
+    const result = await removeListing(pendingId)
+    setBusyId(null)
+    setPendingId(null)
+    if (!result.ok) {
+      toast.error(result.reason)
+      return
+    }
+    toast.success("Ad removed")
+  }
 
   return (
     <>
       <Collection
         title="My ads"
-        description="Ads you publish from this browser. Anyone on the board can see them."
+        description="Ads from this browser session. Clearing cookies loses access to them — there is no account recovery yet."
         emptyTitle="You have not posted an ad"
         emptyBody="Post something for sale, for rent, or a job. It appears at the top of the board."
         listings={mine}
+        busyId={busyId}
         onRemove={setPendingId}
+        onSold={(id) => {
+          const listing = mine.find((item) => item.id === id)
+          if (listing) void onSold(listing)
+        }}
+        onRenew={(id) => {
+          const listing = mine.find((item) => item.id === id)
+          if (listing) void onRenew(listing)
+        }}
         actionHref={postHref}
         actionLabel="Post an ad"
       />
@@ -67,13 +115,7 @@ export function MyAdsPage() {
             <Button variant="outline" onClick={() => setPendingId(null)}>
               Keep it
             </Button>
-            <Button
-              variant="destructive"
-              onClick={() => {
-                if (pendingId) removeListing(pendingId)
-                setPendingId(null)
-              }}
-            >
+            <Button variant="destructive" disabled={busyId === pendingId} onClick={() => void onRemove()}>
               Remove ad
             </Button>
           </DialogFooter>
@@ -89,7 +131,10 @@ function Collection({
   emptyTitle,
   emptyBody,
   listings,
+  busyId,
   onRemove,
+  onSold,
+  onRenew,
   actionHref = "/",
   actionLabel = "Browse listings",
 }: {
@@ -98,7 +143,10 @@ function Collection({
   emptyTitle: string
   emptyBody: string
   listings: { id: string }[]
+  busyId?: string | null
   onRemove?: (id: string) => void
+  onSold?: (id: string) => void
+  onRenew?: (id: string) => void
   actionHref?: string
   actionLabel?: string
 }) {
@@ -125,12 +173,32 @@ function Collection({
             <div key={listing.id} className="flex flex-col gap-2">
               <ListingCard listing={listing} />
               {onRemove ? (
-                <div className="flex items-center gap-1">
+                <div className="flex flex-wrap items-center gap-1">
                   <Button variant="ghost" className="self-start" asChild>
                     <Link href={`/post?edit=${listing.id}`}>Edit</Link>
                   </Button>
+                  {onSold ? (
+                    <Button
+                      variant="ghost"
+                      className="self-start"
+                      disabled={busyId === listing.id}
+                      onClick={() => onSold(listing.id)}
+                    >
+                      {listing.sold ? "Mark available" : "Mark sold"}
+                    </Button>
+                  ) : null}
+                  {onRenew && !listing.sold ? (
+                    <Button
+                      variant="ghost"
+                      className="self-start"
+                      disabled={busyId === listing.id}
+                      onClick={() => onRenew(listing.id)}
+                    >
+                      Renew
+                    </Button>
+                  ) : null}
                   <Button variant="ghost" className="self-start" onClick={() => onRemove(listing.id)}>
-                    Remove ad
+                    Remove
                   </Button>
                 </div>
               ) : null}

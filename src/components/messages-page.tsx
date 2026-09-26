@@ -40,7 +40,8 @@ export function MessagesPage() {
     <div className="mx-auto w-full max-w-5xl px-4 py-8 md:px-6">
       <h1 className="text-2xl font-semibold tracking-tight">Messages</h1>
       <p className="mt-1 text-sm text-neutral-500">
-        Notes you send, and the sample reply, stay on this browser.
+        Notes you send stay on this browser with a sample reply. Sellers do not receive an inbox yet — call or WhatsApp the
+        number on the ad to reach them.
       </p>
       {threads.length === 0 ? (
         <div className="mt-8 rounded-2xl border border-dashed border-neutral-300 bg-white px-6 py-16 text-center">
