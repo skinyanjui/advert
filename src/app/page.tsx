@@ -12,7 +12,7 @@ export default function HomePage() {
 
 function BrowseFallback() {
   return (
-    <div className="mx-auto grid w-full max-w-[1280px] gap-4 px-4 py-6 sm:grid-cols-2 md:px-6 xl:grid-cols-4">
+    <div className="mx-auto grid w-full max-w-[1720px] gap-4 px-4 py-6 sm:grid-cols-2 md:px-6 xl:grid-cols-4 min-[1480px]:grid-cols-5">
       {Array.from({ length: 8 }, (_, index) => (
         <div key={index} className="aspect-[4/5] rounded-2xl bg-white" />
       ))}

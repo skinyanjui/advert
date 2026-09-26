@@ -54,7 +54,7 @@ export function SiteHeader() {
   return (
     <header className="sticky top-0 z-40">
       <div className="border-b border-neutral-200/80 bg-white">
-        <div className="mx-auto max-w-[1280px] px-4 md:px-6">
+        <div className="mx-auto max-w-[1720px] px-4 md:px-6">
         <div className="flex items-center gap-2 py-3 md:gap-3 md:py-3.5">
           <Logo />
           <div className="hidden min-w-0 flex-1 md:block">
@@ -173,7 +173,7 @@ export function SiteHeader() {
         </div>
       </div>
       <div className="bg-background">
-        <div className="mx-auto max-w-[1280px] px-4 pt-2.5 md:px-6">
+        <div className="mx-auto max-w-[1720px] px-4 pt-2.5 md:px-6">
           <CountryTabs active={query.country} onSelect={(country) => update({ country: country ?? null })} />
         </div>
       </div>
@@ -315,7 +315,7 @@ function CountryPill({
 export function HeaderFallback() {
   return (
     <header className="sticky top-0 z-40 border-b border-neutral-200/80 bg-white">
-      <div className="mx-auto flex h-[72px] max-w-[1280px] items-center px-4 md:px-6">
+      <div className="mx-auto flex h-[72px] max-w-[1720px] items-center px-4 md:px-6">
         <Logo />
       </div>
     </header>

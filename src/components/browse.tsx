@@ -105,7 +105,7 @@ export function Browse() {
   const categoryLabel = query.category ? categoryName(query.category) : "All listings"
 
   return (
-    <div className="mx-auto flex w-full max-w-[1280px] gap-6 px-4 pt-4 pb-16 md:px-6">
+    <div className="mx-auto flex w-full max-w-[1720px] gap-6 px-4 pt-4 pb-16 md:px-6">
       <aside className="hidden w-[228px] shrink-0 lg:block">
         <div className="sticky top-[132px]">
           <CategoryNav
@@ -206,7 +206,7 @@ export function Browse() {
             }}
           />
         ) : (
-          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4">
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4 min-[1480px]:grid-cols-5">
             {visible.map((listing) => (
               <ListingCard key={listing.id} listing={listing} />
             ))}
