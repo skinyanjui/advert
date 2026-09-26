@@ -35,10 +35,12 @@ export function useListingQuery() {
   const router = useRouter()
   const pathname = usePathname()
   const searchParams = useSearchParams()
+  const onBoard = pathname === "/"
 
   const scrollAfterNav = useRef(false)
 
   const query = useMemo<ListingQuery>(() => {
+    if (!onBoard) return { q: "", sort: "relevant" }
     const countryParam = searchParams.get("country")
     const categoryParam = searchParams.get("category")
     const sortParam = searchParams.get("sort")
@@ -50,7 +52,7 @@ export function useListingQuery() {
       type: searchParams.get("type")?.trim() || undefined,
       sort: isSortId(sortParam) ? sortParam : "relevant",
     }
-  }, [searchParams])
+  }, [onBoard, searchParams])
 
   useEffect(() => {
     if (pathname !== "/") {
@@ -70,7 +72,7 @@ export function useListingQuery() {
 
   const update = useCallback(
     (patch: QueryPatch) => {
-      const params = new URLSearchParams(searchParams.toString())
+      const params = new URLSearchParams(onBoard ? searchParams.toString() : "")
       normalizeBoardParams(params)
 
       if ("q" in patch) {
@@ -106,10 +108,10 @@ export function useListingQuery() {
       const qs = params.toString()
       const href = qs ? `/?${qs}` : "/"
       scrollAfterNav.current = (Object.keys(patch) as (keyof QueryPatch)[]).some((key) => key !== "q")
-      if (pathname === "/") router.replace(href, { scroll: false })
+      if (onBoard) router.replace(href, { scroll: false })
       else router.push(href)
     },
-    [pathname, router, searchParams],
+    [onBoard, router, searchParams],
   )
 
   const clear = useCallback(() => {

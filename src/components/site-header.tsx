@@ -66,6 +66,7 @@ export function SiteHeader() {
           </div>
           <div className="ml-auto flex items-center gap-2">
             <DropdownMenu
+              modal={false}
               onOpenChange={(open) => {
                 if (!open) setLocationQuery("")
               }}
@@ -118,12 +119,12 @@ export function SiteHeader() {
               </DropdownMenuContent>
             </DropdownMenu>
             <Button asChild className="h-10 rounded-full bg-neutral-950 px-3 text-white hover:bg-neutral-800 sm:px-4">
-              <Link href="/post">
+              <Link href="/post" aria-label="Post ad">
                 <Plus />
                 <span className="hidden sm:inline">Post ad</span>
               </Link>
             </Button>
-            <DropdownMenu>
+            <DropdownMenu modal={false}>
               <DropdownMenuTrigger asChild>
                 <Button variant="outline" size="icon-lg" className="relative rounded-full" aria-label="Notifications">
                   <Bell />
@@ -164,7 +165,7 @@ export function SiteHeader() {
                 })}
               </DropdownMenuContent>
             </DropdownMenu>
-            <DropdownMenu open={accountOpen} onOpenChange={setAccountOpen}>
+            <DropdownMenu modal={false} open={accountOpen} onOpenChange={setAccountOpen}>
               <DropdownMenuTrigger asChild>
                 <Button variant="outline" size="icon-lg" className="relative rounded-full" aria-label="Account menu">
                   <UserRound />
