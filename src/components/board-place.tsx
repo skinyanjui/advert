@@ -7,7 +7,7 @@ import { resolvePlace, searchCities } from "@/lib/cities"
 import { countryName, fold } from "@/lib/countries"
 import { osmLinks } from "@/lib/map"
 
-type PlaceSource = "listed" | "geonames" | "nominatim"
+type PlaceSource = "listed" | "geonames"
 
 type PlaceHit = {
   name: string
@@ -37,30 +37,10 @@ export function BoardCitySearch({
   const inputRef = useRef<HTMLInputElement>(null)
   const [open, setOpen] = useState(false)
   const [draft, setDraft] = useState("")
-  const [remote, setRemote] = useState<{ key: string; places: PlaceHit[] }>({ key: "", places: [] })
   const value = open ? draft : (city ?? "")
   const query = draft.trim()
-  const remoteKey = `${country}|${fold(query)}`
   const local = useMemo(() => listedAndKnownCities(country, query, places), [country, query, places])
-  const mapped = remote.key === remoteKey ? remote.places : []
-  const suggestions = open ? mergePlaces(local, mapped) : []
-  const remoteReady = query.length < 2 || remote.key === remoteKey
-
-  useEffect(() => {
-    if (!open || query.length < 2) return
-    const handle = window.setTimeout(() => {
-      const params = new URLSearchParams({ q: query, country })
-      const nextKey = `${country}|${fold(query)}`
-      fetch(`/api/places?${params}`)
-        .then((response) => (response.ok ? response.json() : { places: [] }))
-        .then((payload: { places?: PlaceHit[] }) => {
-          const nominatim = (payload.places ?? []).map((place) => ({ ...place, source: "nominatim" as const }))
-          setRemote({ key: nextKey, places: nominatim })
-        })
-        .catch(() => setRemote({ key: nextKey, places: [] }))
-    }, 200)
-    return () => window.clearTimeout(handle)
-  }, [open, query, country])
+  const suggestions = open ? local : []
 
   function begin() {
     if (open) return
@@ -136,7 +116,7 @@ export function BoardCitySearch({
           ))}
         </ul>
       ) : null}
-      {open && query.length >= 2 && suggestions.length === 0 && remoteReady ? (
+      {open && query.length >= 2 && suggestions.length === 0 ? (
         <p className="absolute z-30 mt-1 w-full rounded-lg border bg-white px-3 py-2 text-sm text-neutral-500 shadow-md">
           No cities match
         </p>
@@ -216,7 +196,6 @@ function listedAndKnownCities(country: string, query: string, listed: ListedCity
 
 function placeLabel(place: PlaceHit): string {
   if (place.count) return String(place.count)
-  if (place.source === "nominatim") return "Map"
   return "GeoNames"
 }
 
