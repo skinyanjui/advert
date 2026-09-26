@@ -1,7 +1,7 @@
 "use client"
 
 import { usePathname, useRouter, useSearchParams } from "next/navigation"
-import { useCallback, useMemo } from "react"
+import { useCallback, useEffect, useMemo, useRef } from "react"
 
 import { canonicalCountry } from "@/lib/countries"
 import {
@@ -33,6 +33,8 @@ export function useListingQuery() {
   const pathname = usePathname()
   const searchParams = useSearchParams()
 
+  const scrollAfterNav = useRef(false)
+
   const query = useMemo<ListingQuery>(() => {
     const countryParam = searchParams.get("country")
     const categoryParam = searchParams.get("category")
@@ -46,9 +48,26 @@ export function useListingQuery() {
     }
   }, [searchParams])
 
+  useEffect(() => {
+    if (pathname !== "/") {
+      scrollAfterNav.current = false
+      return
+    }
+    const params = new URLSearchParams(searchParams.toString())
+    if (normalizeBoardParams(params)) {
+      const qs = params.toString()
+      router.replace(qs ? `/?${qs}` : "/", { scroll: false })
+      return
+    }
+    if (!scrollAfterNav.current) return
+    scrollAfterNav.current = false
+    window.scrollTo(0, 0)
+  }, [pathname, router, searchParams])
+
   const update = useCallback(
     (patch: QueryPatch) => {
       const params = new URLSearchParams(searchParams.toString())
+      normalizeBoardParams(params)
 
       if ("q" in patch) {
         const next = patch.q?.trim() ?? ""
@@ -76,6 +95,7 @@ export function useListingQuery() {
 
       const qs = params.toString()
       const href = qs ? `/?${qs}` : "/"
+      scrollAfterNav.current = (Object.keys(patch) as (keyof QueryPatch)[]).some((key) => key !== "q")
       if (pathname === "/") router.replace(href, { scroll: false })
       else router.push(href)
     },
@@ -83,9 +103,37 @@ export function useListingQuery() {
   )
 
   const clear = useCallback(() => {
+    scrollAfterNav.current = true
     if (pathname === "/") router.replace("/", { scroll: false })
     else router.push("/")
   }, [pathname, router])
 
   return { query, update, clear }
+}
+
+function normalizeBoardParams(params: URLSearchParams): boolean {
+  let changed = false
+  const rawCountry = params.get("country")
+  if (rawCountry) {
+    const canonical = canonicalCountry(rawCountry)
+    if (!canonical) {
+      params.delete("country")
+      params.delete("city")
+      changed = true
+    } else if (canonical !== rawCountry) {
+      params.set("country", canonical)
+      changed = true
+    }
+  }
+  const rawCategory = params.get("category")
+  if (rawCategory && !isCategoryId(rawCategory)) {
+    params.delete("category")
+    changed = true
+  }
+  const rawSort = params.get("sort")
+  if (rawSort && !isSortId(rawSort)) {
+    params.delete("sort")
+    changed = true
+  }
+  return changed
 }

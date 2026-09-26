@@ -48,6 +48,7 @@ export function SiteHeader() {
   const { savedIds } = useMarketplace()
   const [read, setRead] = useState<string[]>([])
   const [locationQuery, setLocationQuery] = useState("")
+  const [accountOpen, setAccountOpen] = useState(false)
 
   const unread = notifications.filter((item) => !read.includes(item.id)).length
   const locationLabel = query.country ? countryName(query.country) : "All Africa"
@@ -133,26 +134,36 @@ export function SiteHeader() {
               <DropdownMenuContent align="end" className="w-80">
                 <DropdownMenuLabel>Notifications</DropdownMenuLabel>
                 <DropdownMenuSeparator />
-                {notifications.map((item) => (
-                  <DropdownMenuItem
-                    key={item.id}
-                    className="items-start gap-3 py-2"
-                    onSelect={() => {
-                      setRead((current) => (current.includes(item.id) ? current : [...current, item.id]))
-                      openNotification(item.id, update)
-                    }}
-                  >
-                    <span className="mt-1 size-2 shrink-0 rounded-full bg-neutral-900" />
-                    <span className="min-w-0">
-                      <span className="block text-sm font-medium">{item.title}</span>
-                      <span className="block text-xs text-muted-foreground">{item.body}</span>
-                    </span>
-                    <span className="ml-auto text-[11px] text-muted-foreground">{item.time}</span>
-                  </DropdownMenuItem>
-                ))}
+                {notifications.map((item) => {
+                  const seen = read.includes(item.id)
+                  return (
+                    <DropdownMenuItem
+                      key={item.id}
+                      className="items-start gap-3 py-2"
+                      onSelect={() => {
+                        setRead((current) => (current.includes(item.id) ? current : [...current, item.id]))
+                        openNotification(item.id, update)
+                      }}
+                    >
+                      <span
+                        className={cn(
+                          "mt-1 size-2 shrink-0 rounded-full",
+                          seen ? "bg-neutral-300" : "bg-neutral-900",
+                        )}
+                      />
+                      <span className="min-w-0">
+                        <span className={cn("block text-sm", seen ? "font-normal text-neutral-500" : "font-medium")}>
+                          {item.title}
+                        </span>
+                        <span className="block text-xs text-muted-foreground">{item.body}</span>
+                      </span>
+                      <span className="ml-auto text-[11px] text-muted-foreground">{item.time}</span>
+                    </DropdownMenuItem>
+                  )
+                })}
               </DropdownMenuContent>
             </DropdownMenu>
-            <DropdownMenu>
+            <DropdownMenu open={accountOpen} onOpenChange={setAccountOpen}>
               <DropdownMenuTrigger asChild>
                 <Button variant="outline" size="icon-lg" className="rounded-full" aria-label="Account menu">
                   <UserRound />
@@ -165,13 +176,19 @@ export function SiteHeader() {
                 </DropdownMenuLabel>
                 <DropdownMenuSeparator />
                 <DropdownMenuItem asChild>
-                  <Link href="/saved">Saved ads ({savedIds.length})</Link>
+                  <Link href="/saved" onClick={() => setAccountOpen(false)}>
+                    Saved ads ({savedIds.length})
+                  </Link>
                 </DropdownMenuItem>
                 <DropdownMenuItem asChild>
-                  <Link href="/my-ads">My ads</Link>
+                  <Link href="/my-ads" onClick={() => setAccountOpen(false)}>
+                    My ads
+                  </Link>
                 </DropdownMenuItem>
                 <DropdownMenuItem asChild>
-                  <Link href="/post">Post an ad</Link>
+                  <Link href="/post" onClick={() => setAccountOpen(false)}>
+                    Post an ad
+                  </Link>
                 </DropdownMenuItem>
               </DropdownMenuContent>
             </DropdownMenu>
