@@ -44,13 +44,15 @@ for (const line of citiesText.split("\n")) {
   if (!codes.has(country)) continue
   const timezone = parts[17]
   if (!timezone || !timezone.includes("/")) continue
+  const population = Number(parts[14]) || 0
+  if (population < 15000) continue
   cities.push({
     id: Number(parts[0]),
     name: parts[1],
     country,
     lat: Number(Number(parts[4]).toFixed(4)),
     lng: Number(Number(parts[5]).toFixed(4)),
-    pop: Number(parts[14]) || 0,
+    pop: population,
     tz: timezone,
   })
 }
