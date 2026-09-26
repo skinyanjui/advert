@@ -19,7 +19,9 @@ function unpack(row: Row, owner?: string): Listing | undefined {
     hoursAgo: hoursAgoOf({ hoursAgo: listing.hoursAgo, postedAt: row.posted_at }),
     mine: Boolean(owner) && owner === row.owner_id, featured: undefined }
 }
-function payload(listing: Listing) { return { ...listing, mine: undefined, featured: undefined } }
+function payload(listing: Listing) {
+  return { ...listing, mine: undefined, featured: undefined, sold: listing.sold === true ? true : undefined }
+}
 function photoPath(image: string) {
   const base = `${process.env.SUPABASE_URL ?? process.env.NEXT_PUBLIC_SUPABASE_URL}/storage/v1/object/public/listing-photos/`
   const path = image.startsWith(base) ? image.slice(base.length) : ""
@@ -64,8 +66,10 @@ export async function createListing(owner: string, input: unknown): Promise<Resu
   const listing = cleanListing(input)
   if (!listing || !listingId.test(listing.id)) return { ok: false, reason: "That ad could not be read." }
   if (seedIds.has(listing.id)) return { ok: false, reason: "That listing is already on the board." }
-  const accepted = acceptListing({ ...listing, mine: true })
+  const accepted = acceptListing({ ...listing, mine: true, sold: undefined })
   if (!accepted.ok) return accepted
+  const quota = await postingQuota(owner)
+  if (!quota.ok) return quota
   const photo = await storePhoto(listing.image, owner)
   if (!photo.ok) return photo
   const postedAt = new Date().toISOString()
@@ -86,9 +90,9 @@ export async function updateListing(owner: string, id: string, input: unknown): 
   check(readError)
   if (!row) return { ok: false, reason: "This ad is no longer on the board." }
   if (row.owner_id !== owner) return { ok: false, reason: "This ad is not yours." }
-  const accepted = acceptListing({ ...listing, mine: true })
-  if (!accepted.ok) return accepted
   const old = cleanListing(row.payload)
+  const accepted = acceptListing({ ...listing, mine: true, sold: listing.sold ?? old?.sold })
+  if (!accepted.ok) return accepted
   const photo = await storePhoto(listing.image, owner, old?.image)
   if (!photo.ok) return photo
   const stored = { ...accepted.listing, id, image: photo.value, postedAt: row.posted_at,
@@ -102,6 +106,59 @@ export async function updateListing(owner: string, id: string, input: unknown): 
   }
   if (old?.image && old.image !== photo.value) await removePhoto(old.image)
   return { ok: true, value: { ...stored, mine: true } }
+}
+
+async function ownedRow(owner: string, id: string): Promise<Result<Row>> {
+  if (!listingId.test(id) || seedIds.has(id)) return { ok: false, reason: "That ad could not be read." }
+  const { data: row, error } = await boardDb().from("board_listings").select("id,owner_id,posted_at,payload").eq("id", id).maybeSingle()
+  check(error)
+  if (!row) return { ok: false, reason: "This ad is no longer on the board." }
+  if (row.owner_id !== owner) return { ok: false, reason: "This ad is not yours." }
+  return { ok: true, value: row }
+}
+
+export async function setListingSold(owner: string, id: string, sold: boolean): Promise<Result<Listing>> {
+  const owned = await ownedRow(owner, id)
+  if (!owned.ok) return owned
+  const current = cleanListing(owned.value.payload)
+  if (!current) return { ok: false, reason: "That ad could not be read." }
+  const stored = { ...current, id, sold: sold ? true : undefined, postedAt: owned.value.posted_at,
+    hoursAgo: hoursAgoOf({ hoursAgo: 0, postedAt: owned.value.posted_at }) }
+  const { data, error } = await boardDb().from("board_listings").update({ payload: payload(stored) })
+    .eq("id", id).eq("owner_id", owner).select("id")
+  check(error)
+  if (!data?.length) return { ok: false, reason: "This ad is no longer on the board." }
+  return { ok: true, value: { ...stored, mine: true } }
+}
+
+export async function renewListing(owner: string, id: string): Promise<Result<Listing>> {
+  const owned = await ownedRow(owner, id)
+  if (!owned.ok) return owned
+  const current = cleanListing(owned.value.payload)
+  if (!current) return { ok: false, reason: "That ad could not be read." }
+  if (current.sold) return { ok: false, reason: "Mark the ad as available before renewing it." }
+  const postedAt = new Date().toISOString()
+  const stored = { ...current, id, sold: undefined, postedAt, hoursAgo: 0 }
+  const { data, error } = await boardDb().from("board_listings")
+    .update({ posted_at: postedAt, payload: payload(stored) })
+    .eq("id", id).eq("owner_id", owner).select("id")
+  check(error)
+  if (!data?.length) return { ok: false, reason: "This ad is no longer on the board." }
+  return { ok: true, value: { ...stored, mine: true } }
+}
+
+async function postingQuota(owner: string): Promise<Result<true>> {
+  const db = boardDb()
+  const hourAgo = new Date(Date.now() - 60 * 60 * 1000).toISOString()
+  const [total, recent] = await Promise.all([
+    db.from("board_listings").select("id", { count: "exact", head: true }).eq("owner_id", owner),
+    db.from("board_listings").select("id", { count: "exact", head: true }).eq("owner_id", owner).gte("posted_at", hourAgo),
+  ])
+  check(total.error)
+  check(recent.error)
+  if ((total.count ?? 0) >= 40) return { ok: false, reason: "This browser has reached the limit of 40 ads." }
+  if ((recent.count ?? 0) >= 8) return { ok: false, reason: "Too many ads posted recently. Try again in an hour." }
+  return { ok: true, value: true }
 }
 export async function deleteListing(owner: string, id: string): Promise<Result<true>> {
   const db = boardDb()
@@ -141,6 +198,7 @@ export async function createMessage(owner: string, id: string, body: string): Pr
   if (row?.owner_id === owner) return { ok: false, reason: "This is your ad." }
   const listing = seedListings.find((item) => item.id === id) ?? (row ? unpack(row) : undefined)
   if (!listing) return { ok: false, reason: "That listing is no longer on the board." }
+  if (listing.sold) return { ok: false, reason: "This ad is marked sold." }
   const now = Date.now()
   const yours: BoardMessage = { id: crypto.randomUUID(), listingId: id, listingTitle: listing.title, sellerName: listing.sellerName,
     body: body.trim(), sentAt: new Date(now).toISOString(), role: "you", read: true }

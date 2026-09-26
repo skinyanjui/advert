@@ -43,7 +43,11 @@ export function ListingCard({
             Featured
           </span>
         ) : null}
-        {listing.badge === "jobs" ? (
+        {listing.sold ? (
+          <span className="absolute top-2 left-2 rounded-full bg-neutral-800 px-2 py-0.5 text-[10px] font-medium text-white">
+            Sold
+          </span>
+        ) : listing.badge === "jobs" ? (
           <span className="absolute top-2 left-2 rounded-full bg-emerald-500 px-2 py-0.5 text-[10px] font-medium text-white">
             Jobs
           </span>

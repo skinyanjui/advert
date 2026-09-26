@@ -141,29 +141,81 @@ async function updateListing(listing: Listing): Promise<StoreResult> {
   }
 }
 
-function removeListing(id: string) {
-  void (async () => {
-    await ensureLoaded()
-    const previous = memory.posted
+async function removeListing(id: string): Promise<StoreResult> {
+  await ensureLoaded()
+  const previous = memory.posted
+  const previousSaved = memory.savedIds
+  memory = {
+    ...memory,
+    posted: memory.posted.filter((listing) => listing.id !== id),
+    savedIds: memory.savedIds.filter((savedId) => savedId !== id),
+    ready: true,
+  }
+  emit()
+  try {
+    const response = await fetch(`/api/listings/${encodeURIComponent(id)}`, {
+      method: "DELETE",
+      headers: requestHeaders(),
+    })
+    if (!response.ok) {
+      memory = { ...memory, posted: previous, savedIds: previousSaved, ready: true }
+      emit()
+      return { ok: false, reason: await readFailure(response, "The board database did not remove that ad.") }
+    }
+    return { ok: true }
+  } catch {
+    memory = { ...memory, posted: previous, savedIds: previousSaved, ready: true }
+    emit()
+    return { ok: false, reason: "The board database did not remove that ad." }
+  }
+}
+
+async function setListingSold(id: string, sold: boolean): Promise<StoreResult> {
+  await ensureLoaded()
+  try {
+    const response = await fetch(`/api/listings/${encodeURIComponent(id)}`, {
+      method: "PATCH",
+      headers: requestHeaders(),
+      body: JSON.stringify({ sold }),
+    })
+    if (!response.ok) return { ok: false, reason: await readFailure(response, "Could not update that ad.") }
+    const payload = (await response.json()) as { listing?: unknown }
+    const saved = parseBoardState({ posted: [payload.listing], savedIds: [], messages: [] }).posted[0]
+    if (!saved) return { ok: false, reason: "That ad could not be read." }
     memory = {
       ...memory,
-      posted: memory.posted.filter((listing) => listing.id !== id),
-      savedIds: memory.savedIds.filter((savedId) => savedId !== id),
+      posted: memory.posted.map((item) => (item.id === saved.id ? saved : item)),
       ready: true,
     }
     emit()
-    try {
-      const response = await fetch(`/api/listings/${encodeURIComponent(id)}`, {
-        method: "DELETE",
-        headers: requestHeaders(),
-      })
-      if (!response.ok) throw new Error("delete")
-    } catch {
-      memory = { ...memory, posted: previous, ready: true }
-      emit()
-      toast.error("The board database did not remove that ad.")
+    return { ok: true }
+  } catch {
+    return { ok: false, reason: "Could not update that ad." }
+  }
+}
+
+async function renewListing(id: string): Promise<StoreResult> {
+  await ensureLoaded()
+  try {
+    const response = await fetch(`/api/listings/${encodeURIComponent(id)}`, {
+      method: "PATCH",
+      headers: requestHeaders(),
+      body: JSON.stringify({ renew: true }),
+    })
+    if (!response.ok) return { ok: false, reason: await readFailure(response, "Could not renew that ad.") }
+    const payload = (await response.json()) as { listing?: unknown }
+    const saved = parseBoardState({ posted: [payload.listing], savedIds: [], messages: [] }).posted[0]
+    if (!saved) return { ok: false, reason: "That ad could not be read." }
+    memory = {
+      ...memory,
+      posted: [saved, ...memory.posted.filter((item) => item.id !== saved.id)],
+      ready: true,
     }
-  })()
+    emit()
+    return { ok: true }
+  } catch {
+    return { ok: false, reason: "Could not renew that ad." }
+  }
 }
 
 function toggleSaved(id: string) {
@@ -243,7 +295,9 @@ type MarketplaceContextValue = {
   toggleSaved: (id: string) => void
   addListing: (listing: Listing) => Promise<StoreResult>
   updateListing: (listing: Listing) => Promise<StoreResult>
-  removeListing: (id: string) => void
+  removeListing: (id: string) => Promise<StoreResult>
+  setListingSold: (id: string, sold: boolean) => Promise<StoreResult>
+  renewListing: (id: string) => Promise<StoreResult>
   sendMessage: (listingId: string, body: string) => Promise<StoreResult>
   markThreadRead: (listingId: string) => void
 }
@@ -265,6 +319,8 @@ export function MarketplaceProvider({ children }: { children: React.ReactNode })
       addListing,
       updateListing,
       removeListing,
+      setListingSold,
+      renewListing,
       sendMessage,
       markThreadRead,
     }),

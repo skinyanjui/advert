@@ -335,6 +335,7 @@ function AdForm({ existing }: { existing: Listing | null }) {
       phone: phone.trim().slice(0, 30),
       image: image ?? categoryImage[category],
       condition: keptDetails.condition || subcategory.name,
+      sold: existing?.sold,
     }
     setSubmitting(true)
     const result = existing ? await updateListing(listing) : await addListing(listing)
@@ -636,6 +637,9 @@ function AdForm({ existing }: { existing: Listing | null }) {
                   className="h-10 bg-white"
                 />
               </Field>
+              <p className="text-xs leading-5 text-neutral-500">
+                Buyers can call, open WhatsApp with this number, or leave an on-site note. Prefer a number you check often.
+              </p>
             </section>
           ) : null}
 

@@ -4,6 +4,9 @@ import type { CategoryId, Listing } from "@/lib/types"
 
 const maxPrice = 999_999_999
 
+/** Lightweight title/description refusals — not a full moderation system. */
+const prohibited = /\b(cocaine|heroin|fentanyl|methamphetamine|ak-?47|grenade|human trafficking|child porn)\b/i
+
 export type ListingFields = {
   title: string
   price: number
@@ -37,6 +40,8 @@ export function listingFieldErrors(input: ListingFields): FieldErrors {
   if (!Number.isFinite(amount) || amount <= 0) errors.price = "Enter an amount greater than zero."
   else if (amount > maxPrice) errors.price = "Enter a smaller amount."
 
+  if (!getCountry(input.country)) errors.form = errors.form ?? "Choose a country."
+
   if (input.category && !allowedCurrencies(input.country).includes(input.currency)) {
     errors.currency = "Choose a currency for this country."
   }
@@ -65,6 +70,11 @@ export function listingFieldErrors(input: ListingFields): FieldErrors {
   const digits = input.phone.replace(/[^\d]/g, "").length
   if (digits < 7) errors.phone = "Add a phone number people can use."
   else if (digits > 15) errors.phone = "Use a shorter phone number."
+
+  const combined = `${input.title} ${input.description}`
+  if (prohibited.test(combined)) {
+    errors.form = "This listing looks like a prohibited item. Remove it or reword the ad."
+  }
 
   return errors
 }
@@ -123,6 +133,7 @@ function normalizeListing(listing: Listing): Listing {
     condition: details?.condition || subcategory?.name || listing.condition,
     badge: listing.category === "jobs" ? "jobs" : undefined,
     featured: undefined,
+    sold: listing.sold === true ? true : undefined,
     mine: true,
   }
 }

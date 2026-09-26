@@ -24,7 +24,9 @@ export function AccountPage() {
   return (
     <div className="mx-auto w-full max-w-3xl px-4 py-8 md:px-6">
       <h1 className="text-2xl font-semibold tracking-tight">Profile</h1>
-      <p className="mt-1 text-sm text-neutral-500">Amina K. · demo account on this browser</p>
+      <p className="mt-1 text-sm text-neutral-500">
+        Demo profile for this browser. Ads, saves, and messages are tied to a signed cookie — clearing it loses access.
+      </p>
 
       <section className="mt-6 rounded-2xl border border-neutral-200 bg-white p-4">
         <p className="text-sm font-medium">Appearance</p>

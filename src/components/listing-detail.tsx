@@ -3,7 +3,7 @@
 import { ArrowLeft, Clock, Heart, MapPin, Share2 } from "lucide-react"
 import Image from "next/image"
 import Link from "next/link"
-import { useSearchParams } from "next/navigation"
+import { useRouter, useSearchParams } from "next/navigation"
 import { useEffect, useState } from "react"
 import { toast } from "sonner"
 
@@ -37,11 +37,15 @@ import { cn } from "@/lib/utils"
 
 export function ListingDetail({ id }: { id: string }) {
   const searchParams = useSearchParams()
-  const { listings, ready, isSaved, toggleSaved, messages, sendMessage } = useMarketplace()
+  const router = useRouter()
+  const { listings, ready, isSaved, toggleSaved, messages, sendMessage, setListingSold, renewListing, removeListing } =
+    useMarketplace()
   const listing = listings.find((item) => item.id === id)
   const [phoneVisible, setPhoneVisible] = useState(false)
   const [messageOpen, setMessageOpen] = useState(false)
   const [message, setMessage] = useState("")
+  const [busy, setBusy] = useState(false)
+  const [confirmRemove, setConfirmRemove] = useState(false)
 
   useEffect(() => {
     if (listing) document.title = `${listing.title} · africa classifieds`
@@ -52,13 +56,15 @@ export function ListingDetail({ id }: { id: string }) {
     return <MissingListing />
   }
 
-  const saved = isSaved(listing.id)
-  const sentCount = messages.filter((item) => item.listingId === listing.id && item.role === "you").length
-  const voice = listingVoice(listing)
-  const facts = listingFacts(listing)
-  const related = relatedListings(listings, listing)
-  const backSearch = keptSearch(searchParams, listing.subcategory)
-  const backHref = backSearch ? `/${listing.category}?${backSearch}` : `/${listing.category}`
+  const ad = listing
+  const saved = isSaved(ad.id)
+  const sentCount = messages.filter((item) => item.listingId === ad.id && item.role === "you").length
+  const voice = listingVoice(ad)
+  const facts = listingFacts(ad)
+  const related = relatedListings(listings, ad)
+  const backSearch = keptSearch(searchParams, ad.subcategory)
+  const backHref = backSearch ? `/${ad.category}?${backSearch}` : `/${ad.category}`
+  const contactOpen = !ad.sold && !ad.mine
 
   async function share() {
     const url = window.location.href
@@ -72,15 +78,51 @@ export function ListingDetail({ id }: { id: string }) {
 
   const submitMessage = () => {
     void (async () => {
-      const result = await sendMessage(listing.id, message)
+      const result = await sendMessage(ad.id, message)
       if (!result.ok) {
         toast.error(result.reason)
         return
       }
       setMessageOpen(false)
       setMessage("")
-      toast.success(`Message saved for ${listing.sellerName}`)
+      toast.success(`Message saved for ${ad.sellerName}`)
     })()
+  }
+
+  async function onSold() {
+    setBusy(true)
+    const next = !ad.sold
+    const result = await setListingSold(ad.id, next)
+    setBusy(false)
+    if (!result.ok) {
+      toast.error(result.reason)
+      return
+    }
+    toast.success(next ? "Marked as sold" : "Marked as available")
+  }
+
+  async function onRenew() {
+    setBusy(true)
+    const result = await renewListing(ad.id)
+    setBusy(false)
+    if (!result.ok) {
+      toast.error(result.reason)
+      return
+    }
+    toast.success("Ad renewed")
+  }
+
+  async function onRemove() {
+    setBusy(true)
+    const result = await removeListing(ad.id)
+    setBusy(false)
+    setConfirmRemove(false)
+    if (!result.ok) {
+      toast.error(result.reason)
+      return
+    }
+    toast.success("Ad removed")
+    router.push("/my-ads")
   }
 
   return (
@@ -108,6 +150,9 @@ export function ListingDetail({ id }: { id: string }) {
           <div className="mt-5">
             <div className="flex flex-wrap items-start justify-between gap-3">
               <div>
+                {listing.sold ? (
+                  <p className="mb-1 text-xs font-medium tracking-wide text-neutral-500 uppercase">Sold</p>
+                ) : null}
                 <p className="text-2xl font-semibold tracking-tight">{formatPrice(listing)}</p>
                 <h1 className="mt-1 text-xl font-semibold tracking-tight text-neutral-950">
                   {listing.title}
@@ -177,9 +222,26 @@ export function ListingDetail({ id }: { id: string }) {
           </div>
           <div className="mt-4 grid gap-2">
             {listing.mine ? (
-              <Button className="h-10 rounded-full" asChild>
-                <Link href={`/post?edit=${listing.id}`}>Edit ad</Link>
-              </Button>
+              <>
+                <Button className="h-10 rounded-full" asChild>
+                  <Link href={`/post?edit=${listing.id}`}>Edit ad</Link>
+                </Button>
+                <Button variant="outline" className="h-10 rounded-full" disabled={busy} onClick={() => void onSold()}>
+                  {listing.sold ? "Mark available" : "Mark sold"}
+                </Button>
+                {!listing.sold ? (
+                  <Button variant="outline" className="h-10 rounded-full" disabled={busy} onClick={() => void onRenew()}>
+                    Renew ad
+                  </Button>
+                ) : null}
+                <Button variant="outline" className="h-10 rounded-full" disabled={busy} onClick={() => setConfirmRemove(true)}>
+                  Remove ad
+                </Button>
+              </>
+            ) : listing.sold ? (
+              <p className="rounded-xl bg-neutral-50 px-3 py-3 text-sm text-neutral-600">
+                This ad is marked sold. Contact options are closed.
+              </p>
             ) : (
               <Button className="h-10 rounded-full" onClick={() => setMessageOpen(true)}>
                 {voice.messageLabel}
@@ -190,17 +252,26 @@ export function ListingDetail({ id }: { id: string }) {
                 <Link href={`/messages?listing=${listing.id}`}>Your messages ({sentCount})</Link>
               </Button>
             ) : null}
-            {listing.mine ? null : (
+            {contactOpen ? (
               <Button variant="outline" className="h-10 rounded-full" asChild>
                 <a href={whatsappHref(listing.phone, listing.title)} target="_blank" rel="noreferrer">
                   WhatsApp
                 </a>
               </Button>
-            )}
-            <Button variant="outline" className="h-10 rounded-full" onClick={() => setPhoneVisible(true)}>
-              {phoneVisible ? listing.phone : "Show phone number"}
-            </Button>
+            ) : null}
+            {contactOpen || listing.mine ? (
+              <Button variant="outline" className="h-10 rounded-full" onClick={() => setPhoneVisible(true)}>
+                {phoneVisible ? listing.phone : "Show phone number"}
+              </Button>
+            ) : null}
           </div>
+          <p className="mt-4 text-xs leading-5 text-neutral-500">{voice.safety}</p>
+          {!listing.mine && contactOpen ? (
+            <p className="mt-2 text-xs leading-5 text-neutral-500">
+              Prefer WhatsApp or a call using the number above. On-site messages stay on this browser with a sample reply —
+              the seller does not see them in an inbox yet.
+            </p>
+          ) : null}
         </aside>
       </div>
       <div className="fixed inset-x-0 bottom-0 z-20 border-t bg-white p-3 md:left-[max(0px,calc((100%-1720px)/2))] md:pl-(--sidebar-width) lg:hidden">
@@ -212,6 +283,10 @@ export function ListingDetail({ id }: { id: string }) {
           {listing.mine ? (
             <Button className="shrink-0 rounded-full" asChild>
               <Link href={`/post?edit=${listing.id}`}>Edit ad</Link>
+            </Button>
+          ) : listing.sold ? (
+            <Button className="shrink-0 rounded-full" disabled>
+              Sold
             </Button>
           ) : (
             <Button className="shrink-0 rounded-full" onClick={() => setMessageOpen(true)}>
@@ -236,6 +311,22 @@ export function ListingDetail({ id }: { id: string }) {
               Cancel
             </Button>
             <Button onClick={submitMessage}>Send</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+      <Dialog open={confirmRemove} onOpenChange={setConfirmRemove}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>Remove this ad?</DialogTitle>
+          </DialogHeader>
+          <p className="text-sm text-neutral-600">“{listing.title}” will leave the board.</p>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setConfirmRemove(false)}>
+              Keep it
+            </Button>
+            <Button variant="destructive" disabled={busy} onClick={() => void onRemove()}>
+              Remove ad
+            </Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
