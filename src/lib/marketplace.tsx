@@ -69,6 +69,13 @@ async function loadBoard() {
   emit()
 }
 
+export async function reloadBoard(): Promise<void> {
+  memory = { ...memory, ready: false }
+  emit()
+  inflight = loadBoard()
+  await inflight
+}
+
 async function migrateLegacy() {
   if (localStorage.getItem(migratedKey) === "1") return
   const raw = localStorage.getItem(legacyKey)
@@ -300,6 +307,7 @@ type MarketplaceContextValue = {
   renewListing: (id: string) => Promise<StoreResult>
   sendMessage: (listingId: string, body: string) => Promise<StoreResult>
   markThreadRead: (listingId: string) => void
+  reloadBoard: () => Promise<void>
 }
 
 const MarketplaceContext = createContext<MarketplaceContextValue | null>(null)
@@ -323,6 +331,7 @@ export function MarketplaceProvider({ children }: { children: React.ReactNode })
       renewListing,
       sendMessage,
       markThreadRead,
+      reloadBoard,
     }),
     [listings, snapshot],
   )

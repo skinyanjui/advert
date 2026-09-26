@@ -12,6 +12,7 @@ import { ThemeChoices } from "@/components/theme-choices"
 import { useRememberedPlace } from "@/lib/use-remembered-place"
 import { Button, buttonVariants } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
+import { useAuth } from "@/lib/auth"
 import { searchCitiesAnywhere } from "@/lib/cities"
 import { countries, countryName, fold, moreCountries, primaryCountries } from "@/lib/countries"
 import { clearBrowsingEverywhere, markBrowsingEverywhere, useHomePlace, writeHomePlace } from "@/lib/home-place"
@@ -49,13 +50,15 @@ export function SiteHeader() {
   const pathname = usePathname()
   const { query, update } = useListingQuery()
   const { savedIds, messages } = useMarketplace()
-  const home = useHomePlace()
+  const auth = useAuth()
   const [read, setRead] = useState<string[]>([])
   const unread = notifications.filter((item) => !read.includes(item.id)).length
   const unreadMessages = messages.filter((item) => item.role === "sample" && !item.read).length
   const locationLabel = query.country ? countryName(query.country) : "All Africa"
   const remembered = useRememberedPlace()
   const postHref = postAdHref(query.country ? { country: query.country, city: query.city } : remembered)
+  const profileLabel = auth.signedIn ? auth.email ?? "Signed in" : "Guest on this browser"
+  const profileDetail = auth.signedIn ? "Ads stay with your account" : "Sign in to keep ads across devices"
 
   return (
     <header className="sticky top-0 z-50">
@@ -133,11 +136,12 @@ export function SiteHeader() {
                 }
               >
                 <div className="px-2 py-1.5">
-                  <p className="text-sm font-medium">Amina K.</p>
-                  <p className="text-xs text-neutral-500">Demo account on this browser</p>
+                  <p className="truncate text-sm font-medium">{profileLabel}</p>
+                  <p className="text-xs text-neutral-500">{profileDetail}</p>
                   <ThemeChoices className="mt-2" />
                 </div>
                 <div className="mx-1 my-1 h-px bg-neutral-200" />
+                {auth.signedIn ? null : <MenuLink href="/sign-in">Sign in</MenuLink>}
                 <MenuLink href="/account">Profile</MenuLink>
                 <MenuLink href="/messages">
                   Messages{unreadMessages > 0 ? ` (${unreadMessages})` : ""}
@@ -145,6 +149,16 @@ export function SiteHeader() {
                 <MenuLink href="/saved">Saved ads ({savedIds.length})</MenuLink>
                 <MenuLink href="/my-ads">My ads</MenuLink>
                 <MenuLink href={postHref}>Post an ad</MenuLink>
+                {auth.signedIn ? (
+                  <button
+                    type="button"
+                    role="menuitem"
+                    className="flex h-8 w-full cursor-pointer items-center rounded-md px-2 text-left text-sm hover:bg-neutral-100"
+                    onClick={() => void auth.signOut()}
+                  >
+                    Sign out
+                  </button>
+                ) : null}
               </HeaderMenu>
             </div>
           </div>

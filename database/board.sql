@@ -1,4 +1,5 @@
--- Private board data. Only the server's Supabase secret key accesses these tables.
+-- Private board data. The Next.js API uses the server-only Supabase secret key.
+-- After enabling seller accounts, also apply database/migrations/20260926_seller_accounts.sql
 create table if not exists public.board_listings (
   id text primary key check (id ~ '^ad-[a-zA-Z0-9-]{1,64}$'),
   owner_id uuid not null,

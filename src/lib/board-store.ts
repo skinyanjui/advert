@@ -243,3 +243,94 @@ export async function importBoard(owner: string, input: unknown): Promise<{ impo
   }
   return { imported }
 }
+
+export type ClaimResult = {
+  listings: number
+  saves: number
+  messages: number
+  alreadyClaimed: boolean
+}
+
+/** Move anonymous cookie-owned board rows onto the signed-in auth user. */
+export async function claimSession(
+  userId: string,
+  sessionId: string | undefined,
+  profile?: { email?: string; displayName?: string },
+): Promise<Result<ClaimResult>> {
+  const db = boardDb()
+  const { error: profileError } = await db.from("board_profiles").upsert(
+    {
+      user_id: userId,
+      email: profile?.email ?? null,
+      display_name: profile?.displayName ?? null,
+      updated_at: new Date().toISOString(),
+    },
+    { onConflict: "user_id" },
+  )
+  check(profileError)
+
+  if (!sessionId || sessionId === userId) {
+    return { ok: true, value: { listings: 0, saves: 0, messages: 0, alreadyClaimed: false } }
+  }
+
+  const { data: prior, error: priorError } = await db
+    .from("board_session_claims")
+    .select("user_id")
+    .eq("session_id", sessionId)
+    .maybeSingle()
+  check(priorError)
+  if (prior?.user_id && prior.user_id !== userId) {
+    return { ok: false, reason: "This browser session was already linked to another account." }
+  }
+  if (prior?.user_id === userId) {
+    return { ok: true, value: { listings: 0, saves: 0, messages: 0, alreadyClaimed: true } }
+  }
+
+  const { data: listings, error: listingsError } = await db
+    .from("board_listings")
+    .update({ owner_id: userId })
+    .eq("owner_id", sessionId)
+    .select("id")
+  check(listingsError)
+
+  const { data: sessionSaves, error: savesReadError } = await db
+    .from("board_saves")
+    .select("listing_id")
+    .eq("owner_id", sessionId)
+  check(savesReadError)
+  let savesMoved = 0
+  for (const row of sessionSaves ?? []) {
+    const { error } = await db.from("board_saves").upsert(
+      { owner_id: userId, listing_id: row.listing_id },
+      { onConflict: "owner_id,listing_id" },
+    )
+    check(error)
+    savesMoved++
+  }
+  const { error: savesDeleteError } = await db.from("board_saves").delete().eq("owner_id", sessionId)
+  check(savesDeleteError)
+
+  const { data: messages, error: messagesError } = await db
+    .from("board_messages")
+    .update({ owner_id: userId })
+    .eq("owner_id", sessionId)
+    .select("id")
+  check(messagesError)
+
+  const { error: claimError } = await db.from("board_session_claims").insert({
+    session_id: sessionId,
+    user_id: userId,
+  })
+  if (claimError && claimError.code !== "23505") check(claimError)
+
+  return {
+    ok: true,
+    value: {
+      listings: listings?.length ?? 0,
+      saves: savesMoved,
+      messages: messages?.length ?? 0,
+      alreadyClaimed: false,
+    },
+  }
+}
+
