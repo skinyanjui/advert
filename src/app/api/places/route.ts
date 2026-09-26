@@ -10,16 +10,35 @@ type NominatimResult = {
   lon?: string
   name?: string
   display_name?: string
+  type?: string
   address?: {
     city?: string
     town?: string
     village?: string
     hamlet?: string
     suburb?: string
+    neighbourhood?: string
     state?: string
     country_code?: string
   }
 }
+
+const placeTypes = new Set([
+  "city",
+  "town",
+  "village",
+  "hamlet",
+  "suburb",
+  "neighbourhood",
+  "quarter",
+  "city_district",
+  "municipality",
+  "administrative",
+  "county",
+  "locality",
+  "borough",
+  "district",
+])
 
 type PlaceHit = {
   name: string
@@ -74,7 +93,7 @@ export async function GET(request: Request) {
       return NextResponse.json({ places: [] })
     }
     const results = (await response.json()) as NominatimResult[]
-    const places = results.flatMap((result) => toPlace(result, country))
+    const places = dedupePlaces(results.flatMap((result) => toPlace(result, country)))
     cache.set(key, { at: Date.now(), places })
     return NextResponse.json({ places })
   } catch {
@@ -83,17 +102,19 @@ export async function GET(request: Request) {
 }
 
 function toPlace(result: NominatimResult, country: string): PlaceHit[] {
+  if (result.type && !placeTypes.has(result.type)) return []
   const lat = Number(result.lat)
   const lng = Number(result.lon)
   if (!Number.isFinite(lat) || !Number.isFinite(lng)) return []
   const address = result.address
   const name =
-    address?.city ||
-    address?.town ||
-    address?.village ||
-    address?.suburb ||
-    address?.hamlet ||
     result.name ||
+    address?.suburb ||
+    address?.neighbourhood ||
+    address?.village ||
+    address?.town ||
+    address?.hamlet ||
+    address?.city ||
     result.display_name?.split(",")[0] ||
     "Place"
   const region = address?.state
@@ -108,4 +129,14 @@ function toPlace(result: NominatimResult, country: string): PlaceHit[] {
       source: "nominatim",
     },
   ]
+}
+
+function dedupePlaces(places: PlaceHit[]): PlaceHit[] {
+  const seen = new Set<string>()
+  return places.filter((place) => {
+    const key = place.name.toLowerCase()
+    if (seen.has(key)) return false
+    seen.add(key)
+    return true
+  })
 }
