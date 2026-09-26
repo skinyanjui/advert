@@ -1,8 +1,10 @@
 "use client"
 
 import { SlidersHorizontal } from "lucide-react"
+import Link from "next/link"
 import { useMemo, useState } from "react"
 
+import { BoardCitySearch, CityMap } from "@/components/board-place"
 import { CategoryNav } from "@/components/category-nav"
 import { ListingCard } from "@/components/listing-card"
 import { Button } from "@/components/ui/button"
@@ -167,25 +169,38 @@ export function Browse() {
             </SelectContent>
           </Select>
         </div>
-        {query.country && cityOptions.length > 0 ? (
-          <div className="mb-4 flex gap-1 overflow-x-auto pb-1 [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
-            <CityPill active={!query.city} onClick={() => update({ city: null })}>
-              All cities
-            </CityPill>
-            {cityOptions.map((city) => (
-              <CityPill
-                key={city.name}
-                active={fold(query.city ?? "") === fold(city.name)}
-                onClick={() => update({ city: city.name })}
-              >
-                {city.name}
-                <span className="opacity-60">{city.count}</span>
-              </CityPill>
-            ))}
+        {query.country ? (
+          <div className="mb-4 flex flex-col gap-2 sm:flex-row sm:items-center">
+            <BoardCitySearch
+              country={query.country}
+              city={cityLabel}
+              onSelect={(city) => update({ city })}
+            />
+            {cityOptions.length > 0 ? (
+              <div className="flex min-w-0 gap-1 overflow-x-auto pb-1 [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+                <CityPill active={!query.city} onClick={() => update({ city: null })}>
+                  All cities
+                </CityPill>
+                {cityOptions.map((city) => (
+                  <CityPill
+                    key={city.name}
+                    active={fold(query.city ?? "") === fold(city.name)}
+                    onClick={() => update({ city: city.name })}
+                  >
+                    {city.name}
+                    <span className="opacity-60">{city.count}</span>
+                  </CityPill>
+                ))}
+              </div>
+            ) : null}
           </div>
         ) : null}
+        {query.country && query.city ? <CityMap country={query.country} city={query.city} /> : null}
         {visible.length === 0 ? (
           <EmptyResults
+            country={query.country}
+            city={cityLabel}
+            onClearCity={() => update({ city: null })}
             onClear={() => {
               clear()
             }}
@@ -258,16 +273,48 @@ function CityPill({
   )
 }
 
-function EmptyResults({ onClear }: { onClear: () => void }) {
+function EmptyResults({
+  country,
+  city,
+  onClearCity,
+  onClear,
+}: {
+  country?: string
+  city?: string
+  onClearCity: () => void
+  onClear: () => void
+}) {
+  const place = city && country ? `${city}, ${countryName(country)}` : country ? countryName(country) : undefined
+  const postParams = new URLSearchParams()
+  if (country) postParams.set("country", country)
+  if (city) postParams.set("city", city)
+  const postHref = postParams.size > 0 ? `/post?${postParams}` : "/post"
+
   return (
     <div className="rounded-2xl border border-dashed border-neutral-300 bg-white px-6 py-16 text-center">
-      <h2 className="text-lg font-semibold tracking-tight">No listings match</h2>
+      <h2 className="text-lg font-semibold tracking-tight">
+        {place ? `No listings in ${place}` : "No listings match"}
+      </h2>
       <p className="mx-auto mt-2 max-w-sm text-sm text-neutral-500">
-        Nothing in this country and category fits that search. Clear the filters or try a broader word like “toyota” or “rent”.
+        {city
+          ? "Nothing is listed in this city yet. Post an ad, or look through the other cities."
+          : "Nothing in this country and category fits that search. Clear the filters or try a broader word like “toyota” or “rent”."}
       </p>
-      <Button onClick={onClear} className="mt-5 rounded-full">
-        Clear filters
-      </Button>
+      <div className="mt-5 flex flex-wrap items-center justify-center gap-2">
+        {country ? (
+          <Button asChild className="rounded-full">
+            <Link href={postHref}>{city ? `Post an ad in ${city}` : "Post an ad"}</Link>
+          </Button>
+        ) : null}
+        {city ? (
+          <Button variant="outline" className="rounded-full" onClick={onClearCity}>
+            All cities
+          </Button>
+        ) : null}
+        <Button variant={country ? "ghost" : "default"} className="rounded-full" onClick={onClear}>
+          Clear filters
+        </Button>
+      </div>
     </div>
   )
 }

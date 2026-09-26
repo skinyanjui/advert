@@ -27,6 +27,7 @@ import {
   initials,
   whatsappHref,
 } from "@/lib/format"
+import { osmLinks } from "@/lib/map"
 import { useMarketplace } from "@/lib/marketplace"
 import { useClientTime } from "@/lib/use-client-time"
 import { categoryName, type Listing } from "@/lib/types"
@@ -224,16 +225,12 @@ function PlacePanel({ listing }: { listing: Listing }) {
     typeof listing.latitude === "number" && typeof listing.longitude === "number"
       ? { lat: listing.latitude, lng: listing.longitude, pinned: true }
       : { lat: resolved.lat, lng: resolved.lng, pinned: resolved.matched }
-  const { lat, lng } = point
   const showMap = point.pinned
   const timeZone = listing.timezone ?? (showMap ? resolved.timezone : country?.timezone ?? resolved.timezone)
   const localTime = useClientTime(timeZone)
   const currency = listing.currency ?? "USD"
   const languages = country?.languages.map((language) => languageLabel(language.code, language.name)) ?? []
-  const pad = 0.08
-  const bbox = `${lng - pad},${lat - pad},${lng + pad},${lat + pad}`
-  const embed = `https://www.openstreetmap.org/export/embed.html?bbox=${bbox}&layer=mapnik&marker=${lat},${lng}`
-  const external = `https://www.openstreetmap.org/?mlat=${lat}&mlon=${lng}#map=12/${lat}/${lng}`
+  const links = osmLinks(point.lat, point.lng)
 
   return (
     <section className="mt-8">
@@ -246,9 +243,9 @@ function PlacePanel({ listing }: { listing: Listing }) {
       </dl>
       {showMap ? (
         <div className="mt-4 overflow-hidden rounded-2xl border border-neutral-200">
-          <iframe title={`Map of ${listing.city}`} src={embed} className="h-56 w-full" loading="lazy" />
+          <iframe title={`Map of ${listing.city}`} src={links.embed} className="h-56 w-full" loading="lazy" />
           <a
-            href={external}
+            href={links.external}
             target="_blank"
             rel="noreferrer"
             className="block border-t px-3 py-2 text-xs text-neutral-500 hover:text-neutral-900"

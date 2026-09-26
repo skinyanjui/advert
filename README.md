@@ -2,7 +2,7 @@
 
 A classifieds board for buying and selling across Africa: cars, houses, jobs, electronics, and the rest of the usual categories. Search, filter by country and category, save listings, and post an ad. Ads and saved hearts stay in this browser.
 
-Listings in the catalog are sample ads. Nothing is sent to a server.
+Listings in the catalog are sample ads. Ads and saved hearts stay in this browser. City search can ask OpenStreetMap for extra place names.
 
 ## Run locally
 
@@ -15,7 +15,7 @@ Open [http://localhost:3000](http://localhost:3000).
 
 ## What’s included
 
-- Browse, search, and sort. A selected country shows its capital, local time, time zone, currency, languages, and calling code. Cities with ads in that country can be filtered. Price sort keeps each currency together.
+- Browse, search, and sort. A selected country shows its capital, local time, time zone, currency, languages, and calling code. Search any city in that country, or filter to cities that already have ads. A city with no ads shows a map and opens the post form with that place filled in. Price sort keeps each currency together.
 - The location menu and the More list search by country, capital, or ISO code.
 - Country chips and a category sidebar
 - Listing pages with a message, phone reveal, and WhatsApp link

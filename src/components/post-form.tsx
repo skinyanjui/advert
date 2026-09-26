@@ -1,6 +1,6 @@
 "use client"
 
-import { useRouter } from "next/navigation"
+import { useRouter, useSearchParams } from "next/navigation"
 import { useMemo, useState } from "react"
 import { toast } from "sonner"
 
@@ -44,15 +44,18 @@ type FieldErrors = Partial<Record<"title" | "price" | "city" | "description" | "
 
 export function PostForm() {
   const router = useRouter()
+  const searchParams = useSearchParams()
+  const startingCountry = canonicalCountry(searchParams.get("country")) ?? "KE"
+  const startingCity = (searchParams.get("city") ?? "").trim().slice(0, 80)
   const { addListing } = useMarketplace()
   const [title, setTitle] = useState("")
   const [category, setCategory] = useState<CategoryId>("vehicles")
   const [price, setPrice] = useState("")
   const [period, setPeriod] = useState<PeriodId>("fixed")
   const [condition, setCondition] = useState("Used")
-  const [country, setCountry] = useState("KE")
-  const [currency, setCurrency] = useState("KES")
-  const [city, setCity] = useState("")
+  const [country, setCountry] = useState(startingCountry)
+  const [currency, setCurrency] = useState(getCountry(startingCountry)?.currencies[0]?.code ?? "USD")
+  const [city, setCity] = useState(startingCity)
   const [place, setPlace] = useState<ChosenPlace | null>(null)
   const [description, setDescription] = useState("")
   const [phone, setPhone] = useState("")
