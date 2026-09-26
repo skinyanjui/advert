@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server"
 import { fail, ok } from "@/lib/api"
+import { isAdminEmail } from "@/lib/admin"
 import { newSession, resolveMutationOwner, resolveOwner } from "@/lib/board-session"
 import { importBoard, listBoard } from "@/lib/board-store"
 
@@ -11,12 +12,27 @@ export async function GET(request: Request) {
     const owner = await resolveOwner(request)
     if (owner) {
       const state = await listBoard(owner.id)
-      return NextResponse.json({ ...state, auth: owner.kind === "auth", email: owner.email ?? null })
+      return NextResponse.json({
+        ...state,
+        auth: owner.kind === "auth",
+        email: owner.email ?? null,
+        admin: owner.kind === "auth" && isAdminEmail(owner.email),
+      })
     }
-    const response = NextResponse.json({ posted: [], savedIds: [], messages: [], auth: false, email: null })
+    const response = NextResponse.json({
+      posted: [],
+      savedIds: [],
+      messages: [],
+      auth: false,
+      email: null,
+      admin: false,
+    })
     const id = newSession(response)
     const state = await listBoard(id)
-    return NextResponse.json({ ...state, auth: false, email: null }, { headers: response.headers })
+    return NextResponse.json(
+      { ...state, auth: false, email: null, admin: false },
+      { headers: response.headers },
+    )
   } catch {
     return fail("The board database did not respond.", 500)
   }

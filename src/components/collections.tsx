@@ -201,6 +201,9 @@ function Collection({
                         </Link>
                       </Button>
                     ) : null}
+                    {listing.hidden ? (
+                      <span className="self-center px-2 text-xs text-amber-700">Hidden</span>
+                    ) : null}
                     {onSold ? (
                       <Button
                         variant="ghost"

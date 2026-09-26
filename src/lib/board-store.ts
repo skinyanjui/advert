@@ -6,21 +6,36 @@ import { hoursAgoOf } from "@/lib/format"
 import { acceptListing } from "@/lib/listing-rules"
 import { messageError, type BoardMessage } from "@/lib/messages"
 import { cleanListing, parseBoardState, type BoardState } from "@/lib/board-payload"
+import {
+  isReportReasonId,
+  reportAutoHideThreshold,
+  reportNoteError,
+  type ReportReasonId,
+} from "@/lib/reports"
 import type { Listing } from "@/lib/types"
 
 type Result<T> = { ok: true; value: T } | { ok: false; reason: string }
-type Row = { id: string; owner_id: string; posted_at: string; payload: unknown }
+type Row = {
+  id: string
+  owner_id: string
+  posted_at: string
+  payload: unknown
+  hidden_at?: string | null
+  hidden_reason?: string | null
+}
 const seedIds = new Set(seedListings.map((item) => item.id))
-const listingId = /^ad-[a-zA-Z0-9-]{1,64}$/
+const listingIdPattern = /^ad-[a-zA-Z0-9-]{1,64}$/
 function check(error: { message: string } | null) { if (error) throw new Error(error.message) }
 function unpack(row: Row, owner?: string): Listing | undefined {
   const listing = cleanListing(row.payload)
   return listing && { ...listing, id: row.id, postedAt: row.posted_at,
     hoursAgo: hoursAgoOf({ hoursAgo: listing.hoursAgo, postedAt: row.posted_at }),
-    mine: Boolean(owner) && owner === row.owner_id, featured: undefined }
+    mine: Boolean(owner) && owner === row.owner_id,
+    featured: undefined,
+    hidden: row.hidden_at ? true : undefined }
 }
 function payload(listing: Listing) {
-  return { ...listing, mine: undefined, featured: undefined, sold: listing.sold === true ? true : undefined }
+  return { ...listing, mine: undefined, featured: undefined, hidden: undefined, sold: listing.sold === true ? true : undefined }
 }
 function photoPath(image: string) {
   const base = `${process.env.SUPABASE_URL ?? process.env.NEXT_PUBLIC_SUPABASE_URL}/storage/v1/object/public/listing-photos/`
@@ -53,7 +68,11 @@ async function removePhoto(image: string) {
 export async function listBoard(owner: string): Promise<BoardState> {
   const db = boardDb()
   const [posted, saved, messages] = await Promise.all([
-    db.from("board_listings").select("id,owner_id,posted_at,payload").order("posted_at", { ascending: false }).limit(500),
+    db
+      .from("board_listings")
+      .select("id,owner_id,posted_at,payload,hidden_at,hidden_reason")
+      .order("posted_at", { ascending: false })
+      .limit(500),
     db.from("board_saves").select("listing_id").eq("owner_id", owner).order("created_at", { ascending: false }),
     listMessagesFor(owner),
   ])
@@ -61,8 +80,11 @@ export async function listBoard(owner: string): Promise<BoardState> {
   check(saved.error)
   return {
     posted: (posted.data ?? []).flatMap((row) => {
-      const item = unpack(row, owner)
-      return item ? [item] : []
+      const item = unpack(row as Row, owner)
+      if (!item) return []
+      // Hidden ads stay visible only to the owner (My ads / direct edit).
+      if (item.hidden && !item.mine) return []
+      return [item]
     }),
     savedIds: (saved.data ?? []).map((row) => row.listing_id),
     messages,
@@ -148,7 +170,7 @@ function toBoardMessage(row: ConversationMessageRow, conversation: ConversationR
 }
 export async function createListing(owner: string, input: unknown): Promise<Result<Listing>> {
   const listing = cleanListing(input)
-  if (!listing || !listingId.test(listing.id)) return { ok: false, reason: "That ad could not be read." }
+  if (!listing || !listingIdPattern.test(listing.id)) return { ok: false, reason: "That ad could not be read." }
   if (seedIds.has(listing.id)) return { ok: false, reason: "That listing is already on the board." }
   const accepted = acceptListing({ ...listing, mine: true, sold: undefined })
   if (!accepted.ok) return accepted
@@ -170,7 +192,7 @@ export async function updateListing(owner: string, id: string, input: unknown): 
   const listing = cleanListing(input)
   if (!listing || listing.id !== id || seedIds.has(id)) return { ok: false, reason: "That ad could not be read." }
   const db = boardDb()
-  const { data: row, error: readError } = await db.from("board_listings").select("id,owner_id,posted_at,payload").eq("id", id).maybeSingle()
+  const { data: row, error: readError } = await db.from("board_listings").select("id,owner_id,posted_at,payload,hidden_at,hidden_reason").eq("id", id).maybeSingle()
   check(readError)
   if (!row) return { ok: false, reason: "This ad is no longer on the board." }
   if (row.owner_id !== owner) return { ok: false, reason: "This ad is not yours." }
@@ -182,23 +204,29 @@ export async function updateListing(owner: string, id: string, input: unknown): 
   const stored = { ...accepted.listing, id, image: photo.value, postedAt: row.posted_at,
     hoursAgo: hoursAgoOf({ hoursAgo: 0, postedAt: row.posted_at }) }
   const { data, error } = await db.from("board_listings").update({ payload: payload(stored) })
-    .eq("id", id).eq("owner_id", owner).select("id")
+    .eq("id", id).eq("owner_id", owner).select("id,owner_id,posted_at,payload,hidden_at,hidden_reason")
   if (error || !data?.length) {
     if (photo.value !== listing.image) await removePhoto(photo.value)
     check(error)
     return { ok: false, reason: "This ad is no longer on the board." }
   }
   if (old?.image && old.image !== photo.value) await removePhoto(old.image)
-  return { ok: true, value: { ...stored, mine: true } }
+  const updated = unpack(data[0] as Row, owner)
+  if (!updated) return { ok: false, reason: "That ad could not be read." }
+  return { ok: true, value: updated }
 }
 
 async function ownedRow(owner: string, id: string): Promise<Result<Row>> {
-  if (!listingId.test(id) || seedIds.has(id)) return { ok: false, reason: "That ad could not be read." }
-  const { data: row, error } = await boardDb().from("board_listings").select("id,owner_id,posted_at,payload").eq("id", id).maybeSingle()
+  if (!listingIdPattern.test(id) || seedIds.has(id)) return { ok: false, reason: "That ad could not be read." }
+  const { data: row, error } = await boardDb()
+    .from("board_listings")
+    .select("id,owner_id,posted_at,payload,hidden_at,hidden_reason")
+    .eq("id", id)
+    .maybeSingle()
   check(error)
   if (!row) return { ok: false, reason: "This ad is no longer on the board." }
   if (row.owner_id !== owner) return { ok: false, reason: "This ad is not yours." }
-  return { ok: true, value: row }
+  return { ok: true, value: row as Row }
 }
 
 export async function setListingSold(owner: string, id: string, sold: boolean): Promise<Result<Listing>> {
@@ -209,10 +237,12 @@ export async function setListingSold(owner: string, id: string, sold: boolean): 
   const stored = { ...current, id, sold: sold ? true : undefined, postedAt: owned.value.posted_at,
     hoursAgo: hoursAgoOf({ hoursAgo: 0, postedAt: owned.value.posted_at }) }
   const { data, error } = await boardDb().from("board_listings").update({ payload: payload(stored) })
-    .eq("id", id).eq("owner_id", owner).select("id")
+    .eq("id", id).eq("owner_id", owner).select("id,owner_id,posted_at,payload,hidden_at,hidden_reason")
   check(error)
   if (!data?.length) return { ok: false, reason: "This ad is no longer on the board." }
-  return { ok: true, value: { ...stored, mine: true } }
+  const updated = unpack(data[0] as Row, owner)
+  if (!updated) return { ok: false, reason: "That ad could not be read." }
+  return { ok: true, value: updated }
 }
 
 export async function renewListing(owner: string, id: string): Promise<Result<Listing>> {
@@ -225,10 +255,12 @@ export async function renewListing(owner: string, id: string): Promise<Result<Li
   const stored = { ...current, id, sold: undefined, postedAt, hoursAgo: 0 }
   const { data, error } = await boardDb().from("board_listings")
     .update({ posted_at: postedAt, payload: payload(stored) })
-    .eq("id", id).eq("owner_id", owner).select("id")
+    .eq("id", id).eq("owner_id", owner).select("id,owner_id,posted_at,payload,hidden_at,hidden_reason")
   check(error)
   if (!data?.length) return { ok: false, reason: "This ad is no longer on the board." }
-  return { ok: true, value: { ...stored, mine: true } }
+  const updated = unpack(data[0] as Row, owner)
+  if (!updated) return { ok: false, reason: "That ad could not be read." }
+  return { ok: true, value: updated }
 }
 
 async function postingQuota(owner: string): Promise<Result<true>> {
@@ -282,13 +314,14 @@ export async function createMessage(viewerId: string, listingId: string, body: s
   const db = boardDb()
   const { data: row, error } = await db
     .from("board_listings")
-    .select("id,owner_id,posted_at,payload")
+    .select("id,owner_id,posted_at,payload,hidden_at,hidden_reason")
     .eq("id", listingId)
     .maybeSingle()
   check(error)
   if (!row) return { ok: false, reason: "That listing is no longer on the board." }
   if (row.owner_id === viewerId) return { ok: false, reason: "This is your ad." }
-  const listing = unpack(row)
+  if (row.hidden_at) return { ok: false, reason: "That listing is no longer on the board." }
+  const listing = unpack(row as Row)
   if (!listing) return { ok: false, reason: "That listing is no longer on the board." }
   if (listing.sold) return { ok: false, reason: "This ad is marked sold." }
 
@@ -528,4 +561,247 @@ export async function claimSession(
     },
   }
 }
+
+export type BoardReport = {
+  id: string
+  listingId: string
+  listingTitle: string
+  listingOwnerId: string
+  reporterId: string
+  reason: ReportReasonId
+  note: string | null
+  status: "pending" | "dismissed" | "actioned"
+  createdAt: string
+  listingHidden: boolean
+}
+
+const reportHourLimit = 5
+
+export async function createReport(
+  reporterId: string,
+  listingId: string,
+  reason: string,
+  note: string,
+): Promise<Result<{ pendingCount: number; autoHidden: boolean }>> {
+  if (!listingIdPattern.test(listingId) || seedIds.has(listingId)) {
+    return { ok: false, reason: "Sample listings cannot be reported." }
+  }
+  if (!isReportReasonId(reason)) return { ok: false, reason: "Choose a reason for the report." }
+  const noteReason = reportNoteError(note)
+  if (noteReason) return { ok: false, reason: noteReason }
+
+  const db = boardDb()
+  const hourAgo = new Date(Date.now() - 60 * 60 * 1000).toISOString()
+  const { count: recentCount, error: recentError } = await db
+    .from("board_reports")
+    .select("id", { count: "exact", head: true })
+    .eq("reporter_id", reporterId)
+    .gte("created_at", hourAgo)
+  check(recentError)
+  if ((recentCount ?? 0) >= reportHourLimit) {
+    return { ok: false, reason: "Too many reports recently. Try again in an hour." }
+  }
+
+  const { data: row, error } = await db
+    .from("board_listings")
+    .select("id,owner_id,posted_at,payload,hidden_at,hidden_reason")
+    .eq("id", listingId)
+    .maybeSingle()
+  check(error)
+  if (!row) return { ok: false, reason: "That listing is no longer on the board." }
+  if (row.owner_id === reporterId) return { ok: false, reason: "You cannot report your own ad." }
+
+  const listing = unpack(row as Row)
+  if (!listing) return { ok: false, reason: "That listing is no longer on the board." }
+
+  const { error: insertError } = await db.from("board_reports").insert({
+    id: crypto.randomUUID(),
+    listing_id: listingId,
+    reporter_id: reporterId,
+    reason,
+    note: note.trim() || null,
+    status: "pending",
+  })
+  if (insertError) {
+    if (insertError.code === "23505") {
+      return { ok: false, reason: "You already reported this ad." }
+    }
+    check(insertError)
+  }
+
+  const { count: pendingCount, error: pendingError } = await db
+    .from("board_reports")
+    .select("id", { count: "exact", head: true })
+    .eq("listing_id", listingId)
+    .eq("status", "pending")
+  check(pendingError)
+  const pending = pendingCount ?? 0
+  const threshold = reportAutoHideThreshold()
+  let autoHidden = false
+  if (pending >= threshold && !row.hidden_at) {
+    const { error: hideError } = await db
+      .from("board_listings")
+      .update({ hidden_at: new Date().toISOString(), hidden_reason: "reports" })
+      .eq("id", listingId)
+      .is("hidden_at", null)
+    check(hideError)
+    autoHidden = true
+  }
+
+  return { ok: true, value: { pendingCount: pending, autoHidden } }
+}
+
+export async function listPendingReports(): Promise<BoardReport[]> {
+  const db = boardDb()
+  const { data: reports, error } = await db
+    .from("board_reports")
+    .select("id,listing_id,reporter_id,reason,note,status,created_at")
+    .eq("status", "pending")
+    .order("created_at", { ascending: false })
+    .limit(200)
+  check(error)
+  if (!reports?.length) return []
+  const listingIds = [...new Set(reports.map((row) => row.listing_id as string))]
+  const { data: listings, error: listingError } = await db
+    .from("board_listings")
+    .select("id,owner_id,posted_at,payload,hidden_at,hidden_reason")
+    .in("id", listingIds)
+  check(listingError)
+  const byId = new Map((listings ?? []).map((row) => [row.id as string, row as Row]))
+  return reports.flatMap((row) => {
+    const listing = byId.get(row.listing_id as string)
+    const unpacked = listing ? unpack(listing) : undefined
+    if (!isReportReasonId(row.reason as string)) return []
+    return [
+      {
+        id: row.id as string,
+        listingId: row.listing_id as string,
+        listingTitle: unpacked?.title ?? "(removed listing)",
+        listingOwnerId: listing?.owner_id ?? "",
+        reporterId: row.reporter_id as string,
+        reason: row.reason as ReportReasonId,
+        note: typeof row.note === "string" ? row.note : null,
+        status: "pending",
+        createdAt: row.created_at as string,
+        listingHidden: Boolean(listing?.hidden_at),
+      },
+    ]
+  })
+}
+
+export async function dismissReport(adminId: string, reportId: string): Promise<Result<true>> {
+  const db = boardDb()
+  const { data: report, error } = await db
+    .from("board_reports")
+    .select("id,listing_id,status")
+    .eq("id", reportId)
+    .maybeSingle()
+  check(error)
+  if (!report) return { ok: false, reason: "That report was not found." }
+  if (report.status !== "pending") return { ok: false, reason: "That report was already reviewed." }
+
+  const { error: updateError } = await db
+    .from("board_reports")
+    .update({
+      status: "dismissed",
+      reviewed_at: new Date().toISOString(),
+      reviewed_by: adminId,
+    })
+    .eq("id", reportId)
+    .eq("status", "pending")
+  check(updateError)
+
+  const listingId = report.listing_id as string
+  const { count: pendingCount, error: pendingError } = await db
+    .from("board_reports")
+    .select("id", { count: "exact", head: true })
+    .eq("listing_id", listingId)
+    .eq("status", "pending")
+  check(pendingError)
+  if ((pendingCount ?? 0) < reportAutoHideThreshold()) {
+    const { error: unhideError } = await db
+      .from("board_listings")
+      .update({ hidden_at: null, hidden_reason: null })
+      .eq("id", listingId)
+      .eq("hidden_reason", "reports")
+    check(unhideError)
+  }
+
+  return { ok: true, value: true }
+}
+
+export async function hideListingForReport(adminId: string, reportId: string): Promise<Result<true>> {
+  const db = boardDb()
+  const { data: report, error } = await db
+    .from("board_reports")
+    .select("id,listing_id,status")
+    .eq("id", reportId)
+    .maybeSingle()
+  check(error)
+  if (!report) return { ok: false, reason: "That report was not found." }
+  if (report.status !== "pending") return { ok: false, reason: "That report was already reviewed." }
+
+  const listingId = report.listing_id as string
+  const { error: hideError } = await db
+    .from("board_listings")
+    .update({ hidden_at: new Date().toISOString(), hidden_reason: "admin" })
+    .eq("id", listingId)
+  check(hideError)
+
+  const { error: updateError } = await db
+    .from("board_reports")
+    .update({
+      status: "actioned",
+      reviewed_at: new Date().toISOString(),
+      reviewed_by: adminId,
+    })
+    .eq("listing_id", listingId)
+    .eq("status", "pending")
+  check(updateError)
+
+  return { ok: true, value: true }
+}
+
+export async function removeListingForReport(adminId: string, reportId: string): Promise<Result<true>> {
+  const db = boardDb()
+  const { data: report, error } = await db
+    .from("board_reports")
+    .select("id,listing_id,status")
+    .eq("id", reportId)
+    .maybeSingle()
+  check(error)
+  if (!report) return { ok: false, reason: "That report was not found." }
+  if (report.status !== "pending") return { ok: false, reason: "That report was already reviewed." }
+
+  const listingId = report.listing_id as string
+  const { data: row, error: readError } = await db
+    .from("board_listings")
+    .select("payload")
+    .eq("id", listingId)
+    .maybeSingle()
+  check(readError)
+
+  const { error: markError } = await db
+    .from("board_reports")
+    .update({
+      status: "actioned",
+      reviewed_at: new Date().toISOString(),
+      reviewed_by: adminId,
+    })
+    .eq("listing_id", listingId)
+    .eq("status", "pending")
+  check(markError)
+
+  if (row) {
+    const { error: deleteError } = await db.from("board_listings").delete().eq("id", listingId)
+    check(deleteError)
+    const { error: saveError } = await db.from("board_saves").delete().eq("listing_id", listingId)
+    check(saveError)
+    const old = cleanListing(row.payload)
+    if (old) await removePhoto(old.image)
+  }
+
+  return { ok: true, value: true }
+}
+
 

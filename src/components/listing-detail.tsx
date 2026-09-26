@@ -1,6 +1,6 @@
 "use client"
 
-import { ArrowLeft, Clock, Heart, MapPin, Share2 } from "lucide-react"
+import { ArrowLeft, Clock, Flag, Heart, MapPin, Share2 } from "lucide-react"
 import Image from "next/image"
 import Link from "next/link"
 import { useRouter, useSearchParams } from "next/navigation"
@@ -16,6 +16,14 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog"
+import { Label } from "@/components/ui/label"
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select"
 import { Textarea } from "@/components/ui/textarea"
 import { relatedListings } from "@/lib/board"
 import { resolvePlace } from "@/lib/cities"
@@ -31,6 +39,7 @@ import {
 import { osmLinks } from "@/lib/map"
 import { useMarketplace } from "@/lib/marketplace"
 import { listingFacts, listingVoice } from "@/lib/posting"
+import { reportReasons } from "@/lib/reports"
 import { useClientTime } from "@/lib/use-client-time"
 import { categoryName, type Listing } from "@/lib/types"
 import { cn } from "@/lib/utils"
@@ -44,6 +53,10 @@ export function ListingDetail({ id }: { id: string }) {
   const [phoneVisible, setPhoneVisible] = useState(false)
   const [messageOpen, setMessageOpen] = useState(false)
   const [message, setMessage] = useState("")
+  const [reportOpen, setReportOpen] = useState(false)
+  const [reportReason, setReportReason] = useState("")
+  const [reportNote, setReportNote] = useState("")
+  const [reportBusy, setReportBusy] = useState(false)
   const [busy, setBusy] = useState(false)
   const [confirmRemove, setConfirmRemove] = useState(false)
 
@@ -128,6 +141,34 @@ export function ListingDetail({ id }: { id: string }) {
     router.push("/my-ads")
   }
 
+  async function submitReport() {
+    setReportBusy(true)
+    try {
+      const response = await fetch("/api/reports", {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({
+          listingId: ad.id,
+          reason: reportReason,
+          note: reportNote,
+        }),
+      })
+      const payload = (await response.json()) as { reason?: string }
+      if (!response.ok) {
+        toast.error(payload.reason ?? "Could not send the report.")
+        return
+      }
+      setReportOpen(false)
+      setReportReason("")
+      setReportNote("")
+      toast.success("Report sent. Thanks for helping keep the board safe.")
+    } catch {
+      toast.error("Could not send the report.")
+    } finally {
+      setReportBusy(false)
+    }
+  }
+
   return (
     <div className="mx-auto w-full max-w-[1720px] px-4 pt-6 pb-24 md:py-8 md:pr-6 md:pl-[calc(var(--sidebar-width)+1.5rem)] lg:pb-8">
       <div className="mx-auto w-full max-w-[1100px]">
@@ -155,6 +196,9 @@ export function ListingDetail({ id }: { id: string }) {
               <div>
                 {listing.sold ? (
                   <p className="mb-1 text-xs font-medium tracking-wide text-neutral-500 uppercase">Sold</p>
+                ) : null}
+                {listing.hidden && listing.mine ? (
+                  <p className="mb-1 text-xs font-medium tracking-wide text-amber-700 uppercase">Hidden from the board</p>
                 ) : null}
                 <p className="text-2xl font-semibold tracking-tight">{formatPrice(listing)}</p>
                 <h1 className="mt-1 text-xl font-semibold tracking-tight text-neutral-950">
@@ -288,6 +332,16 @@ export function ListingDetail({ id }: { id: string }) {
               they can reply here, and you will see it in Messages.
             </p>
           ) : null}
+          {!listing.mine && listing.id.startsWith("ad-") ? (
+            <Button
+              variant="ghost"
+              className="mt-3 h-9 w-full justify-start rounded-full px-2 text-neutral-500"
+              onClick={() => setReportOpen(true)}
+            >
+              <Flag className="size-4" />
+              Report this ad
+            </Button>
+          ) : null}
         </aside>
       </div>
       <div className="fixed inset-x-0 bottom-0 z-20 border-t bg-white p-3 md:left-[max(0px,calc((100%-1720px)/2))] md:pl-(--sidebar-width) lg:hidden">
@@ -342,6 +396,48 @@ export function ListingDetail({ id }: { id: string }) {
             </Button>
             <Button variant="destructive" disabled={busy} onClick={() => void onRemove()}>
               Remove ad
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+      <Dialog open={reportOpen} onOpenChange={setReportOpen}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>Report this ad</DialogTitle>
+          </DialogHeader>
+          <div className="grid gap-3">
+            <div className="grid gap-1.5">
+              <Label htmlFor="report-reason">Reason</Label>
+              <Select value={reportReason} onValueChange={setReportReason}>
+                <SelectTrigger id="report-reason" className="w-full">
+                  <SelectValue placeholder="Choose a reason" />
+                </SelectTrigger>
+                <SelectContent>
+                  {reportReasons.map((item) => (
+                    <SelectItem key={item.id} value={item.id}>
+                      {item.label}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="grid gap-1.5">
+              <Label htmlFor="report-note">Note (optional)</Label>
+              <Textarea
+                id="report-note"
+                value={reportNote}
+                onChange={(event) => setReportNote(event.target.value)}
+                placeholder="Anything that helps a reviewer"
+                rows={3}
+              />
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setReportOpen(false)}>
+              Cancel
+            </Button>
+            <Button disabled={reportBusy || !reportReason} onClick={() => void submitReport()}>
+              {reportBusy ? "Sending…" : "Send report"}
             </Button>
           </DialogFooter>
         </DialogContent>

@@ -7,7 +7,7 @@
     "build": "next build",
     "start": "next start",
     "lint": "eslint",
-    "test": "tsx --test scripts/listing-rules.test.ts scripts/auth-redirect.test.ts scripts/messages.test.ts"
+    "test": "tsx --test scripts/listing-rules.test.ts scripts/auth-redirect.test.ts scripts/messages.test.ts scripts/reports.test.ts"
   },
   "dependencies": {
     "@supabase/ssr": "^0.12.7",
