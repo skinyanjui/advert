@@ -152,9 +152,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     const supabase = createBrowserSupabase()
     await supabase.auth.signOut()
     setUser(null)
+    await reloadBoard()
     toast.success("Signed out")
-    // Full reload clears marketplace memory tied to the previous owner.
-    window.location.assign("/")
   }, [configured])
 
   const value = useMemo<AuthContextValue>(
