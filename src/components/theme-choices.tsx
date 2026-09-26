@@ -1,9 +1,10 @@
 "use client"
 
-import { useLayoutEffect, useSyncExternalStore } from "react"
+import { Monitor, Moon, Sun } from "lucide-react"
+import { useLayoutEffect, useSyncExternalStore, type ReactNode } from "react"
 
+import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group"
 import { isThemeChoice, themeChoices, themeLabel, themeStorageKey, type ThemeChoice } from "@/lib/theme"
-import { cn } from "@/lib/utils"
 
 const changeEvent = "africa-classifieds-theme"
 
@@ -80,27 +81,44 @@ export function ThemeSync() {
 export function ThemeChoices({ className }: { className?: string }) {
   const choice = useThemeChoice()
   return (
-    <div role="radiogroup" aria-label="Appearance" className={cn("grid grid-cols-3 gap-1", className)}>
-      {themeChoices.map((option) => {
-        const selected = choice === option
-        return (
-          <button
-            key={option}
-            type="button"
-            role="radio"
-            aria-checked={selected}
-            onClick={() => writeTheme(option)}
-            className={cn(
-              "h-8 rounded-full border px-2 text-xs",
-              selected
-                ? "border-neutral-950 bg-neutral-950 text-white"
-                : "border-neutral-200 bg-white text-neutral-700 hover:border-neutral-400",
-            )}
-          >
-            {themeLabel(option)}
-          </button>
-        )
-      })}
-    </div>
+    <ToggleGroup
+      type="single"
+      value={choice}
+      variant="outline"
+      spacing={0}
+      aria-label="Appearance"
+      className={className}
+      onValueChange={(value) => {
+        if (isThemeChoice(value)) writeTheme(value)
+      }}
+    >
+      {themeChoices.map((option) => (
+        <ToggleGroupItem
+          key={option}
+          value={option}
+          aria-label={themeLabel(option)}
+          title={themeLabel(option)}
+          className="px-2.5 data-[state=on]:bg-primary data-[state=on]:text-primary-foreground"
+        >
+          <ThemeIcon choice={option} />
+          <span className="sr-only">{themeLabel(option)}</span>
+        </ToggleGroupItem>
+      ))}
+    </ToggleGroup>
   )
+}
+
+function ThemeIcon({ choice }: { choice: ThemeChoice }) {
+  switch (choice) {
+    case "light":
+      return <Sun />
+    case "dark":
+      return <Moon />
+    case "system":
+      return <Monitor />
+    default: {
+      const unreachable: never = choice
+      return unreachable as ReactNode
+    }
+  }
 }

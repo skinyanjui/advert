@@ -11,6 +11,7 @@ import { CityField, type ChosenPlace } from "@/components/city-field"
 import { ListingCard } from "@/components/listing-card"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
+import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group"
 import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
 import { readPostingPlace } from "@/lib/active-place"
@@ -721,29 +722,28 @@ function ChoiceRow({
   onChange: (id: string) => void
 }) {
   return (
-    <div className="flex flex-wrap gap-1.5" role="radiogroup">
-      {options.map((option) => {
-        const selected = value === option.id
-        return (
-          <button
-            key={option.id}
-            type="button"
-            role="radio"
-            aria-checked={selected}
-            title={option.title}
-            onClick={() => onChange(option.id)}
-            className={cn(
-              "h-9 rounded-full border px-3 text-sm",
-              selected
-                ? "border-neutral-950 bg-neutral-950 text-white"
-                : "border-neutral-200 bg-white text-neutral-700 hover:border-neutral-400",
-            )}
-          >
-            {option.label}
-          </button>
-        )
-      })}
-    </div>
+    <ToggleGroup
+      type="single"
+      value={value}
+      variant="outline"
+      spacing={2}
+      className="flex-wrap justify-start"
+      onValueChange={(next) => {
+        if (next) onChange(next)
+      }}
+    >
+      {options.map((option) => (
+        <ToggleGroupItem
+          key={option.id}
+          value={option.id}
+          title={option.title}
+          aria-label={option.label}
+          className="h-9 rounded-full px-3 data-[state=on]:bg-primary data-[state=on]:text-primary-foreground"
+        >
+          {option.label}
+        </ToggleGroupItem>
+      ))}
+    </ToggleGroup>
   )
 }
 
