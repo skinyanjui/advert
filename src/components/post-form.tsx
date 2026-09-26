@@ -1,6 +1,6 @@
 "use client"
 
-import { Check, ImagePlus } from "lucide-react"
+import { Check, ChevronLeft, ChevronRight, ImagePlus } from "lucide-react"
 import Link from "next/link"
 import { useRouter, useSearchParams } from "next/navigation"
 import { useEffect, useLayoutEffect, useMemo, useRef, useState, type DragEvent, type ReactNode } from "react"
@@ -31,6 +31,7 @@ import { formatPrice } from "@/lib/format"
 import { listingFieldErrors, type FieldErrors as RuleErrors } from "@/lib/listing-rules"
 import { useAuth } from "@/lib/auth"
 import { useMarketplace } from "@/lib/marketplace"
+import { listingImages, maxListingPhotos, photoFileError, withCoverImage } from "@/lib/photos"
 import {
   categoryPlan,
   findSubcategory,
@@ -95,7 +96,7 @@ function AdForm({ existing }: { existing: Listing | null }) {
   const [place, setPlace] = useState<ChosenPlace | null>(placeFromListing(existing))
   const [description, setDescription] = useState(existing?.description ?? "")
   const [phone, setPhone] = useState(existing?.phone ?? "")
-  const [image, setImage] = useState<string | null>(existing?.image ?? null)
+  const [photos, setPhotos] = useState<string[]>(existing ? listingImages(existing) : [])
   const [errors, setErrors] = useState<FieldErrors>({})
   const [submitting, setSubmitting] = useState(false)
   const appliedPlace = useRef(false)
@@ -119,6 +120,7 @@ function AdForm({ existing }: { existing: Listing | null }) {
 
   const preview = useMemo<Listing>(() => {
     const nextCategory = category ?? "vehicles"
+    const cover = withCoverImage(photos.length > 0 ? photos : [categoryImage[nextCategory]])
     return {
       id: "preview",
       title: title.trim() || "Your listing title",
@@ -135,7 +137,8 @@ function AdForm({ existing }: { existing: Listing | null }) {
       timezone: place?.timezone,
       hoursAgo: 0,
       postedAt: new Date().toISOString(),
-      image: image ?? categoryImage[nextCategory],
+      image: cover.image,
+      images: cover.images,
       badge: nextCategory === "jobs" ? "jobs" : undefined,
       description,
       condition: details.condition || subcategory?.name || "Listed",
@@ -155,7 +158,7 @@ function AdForm({ existing }: { existing: Listing | null }) {
     country,
     city,
     place,
-    image,
+    photos,
     description,
     phone,
     callingCode,
@@ -189,18 +192,19 @@ function AdForm({ existing }: { existing: Listing | null }) {
 
   function onFile(file: File | undefined) {
     if (!file) return
-    if (!["image/jpeg", "image/png", "image/webp"].includes(file.type)) {
-      setErrors((current) => ({ ...current, image: "Choose a JPEG, PNG, or WebP photo." }))
+    const reason = photoFileError(file)
+    if (reason) {
+      setErrors((current) => ({ ...current, image: reason }))
       return
     }
-    if (file.size > 700_000) {
-      setErrors((current) => ({ ...current, image: "Use a photo under 700KB." }))
+    if (photos.length >= maxListingPhotos) {
+      setErrors((current) => ({ ...current, image: `You can add up to ${maxListingPhotos} photos.` }))
       return
     }
     const reader = new FileReader()
     reader.onload = () => {
       if (typeof reader.result === "string") {
-        setImage(reader.result)
+        setPhotos((current) => [...current, reader.result as string].slice(0, maxListingPhotos))
         setErrors((current) => ({ ...current, image: undefined }))
       }
     }
@@ -335,7 +339,8 @@ function AdForm({ existing }: { existing: Listing | null }) {
       postedAt: existing?.postedAt ?? new Date().toISOString(),
       description: description.trim().slice(0, 2000),
       phone: phone.trim().slice(0, 30),
-      image: image ?? categoryImage[category],
+      image: preview.image,
+      images: preview.images,
       condition: keptDetails.condition || subcategory.name,
       sold: existing?.sold,
     }
@@ -504,8 +509,34 @@ function AdForm({ existing }: { existing: Listing | null }) {
                 <h2 className="text-base font-medium">{plan.detailHeading}</h2>
                 <p className="mt-1 text-sm text-neutral-500">{plan.intro}</p>
               </div>
-              <PhotoDrop image={image} invalid={Boolean(errors.image)} onFile={onFile} onClear={() => setImage(null)} />
-              <p className="-mt-3 text-xs text-neutral-500">{plan.photoHint} A photo is optional.</p>
+              <PhotoGallery
+                photos={photos}
+                invalid={Boolean(errors.image)}
+                onFile={onFile}
+                onRemove={(index) => setPhotos((current) => current.filter((_, i) => i !== index))}
+                onMove={(from, to) =>
+                  setPhotos((current) => {
+                    if (to < 0 || to >= current.length) return current
+                    const next = [...current]
+                    const [item] = next.splice(from, 1)
+                    if (!item) return current
+                    next.splice(to, 0, item)
+                    return next
+                  })
+                }
+                onCover={(index) =>
+                  setPhotos((current) => {
+                    if (index <= 0 || index >= current.length) return current
+                    const next = [...current]
+                    const [item] = next.splice(index, 1)
+                    if (!item) return current
+                    return [item, ...next]
+                  })
+                }
+              />
+              <p className="-mt-3 text-xs text-neutral-500">
+                {plan.photoHint} Up to {maxListingPhotos} photos. The first photo is the cover. Photos are optional.
+              </p>
               {errors.image ? (
                 <span data-field-error className="-mt-3 text-xs text-destructive">
                   {errors.image}
@@ -698,16 +729,20 @@ function AdForm({ existing }: { existing: Listing | null }) {
   )
 }
 
-function PhotoDrop({
-  image,
+function PhotoGallery({
+  photos,
   invalid,
   onFile,
-  onClear,
+  onRemove,
+  onMove,
+  onCover,
 }: {
-  image: string | null
+  photos: string[]
   invalid: boolean
   onFile: (file: File | undefined) => void
-  onClear: () => void
+  onRemove: (index: number) => void
+  onMove: (from: number, to: number) => void
+  onCover: (index: number) => void
 }) {
   const inputRef = useRef<HTMLInputElement>(null)
   const [drag, setDrag] = useState(false)
@@ -719,52 +754,87 @@ function PhotoDrop({
   }
 
   return (
-    <div
-      className={cn(
-        "overflow-hidden rounded-2xl border border-dashed bg-neutral-50",
-        drag ? "border-neutral-950 bg-white" : "border-neutral-300",
-        invalid && "border-destructive",
-      )}
-      onDragOver={(event) => {
-        event.preventDefault()
-        setDrag(true)
-      }}
-      onDragLeave={() => setDrag(false)}
-      onDrop={take}
-    >
-      <input
-        ref={inputRef}
-        type="file"
-        accept="image/jpeg,image/png,image/webp"
-        tabIndex={-1}
-        className="sr-only"
-        onChange={(event) => {
-          onFile(event.target.files?.[0])
-          event.target.value = ""
-        }}
-      />
-      {image ? (
-        <div className="relative">
-          <img src={image} alt="" className="h-44 w-full object-cover" />
-          <div className="absolute right-2 bottom-2 flex gap-2">
-            <Button type="button" variant="secondary" size="sm" className="rounded-full bg-white" onClick={() => inputRef.current?.click()}>
-              Replace
-            </Button>
-            <Button type="button" variant="secondary" size="sm" className="rounded-full bg-white" onClick={onClear}>
-              Remove
-            </Button>
-          </div>
-        </div>
-      ) : (
-        <button
-          type="button"
-          onClick={() => inputRef.current?.click()}
-          className="flex h-36 w-full flex-col items-center justify-center gap-2 text-sm text-neutral-600"
+    <div className="grid gap-3">
+      {photos.length > 0 ? (
+        <ul className="grid grid-cols-2 gap-2 sm:grid-cols-3">
+          {photos.map((photo, index) => (
+            <li key={`${index}-${photo.slice(0, 32)}`} className="relative overflow-hidden rounded-xl border border-neutral-200 bg-neutral-100">
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img src={photo} alt="" className="aspect-[4/3] w-full object-cover" />
+              {index === 0 ? (
+                <span className="absolute top-2 left-2 rounded-full bg-neutral-950 px-2 py-0.5 text-[10px] font-medium text-white">
+                  Cover
+                </span>
+              ) : null}
+              <div className="absolute inset-x-0 bottom-0 flex flex-wrap gap-1 bg-gradient-to-t from-black/60 to-transparent p-2">
+                {index > 0 ? (
+                  <Button type="button" size="sm" variant="secondary" className="h-7 rounded-full bg-white px-2 text-xs" onClick={() => onCover(index)}>
+                    Cover
+                  </Button>
+                ) : null}
+                <Button
+                  type="button"
+                  size="sm"
+                  variant="secondary"
+                  className="h-7 rounded-full bg-white px-2 text-xs"
+                  disabled={index === 0}
+                  onClick={() => onMove(index, index - 1)}
+                >
+                  <ChevronLeft className="size-3.5" />
+                </Button>
+                <Button
+                  type="button"
+                  size="sm"
+                  variant="secondary"
+                  className="h-7 rounded-full bg-white px-2 text-xs"
+                  disabled={index === photos.length - 1}
+                  onClick={() => onMove(index, index + 1)}
+                >
+                  <ChevronRight className="size-3.5" />
+                </Button>
+                <Button type="button" size="sm" variant="secondary" className="h-7 rounded-full bg-white px-2 text-xs" onClick={() => onRemove(index)}>
+                  Remove
+                </Button>
+              </div>
+            </li>
+          ))}
+        </ul>
+      ) : null}
+      {photos.length < maxListingPhotos ? (
+        <div
+          className={cn(
+            "overflow-hidden rounded-2xl border border-dashed bg-neutral-50",
+            drag ? "border-neutral-950 bg-white" : "border-neutral-300",
+            invalid && "border-destructive",
+          )}
+          onDragOver={(event) => {
+            event.preventDefault()
+            setDrag(true)
+          }}
+          onDragLeave={() => setDrag(false)}
+          onDrop={take}
         >
-          <ImagePlus className="size-5" />
-          Add a photo
-        </button>
-      )}
+          <input
+            ref={inputRef}
+            type="file"
+            accept="image/jpeg,image/png,image/webp"
+            tabIndex={-1}
+            className="sr-only"
+            onChange={(event) => {
+              onFile(event.target.files?.[0])
+              event.target.value = ""
+            }}
+          />
+          <button
+            type="button"
+            onClick={() => inputRef.current?.click()}
+            className="flex h-36 w-full flex-col items-center justify-center gap-2 text-sm text-neutral-600"
+          >
+            <ImagePlus className="size-5" />
+            {photos.length === 0 ? "Add a photo" : "Add another photo"}
+          </button>
+        </div>
+      ) : null}
     </div>
   )
 }

@@ -1,6 +1,6 @@
 "use client"
 
-import { ArrowLeft, Clock, Flag, Heart, MapPin, Share2 } from "lucide-react"
+import { ArrowLeft, ChevronLeft, ChevronRight, Clock, Flag, Heart, MapPin, Share2 } from "lucide-react"
 import Image from "next/image"
 import Link from "next/link"
 import { useRouter, useSearchParams } from "next/navigation"
@@ -40,6 +40,7 @@ import { osmLinks } from "@/lib/map"
 import { useMarketplace } from "@/lib/marketplace"
 import { daysUntilExpiry, isListingExpired, isListingExpiringSoon } from "@/lib/expiry"
 import { listingFacts, listingVoice } from "@/lib/posting"
+import { listingImages } from "@/lib/photos"
 import { reportReasons } from "@/lib/reports"
 import { useClientTime } from "@/lib/use-client-time"
 import { categoryName, type Listing } from "@/lib/types"
@@ -60,6 +61,14 @@ export function ListingDetail({ id }: { id: string }) {
   const [reportBusy, setReportBusy] = useState(false)
   const [busy, setBusy] = useState(false)
   const [confirmRemove, setConfirmRemove] = useState(false)
+  const [photoIndex, setPhotoIndex] = useState(0)
+  const [photoListingId, setPhotoListingId] = useState(id)
+  if (photoListingId !== id) {
+    setPhotoListingId(id)
+    setPhotoIndex(0)
+  }
+  const gallery = listingImages(listing ?? { image: "", images: undefined })
+  const activePhoto = gallery[Math.min(photoIndex, Math.max(gallery.length - 1, 0))] ?? listing?.image
 
   useEffect(() => {
     if (listing) document.title = `${listing.title} · africa classifieds`
@@ -186,14 +195,69 @@ export function ListingDetail({ id }: { id: string }) {
       <div className="mt-4 grid gap-6 lg:grid-cols-[minmax(0,1fr)_320px]">
         <div>
           <div className="overflow-hidden rounded-2xl border border-neutral-200 bg-neutral-100">
-            <Image
-              src={listing.image}
-              alt=""
-              width={1600}
-              height={1000}
-              unoptimized={listing.image.startsWith("data:")}
-              className="aspect-[16/10] w-full object-cover"
-            />
+            <div className="relative">
+              <Image
+                src={activePhoto ?? listing.image}
+                alt=""
+                width={1600}
+                height={1000}
+                unoptimized={(activePhoto ?? listing.image).startsWith("data:")}
+                className="aspect-[16/10] w-full object-cover"
+              />
+              {gallery.length > 1 ? (
+                <>
+                  <Button
+                    type="button"
+                    variant="secondary"
+                    size="icon"
+                    className="absolute top-1/2 left-2 size-9 -translate-y-1/2 rounded-full bg-white/95"
+                    aria-label="Previous photo"
+                    onClick={() => setPhotoIndex((index) => (index - 1 + gallery.length) % gallery.length)}
+                  >
+                    <ChevronLeft className="size-4" />
+                  </Button>
+                  <Button
+                    type="button"
+                    variant="secondary"
+                    size="icon"
+                    className="absolute top-1/2 right-2 size-9 -translate-y-1/2 rounded-full bg-white/95"
+                    aria-label="Next photo"
+                    onClick={() => setPhotoIndex((index) => (index + 1) % gallery.length)}
+                  >
+                    <ChevronRight className="size-4" />
+                  </Button>
+                  <span className="absolute right-3 bottom-3 rounded-full bg-black/70 px-2 py-0.5 text-[11px] font-medium text-white">
+                    {Math.min(photoIndex, gallery.length - 1) + 1} / {gallery.length}
+                  </span>
+                </>
+              ) : null}
+            </div>
+            {gallery.length > 1 ? (
+              <div className="flex gap-2 overflow-x-auto border-t border-neutral-200 bg-white p-2 [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+                {gallery.map((photo, index) => (
+                  <button
+                    key={`${index}-${photo.slice(0, 24)}`}
+                    type="button"
+                    aria-label={`Show photo ${index + 1}`}
+                    aria-current={index === photoIndex}
+                    className={cn(
+                      "relative h-16 w-20 shrink-0 overflow-hidden rounded-lg border",
+                      index === photoIndex ? "border-neutral-950" : "border-neutral-200",
+                    )}
+                    onClick={() => setPhotoIndex(index)}
+                  >
+                    <Image
+                      src={photo}
+                      alt=""
+                      fill
+                      sizes="80px"
+                      unoptimized={photo.startsWith("data:")}
+                      className="object-cover"
+                    />
+                  </button>
+                ))}
+              </div>
+            ) : null}
           </div>
           <div className="mt-5">
             <div className="flex flex-wrap items-start justify-between gap-3">

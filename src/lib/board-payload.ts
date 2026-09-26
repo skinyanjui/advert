@@ -1,5 +1,6 @@
 import { canonicalCountry } from "@/lib/countries"
 import { isBoardMessage, type BoardMessage } from "@/lib/messages"
+import { normalizeListingPhotos } from "@/lib/photos"
 import { isCategoryId, type Listing } from "@/lib/types"
 
 export type BoardState = {
@@ -30,9 +31,12 @@ export function cleanListing(value: unknown): Listing | undefined {
   if (!isStoredListing(value)) return undefined
   const country = canonicalCountry(value.country)
   if (!country) return undefined
+  const images = normalizeListingPhotos(value.images, value.image)
   return {
     ...value,
     country,
+    image: images[0] ?? value.image,
+    images: images.length > 1 ? images : images.length === 1 ? images : undefined,
     subcategory: cleanText(value.subcategory),
     details: cleanDetails(value.details),
     currency: cleanText(value.currency),
