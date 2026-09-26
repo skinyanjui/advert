@@ -86,11 +86,11 @@ export function SiteHeader() {
       <div className="border-b border-neutral-200/80 bg-white">
         <div className="mx-auto flex max-w-[1720px] items-center">
           <Logo />
-          <div className="flex min-w-0 flex-1 items-center gap-2 px-4 py-3 md:gap-3 md:px-6 md:py-3.5">
+          <div className="flex shrink-0 items-center gap-2 px-4 py-3 md:min-w-0 md:flex-1 md:gap-3 md:px-6 md:py-3.5">
           <div className="hidden min-w-0 flex-1 md:block">
             <SearchField value={query.q} onChange={(value) => update({ q: value })} />
           </div>
-          <div ref={menuRoot} className="relative ml-auto flex items-center gap-2">
+          <div ref={menuRoot} className="relative ml-auto flex shrink-0 items-center gap-2">
             <div>
               <Button
                 type="button"
@@ -306,7 +306,7 @@ function MenuButton({
       type="button"
       role="menuitem"
       className={cn(
-        "flex h-8 w-full items-center gap-1.5 rounded-md px-2 text-left text-sm hover:bg-neutral-100",
+        "flex h-8 w-full cursor-pointer items-center gap-1.5 rounded-md px-2 text-left text-sm hover:bg-neutral-100",
         className,
       )}
       {...props}
@@ -327,7 +327,7 @@ function MenuLink({
     <Link
       href={href}
       role="menuitem"
-      className="flex h-8 items-center rounded-md px-2 text-sm hover:bg-neutral-100"
+      className="flex h-8 cursor-pointer items-center rounded-md px-2 text-sm hover:bg-neutral-100"
       onClick={onNavigate}
     >
       {children}
