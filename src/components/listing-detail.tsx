@@ -192,12 +192,12 @@ export function ListingDetail({ id }: { id: string }) {
       </div>
       <div className="fixed inset-x-0 bottom-0 z-30 border-t bg-white p-3 lg:hidden">
         <div className="mx-auto flex max-w-[1100px] items-center justify-between gap-3">
-          <div>
-            <p className="text-sm font-semibold">{formatPrice(listing)}</p>
-            <p className="text-xs text-neutral-500">{formatPlace(listing)}</p>
+          <div className="min-w-0">
+            <p className="truncate text-sm font-semibold">{formatPrice(listing)}</p>
+            <p className="truncate text-xs text-neutral-500">{formatPlace(listing)}</p>
           </div>
-          <Button className="rounded-full" onClick={() => setMessageOpen(true)}>
-            Message
+          <Button className="shrink-0 rounded-full" onClick={() => setMessageOpen(true)}>
+            {voice.messageLabel}
           </Button>
         </div>
       </div>

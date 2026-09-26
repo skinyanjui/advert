@@ -20,11 +20,14 @@ type Seed = Listing
 
 function listing(entry: Seed): Seed {
   const posted = seedPosting[entry.id]
+  const subcategory = posted?.subcategory ?? entry.subcategory
+  const plan = subcategory ? findSubcategory(entry.category, subcategory) : undefined
   return {
     currency: "USD",
     ...entry,
-    subcategory: posted?.subcategory ?? entry.subcategory,
+    subcategory,
     details: posted?.details ?? entry.details,
+    priceSuffix: entry.priceSuffix ?? plan?.priceSuffix,
   }
 }
 

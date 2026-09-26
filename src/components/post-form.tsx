@@ -23,6 +23,7 @@ import { resolvePlace } from "@/lib/cities"
 import {
   canonicalCountry,
   countries,
+  countryName,
   currencyLabel,
   getCountry,
 } from "@/lib/countries"
@@ -74,7 +75,9 @@ export function PostForm() {
 
   const plan = category ? categoryPlan(category) : null
   const subcategory = category ? findSubcategory(category, subcategoryId ?? undefined) : undefined
-  const suffix = pricePeriod(period).suffix
+  const activePeriod = subcategory?.periods.includes(period) ? period : (subcategory?.periods[0] ?? period)
+  const suffix = subcategory?.priceSuffix ?? pricePeriod(activePeriod).suffix
+  const prefilledPlace = Boolean(searchParams.get("country") || searchParams.get("city"))
   const callingCode = getCountry(country)?.callingCode
   const currencies = currencyChoices(country)
   const countryOptions = [...countries].sort((a, b) => a.name.localeCompare(b.name))
@@ -135,7 +138,7 @@ export function PostForm() {
   function chooseSubcategory(next: Subcategory) {
     if (next.id !== subcategoryId) setDetails({})
     setSubcategoryId(next.id)
-    if (!next.periods.includes(period)) setPeriod(next.periods[0])
+    setPeriod(next.periods[0])
     setErrors({})
   }
 
@@ -186,22 +189,37 @@ export function PostForm() {
     return next
   }
 
+  function moveTo(next: number) {
+    setStep(next)
+    window.scrollTo({ top: 0, behavior: "smooth" })
+  }
+
+  function showErrors(next: FieldErrors) {
+    setErrors(next)
+    requestAnimationFrame(() => {
+      document.querySelector("[data-field-error]")?.scrollIntoView({ block: "center", behavior: "smooth" })
+    })
+  }
+
   function goNext() {
     if (step === 0) {
       if (!category) return
-      setStep(1)
+      moveTo(1)
       return
     }
     if (step === 1) {
       if (!subcategory) return
-      setStep(2)
+      moveTo(2)
       return
     }
     if (step === 2) {
       const next = detailErrors()
-      setErrors(next)
-      if (Object.values(next).some(Boolean)) return
-      setStep(3)
+      if (Object.values(next).some(Boolean)) {
+        showErrors(next)
+        return
+      }
+      setErrors({})
+      moveTo(3)
     }
   }
 
@@ -211,9 +229,10 @@ export function PostForm() {
       return
     }
     const next = { ...detailErrors(), ...contactErrors() }
-    setErrors(next)
     if (Object.values(next).some(Boolean)) {
-      if (detailErrors() && Object.values(detailErrors()).some(Boolean)) setStep(2)
+      const detailsInvalid = Object.values(detailErrors()).some(Boolean)
+      if (detailsInvalid) setStep(2)
+      showErrors(next)
       return
     }
 
@@ -271,9 +290,9 @@ export function PostForm() {
               <button
                 type="button"
                 disabled={index > step}
-                onClick={() => setStep(index)}
+                onClick={() => moveTo(index)}
                 className={cn(
-                  "inline-flex h-8 items-center gap-2 rounded-full px-3 text-xs",
+                  "inline-flex h-8 items-center gap-2 rounded-full px-3 text-xs whitespace-nowrap",
                   index === step
                     ? "bg-neutral-950 font-medium text-white"
                     : "bg-neutral-100 text-neutral-600 hover:text-neutral-950 disabled:hover:text-neutral-600",
@@ -303,6 +322,11 @@ export function PostForm() {
                 <li><span className="font-medium text-neutral-950">3. Details.</span> Only the facts for that type. They are saved on the card and the listing.</li>
                 <li><span className="font-medium text-neutral-950">4. Place and phone.</span> The city, and a number people can actually use.</li>
               </ol>
+              {prefilledPlace ? (
+                <p className="rounded-xl bg-neutral-50 px-3 py-2 text-sm text-neutral-600">
+                  Starting in {city.trim() || "the city you choose"}, {countryName(country)}. You can change the place on the last step.
+                </p>
+              ) : null}
               <h2 className="text-sm font-medium">Start with a category</h2>
               <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
                 {postingPlans().map((item) => {
@@ -535,7 +559,7 @@ export function PostForm() {
                 Cancel
               </Button>
             ) : (
-              <Button type="button" variant="ghost" onClick={() => setStep((current) => Math.max(0, current - 1))}>
+              <Button type="button" variant="ghost" onClick={() => moveTo(Math.max(0, step - 1))}>
                 Back
               </Button>
             )}
@@ -650,7 +674,11 @@ function Field({
     <div className="grid gap-1.5">
       <Label>{label}</Label>
       {children}
-      {error ? <span className="text-xs text-destructive">{error}</span> : null}
+      {error ? (
+        <span data-field-error className="text-xs text-destructive">
+          {error}
+        </span>
+      ) : null}
       {!error && hint ? <span className="text-xs text-neutral-500">{hint}</span> : null}
     </div>
   )

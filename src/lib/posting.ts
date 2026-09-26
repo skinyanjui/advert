@@ -42,6 +42,8 @@ export type Subcategory = {
   priceLabel: string
   pricePlaceholder: string
   periods: readonly PricePeriodId[]
+  /** Used when the charge is not one of the standard periods, for example “/ visit”. */
+  priceSuffix?: string
   fields: readonly DetailField[]
   descriptionPlaceholder?: string
 }
@@ -288,7 +290,7 @@ const plans = {
         id: "phones",
         name: "Phone",
         summary: "A handset for sale.",
-        titlePlaceholder: "iPhone 14 Pro, 128GB",
+        titlePlaceholder: "iPhone 14 Pro, 256GB",
         priceLabel: "Price",
         pricePlaceholder: "420",
         periods: ["fixed"],
@@ -508,6 +510,7 @@ const plans = {
         priceLabel: "Price per move",
         pricePlaceholder: "80",
         periods: ["fixed"],
+        priceSuffix: "/ move",
         fields: [
           text("vehicle", "Vehicle", "One truck", { required: true, onCard: true }),
           text("area", "Area covered", "Dar es Salaam", { required: true }),
@@ -531,9 +534,10 @@ const plans = {
         name: "Catering",
         summary: "Food for a gathering, priced so a host can plan.",
         titlePlaceholder: "Event catering, trays",
-        priceLabel: "Price",
+        priceLabel: "Price per tray",
         pricePlaceholder: "20",
         periods: ["fixed"],
+        priceSuffix: "/ tray",
         fields: [
           text("offer", "Offer", "Per tray", { required: true, onCard: true }),
           text("serves", "Serves", "Feeds 8", { onCard: true }),
@@ -781,6 +785,7 @@ const plans = {
         priceLabel: "Price per visit",
         pricePlaceholder: "20",
         periods: ["fixed"],
+        priceSuffix: "/ visit",
         fields: [
           text("service", "Service", "Nursing visit", { required: true, onCard: true }),
           text("who", "Who visits", "Registered nurse", { required: true, onCard: true }),
@@ -822,7 +827,7 @@ const plans = {
         name: "Lessons",
         summary: "Tutoring or a class, usually priced per hour.",
         titlePlaceholder: "After-school maths tutoring",
-        priceLabel: "Price",
+        priceLabel: "Price per hour",
         pricePlaceholder: "8",
         periods: ["hour"],
         fields: [
@@ -853,7 +858,7 @@ const plans = {
         name: "Venue",
         summary: "A hall or ground people can hire.",
         titlePlaceholder: "Community hall for a Saturday",
-        priceLabel: "Hire price",
+        priceLabel: "Price per day",
         pricePlaceholder: "50",
         periods: ["day"],
         fields: [
@@ -946,21 +951,21 @@ export function cardFactLabels(subcategory: Subcategory): string[] {
 export const seedPosting: Record<string, { subcategory: string; details: Record<string, string> }> = {
   "land-cruiser-79": { subcategory: "pickups", details: { fuel: "Diesel", condition: "Used" } },
   "honda-crf-250l": { subcategory: "motorcycles", details: { engine: "250cc", condition: "Used" } },
-  "hiace-2018": { subcategory: "vans", details: { year: "2018", seats: "14 seats", condition: "Used" } },
-  "corolla-2016": { subcategory: "cars", details: { year: "2016", fuel: "Petrol", condition: "Used" } },
+  "hiace-2018": { subcategory: "vans", details: { year: "2018", seats: "14 seats", fuel: "Diesel", condition: "Used" } },
+  "corolla-2016": { subcategory: "cars", details: { year: "2016", fuel: "Petrol", transmission: "Automatic", condition: "Used" } },
   "ranger-lusaka": { subcategory: "pickups", details: { cab: "Double cab", fuel: "Diesel", condition: "Used" } },
   "bajaj-kampala": { subcategory: "motorcycles", details: { engine: "150cc", condition: "Used" } },
-  "hilux-gaborone": { subcategory: "pickups", details: { year: "2014", cab: "Double cab", condition: "Used" } },
+  "hilux-gaborone": { subcategory: "pickups", details: { year: "2014", cab: "Single cab", fuel: "Petrol", condition: "Used" } },
   "kigali-house": { subcategory: "rent", details: { bedrooms: "2 bed", furnished: "Furnished", available: "Next month" } },
   "house-accra": { subcategory: "sale", details: { bedrooms: "3 bed", title: "Title deed" } },
   "studio-lagos": { subcategory: "apartment", details: { bedrooms: "Studio", furnished: "Unfurnished", area: "Ikeja" } },
-  "office-cape-town": { subcategory: "commercial", details: { use: "Office", size: "Small office" } },
-  "cottage-windhoek": { subcategory: "stay", details: { sleeps: "Guests", place: "Cottage" } },
+  "office-cape-town": { subcategory: "commercial", details: { use: "Office", size: "42 m²" } },
+  "cottage-windhoek": { subcategory: "stay", details: { sleeps: "2 guests", place: "Cottage", beds: "1 bedroom" } },
   "riad-room": { subcategory: "stay", details: { sleeps: "2 guests", place: "Room" } },
   "macbook-pro-m2": { subcategory: "computers", details: { brand: "MacBook Pro M2", memory: "16GB", storage: "512GB", condition: "Like new" } },
-  "iphone-14-pro": { subcategory: "phones", details: { brand: "iPhone 14 Pro", storage: "128GB", condition: "Used" } },
+  "iphone-14-pro": { subcategory: "phones", details: { brand: "iPhone 14 Pro", storage: "256GB", condition: "Used" } },
   "samsung-tv": { subcategory: "screens", details: { brand: "Samsung", size: "55 inch", condition: "Used" } },
-  "solar-lilongwe": { subcategory: "power", details: { output: "Starter kit", kind: "Kit", condition: "New" } },
+  "solar-lilongwe": { subcategory: "power", details: { output: "200W", kind: "Kit", condition: "New" } },
   "sofa-accra": { subcategory: "furniture", details: { piece: "Sofa", condition: "Like new" } },
   "solar-panel-550": { subcategory: "solar", details: { output: "550W", condition: "New" } },
   "dining-nairobi": { subcategory: "furniture", details: { piece: "Dining set", condition: "Used" } },
@@ -973,13 +978,13 @@ export const seedPosting: Record<string, { subcategory: string; details: Record<
   "braiding-accra": { subcategory: "beauty", details: { service: "Braiding", place: "At your home" } },
   "moving-dar": { subcategory: "moving", details: { vehicle: "One truck", area: "Dar es Salaam" } },
   "tailor-dakar": { subcategory: "tailoring", details: { turnaround: "Same day", place: "At my shop" } },
-  "catering-abidjan": { subcategory: "events", details: { offer: "Trays", serves: "By the tray" } },
+  "catering-abidjan": { subcategory: "events", details: { offer: "Jollof and fish", serves: "About 12" } },
   "container-mombasa": { subcategory: "containers", details: { size: "20ft", condition: "Wind and watertight" } },
   "generator-lagos": { subcategory: "generators", details: { output: "50kVA", fuel: "Diesel", condition: "Used" } },
   "cat-320d": { subcategory: "machinery", details: { machine: "Excavator", condition: "Used" } },
   "generator-hire-luanda": { subcategory: "hire", details: { item: "Generator", minimum: "Weekend" } },
   "john-deere-5075e": { subcategory: "machinery", details: { machine: "Tractor", condition: "Used" } },
-  "farmland-arusha": { subcategory: "land", details: { size: "5 acres", title: "Still confirming" } },
+  "farmland-arusha": { subcategory: "land", details: { size: "5 acres", title: "Title deed", use: "Maize" } },
   "dairy-cow-lusaka": { subcategory: "livestock", details: { animal: "Dairy cow", count: "1", detail: "In-calf" } },
   "maize-nakuru": { subcategory: "produce", details: { crop: "Maize seed", pack: "50kg" } },
   "cocoa-douala": { subcategory: "produce", details: { crop: "Cocoa seedlings", pack: "Tray of 50" } },
@@ -988,10 +993,10 @@ export const seedPosting: Record<string, { subcategory: string; details: Record<
   "ankara-kumasi": { subcategory: "fabric", details: { fabric: "Ankara", length: "6 yards" } },
   "sneakers-lagos": { subcategory: "shoes", details: { item: "Sneakers", sizes: "Mixed", condition: "New" } },
   "clinic-room-addis": { subcategory: "space", details: { use: "Consultation room", size: "One room" } },
-  "nursing-kampala": { subcategory: "care", details: { service: "Nursing visit", who: "Nurse" } },
+  "nursing-kampala": { subcategory: "care", details: { service: "Nursing visit", who: "Registered nurse" } },
   "textbooks-nairobi": { subcategory: "materials", details: { level: "Form 4", subject: "Textbook set", condition: "Used" } },
   "tutoring-kigali": { subcategory: "lessons", details: { subject: "Maths", level: "After school", format: "At the student's home" } },
   "arabic-cairo": { subcategory: "lessons", details: { subject: "Arabic", level: "Adults", format: "At my place" } },
-  "hall-maputo": { subcategory: "venues", details: { space: "Hall", capacity: "For hire" } },
+  "hall-maputo": { subcategory: "venues", details: { space: "Hall", capacity: "80 people" } },
   "chairs-entebbe": { subcategory: "goods", details: { item: "Plastic chairs", quantity: "40", condition: "Used" } },
 }
