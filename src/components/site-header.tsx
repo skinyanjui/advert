@@ -63,7 +63,7 @@ export function SiteHeader() {
   const profileDetail = auth.signedIn ? "Ads stay with your account" : "Sign in to keep ads across devices"
 
   return (
-    <header className="sticky top-0 z-50">
+    <header data-site-header className="sticky top-0 z-50">
       <div className="border-b border-neutral-200/80 bg-white">
         <div className="mx-auto flex max-w-[1720px] items-center">
           <Logo />

@@ -1,11 +1,10 @@
 "use client"
 
-import { SlidersHorizontal } from "lucide-react"
 import Link from "next/link"
-import { useMemo, useState } from "react"
+import { useMemo } from "react"
 
 import { BoardCitySearch, CityMap } from "@/components/board-place"
-import { CategoryNav } from "@/components/category-nav"
+import { categoryIcons } from "@/components/category-nav"
 import { ListingCard } from "@/components/listing-card"
 import { Button } from "@/components/ui/button"
 import {
@@ -15,13 +14,6 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select"
-import {
-  Sheet,
-  SheetContent,
-  SheetHeader,
-  SheetTitle,
-  SheetTrigger,
-} from "@/components/ui/sheet"
 import { postAdHref } from "@/lib/active-place"
 import { matchesQuery, sortListings } from "@/lib/board"
 import { distanceKm, listingPoint } from "@/lib/distance"
@@ -32,6 +24,7 @@ import { useMarketplace } from "@/lib/marketplace"
 import { countryName, fold, getCountry } from "@/lib/countries"
 import {
   categories,
+  categoryName,
   isSortId,
   sorts,
   type CategoryId,
@@ -39,12 +32,14 @@ import {
 } from "@/lib/types"
 import { categoryPlan, findSubcategory } from "@/lib/posting"
 import { boardSearch, useListingQuery } from "@/lib/use-listing-query"
+import { useSiteHeaderOffset } from "@/lib/use-site-header-offset"
+import { cn } from "@/lib/utils"
 
 export function Browse() {
   const { listings } = useMarketplace()
   const { query, update, clear } = useListingQuery()
   const home = useHomePlace()
-  const [sheetOpen, setSheetOpen] = useState(false)
+  useSiteHeaderOffset()
 
   const origin = useMemo(() => homeOrigin(home, query.country), [home, query.country])
 
@@ -128,60 +123,68 @@ export function Browse() {
     (!home.city || !query.city || fold(query.city) !== fold(home.city))
   return (
     <div className="mx-auto w-full max-w-[1720px]">
-      <section className="min-w-0 px-4 py-4 pb-16 md:py-5 md:pr-6 md:pl-[calc(var(--sidebar-width)+1.5rem)]">
-        <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
-          <div className="flex items-center gap-2">
-            <Sheet open={sheetOpen} onOpenChange={setSheetOpen}>
-              <SheetTrigger asChild>
-                <Button variant="outline" className="h-9 rounded-full md:hidden">
-                  <SlidersHorizontal />
-                  Categories
-                </Button>
-              </SheetTrigger>
-              <SheetContent side="left" className="w-[300px] sm:max-w-xs">
-                <SheetHeader>
-                  <SheetTitle>Categories</SheetTitle>
-                </SheetHeader>
-                <div className="px-4 pb-6">
-                  <CategoryNav
-                    active={query.category}
-                    counts={counts}
-                    total={inCity.length}
-                    types={types}
-                    activeType={query.type}
-                    hrefForCategory={hrefForCategory}
-                    hrefForType={hrefForType}
-                    onNavigate={() => setSheetOpen(false)}
-                  />
-                </div>
-              </SheetContent>
-            </Sheet>
-            <div>
-              <p className="text-sm text-neutral-500">
-                <span className="font-medium text-neutral-900">{visible.length}</span>{" "}
-                {visible.length === 1 ? "listing" : "listings"}
-                {typeName ? ` · ${typeName}` : ""} in {place}
-                {closestFirst ? " · closest first" : ""}
-              </p>
-            </div>
-          </div>
-          <Select
-            value={query.sort}
-            onValueChange={(value) => {
-              if (isSortId(value)) update({ sort: value })
-            }}
+      <section className="min-w-0 px-4 pb-16 md:py-5 md:pr-6 md:pl-[calc(var(--sidebar-width)+1.5rem)]">
+        {/* Mobile: stick categories + sort/filter under the site header while scrolling. */}
+        <div
+          className={cn(
+            "sticky z-40 -mx-4 mb-4 border-b border-neutral-200/80 bg-white px-4 pt-3 pb-3 md:static md:z-auto md:mx-0 md:mb-4 md:border-0 md:bg-transparent md:px-0 md:pt-0 md:pb-0",
+          )}
+          style={{ top: "var(--site-header-offset)" }}
+        >
+          <nav
+            aria-label="Categories"
+            className="mb-3 flex gap-2 overflow-x-auto pb-1 [-ms-overflow-style:none] [scrollbar-width:none] md:hidden [&::-webkit-scrollbar]:hidden"
           >
-            <SelectTrigger className="h-9 rounded-full" aria-label="Sort listings">
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent align="end">
-              {sorts.map((sort) => (
-                <SelectItem key={sort.id} value={sort.id}>
-                  {sort.name}
-                </SelectItem>
+            <CategoryChip href={hrefForCategory(undefined)} active={!query.category} icon="all" label="All" />
+            {categories.map((category) => (
+              <CategoryChip
+                key={category.id}
+                href={hrefForCategory(category.id)}
+                active={query.category === category.id}
+                icon={category.id}
+                label={categoryName(category.id)}
+                count={counts[category.id]}
+              />
+            ))}
+          </nav>
+          {query.category && types.length > 0 ? (
+            <div className="mb-3 flex gap-1.5 overflow-x-auto pb-1 [-ms-overflow-style:none] [scrollbar-width:none] md:hidden [&::-webkit-scrollbar]:hidden">
+              <TypeChip href={hrefForType(undefined)} active={!query.type}>
+                All types
+              </TypeChip>
+              {types.map((type) => (
+                <TypeChip key={type.id} href={hrefForType(type.id)} active={query.type === type.id}>
+                  {type.name}
+                  <span className="opacity-60">{type.count}</span>
+                </TypeChip>
               ))}
-            </SelectContent>
-          </Select>
+            </div>
+          ) : null}
+          <div className="flex flex-wrap items-center justify-between gap-3">
+            <p className="min-w-0 text-sm text-neutral-500">
+              <span className="font-medium text-neutral-900">{visible.length}</span>{" "}
+              {visible.length === 1 ? "listing" : "listings"}
+              {typeName ? ` · ${typeName}` : ""} in {place}
+              {closestFirst ? " · closest first" : ""}
+            </p>
+            <Select
+              value={query.sort}
+              onValueChange={(value) => {
+                if (isSortId(value)) update({ sort: value })
+              }}
+            >
+              <SelectTrigger className="h-9 shrink-0 rounded-full" aria-label="Sort listings">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent align="end">
+                {sorts.map((sort) => (
+                  <SelectItem key={sort.id} value={sort.id}>
+                    {sort.name}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
         </div>
         {query.country ? (
           <div className="mb-4 flex flex-col gap-2 sm:flex-row sm:items-center">
@@ -238,6 +241,65 @@ export function Browse() {
         )}
       </section>
     </div>
+  )
+}
+
+function CategoryChip({
+  href,
+  active,
+  icon,
+  label,
+  count,
+}: {
+  href: string
+  active: boolean
+  icon: CategoryId | "all"
+  label: string
+  count?: number
+}) {
+  const Icon = categoryIcons[icon]
+  return (
+    <Link
+      href={href}
+      scroll={false}
+      aria-current={active ? "page" : undefined}
+      className={cn(
+        "inline-flex h-9 shrink-0 items-center gap-1.5 rounded-full px-3 text-xs font-medium whitespace-nowrap",
+        active
+          ? "bg-neutral-950 text-white"
+          : "bg-white text-neutral-700 ring-1 ring-neutral-200 hover:text-neutral-950",
+      )}
+    >
+      <Icon className="size-3.5 shrink-0" />
+      <span>{label}</span>
+      {typeof count === "number" && count > 0 ? <span className="opacity-60">{count}</span> : null}
+    </Link>
+  )
+}
+
+function TypeChip({
+  href,
+  active,
+  children,
+}: {
+  href: string
+  active: boolean
+  children: React.ReactNode
+}) {
+  return (
+    <Link
+      href={href}
+      scroll={false}
+      aria-current={active ? "page" : undefined}
+      className={cn(
+        "inline-flex h-8 shrink-0 items-center gap-1.5 rounded-full px-3 text-xs whitespace-nowrap",
+        active
+          ? "bg-neutral-950 font-medium text-white"
+          : "bg-neutral-100 text-neutral-600 hover:text-neutral-950",
+      )}
+    >
+      {children}
+    </Link>
   )
 }
 
