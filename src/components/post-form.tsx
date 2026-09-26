@@ -4,6 +4,7 @@ import { useRouter, useSearchParams } from "next/navigation"
 import { useMemo, useState } from "react"
 import { toast } from "sonner"
 
+import { categoryIcons } from "@/components/category-nav"
 import { CityField, type ChosenPlace } from "@/components/city-field"
 import { ListingCard } from "@/components/listing-card"
 import { Button } from "@/components/ui/button"
@@ -26,56 +27,69 @@ import {
   getCountry,
 } from "@/lib/countries"
 import { useMarketplace } from "@/lib/marketplace"
-import { categories, isCategoryId, type CategoryId, type Listing } from "@/lib/types"
+import {
+  cardFactLabels,
+  categoryPlan,
+  findSubcategory,
+  isPricePeriodId,
+  listingMeta,
+  postingPlans,
+  pricePeriod,
+  type DetailField,
+  type PricePeriodId,
+  type Subcategory,
+} from "@/lib/posting"
+import { categoryName, isCategoryId, type CategoryId, type Listing } from "@/lib/types"
+import { cn } from "@/lib/utils"
 
-const periods = [
-  { id: "fixed", label: "Fixed price", suffix: undefined },
-  { id: "month", label: "Per month", suffix: "/ month" },
-  { id: "week", label: "Per week", suffix: "/ week" },
-  { id: "day", label: "Per day", suffix: "/ day" },
-  { id: "hour", label: "Per hour", suffix: "/ hour" },
-] as const
+const steps = ["Category", "Type", "Details", "Contact"] as const
 
-type PeriodId = (typeof periods)[number]["id"]
-
-const conditions = ["New", "Like new", "Used", "For sale", "For rent", "Service"]
-
-type FieldErrors = Partial<Record<"title" | "price" | "city" | "description" | "phone" | "image", string>>
+type FieldErrors = Partial<Record<string, string>>
 
 export function PostForm() {
   const router = useRouter()
   const searchParams = useSearchParams()
   const startingCountry = canonicalCountry(searchParams.get("country")) ?? "KE"
   const startingCity = (searchParams.get("city") ?? "").trim().slice(0, 80)
+  const categoryParam = searchParams.get("category")
+  const startingCategory = isCategoryId(categoryParam) ? categoryParam : null
   const { addListing } = useMarketplace()
+
+  const [step, setStep] = useState(0)
+  const [category, setCategory] = useState<CategoryId | null>(startingCategory)
+  const [subcategoryId, setSubcategoryId] = useState<string | null>(null)
   const [title, setTitle] = useState("")
-  const [category, setCategory] = useState<CategoryId>("vehicles")
   const [price, setPrice] = useState("")
-  const [period, setPeriod] = useState<PeriodId>("fixed")
-  const [condition, setCondition] = useState("Used")
+  const [period, setPeriod] = useState<PricePeriodId>("fixed")
+  const [details, setDetails] = useState<Record<string, string>>({})
   const [country, setCountry] = useState(startingCountry)
   const [currency, setCurrency] = useState(getCountry(startingCountry)?.currencies[0]?.code ?? "USD")
   const [city, setCity] = useState(startingCity)
   const [place, setPlace] = useState<ChosenPlace | null>(null)
   const [description, setDescription] = useState("")
   const [phone, setPhone] = useState("")
-  const [meta, setMeta] = useState("")
   const [image, setImage] = useState<string | null>(null)
   const [errors, setErrors] = useState<FieldErrors>({})
   const [submitting, setSubmitting] = useState(false)
 
-  const suffix = periods.find((item) => item.id === period)?.suffix
+  const plan = category ? categoryPlan(category) : null
+  const subcategory = category ? findSubcategory(category, subcategoryId ?? undefined) : undefined
+  const suffix = pricePeriod(period).suffix
   const callingCode = getCountry(country)?.callingCode
   const currencies = currencyChoices(country)
   const countryOptions = [...countries].sort((a, b) => a.name.localeCompare(b.name))
-  const preview = useMemo<Listing>(
-    () => ({
+
+  const preview = useMemo<Listing>(() => {
+    const nextCategory = category ?? "vehicles"
+    return {
       id: "preview",
       title: title.trim() || "Your listing title",
       price: Number(price) > 0 ? Number(price) : 0,
       currency,
       priceSuffix: suffix,
-      category,
+      category: nextCategory,
+      subcategory: subcategory?.id,
+      details,
       country,
       city: city.trim() || "City",
       latitude: place?.lat,
@@ -83,33 +97,52 @@ export function PostForm() {
       timezone: place?.timezone,
       hoursAgo: 0,
       postedAt: new Date().toISOString(),
-      image: image ?? categoryImage[category],
-      badge: category === "jobs" ? "jobs" : undefined,
-      meta: meta.trim() || undefined,
+      image: image ?? categoryImage[nextCategory],
+      badge: nextCategory === "jobs" ? "jobs" : undefined,
       description,
-      condition,
+      condition: details.condition || subcategory?.name || "Listed",
       sellerName: "Amina K.",
       sellerSince: "2024",
       phone: phone || callingCode || "+000",
       mine: true,
-    }),
-    [
-      title,
-      price,
-      currency,
-      suffix,
-      category,
-      country,
-      city,
-      place,
-      image,
-      meta,
-      description,
-      condition,
-      phone,
-      callingCode,
-    ],
-  )
+    }
+  }, [
+    title,
+    price,
+    currency,
+    suffix,
+    category,
+    subcategory,
+    details,
+    country,
+    city,
+    place,
+    image,
+    description,
+    phone,
+    callingCode,
+  ])
+
+  function chooseCategory(id: CategoryId) {
+    if (id !== category) {
+      setSubcategoryId(null)
+      setDetails({})
+    }
+    setCategory(id)
+    setErrors({})
+  }
+
+  function chooseSubcategory(next: Subcategory) {
+    if (next.id !== subcategoryId) setDetails({})
+    setSubcategoryId(next.id)
+    if (!next.periods.includes(period)) setPeriod(next.periods[0])
+    setErrors({})
+  }
+
+  function setDetail(id: string, value: string) {
+    setDetails((current) => ({ ...current, [id]: value }))
+    setErrors((current) => ({ ...current, [id]: undefined }))
+  }
 
   function onFile(file: File | undefined) {
     if (!file) return
@@ -131,33 +164,87 @@ export function PostForm() {
     reader.readAsDataURL(file)
   }
 
-  function submit() {
-    const nextErrors: FieldErrors = {}
+  function detailErrors(): FieldErrors {
+    if (!subcategory || !plan) return { form: "Choose a type first." }
+    const next: FieldErrors = {}
+    if (title.trim().length < 4) next.title = "Use at least 4 characters."
     const amount = Number(price)
-    if (title.trim().length < 4) nextErrors.title = "Add a title of at least 4 characters."
-    if (!Number.isFinite(amount) || amount <= 0) nextErrors.price = "Enter a price greater than zero."
-    if (city.trim().length < 2) nextErrors.city = "Add the city."
-    if (description.trim().length < 20) nextErrors.description = "Describe the ad in at least 20 characters."
-    if (phone.replace(/[^\d]/g, "").length < 7) nextErrors.phone = "Add a phone number buyers can use."
-    setErrors(nextErrors)
-    if (Object.values(nextErrors).some(Boolean)) return
+    if (!Number.isFinite(amount) || amount <= 0) next.price = "Enter an amount greater than zero."
+    for (const field of subcategory.fields) {
+      if (!field.required) continue
+      if ((details[field.id] ?? "").trim()) continue
+      next[field.id] = field.kind === "select" ? `Choose ${field.label.toLowerCase()}.` : `Add the ${field.label.toLowerCase()}.`
+    }
+    if (description.trim().length < 20) next.description = "Write at least 20 characters. This is the paragraph on the listing."
+    return next
+  }
+
+  function contactErrors(): FieldErrors {
+    const next: FieldErrors = {}
+    if (city.trim().length < 2) next.city = "Add the city."
+    if (phone.replace(/[^\d]/g, "").length < 7) next.phone = "Add a phone number people can use."
+    return next
+  }
+
+  function goNext() {
+    if (step === 0) {
+      if (!category) return
+      setStep(1)
+      return
+    }
+    if (step === 1) {
+      if (!subcategory) return
+      setStep(2)
+      return
+    }
+    if (step === 2) {
+      const next = detailErrors()
+      setErrors(next)
+      if (Object.values(next).some(Boolean)) return
+      setStep(3)
+    }
+  }
+
+  function submit() {
+    if (!plan || !category || !subcategory) {
+      setStep(category ? 1 : 0)
+      return
+    }
+    const next = { ...detailErrors(), ...contactErrors() }
+    setErrors(next)
+    if (Object.values(next).some(Boolean)) {
+      if (detailErrors() && Object.values(detailErrors()).some(Boolean)) setStep(2)
+      return
+    }
 
     setSubmitting(true)
+    const amount = Number(price)
     const located = locatedPlace(place, country, city.trim())
+    const keptDetails = Object.fromEntries(
+      subcategory.fields.flatMap((field) => {
+        const value = (details[field.id] ?? "").trim().slice(0, 80)
+        return value ? [[field.id, value]] : []
+      }),
+    )
     const listing: Listing = {
       ...preview,
       id: `ad-${Date.now()}`,
-      title: title.trim(),
+      title: title.trim().slice(0, 80),
       price: Math.round(amount),
       currency,
+      priceSuffix: suffix,
+      category,
+      subcategory: subcategory.id,
+      details: keptDetails,
+      meta: undefined,
       city: located?.name ?? city.trim(),
       latitude: located?.lat,
       longitude: located?.lng,
       timezone: located?.timezone,
-      description: description.trim(),
-      phone: phone.trim(),
-      meta: meta.trim() || undefined,
+      description: description.trim().slice(0, 2000),
+      phone: phone.trim().slice(0, 30),
       image: image ?? categoryImage[category],
+      condition: keptDetails.condition || subcategory.name,
     }
     const result = addListing(listing)
     setSubmitting(false)
@@ -169,194 +256,366 @@ export function PostForm() {
     router.push(`/listings/${listing.id}`)
   }
 
+  const cardLine = subcategory ? listingMeta(preview) : undefined
+
   return (
     <div className="mx-auto grid w-full max-w-[1100px] gap-8 px-4 py-8 md:px-6 lg:grid-cols-[minmax(0,1fr)_320px]">
       <div>
         <h1 className="text-2xl font-semibold tracking-tight">Post an ad</h1>
-        <p className="mt-1 text-sm text-neutral-500">
-          It shows up at the top of the board and stays in this browser.
+        <p className="mt-1 max-w-xl text-sm text-neutral-500">
+          Four steps. The type you pick decides the questions, the line on the card, and the headings on the listing.
         </p>
+        <ol className="mt-5 flex flex-wrap gap-2" aria-label="Posting steps">
+          {steps.map((label, index) => (
+            <li key={label}>
+              <button
+                type="button"
+                disabled={index > step}
+                onClick={() => setStep(index)}
+                className={cn(
+                  "inline-flex h-8 items-center gap-2 rounded-full px-3 text-xs",
+                  index === step
+                    ? "bg-neutral-950 font-medium text-white"
+                    : "bg-neutral-100 text-neutral-600 hover:text-neutral-950 disabled:hover:text-neutral-600",
+                )}
+                aria-current={index === step ? "step" : undefined}
+              >
+                <span>{index + 1}</span>
+                {label}
+              </button>
+            </li>
+          ))}
+        </ol>
+
         <form
           className="mt-6 grid gap-5"
           onSubmit={(event) => {
             event.preventDefault()
-            submit()
+            if (step < 3) goNext()
+            else submit()
           }}
         >
-          <Field label="Photo" hint="Optional. A category photo is used if you skip this." error={errors.image}>
-            <Input
-              type="file"
-              accept="image/*"
-              onChange={(event) => onFile(event.target.files?.[0])}
-              className="h-10 cursor-pointer"
-            />
-          </Field>
-          <Field label="Title" error={errors.title}>
-            <Input
-              value={title}
-              onChange={(event) => setTitle(event.target.value)}
-              placeholder="Toyota Corolla 2016, low mileage"
-              className="h-10"
-            />
-          </Field>
-          <div className="grid gap-5 sm:grid-cols-2">
-            <Field label="Category">
-              <Select
-                value={category}
-                onValueChange={(value) => {
-                  if (isCategoryId(value)) {
-                    setCategory(value)
-                    if (value === "jobs") setPeriod("month")
-                  }
-                }}
-              >
-                <SelectTrigger className="h-10 w-full">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  {categories.map((item) => (
-                    <SelectItem key={item.id} value={item.id}>
-                      {item.name}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </Field>
-            <Field label="Condition">
-              <Select value={condition} onValueChange={(value) => setCondition(value ?? "Used")}>
-                <SelectTrigger className="h-10 w-full">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  {conditions.map((item) => (
-                    <SelectItem key={item} value={item}>
-                      {item}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </Field>
-          </div>
-          <div className="grid gap-5 sm:grid-cols-3">
-            <Field label={`Price (${currency})`} error={errors.price}>
-              <Input
-                inputMode="decimal"
-                value={price}
-                onChange={(event) => setPrice(event.target.value)}
-                placeholder="450"
-                className="h-10"
-              />
-            </Field>
-            <Field label="Currency">
-              <Select
-                value={currency}
-                onValueChange={(value) => {
-                  if (value && currencies.includes(value)) setCurrency(value)
-                }}
-              >
-                <SelectTrigger className="h-10 w-full">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  {currencies.map((code) => (
-                    <SelectItem key={code} value={code}>
-                      {code} · {currencyLabel(code)}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </Field>
-            <Field label="Price period">
-              <Select
-                value={period}
-                onValueChange={(value) => {
-                  if (periods.some((item) => item.id === value)) setPeriod(value as PeriodId)
-                }}
-              >
-                <SelectTrigger className="h-10 w-full">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  {periods.map((item) => (
-                    <SelectItem key={item.id} value={item.id}>
-                      {item.label}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </Field>
-          </div>
-          <Field label="Extra line" hint="Optional. Jobs often use Full-time or Part-time.">
-            <Input
-              value={meta}
-              onChange={(event) => setMeta(event.target.value)}
-              placeholder="Full-time"
-              className="h-10"
-            />
-          </Field>
-          <div className="grid gap-5 sm:grid-cols-2">
-            <Field label="Country">
-              <Select
-                value={country}
-                onValueChange={(value) => {
-                  const code = canonicalCountry(value)
-                  if (!code) return
-                  setCountry(code)
-                  setCity("")
-                  setPlace(null)
-                  setCurrency(getCountry(code)?.currencies[0]?.code ?? "USD")
-                }}
-              >
-                <SelectTrigger className="h-10 w-full">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  {countryOptions.map((item) => (
-                    <SelectItem key={item.code} value={item.code}>
-                      {item.name}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </Field>
-            <Field label="City" error={errors.city} hint="Pick a GeoNames city, or search the map.">
-              <CityField country={country} city={city} onCityChange={setCity} onPlace={setPlace} />
-            </Field>
-          </div>
-          <Field label="Description" error={errors.description}>
-            <Textarea
-              value={description}
-              onChange={(event) => setDescription(event.target.value)}
-              rows={5}
-              placeholder="What is it, what condition is it in, and how can someone view it?"
-            />
-          </Field>
-          <Field label="Phone" error={errors.phone} hint={callingCode ? `Calling code ${callingCode}.` : undefined}>
-            <Input
-              value={phone}
-              onChange={(event) => setPhone(event.target.value)}
-              placeholder={callingCode ? `${callingCode} 7XX XXX XXX` : "+254 7XX XXX XXX"}
-              className="h-10"
-            />
-          </Field>
+          {step === 0 ? (
+            <section className="grid gap-4">
+              <ol className="grid gap-2 text-sm text-neutral-600">
+                <li><span className="font-medium text-neutral-950">1. Category.</span> Vehicles, property, jobs, and the rest of the board.</li>
+                <li><span className="font-medium text-neutral-950">2. Type.</span> A car is not a pickup, and a monthly rental is not a job.</li>
+                <li><span className="font-medium text-neutral-950">3. Details.</span> Only the facts for that type. They are saved on the card and the listing.</li>
+                <li><span className="font-medium text-neutral-950">4. Place and phone.</span> The city, and a number people can actually use.</li>
+              </ol>
+              <h2 className="text-sm font-medium">Start with a category</h2>
+              <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
+                {postingPlans().map((item) => {
+                  const Icon = categoryIcons[item.id]
+                  const selected = category === item.id
+                  return (
+                    <button
+                      key={item.id}
+                      type="button"
+                      aria-pressed={selected}
+                      onClick={() => chooseCategory(item.id)}
+                      className={cn(
+                        "flex items-center gap-3 rounded-xl border px-3 py-3 text-left text-sm",
+                        selected ? "border-neutral-950 bg-neutral-50 font-medium" : "border-neutral-200 hover:border-neutral-400",
+                      )}
+                    >
+                      <Icon className="size-4 shrink-0" />
+                      {categoryName(item.id)}
+                    </button>
+                  )
+                })}
+              </div>
+            </section>
+          ) : null}
+
+          {step === 1 && plan ? (
+            <section className="grid gap-4">
+              <div>
+                <h2 className="text-lg font-semibold tracking-tight">{plan.prompt}</h2>
+                <p className="mt-1 text-sm text-neutral-500">{plan.intro}</p>
+              </div>
+              <div className="grid gap-2">
+                {plan.subcategories.map((item) => {
+                  const selected = subcategoryId === item.id
+                  return (
+                    <button
+                      key={item.id}
+                      type="button"
+                      aria-pressed={selected}
+                      onClick={() => chooseSubcategory(item)}
+                      className={cn(
+                        "rounded-xl border px-3 py-3 text-left",
+                        selected ? "border-neutral-950 bg-neutral-50" : "border-neutral-200 hover:border-neutral-400",
+                      )}
+                    >
+                      <span className="block text-sm font-medium">{item.name}</span>
+                      <span className="mt-0.5 block text-xs text-neutral-500">{item.summary}</span>
+                    </button>
+                  )
+                })}
+              </div>
+            </section>
+          ) : null}
+
+          {step === 2 && plan && subcategory ? (
+            <section className="grid gap-5">
+              <div>
+                <h2 className="text-lg font-semibold tracking-tight">{categoryName(plan.id)} · {subcategory.name}</h2>
+                <p className="mt-1 text-sm text-neutral-500">{subcategory.summary}</p>
+                <p className="mt-2 text-xs text-neutral-500">
+                  On the card: {subcategory.name}
+                  {cardFactLabels(subcategory).length > 0 ? ` · ${cardFactLabels(subcategory).join(" · ")}` : ""}.
+                  The other answers, and your paragraph, stay on the listing page under {plan.detailHeading} and {plan.aboutHeading}.
+                </p>
+              </div>
+              <Field label="Photo" hint={plan.photoHint} error={errors.image}>
+                <Input type="file" accept="image/*" onChange={(event) => onFile(event.target.files?.[0])} className="h-10 cursor-pointer" />
+              </Field>
+              <Field label="Title" error={errors.title}>
+                <Input
+                  value={title}
+                  onChange={(event) => {
+                    setTitle(event.target.value)
+                    setErrors((current) => ({ ...current, title: undefined }))
+                  }}
+                  placeholder={subcategory.titlePlaceholder}
+                  className="h-10"
+                />
+              </Field>
+              <div className={cn("grid gap-5", subcategory.periods.length > 1 ? "sm:grid-cols-3" : "sm:grid-cols-2")}>
+                <Field label={`${subcategory.priceLabel} (${currency})`} error={errors.price}>
+                  <Input
+                    inputMode="decimal"
+                    value={price}
+                    onChange={(event) => {
+                      setPrice(event.target.value)
+                      setErrors((current) => ({ ...current, price: undefined }))
+                    }}
+                    placeholder={subcategory.pricePlaceholder}
+                    className="h-10"
+                  />
+                </Field>
+                <Field label="Currency">
+                  <Select
+                    value={currency}
+                    onValueChange={(value) => {
+                      if (value && currencies.includes(value)) setCurrency(value)
+                    }}
+                  >
+                    <SelectTrigger className="h-10 w-full">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {currencies.map((code) => (
+                        <SelectItem key={code} value={code}>
+                          {code} · {currencyLabel(code)}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </Field>
+                {subcategory.periods.length > 1 ? (
+                  <Field label="Charged">
+                    <Select
+                      value={period}
+                      onValueChange={(value) => {
+                        if (isPricePeriodId(value) && subcategory.periods.includes(value)) setPeriod(value)
+                      }}
+                    >
+                      <SelectTrigger className="h-10 w-full">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {subcategory.periods.map((id) => (
+                          <SelectItem key={id} value={id}>
+                            {pricePeriod(id).label}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </Field>
+                ) : null}
+              </div>
+              <div className="grid gap-5 sm:grid-cols-2">
+                {subcategory.fields.map((field) => (
+                  <DetailControl
+                    key={field.id}
+                    field={field}
+                    value={details[field.id] ?? ""}
+                    error={errors[field.id]}
+                    onChange={(value) => setDetail(field.id, value)}
+                  />
+                ))}
+              </div>
+              <Field label={plan.descriptionLabel} error={errors.description}>
+                <Textarea
+                  value={description}
+                  onChange={(event) => {
+                    setDescription(event.target.value)
+                    setErrors((current) => ({ ...current, description: undefined }))
+                  }}
+                  rows={5}
+                  placeholder={subcategory.descriptionPlaceholder ?? plan.descriptionPlaceholder}
+                />
+              </Field>
+              {cardLine ? (
+                <p className="text-xs text-neutral-500">
+                  Card line: <span className="font-medium text-neutral-800">{cardLine}</span>
+                </p>
+              ) : null}
+              <div className="lg:hidden">
+                <ListingCard listing={preview} linked={false} saveable={false} />
+              </div>
+            </section>
+          ) : null}
+
+          {step === 3 && plan ? (
+            <section className="grid gap-5">
+              <div>
+                <h2 className="text-lg font-semibold tracking-tight">Where is it, and how do people reach you?</h2>
+                <p className="mt-1 text-sm text-neutral-500">{plan.phoneHint}</p>
+              </div>
+              <div className="grid gap-5 sm:grid-cols-2">
+                <Field label="Country">
+                  <Select
+                    value={country}
+                    onValueChange={(value) => {
+                      const code = canonicalCountry(value)
+                      if (!code) return
+                      setCountry(code)
+                      setCity("")
+                      setPlace(null)
+                      setCurrency(getCountry(code)?.currencies[0]?.code ?? "USD")
+                    }}
+                  >
+                    <SelectTrigger className="h-10 w-full">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {countryOptions.map((item) => (
+                        <SelectItem key={item.code} value={item.code}>
+                          {item.name}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </Field>
+                <Field label="City" error={errors.city} hint="Pick a GeoNames city, or search the map.">
+                  <CityField
+                    country={country}
+                    city={city}
+                    onCityChange={(value) => {
+                      setCity(value)
+                      setErrors((current) => ({ ...current, city: undefined }))
+                    }}
+                    onPlace={setPlace}
+                  />
+                </Field>
+              </div>
+              <Field label="Phone" error={errors.phone} hint={callingCode ? `Calling code ${callingCode}.` : undefined}>
+                <Input
+                  value={phone}
+                  onChange={(event) => {
+                    setPhone(event.target.value)
+                    setErrors((current) => ({ ...current, phone: undefined }))
+                  }}
+                  placeholder={callingCode ? `${callingCode} 7XX XXX XXX` : "+254 7XX XXX XXX"}
+                  className="h-10"
+                />
+              </Field>
+              <div className="lg:hidden">
+                <ListingCard listing={preview} linked={false} saveable={false} />
+              </div>
+            </section>
+          ) : null}
+
           <div className="flex items-center gap-3">
-            <Button type="submit" disabled={submitting} className="h-10 rounded-full px-5">
-              Publish ad
-            </Button>
-            <Button type="button" variant="ghost" onClick={() => router.push("/")}>
-              Cancel
-            </Button>
+            {step === 0 ? (
+              <Button type="button" variant="ghost" onClick={() => router.push("/")}>
+                Cancel
+              </Button>
+            ) : (
+              <Button type="button" variant="ghost" onClick={() => setStep((current) => Math.max(0, current - 1))}>
+                Back
+              </Button>
+            )}
+            {step < 3 ? (
+              <Button
+                type="submit"
+                className="h-10 rounded-full px-5"
+                disabled={(step === 0 && !category) || (step === 1 && !subcategory)}
+              >
+                Continue
+              </Button>
+            ) : (
+              <Button type="submit" disabled={submitting} className="h-10 rounded-full px-5">
+                Publish ad
+              </Button>
+            )}
           </div>
         </form>
       </div>
       <aside className="hidden lg:block">
-        <p className="mb-3 text-xs font-medium tracking-wide text-neutral-500 uppercase">Preview</p>
+        <p className="mb-3 text-xs font-medium tracking-wide text-neutral-500 uppercase">Card preview</p>
         <div className="sticky top-[85px]">
-          <ListingCard listing={preview} linked={false} saveable={false} />
+          {category ? (
+            <ListingCard listing={preview} linked={false} saveable={false} />
+          ) : (
+            <p className="rounded-xl border border-dashed border-neutral-300 px-4 py-8 text-sm text-neutral-500">
+              The card appears here after you choose a category.
+            </p>
+          )}
         </div>
       </aside>
     </div>
   )
+}
+
+function DetailControl({
+  field,
+  value,
+  error,
+  onChange,
+}: {
+  field: DetailField
+  value: string
+  error?: string
+  onChange: (value: string) => void
+}) {
+  switch (field.kind) {
+    case "select":
+      return (
+        <Field label={field.label} hint={field.hint} error={error}>
+          <Select
+            value={value || undefined}
+            onValueChange={(next) => {
+              if (next) onChange(next)
+            }}
+          >
+            <SelectTrigger className="h-10 w-full">
+              <SelectValue placeholder={`Choose ${field.label.toLowerCase()}`} />
+            </SelectTrigger>
+            <SelectContent>
+              {(field.options ?? []).map((option) => (
+                <SelectItem key={option} value={option}>
+                  {option}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </Field>
+      )
+    case "text":
+      return (
+        <Field label={field.label} hint={field.hint} error={error}>
+          <Input value={value} onChange={(event) => onChange(event.target.value)} placeholder={field.placeholder} className="h-10" />
+        </Field>
+      )
+    default: {
+      const unreachable: never = field.kind
+      throw new Error(`Unknown field kind: ${unreachable}`)
+    }
+  }
 }
 
 function currencyChoices(countryCode: string): string[] {

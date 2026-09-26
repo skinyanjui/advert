@@ -29,6 +29,7 @@ import {
 } from "@/lib/format"
 import { osmLinks } from "@/lib/map"
 import { useMarketplace } from "@/lib/marketplace"
+import { listingFacts, listingVoice } from "@/lib/posting"
 import { useClientTime } from "@/lib/use-client-time"
 import { categoryName, type Listing } from "@/lib/types"
 import { cn } from "@/lib/utils"
@@ -50,6 +51,8 @@ export function ListingDetail({ id }: { id: string }) {
   }
 
   const saved = isSaved(listing.id)
+  const voice = listingVoice(listing)
+  const facts = listingFacts(listing)
   const related = listings
     .filter((item) => item.category === listing.category && item.id !== listing.id)
     .slice(0, 4)
@@ -124,18 +127,24 @@ export function ListingDetail({ id }: { id: string }) {
                 <Clock className="size-4" />
                 {formatPosted(hoursAgoOf(listing))}
               </span>
-              <span>{categoryName(listing.category)}</span>
-              {listing.meta ? <span>{listing.meta}</span> : null}
+              <span>
+                {categoryName(listing.category)}
+                {voice.typeName ? ` · ${voice.typeName}` : ""}
+              </span>
             </div>
           </div>
           <section className="mt-8">
-            <h2 className="text-sm font-medium text-neutral-950">Description</h2>
-            <p className="mt-2 max-w-2xl text-sm leading-6 text-neutral-700">{listing.description}</p>
-            <dl className="mt-5 grid grid-cols-2 gap-3 text-sm sm:grid-cols-3">
-              <Fact label="Condition" value={listing.condition} />
-              <Fact label="Category" value={categoryName(listing.category)} />
+            <h2 className="text-sm font-medium text-neutral-950">{voice.detailHeading}</h2>
+            <dl className="mt-3 grid grid-cols-2 gap-3 text-sm sm:grid-cols-3">
+              {facts.map((fact) => (
+                <Fact key={fact.label} label={fact.label} value={fact.value} />
+              ))}
               <Fact label="Listed" value={formatPosted(hoursAgoOf(listing))} />
             </dl>
+          </section>
+          <section className="mt-8">
+            <h2 className="text-sm font-medium text-neutral-950">{voice.aboutHeading}</h2>
+            <p className="mt-2 max-w-2xl text-sm leading-6 text-neutral-700">{listing.description}</p>
           </section>
           <PlacePanel listing={listing} />
           {related.length > 0 ? (
@@ -161,7 +170,7 @@ export function ListingDetail({ id }: { id: string }) {
           </div>
           <div className="mt-4 grid gap-2">
             <Button className="h-10 rounded-full" onClick={() => setMessageOpen(true)}>
-              Message seller
+              {voice.messageLabel}
             </Button>
             <Button variant="outline" className="h-10 rounded-full" asChild>
               <a href={whatsappHref(listing.phone, listing.title)} target="_blank" rel="noreferrer">
@@ -177,7 +186,7 @@ export function ListingDetail({ id }: { id: string }) {
             </Button>
           </div>
           <p className="mt-4 text-xs leading-5 text-neutral-500">
-            Meet in a public place and confirm the item before you pay. This is a sample marketplace, so messages stay in your browser.
+            {voice.safety} Messages stay in this browser.
           </p>
         </aside>
       </div>
@@ -197,13 +206,13 @@ export function ListingDetail({ id }: { id: string }) {
           <DialogHeader>
             <DialogTitle>Message {listing.sellerName}</DialogTitle>
             <DialogDescription>
-              About {listing.title}. The seller sees this on the demo account only.
+              {voice.dialogLead} The reply stays in this browser.
             </DialogDescription>
           </DialogHeader>
           <Textarea
             value={message}
             onChange={(event) => setMessage(event.target.value)}
-            placeholder="Is this still available? I can view it tomorrow."
+            placeholder={voice.messagePlaceholder}
             rows={4}
           />
           <DialogFooter>

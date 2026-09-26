@@ -39,7 +39,9 @@ function parseStored(raw: string | null): StoredState {
       ? parsed.posted.flatMap((item) => {
           if (!isStoredListing(item)) return []
           const country = canonicalCountry(item.country)
-          return country ? [{ ...item, country }] : []
+          return country
+            ? [{ ...item, country, subcategory: cleanSubcategory(item.subcategory), details: cleanDetails(item.details) }]
+            : []
         })
       : []
     const savedIds = Array.isArray(parsed.savedIds)
@@ -85,6 +87,16 @@ function getReadySnapshot() {
 
 function getReadyServerSnapshot() {
   return false
+}
+
+function cleanSubcategory(value: unknown): string | undefined {
+  return typeof value === "string" && value.trim() ? value : undefined
+}
+
+function cleanDetails(value: unknown): Record<string, string> | undefined {
+  if (!value || typeof value !== "object" || Array.isArray(value)) return undefined
+  const entries = Object.entries(value).filter((entry): entry is [string, string] => typeof entry[1] === "string" && entry[1].trim().length > 0)
+  return entries.length > 0 ? Object.fromEntries(entries) : undefined
 }
 
 function isStoredListing(value: unknown): value is Listing {

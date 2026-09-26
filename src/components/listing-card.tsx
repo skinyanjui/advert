@@ -5,6 +5,7 @@ import Image from "next/image"
 import Link from "next/link"
 
 import { formatPlace, formatPosted, formatPrice, hoursAgoOf } from "@/lib/format"
+import { listingMeta } from "@/lib/posting"
 import { useMarketplace } from "@/lib/marketplace"
 import type { Listing } from "@/lib/types"
 import { cn } from "@/lib/utils"
@@ -48,7 +49,7 @@ export function ListingCard({
           {formatPrice(listing)}
         </p>
         <h3 className="truncate text-[13px] leading-4 text-neutral-800">{listing.title}</h3>
-        <p className="truncate text-[11px] leading-3.5 text-neutral-500">{listing.meta}</p>
+        <p className="truncate text-[11px] leading-3.5 text-neutral-500">{listingMeta(listing)}</p>
         <div className="grid grid-cols-[minmax(0,1fr)_auto] items-center gap-1.5 text-[11px] leading-none text-neutral-500">
           <span className="flex min-w-0 items-center gap-1">
             <MapPin className="size-3 shrink-0" />

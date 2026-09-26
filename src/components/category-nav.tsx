@@ -21,7 +21,7 @@ import { formatCount } from "@/lib/format"
 import { categories, categoryName, type CategoryId } from "@/lib/types"
 import { cn } from "@/lib/utils"
 
-const icons: Record<CategoryId | "all", LucideIcon> = {
+export const categoryIcons: Record<CategoryId | "all", LucideIcon> = {
   all: LayoutGrid,
   vehicles: Car,
   property: Home,
@@ -48,7 +48,7 @@ export function CategoryNav({ active, counts, total, onSelect }: CategoryNavProp
   return (
     <nav aria-label="Categories" className="flex flex-col gap-0.5">
       <CategoryButton
-        icon={icons.all}
+        icon={categoryIcons.all}
         label="All listings"
         count={total}
         active={!active}
@@ -57,7 +57,7 @@ export function CategoryNav({ active, counts, total, onSelect }: CategoryNavProp
       {categories.map((category) => (
         <CategoryButton
           key={category.id}
-          icon={icons[category.id]}
+          icon={categoryIcons[category.id]}
           label={categoryName(category.id)}
           count={counts[category.id]}
           active={active === category.id}

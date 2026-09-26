@@ -1,3 +1,4 @@
+import { findSubcategory, seedPosting } from "@/lib/posting"
 import type { CategoryId, Listing } from "@/lib/types"
 
 export const categoryImage: Record<CategoryId, string> = {
@@ -18,7 +19,13 @@ export const categoryImage: Record<CategoryId, string> = {
 type Seed = Listing
 
 function listing(entry: Seed): Seed {
-  return { currency: "USD", ...entry }
+  const posted = seedPosting[entry.id]
+  return {
+    currency: "USD",
+    ...entry,
+    subcategory: posted?.subcategory ?? entry.subcategory,
+    details: posted?.details ?? entry.details,
+  }
 }
 
 export const seedListings: Listing[] = [
@@ -852,3 +859,10 @@ export const seedListings: Listing[] = [
     phone: "+251 91 118 2204",
   }),
 ]
+
+for (const item of seedListings) {
+  const posted = seedPosting[item.id]
+  if (!posted || !findSubcategory(item.category, posted.subcategory)) {
+    throw new Error(`Posting plan missing for ${item.id}`)
+  }
+}

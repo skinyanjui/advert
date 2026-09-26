@@ -40,6 +40,7 @@ import {
   type Listing,
   type SortId,
 } from "@/lib/types"
+import { listingSearchBits } from "@/lib/posting"
 import { useClientTime } from "@/lib/use-client-time"
 import { useListingQuery } from "@/lib/use-listing-query"
 
@@ -327,6 +328,7 @@ function matchesQuery(listing: Listing, q: string): boolean {
     listing.meta ?? "",
     countryName(listing.country),
     categoryName(listing.category),
+    ...listingSearchBits(listing),
   ]
     .join(" ")
     .toLowerCase()

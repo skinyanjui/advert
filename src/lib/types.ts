@@ -37,6 +37,10 @@ export type Listing = {
   currency?: string
   priceSuffix?: string
   category: CategoryId
+  /** Subcategory id from the posting plan, for example "cars". */
+  subcategory?: string
+  /** Answers from the conditional form, keyed by field id. */
+  details?: Record<string, string>
   country: CountryId
   city: string
   latitude?: number
