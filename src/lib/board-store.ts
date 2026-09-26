@@ -40,8 +40,16 @@ function unpack(row: Row, owner?: string): Listing | undefined {
     expiresAt: row.expires_at ?? listing.expiresAt }
 }
 function payload(listing: Listing) {
+  const images =
+    Array.isArray(listing.images) && listing.images.length > 0
+      ? listing.images.slice(0, 6)
+      : listing.image
+        ? [listing.image]
+        : []
   return {
     ...listing,
+    image: images[0] ?? listing.image,
+    images: images.length > 0 ? images : undefined,
     mine: undefined,
     featured: undefined,
     hidden: undefined,
@@ -70,6 +78,34 @@ async function storePhoto(image: string, owner: string, previous?: string): Prom
   const { error } = await db.storage.from("listing-photos").upload(path, bytes, { contentType: mime })
   check(error)
   return { ok: true, value: db.storage.from("listing-photos").getPublicUrl(path).data.publicUrl }
+}
+
+async function storePhotos(
+  images: string[],
+  owner: string,
+  previous: string[] = [],
+): Promise<Result<string[]>> {
+  if (images.length > 6) return { ok: false, reason: "You can add up to 6 photos." }
+  if (images.length === 0) return { ok: false, reason: "Add at least one photo, or keep the category placeholder." }
+  const stored: string[] = []
+  for (let index = 0; index < images.length; index++) {
+    const image = images[index]!
+    const prior = previous.includes(image) ? image : undefined
+    const result = await storePhoto(image, owner, prior)
+    if (!result.ok) {
+      for (const url of stored) {
+        if (!previous.includes(url)) await removePhoto(url)
+      }
+      return result
+    }
+    stored.push(result.value)
+  }
+  return { ok: true, value: stored }
+}
+
+function listingPhotoList(listing: Listing): string[] {
+  if (Array.isArray(listing.images) && listing.images.length > 0) return listing.images.slice(0, 6)
+  return listing.image ? [listing.image] : []
 }
 async function removePhoto(image: string) {
   const path = photoPath(image)
@@ -188,11 +224,17 @@ export async function createListing(owner: string, input: unknown): Promise<Resu
   if (!accepted.ok) return accepted
   const quota = await postingQuota(owner)
   if (!quota.ok) return quota
-  const photo = await storePhoto(listing.image, owner)
+  const photo = await storePhotos(listingPhotoList(accepted.listing), owner)
   if (!photo.ok) return photo
   const postedAt = new Date().toISOString()
   const expiresAt = expiresAtFrom(postedAt)
-  const stored = { ...accepted.listing, image: photo.value, postedAt, expiresAt }
+  const stored = {
+    ...accepted.listing,
+    image: photo.value[0]!,
+    images: photo.value,
+    postedAt,
+    expiresAt,
+  }
   const { error } = await boardDb().from("board_listings").insert({
     id: listing.id,
     owner_id: owner,
@@ -201,7 +243,9 @@ export async function createListing(owner: string, input: unknown): Promise<Resu
     payload: payload(stored),
   })
   if (error) {
-    if (photo.value !== listing.image) await removePhoto(photo.value)
+    for (const url of photo.value) {
+      if (!listingPhotoList(accepted.listing).includes(url)) await removePhoto(url)
+    }
     if (error.code === "23505") return { ok: false, reason: "That listing is already on the board." }
     check(error)
   }
@@ -218,18 +262,29 @@ export async function updateListing(owner: string, id: string, input: unknown): 
   const old = cleanListing(row.payload)
   const accepted = acceptListing({ ...listing, mine: true, sold: listing.sold ?? old?.sold })
   if (!accepted.ok) return accepted
-  const photo = await storePhoto(listing.image, owner, old?.image)
+  const previousPhotos = old ? listingPhotoList(old) : []
+  const photo = await storePhotos(listingPhotoList(accepted.listing), owner, previousPhotos)
   if (!photo.ok) return photo
-  const stored = { ...accepted.listing, id, image: photo.value, postedAt: row.posted_at,
-    hoursAgo: hoursAgoOf({ hoursAgo: 0, postedAt: row.posted_at }) }
+  const stored = {
+    ...accepted.listing,
+    id,
+    image: photo.value[0]!,
+    images: photo.value,
+    postedAt: row.posted_at,
+    hoursAgo: hoursAgoOf({ hoursAgo: 0, postedAt: row.posted_at }),
+  }
   const { data, error } = await db.from("board_listings").update({ payload: payload(stored) })
     .eq("id", id).eq("owner_id", owner).select("id,owner_id,posted_at,payload,hidden_at,hidden_reason,expires_at")
   if (error || !data?.length) {
-    if (photo.value !== listing.image) await removePhoto(photo.value)
+    for (const url of photo.value) {
+      if (!previousPhotos.includes(url)) await removePhoto(url)
+    }
     check(error)
     return { ok: false, reason: "This ad is no longer on the board." }
   }
-  if (old?.image && old.image !== photo.value) await removePhoto(old.image)
+  for (const url of previousPhotos) {
+    if (!photo.value.includes(url)) await removePhoto(url)
+  }
   const updated = unpack(data[0] as Row, owner)
   if (!updated) return { ok: false, reason: "That ad could not be read." }
   return { ok: true, value: updated }
@@ -311,7 +366,9 @@ export async function deleteListing(owner: string, id: string): Promise<Result<t
   const { error: saveError } = await db.from("board_saves").delete().eq("listing_id", id)
   check(saveError)
   const old = cleanListing(data[0].payload)
-  if (old) await removePhoto(old.image)
+  if (old) {
+    for (const url of listingPhotoList(old)) await removePhoto(url)
+  }
   return { ok: true, value: true }
 }
 async function exists(id: string) {
@@ -827,7 +884,9 @@ export async function removeListingForReport(adminId: string, reportId: string):
     const { error: saveError } = await db.from("board_saves").delete().eq("listing_id", listingId)
     check(saveError)
     const old = cleanListing(row.payload)
-    if (old) await removePhoto(old.image)
+    if (old) {
+      for (const url of listingPhotoList(old)) await removePhoto(url)
+    }
   }
 
   return { ok: true, value: true }

@@ -57,6 +57,8 @@ export type Listing = {
   hoursAgo: number
   postedAt?: string
   image: string
+  /** Extra photos; first entry matches `image` (cover). Legacy ads may omit this. */
+  images?: string[]
   featured?: boolean
   badge?: ListingBadge
   meta?: string
