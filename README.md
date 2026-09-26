@@ -34,6 +34,44 @@ Open [http://localhost:3000](http://localhost:3000).
 
 Rebuild the snapshots with `node scripts/build-reference.mjs`.
 
+## Reference database and sync webhook
+
+The checked-in snapshots are the app's offline fallback. The dedicated Supabase
+database mirrors those records so other clients can query the same reference
+data. Apply `database/schema.sql` once, then import the snapshots with
+`node scripts/reference-sql.mjs batches` and apply numbered batches from
+`node scripts/reference-sql.mjs 0` onward. The import is idempotent. The
+database holds countries, cities (population at least 15,000), currencies,
+languages, time zones, country relationships, and source hashes. There are no
+currency conversion rates or translated names stored in these tables.
+
+`GET /api/reference/countries` and `GET /api/reference/cities?country=KE&q=Nai`
+read from Supabase with its publishable key and use the bundled snapshot if
+Supabase is unavailable. The board's city controls use the city endpoint.
+Display labels and local time remain formatted by `Intl` at runtime.
+
+`POST /api/reference/sync` is a webhook receiver for a snapshot update. Send
+`Authorization: Bearer <REFERENCE_WEBHOOK_SECRET>` after a deployment containing
+the refreshed JSON files. It upserts only changed snapshots and stores their
+SHA-256 versions in `reference_imports`. The endpoint **does not** accept arbitrary
+external data or call upstream services. Configure `SUPABASE_URL`, a server-only
+`SUPABASE_SECRET_KEY`, and `REFERENCE_WEBHOOK_SECRET` in Vercel. The key must
+never be prefixed `NEXT_PUBLIC_` or committed. If Vercel supplies the legacy
+`SUPABASE_SERVICE_ROLE_KEY`, the sync handler supports it too.
+
+The upstream datasets do not send webhooks. Refresh them deliberately with
+`node scripts/build-reference.mjs`, review the resulting data diff and license
+attribution, deploy the updated snapshot, and then call the sync endpoint.
+This prevents a third party's changed country or city record from appearing
+on the live board without review. The source data comes from
+[mledoze/countries](https://github.com/mledoze/countries) (ODbL 1.0) and
+[GeoNames cities15000](https://download.geonames.org/export/dump/)
+(CC BY 4.0). ISO code semantics are described by
+[ISO](https://www.iso.org/iso-4217-currency-codes.html); currency and language
+display names use Unicode CLDR through the server's `Intl` runtime, and city
+time zones use IANA identifiers supplied by GeoNames. Maps are OpenStreetMap
+embeds; no request goes to the public Nominatim autocomplete API.
+
 ## Photos
 
 Sample photos come from Unsplash, Pexels, and Wikimedia Commons. The Toyota HiAce photo is by Lawrence Ruiz and the diesel generator photo is by Biswarup Ganguly, both CC BY-SA via Wikimedia Commons.
