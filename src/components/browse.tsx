@@ -102,12 +102,13 @@ export function Browse() {
       ? `${cityLabel}, ${countryName(query.country)}`
       : countryName(query.country)
     : "All Africa"
-  const categoryLabel = query.category ? categoryName(query.category) : "All listings"
-
   return (
-    <div className="mx-auto flex w-full max-w-[1720px] gap-6 px-4 pt-4 pb-16 md:px-6">
-      <aside className="hidden w-[228px] shrink-0 lg:block">
-        <div className="sticky top-[132px]">
+    <div className="mx-auto flex w-full max-w-[1720px] items-start">
+      <aside className="sticky top-[132px] hidden h-[calc(100dvh-132px)] w-60 shrink-0 overflow-y-auto border-r border-neutral-200 bg-white md:block">
+        <div className="px-3 py-4">
+          <p className="px-2.5 pb-2 text-xs font-medium tracking-wide text-neutral-500 uppercase">
+            Categories
+          </p>
           <CategoryNav
             active={query.category}
             counts={counts}
@@ -116,14 +117,14 @@ export function Browse() {
           />
         </div>
       </aside>
-      <section className="min-w-0 flex-1">
+      <section className="min-w-0 flex-1 px-4 py-4 pb-16 md:px-6 md:py-5">
         <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
           <div className="flex items-center gap-2">
             <Sheet open={sheetOpen} onOpenChange={setSheetOpen}>
               <SheetTrigger asChild>
-                <Button variant="outline" className="h-9 rounded-full lg:hidden">
+                <Button variant="outline" className="h-9 rounded-full md:hidden">
                   <SlidersHorizontal />
-                  {categoryLabel}
+                  Categories
                 </Button>
               </SheetTrigger>
               <SheetContent side="left" className="w-[300px] sm:max-w-xs">

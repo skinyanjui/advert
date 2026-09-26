@@ -87,21 +87,17 @@ function CategoryButton({
       onClick={onClick}
       aria-current={active ? "page" : undefined}
       className={cn(
-        "flex w-full items-center gap-2.5 rounded-xl px-3 py-2 text-left text-sm transition-colors",
+        "flex w-full items-center gap-2.5 rounded-lg px-2.5 py-2 text-left text-sm transition-colors",
         active
-          ? "bg-neutral-950 text-white"
-          : "text-neutral-700 hover:bg-neutral-100",
+          ? "bg-neutral-100 font-medium text-neutral-950"
+          : "text-neutral-600 hover:bg-neutral-50 hover:text-neutral-950",
       )}
     >
       <Icon className="size-4 shrink-0" />
       <span className="min-w-0 flex-1 truncate">{label}</span>
-      {active ? (
-        <span className="rounded-full bg-white/15 px-1.5 py-0.5 text-[11px] tabular-nums">
-          {formatCount(count)}
-        </span>
-      ) : (
-        <span className="text-xs text-neutral-400 tabular-nums">{formatCount(count)}</span>
-      )}
+      <span className={cn("text-xs tabular-nums", active ? "text-neutral-700" : "text-neutral-400")}>
+        {formatCount(count)}
+      </span>
     </button>
   )
 }
