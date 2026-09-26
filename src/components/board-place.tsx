@@ -37,10 +37,27 @@ export function BoardCitySearch({
   const inputRef = useRef<HTMLInputElement>(null)
   const [open, setOpen] = useState(false)
   const [draft, setDraft] = useState("")
+  const [remote, setRemote] = useState<{ key: string; places: PlaceHit[] }>({ key: "", places: [] })
   const value = open ? draft : (city ?? "")
   const query = draft.trim()
   const local = useMemo(() => listedAndKnownCities(country, query, places), [country, query, places])
-  const suggestions = open ? local : []
+  const key = `${country}|${query}`
+  const suggestions = open ? mergePlaces(local, remote.key === key ? remote.places : []) : []
+
+  useEffect(() => {
+    if (!open || query.length < 2) return
+    const controller = new AbortController()
+    const timer = window.setTimeout(async () => {
+      try {
+        const params = new URLSearchParams({ q: query, country })
+        const response = await fetch(`/api/reference/cities?${params}`, { signal: controller.signal })
+        if (!response.ok) return
+        const payload = (await response.json()) as { places?: PlaceHit[] }
+        setRemote({ key, places: (payload.places ?? []).map((place) => ({ ...place, source: "geonames" })) })
+      } catch { /* Bundled cities remain available. */ }
+    }, 250)
+    return () => { controller.abort(); window.clearTimeout(timer) }
+  }, [open, query, country, key])
 
   function begin() {
     if (open) return
