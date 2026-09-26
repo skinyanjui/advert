@@ -4,8 +4,10 @@ import { Suspense } from "react"
 
 import { HeaderFallback, SiteHeader } from "@/components/site-header"
 import { SiteFooter } from "@/components/site-footer"
+import { ThemeSync } from "@/components/theme-choices"
 import { Toaster } from "@/components/ui/sonner"
 import { MarketplaceProvider } from "@/lib/marketplace"
+import { themeBootScript } from "@/lib/theme"
 
 import "./globals.css"
 
@@ -30,8 +32,10 @@ export const metadata: Metadata = {
 
 export default function RootLayout({ children }: LayoutProps<"/">) {
   return (
-    <html lang="en" className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`}>
+    <html lang="en" className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`} suppressHydrationWarning>
       <body className="flex min-h-full flex-col bg-background font-sans text-foreground">
+        <script dangerouslySetInnerHTML={{ __html: themeBootScript }} />
+        <ThemeSync />
         <MarketplaceProvider>
           <Suspense fallback={<HeaderFallback />}>
             <SiteHeader />

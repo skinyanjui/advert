@@ -3,6 +3,7 @@
 import { ChevronRight, MapPin } from "lucide-react"
 import Link from "next/link"
 
+import { ThemeChoices } from "@/components/theme-choices"
 import { Button } from "@/components/ui/button"
 import { countryName } from "@/lib/countries"
 import { useHomePlace, writeHomePlace } from "@/lib/home-place"
@@ -23,6 +24,11 @@ export function AccountPage() {
       <p className="mt-1 text-sm text-neutral-500">Amina K. · demo account on this browser</p>
 
       <section className="mt-6 rounded-2xl border border-neutral-200 bg-white p-4">
+        <p className="text-sm font-medium">Appearance</p>
+        <ThemeChoices className="mt-3" />
+      </section>
+
+      <section className="mt-4 rounded-2xl border border-neutral-200 bg-white p-4">
         <div className="flex items-start gap-3">
           <MapPin className="mt-0.5 size-4 shrink-0 text-neutral-500" />
           <div className="min-w-0 flex-1">

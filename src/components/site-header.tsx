@@ -6,6 +6,7 @@ import { usePathname, useSearchParams } from "next/navigation"
 import { useEffect, useRef, useState, type ReactNode } from "react"
 
 import { Logo } from "@/components/logo"
+import { ThemeChoices } from "@/components/theme-choices"
 import { Button, buttonVariants } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { countries, countryName, fold, moreCountries, primaryCountries } from "@/lib/countries"
@@ -128,6 +129,7 @@ export function SiteHeader() {
                 <div className="px-2 py-1.5">
                   <p className="text-sm font-medium">Amina K.</p>
                   <p className="text-xs text-neutral-500">Demo account on this browser</p>
+                  <ThemeChoices className="mt-2" />
                 </div>
                 <div className="mx-1 my-1 h-px bg-neutral-200" />
                 <MenuLink href="/account">Profile</MenuLink>
@@ -345,7 +347,12 @@ function HeaderMenu({
     >
       <summary
         aria-label={label}
-        className={cn(buttonVariants({ variant: "outline" }), summaryClass, "group-open:bg-neutral-100", summaryClassName)}
+        className={cn(
+          buttonVariants({ variant: "outline" }),
+          summaryClass,
+          "group-open:bg-neutral-100 dark:group-open:bg-neutral-800",
+          summaryClassName,
+        )}
       >
         {summary}
       </summary>
