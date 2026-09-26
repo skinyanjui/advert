@@ -187,8 +187,8 @@ function AdForm({ existing }: { existing: Listing | null }) {
 
   function onFile(file: File | undefined) {
     if (!file) return
-    if (!file.type.startsWith("image/")) {
-      setErrors((current) => ({ ...current, image: "Choose a photo." }))
+    if (!["image/jpeg", "image/png", "image/webp"].includes(file.type)) {
+      setErrors((current) => ({ ...current, image: "Choose a JPEG, PNG, or WebP photo." }))
       return
     }
     if (file.size > 700_000) {
@@ -721,7 +721,7 @@ function PhotoDrop({
       <input
         ref={inputRef}
         type="file"
-        accept="image/*"
+        accept="image/jpeg,image/png,image/webp"
         tabIndex={-1}
         className="sr-only"
         onChange={(event) => {
