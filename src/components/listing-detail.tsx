@@ -68,14 +68,16 @@ export function ListingDetail({ id }: { id: string }) {
   }
 
   const submitMessage = () => {
-    const result = sendMessage(listing.id, message)
-    if (!result.ok) {
-      toast.error(result.reason)
-      return
-    }
-    setMessageOpen(false)
-    setMessage("")
-    toast.success(`Message saved for ${listing.sellerName}`)
+    void (async () => {
+      const result = await sendMessage(listing.id, message)
+      if (!result.ok) {
+        toast.error(result.reason)
+        return
+      }
+      setMessageOpen(false)
+      setMessage("")
+      toast.success(`Message saved for ${listing.sellerName}`)
+    })()
   }
 
   return (
@@ -201,7 +203,7 @@ export function ListingDetail({ id }: { id: string }) {
             </div>
           )}
           <p className="mt-4 text-xs leading-5 text-neutral-500">
-            {listing.mine ? "Changes you save stay on this browser, with the ad." : `${voice.safety} Messages stay in this browser.`}
+            {listing.mine ? "Changes you save stay on the board with the ad." : `${voice.safety} Messages stay with this browser.`}
           </p>
         </aside>
       </div>

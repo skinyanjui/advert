@@ -1,28 +1,25 @@
 "use client"
 
 import { createContext, useContext, useMemo, useSyncExternalStore } from "react"
+import { toast } from "sonner"
 
+import { parseBoardState, type BoardState } from "@/lib/board-payload"
 import { seedListings } from "@/lib/catalog"
-import { canonicalCountry } from "@/lib/countries"
-import { acceptListing } from "@/lib/listing-rules"
-import { isBoardMessage, messageError, sampleReply, type BoardMessage } from "@/lib/messages"
-import { isCategoryId, type Listing } from "@/lib/types"
+import type { BoardMessage } from "@/lib/messages"
+import type { Listing } from "@/lib/types"
 
-const STORAGE_KEY = "africa-classifieds-v1"
-const messageLimit = 200
+const ownerKey = "africa-classifieds-owner"
+const legacyKey = "africa-classifieds-v1"
+const migratedKey = "africa-classifieds-migrated"
+const tokenPattern = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i
 
-type StoredState = {
-  posted: Listing[]
-  savedIds: string[]
-  messages: BoardMessage[]
-}
+type Snapshot = BoardState & { ready: boolean }
 
-const emptyState: StoredState = { posted: [], savedIds: [], messages: [] }
+const emptyState: BoardState = { posted: [], savedIds: [], messages: [] }
+const serverSnapshot: Snapshot = { ...emptyState, ready: false }
 
-let memory: { raw: string | null; state: StoredState } = {
-  raw: null,
-  state: emptyState,
-}
+let memory: Snapshot = { ...emptyState, ready: false }
+let inflight: Promise<void> | null = null
 
 const listeners = new Set<() => void>()
 
@@ -32,222 +29,257 @@ function emit() {
 
 function subscribe(listener: () => void) {
   listeners.add(listener)
+  void ensureLoaded()
   return () => listeners.delete(listener)
 }
 
-function parseStored(raw: string | null): StoredState {
-  if (!raw) return emptyState
+function readSnapshot(): Snapshot {
+  return memory
+}
+
+function getServerSnapshot(): Snapshot {
+  return serverSnapshot
+}
+
+function ownerToken(): string {
+  const current = localStorage.getItem(ownerKey)
+  if (current && tokenPattern.test(current)) return current
+  const next = crypto.randomUUID()
+  localStorage.setItem(ownerKey, next)
+  return next
+}
+
+function requestHeaders(): HeadersInit {
+  return { "content-type": "application/json", "x-owner-token": ownerToken() }
+}
+
+function ensureLoaded(): Promise<void> {
+  if (memory.ready) return Promise.resolve()
+  if (!inflight) inflight = loadBoard()
+  return inflight
+}
+
+async function loadBoard() {
   try {
-    const parsed = JSON.parse(raw) as Partial<StoredState>
-    const posted = Array.isArray(parsed.posted)
-      ? parsed.posted.flatMap((item) => {
-          if (!isStoredListing(item)) return []
-          const country = canonicalCountry(item.country)
-          return country
-            ? [{ ...item, country, subcategory: cleanSubcategory(item.subcategory), details: cleanDetails(item.details) }]
-            : []
-        })
-      : []
-    const savedIds = Array.isArray(parsed.savedIds)
-      ? parsed.savedIds.filter((id): id is string => typeof id === "string")
-      : []
-    const messages = Array.isArray(parsed.messages) ? parsed.messages.filter(isBoardMessage).slice(-messageLimit) : []
-    return { posted, savedIds, messages }
+    await migrateLegacy()
   } catch {
-    return emptyState
+    toast.error("Saved ads on this browser could not be moved into the database.")
   }
-}
-
-function readSnapshot(): StoredState {
-  const raw = localStorage.getItem(STORAGE_KEY)
-  if (raw === memory.raw) return memory.state
-  const state = parseStored(raw)
-  memory = { raw, state }
-  return state
-}
-
-function getServerSnapshot(): StoredState {
-  return emptyState
-}
-
-function writeStored(state: StoredState): boolean {
   try {
-    const raw = JSON.stringify(state)
-    localStorage.setItem(STORAGE_KEY, raw)
-    memory = { raw, state }
+    const response = await fetch("/api/board", { headers: requestHeaders(), cache: "no-store" })
+    if (!response.ok) throw new Error("board")
+    const payload: unknown = await response.json()
+    memory = { ...parseBoardState(payload), ready: true }
+  } catch {
+    memory = { ...emptyState, ready: true }
+    toast.error("The board database did not respond. Sample ads are still here.")
+  }
+  emit()
+}
+
+async function migrateLegacy() {
+  if (localStorage.getItem(migratedKey) === "1") return
+  const raw = localStorage.getItem(legacyKey)
+  if (!raw) {
+    localStorage.setItem(migratedKey, "1")
+    return
+  }
+  const response = await fetch("/api/board", {
+    method: "POST",
+    headers: requestHeaders(),
+    body: raw,
+  })
+  if (!response.ok) throw new Error("migrate")
+  localStorage.removeItem(legacyKey)
+  localStorage.setItem(migratedKey, "1")
+}
+
+async function readFailure(response: Response, fallback: string): Promise<string> {
+  try {
+    const payload = (await response.json()) as { reason?: unknown }
+    if (typeof payload.reason === "string" && payload.reason) return payload.reason
+  } catch {
+    return fallback
+  }
+  return fallback
+}
+
+type StoreResult = { ok: true } | { ok: false; reason: string }
+
+async function addListing(listing: Listing): Promise<StoreResult> {
+  await ensureLoaded()
+  try {
+    const response = await fetch("/api/listings", {
+      method: "POST",
+      headers: requestHeaders(),
+      body: JSON.stringify(listing),
+    })
+    if (!response.ok) return { ok: false, reason: await readFailure(response, "The board database did not save that ad.") }
+    const payload = (await response.json()) as { listing?: unknown }
+    const saved = parseBoardState({ posted: [payload.listing], savedIds: [], messages: [] }).posted[0]
+    if (!saved) return { ok: false, reason: "That ad could not be read." }
+    memory = { ...memory, posted: [saved, ...memory.posted.filter((item) => item.id !== saved.id)], ready: true }
     emit()
-    return true
+    return { ok: true }
   } catch {
-    return false
+    return { ok: false, reason: "The board database did not save that ad." }
   }
 }
 
-function subscribeReady() {
-  return () => {}
+async function updateListing(listing: Listing): Promise<StoreResult> {
+  await ensureLoaded()
+  try {
+    const response = await fetch(`/api/listings/${encodeURIComponent(listing.id)}`, {
+      method: "PATCH",
+      headers: requestHeaders(),
+      body: JSON.stringify(listing),
+    })
+    if (!response.ok) return { ok: false, reason: await readFailure(response, "The board database did not save that ad.") }
+    const payload = (await response.json()) as { listing?: unknown }
+    const saved = parseBoardState({ posted: [payload.listing], savedIds: [], messages: [] }).posted[0]
+    if (!saved) return { ok: false, reason: "That ad could not be read." }
+    const posted = memory.posted.some((item) => item.id === saved.id)
+      ? memory.posted.map((item) => (item.id === saved.id ? saved : item))
+      : [saved, ...memory.posted]
+    memory = { ...memory, posted, ready: true }
+    emit()
+    return { ok: true }
+  } catch {
+    return { ok: false, reason: "The board database did not save that ad." }
+  }
 }
 
-function getReadySnapshot() {
-  return true
+function removeListing(id: string) {
+  void (async () => {
+    await ensureLoaded()
+    const previous = memory.posted
+    memory = {
+      ...memory,
+      posted: memory.posted.filter((listing) => listing.id !== id),
+      savedIds: memory.savedIds.filter((savedId) => savedId !== id),
+      ready: true,
+    }
+    emit()
+    try {
+      const response = await fetch(`/api/listings/${encodeURIComponent(id)}`, {
+        method: "DELETE",
+        headers: requestHeaders(),
+      })
+      if (!response.ok) throw new Error("delete")
+    } catch {
+      memory = { ...memory, posted: previous, ready: true }
+      emit()
+      toast.error("The board database did not remove that ad.")
+    }
+  })()
 }
 
-function getReadyServerSnapshot() {
-  return false
+function toggleSaved(id: string) {
+  void (async () => {
+    await ensureLoaded()
+    const previous = memory.savedIds
+    const savedIds = previous.includes(id) ? previous.filter((savedId) => savedId !== id) : [id, ...previous]
+    memory = { ...memory, savedIds, ready: true }
+    emit()
+    try {
+      const response = await fetch("/api/saves", {
+        method: "POST",
+        headers: requestHeaders(),
+        body: JSON.stringify({ listingId: id }),
+      })
+      if (!response.ok) throw new Error("save")
+      const payload = (await response.json()) as { savedIds?: unknown }
+      const next = parseBoardState({ posted: [], savedIds: payload.savedIds, messages: [] }).savedIds
+      memory = { ...memory, savedIds: next, ready: true }
+      emit()
+    } catch {
+      memory = { ...memory, savedIds: previous, ready: true }
+      emit()
+      toast.error("Could not update saved ads.")
+    }
+  })()
 }
 
-function cleanSubcategory(value: unknown): string | undefined {
-  return typeof value === "string" && value.trim() ? value : undefined
+async function sendMessage(listingId: string, body: string): Promise<StoreResult> {
+  await ensureLoaded()
+  try {
+    const response = await fetch("/api/messages", {
+      method: "POST",
+      headers: requestHeaders(),
+      body: JSON.stringify({ listingId, body }),
+    })
+    if (!response.ok) return { ok: false, reason: await readFailure(response, "The board database did not store the message.") }
+    const payload = (await response.json()) as { messages?: unknown }
+    const messages = parseBoardState({ posted: [], savedIds: [], messages: payload.messages }).messages
+    memory = { ...memory, messages, ready: true }
+    emit()
+    return { ok: true }
+  } catch {
+    return { ok: false, reason: "The board database did not store the message." }
+  }
 }
 
-function cleanDetails(value: unknown): Record<string, string> | undefined {
-  if (!value || typeof value !== "object" || Array.isArray(value)) return undefined
-  const entries = Object.entries(value).filter((entry): entry is [string, string] => typeof entry[1] === "string" && entry[1].trim().length > 0)
-  return entries.length > 0 ? Object.fromEntries(entries) : undefined
-}
-
-function isStoredListing(value: unknown): value is Listing {
-  if (!value || typeof value !== "object") return false
-  const listing = value as Partial<Listing>
-  return (
-    typeof listing.id === "string" &&
-    typeof listing.title === "string" &&
-    typeof listing.price === "number" &&
-    typeof listing.city === "string" &&
-    typeof listing.image === "string" &&
-    typeof listing.description === "string" &&
-    typeof listing.sellerName === "string" &&
-    typeof listing.phone === "string" &&
-    isCategoryId(listing.category) &&
-    canonicalCountry(typeof listing.country === "string" ? listing.country : undefined) !== undefined
+function markThreadRead(listingId: string) {
+  if (!memory.messages.some((message) => message.listingId === listingId && !message.read)) return
+  const previous = memory.messages
+  const messages: BoardMessage[] = memory.messages.map((message) =>
+    message.listingId === listingId ? { ...message, read: true } : message,
   )
+  memory = { ...memory, messages, ready: true }
+  emit()
+  void (async () => {
+    try {
+      const response = await fetch("/api/messages", {
+        method: "PATCH",
+        headers: requestHeaders(),
+        body: JSON.stringify({ listingId }),
+      })
+      if (!response.ok) throw new Error("read")
+    } catch {
+      memory = { ...memory, messages: previous, ready: true }
+      emit()
+    }
+  })()
 }
 
 type MarketplaceContextValue = {
   ready: boolean
   listings: Listing[]
   savedIds: string[]
-  isSaved: (id: string) => boolean
   messages: BoardMessage[]
+  isSaved: (id: string) => boolean
   toggleSaved: (id: string) => void
-  addListing: (listing: Listing) => { ok: true } | { ok: false; reason: string }
-  updateListing: (listing: Listing) => { ok: true } | { ok: false; reason: string }
+  addListing: (listing: Listing) => Promise<StoreResult>
+  updateListing: (listing: Listing) => Promise<StoreResult>
   removeListing: (id: string) => void
-  sendMessage: (listingId: string, body: string) => { ok: true } | { ok: false; reason: string }
+  sendMessage: (listingId: string, body: string) => Promise<StoreResult>
   markThreadRead: (listingId: string) => void
 }
 
 const MarketplaceContext = createContext<MarketplaceContextValue | null>(null)
 
 export function MarketplaceProvider({ children }: { children: React.ReactNode }) {
-  const stored = useSyncExternalStore(subscribe, readSnapshot, getServerSnapshot)
-  const ready = useSyncExternalStore(subscribeReady, getReadySnapshot, getReadyServerSnapshot)
-  const listings = useMemo(() => [...stored.posted, ...seedListings], [stored])
+  const snapshot = useSyncExternalStore(subscribe, readSnapshot, getServerSnapshot)
+  const listings = useMemo(() => [...snapshot.posted, ...seedListings], [snapshot])
 
-  const value = useMemo<MarketplaceContextValue>(() => {
-    return {
-      ready,
+  const value = useMemo<MarketplaceContextValue>(
+    () => ({
+      ready: snapshot.ready,
       listings,
-      savedIds: stored.savedIds,
-      messages: stored.messages,
-      isSaved: (id: string) => stored.savedIds.includes(id),
-      toggleSaved: (id: string) => {
-        const current = readSnapshot()
-        const savedIds = current.savedIds.includes(id)
-          ? current.savedIds.filter((savedId) => savedId !== id)
-          : [id, ...current.savedIds]
-        writeStored({ posted: current.posted, savedIds, messages: current.messages })
-      },
-      addListing: (listing: Listing) => {
-        const accepted = acceptPosted(listing)
-        if (!accepted.ok) return accepted
-        const current = readSnapshot()
-        const posted = [accepted.listing, ...current.posted.filter((item) => item.id !== accepted.listing.id)]
-        const saved = writeStored({ posted, savedIds: current.savedIds, messages: current.messages })
-        if (!saved) {
-          return { ok: false, reason: "This browser could not store the ad. Try a smaller photo." }
-        }
-        return { ok: true }
-      },
-      updateListing: (listing: Listing) => {
-        const accepted = acceptPosted(listing)
-        if (!accepted.ok) return accepted
-        const current = readSnapshot()
-        if (!current.posted.some((item) => item.id === accepted.listing.id)) {
-          return { ok: false, reason: "This ad is no longer on this browser." }
-        }
-        const posted = current.posted.map((item) => (item.id === accepted.listing.id ? accepted.listing : item))
-        const saved = writeStored({ posted, savedIds: current.savedIds, messages: current.messages })
-        if (!saved) {
-          return { ok: false, reason: "This browser could not store the ad. Try a smaller photo." }
-        }
-        return { ok: true }
-      },
-      removeListing: (id: string) => {
-        const current = readSnapshot()
-        writeStored({
-          posted: current.posted.filter((listing) => listing.id !== id),
-          savedIds: current.savedIds.filter((savedId) => savedId !== id),
-          messages: current.messages,
-        })
-      },
-      sendMessage: (listingId: string, body: string) => {
-        const text = body.trim()
-        const error = messageError(text)
-        if (error) return { ok: false, reason: error }
-        const current = readSnapshot()
-        const listing = [...current.posted, ...seedListings].find((item) => item.id === listingId)
-        if (!listing) return { ok: false, reason: "That listing is no longer on the board." }
-        if (listing.mine) return { ok: false, reason: "This is your ad." }
-        const sentAt = new Date().toISOString()
-        const yours: BoardMessage = {
-          id: crypto.randomUUID(),
-          listingId,
-          listingTitle: listing.title,
-          sellerName: listing.sellerName,
-          body: text,
-          sentAt,
-          role: "you",
-          read: true,
-        }
-        const reply: BoardMessage = {
-          id: crypto.randomUUID(),
-          listingId,
-          listingTitle: listing.title,
-          sellerName: listing.sellerName,
-          body: sampleReply(listing.title),
-          sentAt: new Date(Date.now() + 1).toISOString(),
-          role: "sample",
-          read: false,
-        }
-        const saved = writeStored({
-          posted: current.posted,
-          savedIds: current.savedIds,
-          messages: [...current.messages, yours, reply].slice(-messageLimit),
-        })
-        if (!saved) return { ok: false, reason: "This browser could not store the message." }
-        return { ok: true }
-      },
-      markThreadRead: (listingId: string) => {
-        const current = readSnapshot()
-        if (!current.messages.some((message) => message.listingId === listingId && !message.read)) return
-        writeStored({
-          posted: current.posted,
-          savedIds: current.savedIds,
-          messages: current.messages.map((message) =>
-            message.listingId === listingId ? { ...message, read: true } : message,
-          ),
-        })
-      },
-    }
-  }, [listings, ready, stored])
+      savedIds: snapshot.savedIds,
+      messages: snapshot.messages,
+      isSaved: (id: string) => snapshot.savedIds.includes(id),
+      toggleSaved,
+      addListing,
+      updateListing,
+      removeListing,
+      sendMessage,
+      markThreadRead,
+    }),
+    [listings, snapshot],
+  )
 
   return <MarketplaceContext.Provider value={value}>{children}</MarketplaceContext.Provider>
-}
-
-function acceptPosted(listing: Listing): { ok: true; listing: Listing } | { ok: false; reason: string } {
-  if (seedListings.some((item) => item.id === listing.id)) {
-    return { ok: false, reason: "That listing is already on the board." }
-  }
-  return acceptListing(listing)
 }
 
 export function useMarketplace(): MarketplaceContextValue {

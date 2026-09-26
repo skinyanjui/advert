@@ -1,8 +1,8 @@
 # africa classifieds
 
-A classifieds board for buying and selling across Africa: cars, houses, jobs, electronics, and the rest of the usual categories. Search, filter by country and category, save listings, and post an ad. Ads and saved hearts stay in this browser.
+A classifieds board for buying and selling across Africa: cars, houses, jobs, electronics, and the rest of the usual categories. Search, filter by country and category, save listings, and post an ad.
 
-Listings in the catalog are sample ads. Ads and saved hearts stay in this browser. City search can ask OpenStreetMap for extra place names.
+Listings in the catalog are sample ads. Ads you post are stored in a SQLite database and show on the board for everyone. Saved hearts and messages stay with this browser. City search can ask OpenStreetMap for extra place names.
 
 ## Run locally
 
@@ -21,6 +21,7 @@ Open [http://localhost:3000](http://localhost:3000).
 - Listing pages with a message, phone reveal, and WhatsApp link
 - Post an ad, with a photo from your computer or a category image
 - Saved ads and your own ads
+- SQLite database at `data/classifieds.db` (created on first request). It holds posted ads, saves, messages, and the OpenStreetMap place cache. Node’s built-in `node:sqlite` is the driver, so there is no database server to start. A host with a read-only disk, including Vercel’s serverless filesystem, keeps that file in temporary storage, so posted ads reset when the server restarts.
 
 ## Reference data
 

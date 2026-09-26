@@ -44,7 +44,7 @@ export function MyAdsPage() {
     <>
       <Collection
         title="My ads"
-        description="Ads you publish from this browser."
+        description="Ads you publish from this browser. Anyone on the board can see them."
         emptyTitle="You have not posted an ad"
         emptyBody="Post something for sale, for rent, or a job. It appears at the top of the board."
         listings={mine}
@@ -57,7 +57,7 @@ export function MyAdsPage() {
           <DialogHeader>
             <DialogTitle>Remove this ad?</DialogTitle>
             <DialogDescription>
-              {pending ? `“${pending.title}” will leave the board on this browser.` : ""}
+              {pending ? `“${pending.title}” will leave the board.` : ""}
             </DialogDescription>
           </DialogHeader>
           <DialogFooter>

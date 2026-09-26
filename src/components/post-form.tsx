@@ -254,7 +254,7 @@ function AdForm({ existing }: { existing: Listing | null }) {
     }
   }
 
-  function submit() {
+  async function submit() {
     if (!plan || !category || !subcategory) {
       setStep(category ? 1 : 0)
       return
@@ -267,7 +267,6 @@ function AdForm({ existing }: { existing: Listing | null }) {
       return
     }
 
-    setSubmitting(true)
     const amount = Number(price)
     const located = locatedPlace(place, country, city.trim())
     const keptDetails = Object.fromEntries(
@@ -278,7 +277,7 @@ function AdForm({ existing }: { existing: Listing | null }) {
     )
     const listing: Listing = {
       ...preview,
-      id: existing?.id ?? `ad-${Date.now()}`,
+      id: existing?.id ?? `ad-${crypto.randomUUID()}`,
       title: title.trim().slice(0, 80),
       price: Math.round(amount),
       currency,
@@ -298,7 +297,8 @@ function AdForm({ existing }: { existing: Listing | null }) {
       image: image ?? categoryImage[category],
       condition: keptDetails.condition || subcategory.name,
     }
-    const result = existing ? updateListing(listing) : addListing(listing)
+    setSubmitting(true)
+    const result = existing ? await updateListing(listing) : await addListing(listing)
     setSubmitting(false)
     if (!result.ok) {
       toast.error(result.reason)
@@ -706,8 +706,8 @@ function placeFromListing(listing: Listing | null): ChosenPlace | null {
 function MissingAd() {
   return (
     <div className="mx-auto max-w-lg px-4 py-24 text-center">
-      <h1 className="text-xl font-semibold tracking-tight">This ad is not on this browser</h1>
-      <p className="mt-2 text-sm text-neutral-500">It may have been removed, or it was posted in another browser.</p>
+      <h1 className="text-xl font-semibold tracking-tight">This ad is not yours</h1>
+      <p className="mt-2 text-sm text-neutral-500">It may have been removed, or it was posted from another browser.</p>
       <div className="mt-5 flex flex-wrap items-center justify-center gap-2">
         <Button asChild className="rounded-full">
           <Link href="/my-ads">My ads</Link>
