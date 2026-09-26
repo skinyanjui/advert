@@ -9,14 +9,18 @@ import { categoryFromPath } from "@/lib/use-listing-query"
 
 export function BoardShell() {
   const pathname = usePathname()
-  if (pathname !== "/" && categoryFromPath(pathname) === undefined) return null
+  const onBoard = pathname === "/" || categoryFromPath(pathname) !== undefined
+  const onListing = /^\/listings\/[^/]+$/.test(pathname)
+  if (!onBoard && !onListing) return null
 
   return (
     <>
       <CategorySidebar />
-      <Suspense fallback={<ListingsFallback />}>
-        <Browse />
-      </Suspense>
+      {onBoard ? (
+        <Suspense fallback={<ListingsFallback />}>
+          <Browse />
+        </Suspense>
+      ) : null}
     </>
   )
 }

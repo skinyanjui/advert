@@ -37,19 +37,22 @@ function CategorySidebarNav() {
     () => readBoardQuery(pathname, searchParams),
     [pathname, searchParams],
   )
+  const opened = openedListing(pathname, listings)
+  const active = query.category ?? opened?.category
+  const activeType = query.category ? query.type : opened?.subcategory
   const inCity = useMemo(() => listingsInPlace(listings, query), [listings, query])
   const counts = useMemo(() => countCategories(inCity), [inCity])
-  const types = useMemo(() => typeChoices(inCity, query.category), [inCity, query.category])
+  const types = useMemo(() => typeChoices(inCity, active), [inCity, active])
 
   return (
     <CategoryNav
-      active={query.category}
+      active={active}
       counts={counts}
       total={inCity.length}
       types={types}
-      activeType={query.type}
+      activeType={activeType}
       hrefForCategory={(category) => listingHref(category, undefined, query)}
-      hrefForType={(type) => listingHref(query.category, type, query)}
+      hrefForType={(type) => listingHref(active, type, query)}
     />
   )
 }
@@ -73,16 +76,22 @@ function SidebarFallback({ active }: { active?: CategoryId }) {
 function readBoardQuery(pathname: string, searchParams: { get: (key: string) => string | null }): ListingQuery {
   const pathCategory = categoryFromPath(pathname)
   const onBoard = pathname === "/" || pathCategory !== undefined
-  if (!onBoard) return { q: "", sort: "relevant" }
   const sortParam = searchParams.get("sort")
   return {
     q: searchParams.get("q") ?? "",
     country: canonicalCountry(searchParams.get("country")),
     city: searchParams.get("city")?.trim() || undefined,
     category: pathCategory,
-    type: searchParams.get("type")?.trim() || undefined,
+    type: onBoard ? searchParams.get("type")?.trim() || undefined : undefined,
     sort: isSortId(sortParam) ? sortParam : "relevant",
   }
+}
+
+function openedListing(pathname: string, listings: Listing[]): Listing | undefined {
+  const match = pathname.match(/^\/listings\/([^/]+)$/)
+  if (!match?.[1]) return undefined
+  const id = decodeURIComponent(match[1])
+  return listings.find((listing) => listing.id === id)
 }
 
 function listingHref(category: CategoryId | undefined, type: string | undefined, query: ListingQuery): string {

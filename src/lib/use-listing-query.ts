@@ -153,6 +153,16 @@ export function useListingQuery() {
   return { query, update, clear }
 }
 
+export function boardSearch(query: ListingQuery): string {
+  const params = new URLSearchParams()
+  if (query.q) params.set("q", query.q)
+  if (query.country) params.set("country", query.country)
+  if (query.city) params.set("city", query.city)
+  if (query.type) params.set("type", query.type)
+  if (query.sort !== "relevant") params.set("sort", query.sort)
+  return params.toString()
+}
+
 export function categoryFromPath(pathname: string): CategoryId | undefined {
   const [segment, extra] = pathname.split("/").filter(Boolean)
   if (!segment || extra) return undefined

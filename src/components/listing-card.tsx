@@ -15,11 +15,13 @@ export function ListingCard({
   linked = true,
   saveable = true,
   distanceKm,
+  preserve,
 }: {
   listing: Listing
   linked?: boolean
   saveable?: boolean
   distanceKm?: number
+  preserve?: string
 }) {
   const { isSaved, toggleSaved } = useMarketplace()
   const saved = isSaved(listing.id)
@@ -76,7 +78,7 @@ export function ListingCard({
     <article className="group relative flex h-full flex-col overflow-hidden rounded-xl border border-neutral-200/80 bg-white transition-shadow hover:shadow-md">
       {linked ? (
         <Link
-          href={`/listings/${listing.id}`}
+          href={preserve ? `/listings/${listing.id}?${preserve}` : `/listings/${listing.id}`}
           className="flex h-full flex-col outline-none focus-visible:ring-2 focus-visible:ring-neutral-950 focus-visible:ring-offset-2"
         >
           {body}

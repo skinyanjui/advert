@@ -3,6 +3,7 @@
 import { ArrowLeft, Clock, Heart, MapPin, Share2 } from "lucide-react"
 import Image from "next/image"
 import Link from "next/link"
+import { useSearchParams } from "next/navigation"
 import { useEffect, useState } from "react"
 import { toast } from "sonner"
 
@@ -35,6 +36,7 @@ import { categoryName, type Listing } from "@/lib/types"
 import { cn } from "@/lib/utils"
 
 export function ListingDetail({ id }: { id: string }) {
+  const searchParams = useSearchParams()
   const { listings, ready, isSaved, toggleSaved, messages, sendMessage } = useMarketplace()
   const listing = listings.find((item) => item.id === id)
   const [phoneVisible, setPhoneVisible] = useState(false)
@@ -55,6 +57,8 @@ export function ListingDetail({ id }: { id: string }) {
   const voice = listingVoice(listing)
   const facts = listingFacts(listing)
   const related = relatedListings(listings, listing)
+  const backSearch = keptSearch(searchParams, listing.subcategory)
+  const backHref = backSearch ? `/${listing.category}?${backSearch}` : `/${listing.category}`
 
   async function share() {
     const url = window.location.href
@@ -80,13 +84,14 @@ export function ListingDetail({ id }: { id: string }) {
   }
 
   return (
-    <div className="mx-auto w-full max-w-[1100px] px-4 pt-6 pb-24 md:px-6 md:py-8 lg:pb-8">
+    <div className="mx-auto w-full max-w-[1720px] px-4 pt-6 pb-24 md:py-8 md:pr-6 md:pl-[calc(var(--sidebar-width)+1.5rem)] lg:pb-8">
+      <div className="mx-auto w-full max-w-[1100px]">
       <Link
-        href="/"
+        href={backHref}
         className="inline-flex items-center gap-1.5 text-sm text-neutral-500 hover:text-neutral-900"
       >
         <ArrowLeft className="size-4" />
-        All listings
+        {categoryName(listing.category)}
       </Link>
       <div className="mt-4 grid gap-6 lg:grid-cols-[minmax(0,1fr)_320px]">
         <div>
@@ -129,7 +134,9 @@ export function ListingDetail({ id }: { id: string }) {
                 {formatPosted(hoursAgoOf(listing))}
               </span>
               <span>
-                {categoryName(listing.category)}
+                <Link href={backHref} className="hover:text-neutral-900">
+                  {categoryName(listing.category)}
+                </Link>
                 {voice.typeName ? ` · ${voice.typeName}` : ""}
               </span>
             </div>
@@ -152,7 +159,7 @@ export function ListingDetail({ id }: { id: string }) {
               <h2 className="text-sm font-medium text-neutral-950">Similar listings</h2>
               <div className="mt-3 grid grid-cols-1 gap-4 sm:grid-cols-2">
                 {related.map((item) => (
-                  <ListingCard key={item.id} listing={item} />
+                  <ListingCard key={item.id} listing={item} preserve={keptSearch(searchParams, item.subcategory)} />
                 ))}
               </div>
             </section>
@@ -196,7 +203,7 @@ export function ListingDetail({ id }: { id: string }) {
           </div>
         </aside>
       </div>
-      <div className="fixed inset-x-0 bottom-0 z-30 border-t bg-white p-3 lg:hidden">
+      <div className="fixed inset-x-0 bottom-0 z-20 border-t bg-white p-3 md:left-[max(0px,calc((100%-1720px)/2))] md:pl-(--sidebar-width) lg:hidden">
         <div className="mx-auto flex max-w-[1100px] items-center justify-between gap-3">
           <div className="min-w-0">
             <p className="truncate text-sm font-semibold">{formatPrice(listing)}</p>
@@ -232,8 +239,21 @@ export function ListingDetail({ id }: { id: string }) {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+      </div>
     </div>
   )
+}
+
+function keptSearch(
+  searchParams: { toString: () => string; get: (key: string) => string | null },
+  subcategory?: string,
+) {
+  const params = new URLSearchParams(searchParams.toString())
+  params.delete("category")
+  const type = params.get("type")
+  if (type && type !== subcategory) params.delete("type")
+  const qs = params.toString()
+  return qs
 }
 
 function PlacePanel({ listing }: { listing: Listing }) {
@@ -280,7 +300,7 @@ function Fact({ label, value }: { label: string; value: string }) {
 
 function MissingListing() {
   return (
-    <div className="mx-auto max-w-lg px-4 py-24 text-center">
+    <div className="mx-auto max-w-lg px-4 py-24 text-center md:pl-[calc(var(--sidebar-width)+1.5rem)]">
       <h1 className="text-xl font-semibold tracking-tight">This listing is gone</h1>
       <p className="mt-2 text-sm text-neutral-500">
         It may have been removed, or it only existed in another browser.
@@ -294,7 +314,7 @@ function MissingListing() {
 
 function DetailSkeleton() {
   return (
-    <div className="mx-auto w-full max-w-[1100px] px-4 py-8 md:px-6">
+    <div className="mx-auto w-full max-w-[1720px] px-4 py-8 md:pr-6 md:pl-[calc(var(--sidebar-width)+1.5rem)]">
       <div className="h-4 w-28 rounded bg-neutral-200" />
       <div className="mt-4 aspect-[16/10] rounded-2xl bg-neutral-200" />
       <div className="mt-5 h-7 w-48 rounded bg-neutral-200" />

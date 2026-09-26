@@ -43,7 +43,7 @@ import {
 } from "@/lib/types"
 import { categoryPlan, findSubcategory } from "@/lib/posting"
 import { useClientTime } from "@/lib/use-client-time"
-import { useListingQuery } from "@/lib/use-listing-query"
+import { boardSearch, useListingQuery } from "@/lib/use-listing-query"
 
 export function Browse() {
   const { listings } = useMarketplace()
@@ -113,6 +113,7 @@ export function Browse() {
       ? `${cityLabel}, ${countryName(query.country)}`
       : countryName(query.country)
     : "All Africa"
+  const preserve = boardSearch(query)
   const hrefForCategory = (category?: CategoryId) => listingHref(category, undefined, query)
   const hrefForType = (type?: string) => listingHref(query.category, type, query)
   const closestFirst =
@@ -227,6 +228,7 @@ export function Browse() {
                 key={listing.id}
                 listing={listing}
                 distanceKm={origin ? distanceKm(origin, listingPoint(listing)) : undefined}
+                preserve={preserve}
               />
             ))}
           </div>
