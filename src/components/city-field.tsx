@@ -1,6 +1,6 @@
 "use client"
 
-import { useRef, useState } from "react"
+import { useEffect, useRef, useState } from "react"
 
 import { Input } from "@/components/ui/input"
 import { searchCities } from "@/lib/cities"
@@ -30,6 +30,7 @@ export function CityField({
 }) {
   const inputRef = useRef<HTMLInputElement>(null)
   const [open, setOpen] = useState(false)
+  const [remote, setRemote] = useState<{ key: string; places: Suggestion[] }>({ key: "", places: [] })
   const local: Suggestion[] = searchCities(country, city, 6).map((item) => ({
     name: item.name,
     label: `${item.name} · GeoNames`,
@@ -37,7 +38,25 @@ export function CityField({
     lng: item.lng,
     timezone: item.tz,
   }))
-  const suggestions = local
+  const key = `${country}|${city.trim()}`
+  const known = new Set(local.map((place) => fold(place.name)))
+  const suggestions = [...local, ...(remote.key === key ? remote.places.filter((place) => !known.has(fold(place.name))) : [])].slice(0, 8)
+
+  useEffect(() => {
+    const query = city.trim()
+    if (query.length < 2) return
+    const controller = new AbortController()
+    const timer = window.setTimeout(async () => {
+      try {
+        const params = new URLSearchParams({ q: query, country })
+        const response = await fetch(`/api/reference/cities?${params}`, { signal: controller.signal })
+        if (!response.ok) return
+        const payload = (await response.json()) as { places?: ChosenPlace[] }
+        setRemote({ key: `${country}|${query}`, places: (payload.places ?? []).map((place) => ({ ...place, label: place.name })) })
+      } catch { /* Keep local suggestions if the database is unavailable. */ }
+    }, 250)
+    return () => { controller.abort(); window.clearTimeout(timer) }
+  }, [city, country])
 
   return (
     <div className="relative">
