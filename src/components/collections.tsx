@@ -18,6 +18,7 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog"
 import { useMarketplace } from "@/lib/marketplace"
+import { unreadMessageCount } from "@/lib/messages"
 import type { Listing } from "@/lib/types"
 
 export function SavedPage() {
@@ -38,8 +39,10 @@ export function SavedPage() {
 }
 
 export function MyAdsPage() {
-  const { ready, listings, removeListing, setListingSold, renewListing } = useMarketplace()
+  const { ready, listings, messages, removeListing, setListingSold, renewListing } = useMarketplace()
   const mine = listings.filter((listing) => listing.mine)
+  const unread = unreadMessageCount(messages.filter((item) => item.viewerIsSeller))
+  const unreadByListing = unreadByListingId(messages)
   const postHref = postAdHref(useRememberedPlace())
   const [pendingId, setPendingId] = useState<string | null>(null)
   const [busyId, setBusyId] = useState<string | null>(null)
@@ -87,11 +90,16 @@ export function MyAdsPage() {
     <>
       <Collection
         title="My ads"
-        description="Ads you own on this account or browser. Sign in to keep them after clearing cookies."
+        description={
+          unread > 0
+            ? `Ads you own on this account or browser. ${unread === 1 ? "1 unread buyer message" : `${unread} unread buyer messages`} waiting in Messages.`
+            : "Ads you own on this account or browser. Sign in to keep them after clearing cookies."
+        }
         emptyTitle="You have not posted an ad"
         emptyBody="Post something for sale, for rent, or a job. It appears at the top of the board."
         listings={mine}
         busyId={busyId}
+        unreadByListing={unreadByListing}
         onRemove={setPendingId}
         onSold={(id) => {
           const listing = mine.find((item) => item.id === id)
@@ -134,6 +142,7 @@ function Collection({
   emptyBody,
   listings,
   busyId,
+  unreadByListing,
   onRemove,
   onSold,
   onRenew,
@@ -147,6 +156,7 @@ function Collection({
   emptyBody: string
   listings: { id: string }[]
   busyId?: string | null
+  unreadByListing?: Map<string, number>
   onRemove?: (id: string) => void
   onSold?: (id: string) => void
   onRenew?: (id: string) => void
@@ -174,45 +184,64 @@ function Collection({
         </div>
       ) : (
         <div className="mt-6 grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5">
-          {cards.map((listing) => (
-            <div key={listing.id} className="flex flex-col gap-2">
-              <ListingCard listing={listing} />
-              {onRemove ? (
-                <div className="flex flex-wrap items-center gap-1">
-                  <Button variant="ghost" className="self-start" asChild>
-                    <Link href={`/post?edit=${listing.id}`}>Edit</Link>
-                  </Button>
-                  {onSold ? (
-                    <Button
-                      variant="ghost"
-                      className="self-start"
-                      disabled={busyId === listing.id}
-                      onClick={() => onSold(listing.id)}
-                    >
-                      {listing.sold ? "Mark available" : "Mark sold"}
+          {cards.map((listing) => {
+            const unread = unreadByListing?.get(listing.id) ?? 0
+            return (
+              <div key={listing.id} className="flex flex-col gap-2">
+                <ListingCard listing={listing} />
+                {onRemove ? (
+                  <div className="flex flex-wrap items-center gap-1">
+                    <Button variant="ghost" className="self-start" asChild>
+                      <Link href={`/post?edit=${listing.id}`}>Edit</Link>
                     </Button>
-                  ) : null}
-                  {onRenew && !listing.sold ? (
-                    <Button
-                      variant="ghost"
-                      className="self-start"
-                      disabled={busyId === listing.id}
-                      onClick={() => onRenew(listing.id)}
-                    >
-                      Renew
+                    {unread > 0 ? (
+                      <Button variant="ghost" className="self-start text-rose-600" asChild>
+                        <Link href={`/messages?listing=${listing.id}`}>
+                          {unread === 1 ? "1 unread" : `${unread} unread`}
+                        </Link>
+                      </Button>
+                    ) : null}
+                    {onSold ? (
+                      <Button
+                        variant="ghost"
+                        className="self-start"
+                        disabled={busyId === listing.id}
+                        onClick={() => onSold(listing.id)}
+                      >
+                        {listing.sold ? "Mark available" : "Mark sold"}
+                      </Button>
+                    ) : null}
+                    {onRenew && !listing.sold ? (
+                      <Button
+                        variant="ghost"
+                        className="self-start"
+                        disabled={busyId === listing.id}
+                        onClick={() => onRenew(listing.id)}
+                      >
+                        Renew
+                      </Button>
+                    ) : null}
+                    <Button variant="ghost" className="self-start" onClick={() => onRemove(listing.id)}>
+                      Remove
                     </Button>
-                  ) : null}
-                  <Button variant="ghost" className="self-start" onClick={() => onRemove(listing.id)}>
-                    Remove
-                  </Button>
-                </div>
-              ) : null}
-            </div>
-          ))}
+                  </div>
+                ) : null}
+              </div>
+            )
+          })}
         </div>
       )}
     </div>
   )
+}
+
+function unreadByListingId(messages: { listingId: string; read: boolean; fromMe: boolean; viewerIsSeller: boolean }[]) {
+  const counts = new Map<string, number>()
+  for (const message of messages) {
+    if (!message.viewerIsSeller || message.fromMe || message.read) continue
+    counts.set(message.listingId, (counts.get(message.listingId) ?? 0) + 1)
+  }
+  return counts
 }
 
 function KeepAdsBanner() {

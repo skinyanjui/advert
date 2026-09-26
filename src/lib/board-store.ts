@@ -4,7 +4,7 @@ import { boardDb } from "@/lib/board-db"
 import { seedListings } from "@/lib/catalog"
 import { hoursAgoOf } from "@/lib/format"
 import { acceptListing } from "@/lib/listing-rules"
-import { isBoardMessage, messageError, sampleReply, type BoardMessage } from "@/lib/messages"
+import { messageError, type BoardMessage } from "@/lib/messages"
 import { cleanListing, parseBoardState, type BoardState } from "@/lib/board-payload"
 import type { Listing } from "@/lib/types"
 
@@ -55,12 +55,96 @@ export async function listBoard(owner: string): Promise<BoardState> {
   const [posted, saved, messages] = await Promise.all([
     db.from("board_listings").select("id,owner_id,posted_at,payload").order("posted_at", { ascending: false }).limit(500),
     db.from("board_saves").select("listing_id").eq("owner_id", owner).order("created_at", { ascending: false }),
-    db.from("board_messages").select("payload").eq("owner_id", owner).order("sent_at").limit(200),
+    listMessagesFor(owner),
   ])
-  check(posted.error); check(saved.error); check(messages.error)
-  return { posted: (posted.data ?? []).flatMap((row) => { const item = unpack(row, owner); return item ? [item] : [] }),
+  check(posted.error)
+  check(saved.error)
+  return {
+    posted: (posted.data ?? []).flatMap((row) => {
+      const item = unpack(row, owner)
+      return item ? [item] : []
+    }),
     savedIds: (saved.data ?? []).map((row) => row.listing_id),
-    messages: (messages.data ?? []).flatMap((row) => isBoardMessage(row.payload) ? [row.payload] : []) }
+    messages,
+  }
+}
+
+type ConversationRow = {
+  id: string
+  listing_id: string
+  listing_owner_id: string
+  buyer_id: string
+  listing_title: string
+  seller_name: string
+  buyer_last_read_at: string | null
+  seller_last_read_at: string | null
+}
+
+type ConversationMessageRow = {
+  id: string
+  conversation_id: string
+  sender_id: string
+  body: string
+  sent_at: string
+}
+
+async function listMessagesFor(viewerId: string): Promise<BoardMessage[]> {
+  const db = boardDb()
+  const { data: asBuyer, error: buyerError } = await db
+    .from("board_conversations")
+    .select("id,listing_id,listing_owner_id,buyer_id,listing_title,seller_name,buyer_last_read_at,seller_last_read_at")
+    .eq("buyer_id", viewerId)
+    .order("updated_at", { ascending: false })
+    .limit(100)
+  check(buyerError)
+  const { data: asSeller, error: sellerError } = await db
+    .from("board_conversations")
+    .select("id,listing_id,listing_owner_id,buyer_id,listing_title,seller_name,buyer_last_read_at,seller_last_read_at")
+    .eq("listing_owner_id", viewerId)
+    .order("updated_at", { ascending: false })
+    .limit(100)
+  check(sellerError)
+  const conversations = new Map<string, ConversationRow>()
+  for (const row of [...(asBuyer ?? []), ...(asSeller ?? [])] as ConversationRow[]) {
+    conversations.set(row.id, row)
+  }
+  if (conversations.size === 0) return []
+  const ids = [...conversations.keys()]
+  const { data: rows, error } = await db
+    .from("board_conversation_messages")
+    .select("id,conversation_id,sender_id,body,sent_at")
+    .in("conversation_id", ids)
+    .order("sent_at", { ascending: true })
+    .limit(500)
+  check(error)
+  return ((rows ?? []) as ConversationMessageRow[]).flatMap((row) => {
+    const conversation = conversations.get(row.conversation_id)
+    if (!conversation) return []
+    return [toBoardMessage(row, conversation, viewerId)]
+  })
+}
+
+function toBoardMessage(row: ConversationMessageRow, conversation: ConversationRow, viewerId: string): BoardMessage {
+  const viewerIsSeller = conversation.listing_owner_id === viewerId
+  const role = row.sender_id === conversation.listing_owner_id ? "seller" : "buyer"
+  const fromMe = row.sender_id === viewerId
+  const lastRead = viewerIsSeller ? conversation.seller_last_read_at : conversation.buyer_last_read_at
+  const read = fromMe || (lastRead ? row.sent_at <= lastRead : false)
+  return {
+    id: row.id,
+    conversationId: conversation.id,
+    listingId: conversation.listing_id,
+    listingTitle: conversation.listing_title,
+    sellerName: conversation.seller_name,
+    peerName: viewerIsSeller ? "Buyer" : conversation.seller_name,
+    body: row.body,
+    sentAt: row.sent_at,
+    senderId: row.sender_id,
+    role,
+    fromMe,
+    read,
+    viewerIsSeller,
+  }
 }
 export async function createListing(owner: string, input: unknown): Promise<Result<Listing>> {
   const listing = cleanListing(input)
@@ -189,55 +273,143 @@ export async function toggleSave(owner: string, id: string): Promise<Result<stri
   check(listError)
   return { ok: true, value: (data ?? []).map((row) => row.listing_id) }
 }
-export async function createMessage(owner: string, id: string, body: string): Promise<Result<BoardMessage[]>> {
+export async function createMessage(viewerId: string, listingId: string, body: string): Promise<Result<BoardMessage[]>> {
+  const reason = messageError(body.trim())
+  if (reason) return { ok: false, reason }
+  if (seedIds.has(listingId)) {
+    return { ok: false, reason: "Sample listings cannot receive messages. Open a live ad instead." }
+  }
+  const db = boardDb()
+  const { data: row, error } = await db
+    .from("board_listings")
+    .select("id,owner_id,posted_at,payload")
+    .eq("id", listingId)
+    .maybeSingle()
+  check(error)
+  if (!row) return { ok: false, reason: "That listing is no longer on the board." }
+  if (row.owner_id === viewerId) return { ok: false, reason: "This is your ad." }
+  const listing = unpack(row)
+  if (!listing) return { ok: false, reason: "That listing is no longer on the board." }
+  if (listing.sold) return { ok: false, reason: "This ad is marked sold." }
+
+  const { data: existing, error: existingError } = await db
+    .from("board_conversations")
+    .select("id,listing_id,listing_owner_id,buyer_id,listing_title,seller_name,buyer_last_read_at,seller_last_read_at")
+    .eq("listing_id", listingId)
+    .eq("buyer_id", viewerId)
+    .maybeSingle()
+  check(existingError)
+
+  let conversation = existing as ConversationRow | null
+  if (!conversation) {
+    const created: ConversationRow = {
+      id: crypto.randomUUID(),
+      listing_id: listingId,
+      listing_owner_id: row.owner_id,
+      buyer_id: viewerId,
+      listing_title: listing.title,
+      seller_name: listing.sellerName,
+      buyer_last_read_at: new Date().toISOString(),
+      seller_last_read_at: null,
+    }
+    const { error: insertConversation } = await db.from("board_conversations").insert({
+      id: created.id,
+      listing_id: created.listing_id,
+      listing_owner_id: created.listing_owner_id,
+      buyer_id: created.buyer_id,
+      listing_title: created.listing_title,
+      seller_name: created.seller_name,
+      buyer_last_read_at: created.buyer_last_read_at,
+      updated_at: new Date().toISOString(),
+    })
+    check(insertConversation)
+    conversation = created
+  }
+
+  return appendMessage(viewerId, conversation, body.trim())
+}
+
+export async function replyToConversation(
+  viewerId: string,
+  conversationId: string,
+  body: string,
+): Promise<Result<BoardMessage[]>> {
   const reason = messageError(body.trim())
   if (reason) return { ok: false, reason }
   const db = boardDb()
-  const { data: row, error } = await db.from("board_listings").select("id,owner_id,posted_at,payload").eq("id", id).maybeSingle()
+  const { data: conversation, error } = await db
+    .from("board_conversations")
+    .select("id,listing_id,listing_owner_id,buyer_id,listing_title,seller_name,buyer_last_read_at,seller_last_read_at")
+    .eq("id", conversationId)
+    .maybeSingle()
   check(error)
-  if (row?.owner_id === owner) return { ok: false, reason: "This is your ad." }
-  const listing = seedListings.find((item) => item.id === id) ?? (row ? unpack(row) : undefined)
-  if (!listing) return { ok: false, reason: "That listing is no longer on the board." }
-  if (listing.sold) return { ok: false, reason: "This ad is marked sold." }
-  const now = Date.now()
-  const yours: BoardMessage = { id: crypto.randomUUID(), listingId: id, listingTitle: listing.title, sellerName: listing.sellerName,
-    body: body.trim(), sentAt: new Date(now).toISOString(), role: "you", read: true }
-  const reply: BoardMessage = { ...yours, id: crypto.randomUUID(), body: sampleReply(listing.title),
-    sentAt: new Date(now + 1).toISOString(), role: "sample", read: false }
-  const { error: insertError } = await db.from("board_messages").insert([yours, reply].map((message) => ({
-    id: message.id, owner_id: owner, listing_id: id, sent_at: message.sentAt, payload: message,
-  })))
-  check(insertError)
-  return { ok: true, value: (await listBoard(owner)).messages }
-}
-export async function markMessagesRead(owner: string, id: string): Promise<Result<BoardMessage[]>> {
-  const db = boardDb()
-  const { data, error } = await db.from("board_messages").select("id,payload").eq("owner_id", owner).eq("listing_id", id)
-  check(error)
-  for (const row of data ?? []) {
-    if (!isBoardMessage(row.payload) || row.payload.read) continue
-    const { error: updateError } = await db.from("board_messages").update({ payload: { ...row.payload, read: true } })
-      .eq("id", row.id).eq("owner_id", owner)
-    check(updateError)
+  if (!conversation) return { ok: false, reason: "That conversation was not found." }
+  if (conversation.buyer_id !== viewerId && conversation.listing_owner_id !== viewerId) {
+    return { ok: false, reason: "This conversation is not yours." }
   }
-  return { ok: true, value: (await listBoard(owner)).messages }
+  return appendMessage(viewerId, conversation as ConversationRow, body.trim())
 }
+
+async function appendMessage(
+  viewerId: string,
+  conversation: ConversationRow,
+  body: string,
+): Promise<Result<BoardMessage[]>> {
+  const db = boardDb()
+  const sentAt = new Date().toISOString()
+  const messageId = crypto.randomUUID()
+  const viewerIsSeller = conversation.listing_owner_id === viewerId
+  const { error: insertError } = await db.from("board_conversation_messages").insert({
+    id: messageId,
+    conversation_id: conversation.id,
+    sender_id: viewerId,
+    body,
+    sent_at: sentAt,
+  })
+  check(insertError)
+  const { error: touchError } = await db
+    .from("board_conversations")
+    .update({
+      updated_at: sentAt,
+      listing_title: conversation.listing_title,
+      ...(viewerIsSeller
+        ? { seller_last_read_at: sentAt }
+        : { buyer_last_read_at: sentAt }),
+    })
+    .eq("id", conversation.id)
+  check(touchError)
+  return { ok: true, value: await listMessagesFor(viewerId) }
+}
+
+export async function markMessagesRead(viewerId: string, conversationId: string): Promise<Result<BoardMessage[]>> {
+  const db = boardDb()
+  const { data: conversation, error } = await db
+    .from("board_conversations")
+    .select("id,listing_owner_id,buyer_id")
+    .eq("id", conversationId)
+    .maybeSingle()
+  check(error)
+  if (!conversation) return { ok: false, reason: "That conversation was not found." }
+  if (conversation.buyer_id !== viewerId && conversation.listing_owner_id !== viewerId) {
+    return { ok: false, reason: "This conversation is not yours." }
+  }
+  const now = new Date().toISOString()
+  const patch =
+    conversation.listing_owner_id === viewerId ? { seller_last_read_at: now } : { buyer_last_read_at: now }
+  const { error: updateError } = await db.from("board_conversations").update(patch).eq("id", conversation.id)
+  check(updateError)
+  return { ok: true, value: await listMessagesFor(viewerId) }
+}
+
 export async function importBoard(owner: string, input: unknown): Promise<{ imported: number }> {
   const state = parseBoardState(input)
   let imported = 0
   for (const item of state.posted.slice(0, 40)) if ((await createListing(owner, item)).ok) imported++
   for (const id of state.savedIds.slice(0, 200)) {
-    if (!await exists(id)) continue
-    const { error } = await boardDb().from("board_saves").upsert({ owner_id: owner, listing_id: id }, { onConflict: "owner_id,listing_id" })
-    check(error)
-    imported++
-  }
-  for (const message of state.messages.slice(-200)) {
-    if (!await exists(message.listingId)) continue
-    const { error } = await boardDb().from("board_messages").upsert({
-      id: message.id, owner_id: owner, listing_id: message.listingId,
-      sent_at: message.sentAt, payload: message,
-    }, { onConflict: "id", ignoreDuplicates: true })
+    if (!(await exists(id))) continue
+    const { error } = await boardDb()
+      .from("board_saves")
+      .upsert({ owner_id: owner, listing_id: id }, { onConflict: "owner_id,listing_id" })
     check(error)
     imported++
   }
@@ -317,6 +489,25 @@ export async function claimSession(
     .select("id")
   check(messagesError)
 
+  const { data: buyerThreads, error: buyerThreadError } = await db
+    .from("board_conversations")
+    .update({ buyer_id: userId })
+    .eq("buyer_id", sessionId)
+    .select("id")
+  check(buyerThreadError)
+  const { data: sellerThreads, error: sellerThreadError } = await db
+    .from("board_conversations")
+    .update({ listing_owner_id: userId })
+    .eq("listing_owner_id", sessionId)
+    .select("id")
+  check(sellerThreadError)
+  const { data: sentRows, error: sentError } = await db
+    .from("board_conversation_messages")
+    .update({ sender_id: userId })
+    .eq("sender_id", sessionId)
+    .select("id")
+  check(sentError)
+
   const { error: claimError } = await db.from("board_session_claims").insert({
     session_id: sessionId,
     user_id: userId,
@@ -328,7 +519,11 @@ export async function claimSession(
     value: {
       listings: listings?.length ?? 0,
       saves: savesMoved,
-      messages: messages?.length ?? 0,
+      messages:
+        (messages?.length ?? 0) +
+        (buyerThreads?.length ?? 0) +
+        (sellerThreads?.length ?? 0) +
+        (sentRows?.length ?? 0),
       alreadyClaimed: false,
     },
   }

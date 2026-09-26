@@ -58,7 +58,10 @@ export function ListingDetail({ id }: { id: string }) {
 
   const ad = listing
   const saved = isSaved(ad.id)
-  const sentCount = messages.filter((item) => item.listingId === ad.id && item.role === "you").length
+  const listingMessages = messages.filter((item) => item.listingId === ad.id)
+  const threadCount = new Set(listingMessages.map((item) => item.conversationId)).size
+  const unreadHere = listingMessages.filter((item) => !item.read && !item.fromMe).length
+  const myMessageCount = listingMessages.filter((item) => item.fromMe).length
   const voice = listingVoice(ad)
   const facts = listingFacts(ad)
   const related = relatedListings(listings, ad)
@@ -85,7 +88,7 @@ export function ListingDetail({ id }: { id: string }) {
       }
       setMessageOpen(false)
       setMessage("")
-      toast.success(`Message saved for ${ad.sellerName}`)
+      toast.success(`Message sent to ${ad.sellerName}`)
     })()
   }
 
@@ -237,6 +240,17 @@ export function ListingDetail({ id }: { id: string }) {
                 <Button variant="outline" className="h-10 rounded-full" disabled={busy} onClick={() => setConfirmRemove(true)}>
                   Remove ad
                 </Button>
+                {threadCount > 0 ? (
+                  <Button variant="outline" className="h-10 rounded-full" asChild>
+                    <Link href={`/messages?listing=${listing.id}`}>
+                      {unreadHere > 0
+                        ? `Inbox (${unreadHere} unread)`
+                        : threadCount === 1
+                          ? "Inbox (1 conversation)"
+                          : `Inbox (${threadCount} conversations)`}
+                    </Link>
+                  </Button>
+                ) : null}
               </>
             ) : listing.sold ? (
               <p className="rounded-xl bg-neutral-50 px-3 py-3 text-sm text-neutral-600">
@@ -247,9 +261,11 @@ export function ListingDetail({ id }: { id: string }) {
                 {voice.messageLabel}
               </Button>
             )}
-            {sentCount > 0 ? (
+            {!listing.mine && myMessageCount > 0 ? (
               <Button variant="outline" className="h-10 rounded-full" asChild>
-                <Link href={`/messages?listing=${listing.id}`}>Your messages ({sentCount})</Link>
+                <Link href={`/messages?listing=${listing.id}`}>
+                  {unreadHere > 0 ? `Your messages (${unreadHere} unread)` : "Your messages"}
+                </Link>
               </Button>
             ) : null}
             {contactOpen ? (
@@ -268,8 +284,8 @@ export function ListingDetail({ id }: { id: string }) {
           <p className="mt-4 text-xs leading-5 text-neutral-500">{voice.safety}</p>
           {!listing.mine && contactOpen ? (
             <p className="mt-2 text-xs leading-5 text-neutral-500">
-              Prefer WhatsApp or a call using the number above. On-site messages stay on this browser with a sample reply —
-              the seller does not see them in an inbox yet.
+              Prefer WhatsApp or a call using the number above. On-site messages go to the seller’s inbox on this board —
+              they can reply here, and you will see it in Messages.
             </p>
           ) : null}
         </aside>
