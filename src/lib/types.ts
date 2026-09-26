@@ -67,6 +67,8 @@ export type Listing = {
   phone: string
   /** Owner marked the ad as sold; hidden from the main board. */
   sold?: boolean
+  /** Moderators hid the ad (reports or admin); dropped from browse. */
+  hidden?: boolean
   mine?: boolean
 }
 

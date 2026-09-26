@@ -16,7 +16,7 @@ import { messageThreads, unreadMessageCount } from "@/lib/messages"
 
 export function AccountPage() {
   const auth = useAuth()
-  const { ready, listings, savedIds, messages } = useMarketplace()
+  const { ready, admin, listings, savedIds, messages } = useMarketplace()
   const home = useHomePlace()
   const unread = unreadMessageCount(messages)
   const sellerUnread = unreadMessageCount(messages.filter((item) => item.viewerIsSeller))
@@ -24,6 +24,7 @@ export function AccountPage() {
   const mine = listings.filter((listing) => listing.mine).length
   const homeLabel = home ? (home.city ? `${home.city}, ${countryName(home.country)}` : countryName(home.country)) : null
   const postHref = postAdHref(useRememberedPlace())
+  const isAdmin = auth.signedIn && admin
 
   return (
     <div className="mx-auto w-full max-w-3xl px-4 py-8 md:px-6">
@@ -96,6 +97,9 @@ export function AccountPage() {
           detail={myAdsDetail(mine, sellerUnread, auth.signedIn)}
         />
         <ProfileLink href={postHref} title="Post an ad" detail="Cars, houses, jobs, and everything else on the board." />
+        {isAdmin ? (
+          <ProfileLink href="/admin/reports" title="Reports" detail="Review reported ads as an admin." />
+        ) : null}
       </ul>
     </div>
   )

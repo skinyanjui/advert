@@ -52,6 +52,7 @@ export function Browse() {
       listings.filter(
         (listing) =>
           !listing.sold &&
+          !listing.hidden &&
           (!query.country || listing.country === query.country) &&
           matchesQuery(listing, query.q),
       ),

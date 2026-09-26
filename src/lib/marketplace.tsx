@@ -11,12 +11,12 @@ import type { Listing } from "@/lib/types"
 const legacyKey = "africa-classifieds-v1"
 const migratedKey = "africa-classifieds-migrated"
 
-type Snapshot = BoardState & { ready: boolean }
+type Snapshot = BoardState & { ready: boolean; admin: boolean }
 
 const emptyState: BoardState = { posted: [], savedIds: [], messages: [] }
-const serverSnapshot: Snapshot = { ...emptyState, ready: false }
+const serverSnapshot: Snapshot = { ...emptyState, ready: false, admin: false }
 
-let memory: Snapshot = { ...emptyState, ready: false }
+let memory: Snapshot = { ...emptyState, ready: false, admin: false }
 let inflight: Promise<void> | null = null
 
 const listeners = new Set<() => void>()
@@ -61,9 +61,14 @@ async function loadBoard() {
     const refreshed = await fetch("/api/board", { headers: requestHeaders(), cache: "no-store" })
     if (!refreshed.ok) throw new Error("board")
     const payload: unknown = await refreshed.json()
-    memory = { ...parseBoardState(payload), ready: true }
+    const admin =
+      typeof payload === "object" &&
+      payload !== null &&
+      "admin" in payload &&
+      (payload as { admin?: unknown }).admin === true
+    memory = { ...parseBoardState(payload), ready: true, admin: Boolean(admin) }
   } catch {
-    memory = { ...emptyState, ready: true }
+    memory = { ...emptyState, ready: true, admin: false }
     toast.error("The board database did not respond. Sample ads are still here.")
   }
   emit()
@@ -297,6 +302,7 @@ function markThreadRead(conversationId: string) {
 
 type MarketplaceContextValue = {
   ready: boolean
+  admin: boolean
   listings: Listing[]
   savedIds: string[]
   messages: BoardMessage[]
@@ -321,6 +327,7 @@ export function MarketplaceProvider({ children }: { children: React.ReactNode })
   const value = useMemo<MarketplaceContextValue>(
     () => ({
       ready: snapshot.ready,
+      admin: snapshot.admin,
       listings,
       savedIds: snapshot.savedIds,
       messages: snapshot.messages,

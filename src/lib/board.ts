@@ -141,7 +141,7 @@ function sortChargeBands(listings: Listing[], direction: "asc" | "desc"): Listin
 
 export function relatedListings(listings: Listing[], listing: Listing, limit = 4): Listing[] {
   return listings
-    .filter((item) => !item.sold && item.category === listing.category && item.id !== listing.id)
+    .filter((item) => !item.sold && !item.hidden && item.category === listing.category && item.id !== listing.id)
     .map((item) => ({
       item,
       score:
