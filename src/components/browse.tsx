@@ -86,7 +86,9 @@ export function Browse() {
   const types = useMemo(() => {
     if (!query.category) return []
     const pool = inCity.filter((listing) => listing.category === query.category)
-    return categoryPlan(query.category).subcategories.flatMap((subcategory) => {
+    const plan = categoryPlan(query.category)
+    if (!plan) return []
+    return plan.subcategories.flatMap((subcategory) => {
       const count = pool.filter((listing) => listing.subcategory === subcategory.id).length
       return count > 0 ? [{ id: subcategory.id, name: subcategory.name, count }] : []
     })

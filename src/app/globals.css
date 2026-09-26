@@ -128,4 +128,13 @@
   html {
     @apply font-sans;
   }
+  summary.menu-summary {
+    list-style: none;
+  }
+  summary.menu-summary::-webkit-details-marker {
+    display: none;
+  }
+  details:not([open]) > [data-header-panel] {
+    display: none;
+  }
 }

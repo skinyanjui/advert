@@ -6,6 +6,7 @@ const pages = [
   { href: "/", label: "All listings" },
   ...categories.map((category) => ({ href: `/${category.id}`, label: category.name })),
   { href: "/post", label: "Post ad" },
+  { href: "/account", label: "Profile" },
   { href: "/messages", label: "Messages" },
   { href: "/saved", label: "Saved" },
   { href: "/my-ads", label: "My ads" },

@@ -1,0 +1,84 @@
+"use client"
+
+import { ChevronRight, MapPin } from "lucide-react"
+import Link from "next/link"
+
+import { Button } from "@/components/ui/button"
+import { countryName } from "@/lib/countries"
+import { useHomePlace, writeHomePlace } from "@/lib/home-place"
+import { useMarketplace } from "@/lib/marketplace"
+import { messageThreads } from "@/lib/messages"
+
+export function AccountPage() {
+  const { ready, listings, savedIds, messages } = useMarketplace()
+  const home = useHomePlace()
+  const unread = messages.filter((item) => item.role === "sample" && !item.read).length
+  const threads = messageThreads(messages)
+  const mine = listings.filter((listing) => listing.mine).length
+  const homeLabel = home ? (home.city ? `${home.city}, ${countryName(home.country)}` : countryName(home.country)) : null
+
+  return (
+    <div className="mx-auto w-full max-w-3xl px-4 py-8 md:px-6">
+      <h1 className="text-2xl font-semibold tracking-tight">Profile</h1>
+      <p className="mt-1 text-sm text-neutral-500">Amina K. · demo account on this browser</p>
+
+      <section className="mt-6 rounded-2xl border border-neutral-200 bg-white p-4">
+        <div className="flex items-start gap-3">
+          <MapPin className="mt-0.5 size-4 shrink-0 text-neutral-500" />
+          <div className="min-w-0 flex-1">
+            <p className="text-sm font-medium">Default location</p>
+            {homeLabel ? (
+              <p className="mt-1 text-sm text-neutral-600">{homeLabel}. Nearby ads come first on the board.</p>
+            ) : (
+              <p className="mt-1 text-sm text-neutral-600">
+                Pick a country from the header and save it. The board then leads with ads closer to you.
+              </p>
+            )}
+          </div>
+          {home ? (
+            <Button variant="outline" className="shrink-0 rounded-full" onClick={() => writeHomePlace(null)}>
+              Clear
+            </Button>
+          ) : null}
+        </div>
+      </section>
+
+      {!ready ? <p className="mt-6 text-sm text-neutral-500">Loading your profile…</p> : null}
+
+      <ul className="mt-4 grid gap-2">
+        <ProfileLink href="/messages" title="Messages" detail={messageDetail(threads.length, unread)} />
+        <ProfileLink href="/saved" title="Saved ads" detail={countDetail(savedIds.length, "saved ad", "saved ads")} />
+        <ProfileLink href="/my-ads" title="My ads" detail={countDetail(mine, "ad posted from this browser", "ads posted from this browser")} />
+        <ProfileLink href="/post" title="Post an ad" detail="Cars, houses, jobs, and everything else on the board." />
+      </ul>
+    </div>
+  )
+}
+
+function ProfileLink({ href, title, detail }: { href: string; title: string; detail: string }) {
+  return (
+    <li>
+      <Link
+        href={href}
+        className="flex items-center gap-3 rounded-2xl border border-neutral-200 bg-white px-4 py-3 hover:border-neutral-400"
+      >
+        <span className="min-w-0 flex-1">
+          <span className="block text-sm font-medium">{title}</span>
+          <span className="mt-0.5 block text-xs text-neutral-500">{detail}</span>
+        </span>
+        <ChevronRight className="size-4 shrink-0 text-neutral-400" />
+      </Link>
+    </li>
+  )
+}
+
+function messageDetail(threads: number, unread: number): string {
+  if (threads === 0) return "No conversations yet. Write to a seller from a listing."
+  if (unread === 0) return threads === 1 ? "1 conversation" : `${threads} conversations`
+  return unread === 1 ? "1 unread reply" : `${unread} unread replies`
+}
+
+function countDetail(count: number, singular: string, plural: string): string {
+  if (count === 0) return `No ${plural} yet`
+  return count === 1 ? `1 ${singular}` : `${count} ${plural}`
+}
