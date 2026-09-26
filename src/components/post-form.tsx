@@ -28,6 +28,7 @@ import {
   currencyLabel,
   getCountry,
 } from "@/lib/countries"
+import { listingFieldErrors, type FieldErrors as RuleErrors } from "@/lib/listing-rules"
 import { useMarketplace } from "@/lib/marketplace"
 import {
   cardFactLabels,
@@ -47,7 +48,7 @@ import { cn } from "@/lib/utils"
 
 const steps = ["Category", "Type", "Details", "Contact"] as const
 
-type FieldErrors = Partial<Record<string, string>>
+type FieldErrors = RuleErrors
 
 export function PostForm() {
   const searchParams = useSearchParams()
@@ -184,26 +185,33 @@ function AdForm({ existing }: { existing: Listing | null }) {
     reader.readAsDataURL(file)
   }
 
+  function currentErrors(): FieldErrors {
+    return listingFieldErrors({
+      title,
+      price: Number(price),
+      currency,
+      priceSuffix: suffix,
+      category,
+      subcategoryId: subcategory?.id ?? null,
+      details,
+      country,
+      city,
+      description,
+      phone,
+    })
+  }
+
   function detailErrors(): FieldErrors {
     if (!subcategory || !plan) return { form: "Choose a type first." }
-    const next: FieldErrors = {}
-    if (title.trim().length < 4) next.title = "Use at least 4 characters."
-    const amount = Number(price)
-    if (!Number.isFinite(amount) || amount <= 0) next.price = "Enter an amount greater than zero."
-    for (const field of subcategory.fields) {
-      if (!field.required) continue
-      if ((details[field.id] ?? "").trim()) continue
-      next[field.id] = field.kind === "select" ? `Choose ${field.label.toLowerCase()}.` : `Add the ${field.label.toLowerCase()}.`
-    }
-    if (description.trim().length < 20) next.description = "Write at least 20 characters. This is the paragraph on the listing."
-    return next
+    const errors = currentErrors()
+    delete errors.city
+    delete errors.phone
+    return errors
   }
 
   function contactErrors(): FieldErrors {
-    const next: FieldErrors = {}
-    if (city.trim().length < 2) next.city = "Add the city."
-    if (phone.replace(/[^\d]/g, "").length < 7) next.phone = "Add a phone number people can use."
-    return next
+    const errors = currentErrors()
+    return { city: errors.city, phone: errors.phone }
   }
 
   function moveTo(next: number) {
@@ -444,11 +452,12 @@ function AdForm({ existing }: { existing: Listing | null }) {
                     className="h-10"
                   />
                 </Field>
-                <Field label="Currency">
+                <Field label="Currency" error={errors.currency}>
                   <Select
                     value={currency}
                     onValueChange={(value) => {
                       if (value && currencies.includes(value)) setCurrency(value)
+                      setErrors((current) => ({ ...current, currency: undefined }))
                     }}
                   >
                     <SelectTrigger className="h-10 w-full">
@@ -464,7 +473,7 @@ function AdForm({ existing }: { existing: Listing | null }) {
                   </Select>
                 </Field>
                 {subcategory.periods.length > 1 ? (
-                  <Field label="Charged">
+                  <Field label="Charged" error={errors.priceSuffix}>
                     <Select
                       value={period}
                       onValueChange={(value) => {

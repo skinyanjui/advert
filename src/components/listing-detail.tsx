@@ -17,6 +17,7 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog"
 import { Textarea } from "@/components/ui/textarea"
+import { relatedListings } from "@/lib/board"
 import { resolvePlace } from "@/lib/cities"
 import { currencyLabel, getCountry, languageLabel } from "@/lib/countries"
 import {
@@ -53,9 +54,7 @@ export function ListingDetail({ id }: { id: string }) {
   const saved = isSaved(listing.id)
   const voice = listingVoice(listing)
   const facts = listingFacts(listing)
-  const related = listings
-    .filter((item) => item.category === listing.category && item.id !== listing.id)
-    .slice(0, 4)
+  const related = relatedListings(listings, listing)
 
   async function share() {
     const url = window.location.href

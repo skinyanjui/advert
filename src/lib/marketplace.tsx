@@ -4,6 +4,7 @@ import { createContext, useContext, useMemo, useSyncExternalStore } from "react"
 
 import { seedListings } from "@/lib/catalog"
 import { canonicalCountry } from "@/lib/countries"
+import { acceptListing } from "@/lib/listing-rules"
 import { isCategoryId, type Listing } from "@/lib/types"
 
 const STORAGE_KEY = "africa-classifieds-v1"
@@ -148,8 +149,10 @@ export function MarketplaceProvider({ children }: { children: React.ReactNode })
         writeStored({ posted: current.posted, savedIds })
       },
       addListing: (listing: Listing) => {
+        const accepted = acceptPosted(listing)
+        if (!accepted.ok) return accepted
         const current = readSnapshot()
-        const posted = [listing, ...current.posted.filter((item) => item.id !== listing.id)]
+        const posted = [accepted.listing, ...current.posted.filter((item) => item.id !== accepted.listing.id)]
         const saved = writeStored({ posted, savedIds: current.savedIds })
         if (!saved) {
           return { ok: false, reason: "This browser could not store the ad. Try a smaller photo." }
@@ -157,11 +160,13 @@ export function MarketplaceProvider({ children }: { children: React.ReactNode })
         return { ok: true }
       },
       updateListing: (listing: Listing) => {
+        const accepted = acceptPosted(listing)
+        if (!accepted.ok) return accepted
         const current = readSnapshot()
-        if (!current.posted.some((item) => item.id === listing.id)) {
+        if (!current.posted.some((item) => item.id === accepted.listing.id)) {
           return { ok: false, reason: "This ad is no longer on this browser." }
         }
-        const posted = current.posted.map((item) => (item.id === listing.id ? listing : item))
+        const posted = current.posted.map((item) => (item.id === accepted.listing.id ? accepted.listing : item))
         const saved = writeStored({ posted, savedIds: current.savedIds })
         if (!saved) {
           return { ok: false, reason: "This browser could not store the ad. Try a smaller photo." }
@@ -179,6 +184,13 @@ export function MarketplaceProvider({ children }: { children: React.ReactNode })
   }, [listings, ready, stored])
 
   return <MarketplaceContext.Provider value={value}>{children}</MarketplaceContext.Provider>
+}
+
+function acceptPosted(listing: Listing): { ok: true; listing: Listing } | { ok: false; reason: string } {
+  if (seedListings.some((item) => item.id === listing.id)) {
+    return { ok: false, reason: "That listing is already on the board." }
+  }
+  return acceptListing(listing)
 }
 
 export function useMarketplace(): MarketplaceContextValue {

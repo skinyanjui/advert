@@ -22,7 +22,7 @@ import {
   SheetTitle,
   SheetTrigger,
 } from "@/components/ui/sheet"
-import { hoursAgoOf } from "@/lib/format"
+import { matchesQuery, sortListings } from "@/lib/board"
 import { useMarketplace } from "@/lib/marketplace"
 import {
   countryName,
@@ -33,14 +33,11 @@ import {
 } from "@/lib/countries"
 import {
   categories,
-  categoryName,
   isSortId,
   sorts,
   type CategoryId,
   type Listing,
-  type SortId,
 } from "@/lib/types"
-import { listingSearchBits } from "@/lib/posting"
 import { useClientTime } from "@/lib/use-client-time"
 import { useListingQuery } from "@/lib/use-listing-query"
 
@@ -92,8 +89,8 @@ export function Browse() {
       ? inCity.filter((listing) => listing.category === query.category)
       : inCity
     const preferred = getCountry(query.country ?? "")?.currencies[0]?.code ?? "USD"
-    return sortListings(filtered, query.sort, preferred)
-  }, [inCity, query.category, query.country, query.sort])
+    return sortListings(filtered, query.sort, preferred, query.q)
+  }, [inCity, query.category, query.country, query.q, query.sort])
 
   const cityLabel = query.city
     ? (cityOptions.find((city) => fold(city.name) === fold(query.city ?? ""))?.name ?? query.city)
@@ -318,23 +315,6 @@ function EmptyResults({
   )
 }
 
-function matchesQuery(listing: Listing, q: string): boolean {
-  const needle = q.trim().toLowerCase()
-  if (!needle) return true
-  const haystack = [
-    listing.title,
-    listing.city,
-    listing.description,
-    listing.meta ?? "",
-    countryName(listing.country),
-    categoryName(listing.category),
-    ...listingSearchBits(listing),
-  ]
-    .join(" ")
-    .toLowerCase()
-  return needle.split(/\s+/).every((word) => haystack.includes(word))
-}
-
 function citiesIn(listings: Listing[]): { name: string; count: number }[] {
   const map = new Map<string, { name: string; count: number }>()
   for (const listing of listings) {
@@ -346,42 +326,3 @@ function citiesIn(listings: Listing[]): { name: string; count: number }[] {
   return [...map.values()].sort((a, b) => b.count - a.count || a.name.localeCompare(b.name))
 }
 
-function sortListings(listings: Listing[], sort: SortId, preferredCurrency: string): Listing[] {
-  const copy = [...listings]
-  switch (sort) {
-    case "relevant":
-      return copy
-    case "newest":
-      copy.sort((a, b) => hoursAgoOf(a) - hoursAgoOf(b))
-      return copy
-    case "price-asc":
-      copy.sort((a, b) => comparePrice(a, b, preferredCurrency, "asc"))
-      return copy
-    case "price-desc":
-      copy.sort((a, b) => comparePrice(a, b, preferredCurrency, "desc"))
-      return copy
-    default: {
-      const exhaustive: never = sort
-      return exhaustive
-    }
-  }
-}
-
-function comparePrice(
-  a: Listing,
-  b: Listing,
-  preferredCurrency: string,
-  direction: "asc" | "desc",
-): number {
-  const group = currencyGroup(a, preferredCurrency) - currencyGroup(b, preferredCurrency)
-  if (group !== 0) return group
-  const price = a.price - b.price
-  return direction === "asc" ? price : -price
-}
-
-function currencyGroup(listing: Listing, preferredCurrency: string): number {
-  const currency = listing.currency ?? "USD"
-  if (currency === preferredCurrency) return 0
-  if (currency === "USD") return 1
-  return 2
-}
