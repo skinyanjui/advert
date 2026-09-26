@@ -16,7 +16,7 @@ import {
 } from "@/components/ui/dropdown-menu"
 import { Input } from "@/components/ui/input"
 import { useMarketplace } from "@/lib/marketplace"
-import { countries, countryName, fold, moreCountries, primaryCountries } from "@/lib/countries"
+import { countries, countryName, fold } from "@/lib/countries"
 import { useListingQuery } from "@/lib/use-listing-query"
 import { cn } from "@/lib/utils"
 
@@ -69,11 +69,12 @@ export function SiteHeader() {
               <DropdownMenuTrigger asChild>
                 <Button
                   variant="outline"
-                  className="hidden h-10 rounded-full px-3 lg:inline-flex"
+                  className="h-10 max-w-[9.5rem] rounded-full px-2.5 sm:max-w-48 sm:px-3"
+                  aria-label={`Country: ${locationLabel}`}
                 >
-                  <MapPin className="size-4 text-neutral-500" />
-                  <span className="max-w-32 truncate">{locationLabel}</span>
-                  <ChevronDown className="size-4 text-neutral-400" />
+                  <MapPin className="size-4 shrink-0 text-neutral-500" />
+                  <span className="truncate">{locationLabel}</span>
+                  <ChevronDown className="size-4 shrink-0 text-neutral-400" />
                 </Button>
               </DropdownMenuTrigger>
               <DropdownMenuContent align="end" className="w-64">
@@ -89,7 +90,10 @@ export function SiteHeader() {
                 <DropdownMenuSeparator />
                 <div className="max-h-72 overflow-y-auto">
                   {locationQuery.trim() ? null : (
-                    <DropdownMenuItem onSelect={() => update({ country: null })}>
+                    <DropdownMenuItem
+                      onSelect={() => update({ country: null })}
+                      className={cn(!query.country && "font-medium")}
+                    >
                       All Africa
                     </DropdownMenuItem>
                   )}
@@ -97,6 +101,7 @@ export function SiteHeader() {
                     <DropdownMenuItem
                       key={country.code}
                       onSelect={() => update({ country: country.code })}
+                      className={cn(query.country === country.code && "font-medium")}
                     >
                       <span className="min-w-0 flex-1 truncate">{country.name}</span>
                       <span className="text-[11px] text-neutral-400">{country.code}</span>
@@ -172,11 +177,6 @@ export function SiteHeader() {
         </div>
         </div>
       </div>
-      <div className="bg-background">
-        <div className="mx-auto max-w-[1720px] px-4 pt-2.5 md:px-6">
-          <CountryTabs active={query.country} onSelect={(country) => update({ country: country ?? null })} />
-        </div>
-      </div>
     </header>
   )
 }
@@ -196,86 +196,6 @@ function SearchField({ value, onChange }: { value: string; onChange: (value: str
   )
 }
 
-function CountryTabs({
-  active,
-  onSelect,
-}: {
-  active?: string
-  onSelect: (country?: string) => void
-}) {
-  const primary = primaryCountries()
-  const more = moreCountries()
-  const moreActive = more.find((country) => country.code === active)
-  const [moreQuery, setMoreQuery] = useState("")
-  const moreMatches = filterCountries(moreQuery).filter((country) =>
-    more.some((item) => item.code === country.code),
-  )
-  const primaryHit = filterCountries(moreQuery).find((country) =>
-    primary.some((item) => item.code === country.code),
-  )
-
-  return (
-    <div className="flex items-center gap-1 overflow-x-auto pb-3 [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
-      <CountryPill active={!active} onClick={() => onSelect(undefined)}>
-        All
-      </CountryPill>
-      {primary.map((country) => (
-        <CountryPill
-          key={country.code}
-          active={active === country.code}
-          onClick={() => onSelect(country.code)}
-        >
-          {country.name}
-        </CountryPill>
-      ))}
-      <DropdownMenu
-        onOpenChange={(open) => {
-          if (!open) setMoreQuery("")
-        }}
-      >
-        <DropdownMenuTrigger asChild>
-          <button
-            type="button"
-            className={cn(
-              "inline-flex h-9 shrink-0 items-center gap-1 rounded-full px-3.5 text-sm whitespace-nowrap",
-              moreActive
-                ? "bg-white font-medium text-neutral-950 shadow-sm ring-1 ring-black/5"
-                : "text-neutral-500 hover:text-neutral-900",
-            )}
-          >
-            {moreActive ? moreActive.name : "More"}
-            <ChevronDown className="size-3.5" />
-          </button>
-        </DropdownMenuTrigger>
-        <DropdownMenuContent align="start" className="w-60">
-          <div className="p-1" onKeyDown={(event) => event.stopPropagation()}>
-            <Input
-              value={moreQuery}
-              onChange={(event) => setMoreQuery(event.target.value)}
-              placeholder="Search countries"
-              aria-label="Search more countries"
-              className="h-8"
-            />
-          </div>
-          <DropdownMenuSeparator />
-          <div className="max-h-72 overflow-y-auto">
-            {moreMatches.map((country) => (
-              <DropdownMenuItem key={country.code} onSelect={() => onSelect(country.code)}>
-                {country.name}
-              </DropdownMenuItem>
-            ))}
-            {moreMatches.length === 0 ? (
-              <p className="px-2 py-3 text-xs text-neutral-500">
-                {primaryHit ? `${primaryHit.name} is in the row above.` : "No country matches."}
-              </p>
-            ) : null}
-          </div>
-        </DropdownMenuContent>
-      </DropdownMenu>
-    </div>
-  )
-}
-
 function filterCountries(query: string) {
   const needle = fold(query)
   if (!needle) return countries
@@ -284,31 +204,6 @@ function filterCountries(query: string) {
       fold(country.name).includes(needle) ||
       country.code.toLowerCase() === needle ||
       fold(country.capital).includes(needle),
-  )
-}
-
-function CountryPill({
-  active,
-  onClick,
-  children,
-}: {
-  active: boolean
-  onClick: () => void
-  children: React.ReactNode
-}) {
-  return (
-    <button
-      type="button"
-      onClick={onClick}
-      className={cn(
-        "inline-flex h-9 shrink-0 items-center rounded-full px-3.5 text-sm whitespace-nowrap transition-colors",
-        active
-          ? "bg-white font-medium text-neutral-950 shadow-sm ring-1 ring-black/5"
-          : "text-neutral-500 hover:bg-white/70 hover:text-neutral-900",
-      )}
-    >
-      {children}
-    </button>
   )
 }
 

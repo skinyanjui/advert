@@ -149,7 +149,7 @@ export function ListingDetail({ id }: { id: string }) {
             </section>
           ) : null}
         </div>
-        <aside className="h-fit rounded-2xl border border-neutral-200 bg-white p-4 lg:sticky lg:top-[132px]">
+        <aside className="h-fit rounded-2xl border border-neutral-200 bg-white p-4 lg:sticky lg:top-[85px]">
           <div className="flex items-center gap-3">
             <span className="flex size-11 items-center justify-center rounded-full bg-neutral-950 text-sm font-medium text-white">
               {initials(listing.sellerName)}

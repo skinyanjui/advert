@@ -351,7 +351,7 @@ export function PostForm() {
       </div>
       <aside className="hidden lg:block">
         <p className="mb-3 text-xs font-medium tracking-wide text-neutral-500 uppercase">Preview</p>
-        <div className="sticky top-[132px]">
+        <div className="sticky top-[85px]">
           <ListingCard listing={preview} linked={false} saveable={false} />
         </div>
       </aside>
