@@ -16,7 +16,7 @@ import {
 } from "@/components/ui/dropdown-menu"
 import { Input } from "@/components/ui/input"
 import { useMarketplace } from "@/lib/marketplace"
-import { countries, countryName } from "@/lib/types"
+import { countries, countryName, moreCountries, primaryCountries } from "@/lib/countries"
 import { useListingQuery } from "@/lib/use-listing-query"
 import { cn } from "@/lib/utils"
 
@@ -77,8 +77,8 @@ export function SiteHeader() {
                 <DropdownMenuSeparator />
                 {countries.map((country) => (
                   <DropdownMenuItem
-                    key={country.id}
-                    onSelect={() => update({ country: country.id })}
+                    key={country.code}
+                    onSelect={() => update({ country: country.code })}
                   >
                     {country.name}
                   </DropdownMenuItem>
@@ -178,11 +178,11 @@ function CountryTabs({
   onSelect,
 }: {
   active?: string
-  onSelect: (country?: (typeof countries)[number]["id"]) => void
+  onSelect: (country?: string) => void
 }) {
-  const primary = countries.filter((country) => country.primary)
-  const more = countries.filter((country) => !country.primary)
-  const moreActive = more.find((country) => country.id === active)
+  const primary = primaryCountries()
+  const more = moreCountries()
+  const moreActive = more.find((country) => country.code === active)
 
   return (
     <div className="flex items-center gap-1 overflow-x-auto pb-3 [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
@@ -191,9 +191,9 @@ function CountryTabs({
       </CountryPill>
       {primary.map((country) => (
         <CountryPill
-          key={country.id}
-          active={active === country.id}
-          onClick={() => onSelect(country.id)}
+          key={country.code}
+          active={active === country.code}
+          onClick={() => onSelect(country.code)}
         >
           {country.name}
         </CountryPill>
@@ -213,9 +213,9 @@ function CountryTabs({
             <ChevronDown className="size-3.5" />
           </button>
         </DropdownMenuTrigger>
-        <DropdownMenuContent align="start" className="w-48">
+        <DropdownMenuContent align="start" className="max-h-80 w-60 overflow-y-auto">
           {more.map((country) => (
-            <DropdownMenuItem key={country.id} onSelect={() => onSelect(country.id)}>
+            <DropdownMenuItem key={country.code} onSelect={() => onSelect(country.code)}>
               {country.name}
             </DropdownMenuItem>
           ))}

@@ -3,7 +3,8 @@
 import { createContext, useContext, useMemo, useSyncExternalStore } from "react"
 
 import { seedListings } from "@/lib/catalog"
-import { isCategoryId, isCountryId, type Listing } from "@/lib/types"
+import { canonicalCountry } from "@/lib/countries"
+import { isCategoryId, type Listing } from "@/lib/types"
 
 const STORAGE_KEY = "africa-classifieds-v1"
 
@@ -34,7 +35,13 @@ function parseStored(raw: string | null): StoredState {
   if (!raw) return emptyState
   try {
     const parsed = JSON.parse(raw) as Partial<StoredState>
-    const posted = Array.isArray(parsed.posted) ? parsed.posted.filter(isStoredListing) : []
+    const posted = Array.isArray(parsed.posted)
+      ? parsed.posted.flatMap((item) => {
+          if (!isStoredListing(item)) return []
+          const country = canonicalCountry(item.country)
+          return country ? [{ ...item, country }] : []
+        })
+      : []
     const savedIds = Array.isArray(parsed.savedIds)
       ? parsed.savedIds.filter((id): id is string => typeof id === "string")
       : []
@@ -93,7 +100,7 @@ function isStoredListing(value: unknown): value is Listing {
     typeof listing.sellerName === "string" &&
     typeof listing.phone === "string" &&
     isCategoryId(listing.category) &&
-    isCountryId(listing.country)
+    canonicalCountry(typeof listing.country === "string" ? listing.country : undefined) !== undefined
   )
 }
 

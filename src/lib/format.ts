@@ -1,15 +1,20 @@
-import { countryName, type Listing } from "@/lib/types"
+import { countryName } from "@/lib/countries"
+import type { Listing } from "@/lib/types"
 
-export function formatMoney(amount: number): string {
-  return new Intl.NumberFormat("en-US", {
-    style: "currency",
-    currency: "USD",
-    maximumFractionDigits: 0,
-  }).format(amount)
+export function formatMoney(amount: number, currency = "USD"): string {
+  try {
+    return new Intl.NumberFormat("en", {
+      style: "currency",
+      currency,
+      maximumFractionDigits: 0,
+    }).format(amount)
+  } catch {
+    return `${currency} ${Math.round(amount).toLocaleString("en")}`
+  }
 }
 
-export function formatPrice(listing: Pick<Listing, "price" | "priceSuffix">): string {
-  const money = formatMoney(listing.price)
+export function formatPrice(listing: Pick<Listing, "price" | "priceSuffix" | "currency">): string {
+  const money = formatMoney(listing.price, listing.currency ?? "USD")
   return listing.priceSuffix ? `${money} ${listing.priceSuffix}` : money
 }
 

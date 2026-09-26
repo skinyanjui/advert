@@ -22,10 +22,10 @@ import {
 } from "@/components/ui/sheet"
 import { hoursAgoOf } from "@/lib/format"
 import { useMarketplace } from "@/lib/marketplace"
+import { countryName } from "@/lib/countries"
 import {
   categories,
   categoryName,
-  countryName,
   isSortId,
   sorts,
   type CategoryId,

@@ -3,7 +3,7 @@
 import { ArrowLeft, Clock, Heart, MapPin, Share2 } from "lucide-react"
 import Image from "next/image"
 import Link from "next/link"
-import { useEffect, useState } from "react"
+import { useEffect, useState, useSyncExternalStore } from "react"
 import { toast } from "sonner"
 
 import { ListingCard } from "@/components/listing-card"
@@ -17,6 +17,13 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog"
 import { Textarea } from "@/components/ui/textarea"
+import { resolvePlace } from "@/lib/cities"
+import {
+  currencyLabel,
+  formatLocalTime,
+  getCountry,
+  languageLabel,
+} from "@/lib/countries"
 import {
   formatPlace,
   formatPosted,
@@ -26,7 +33,7 @@ import {
   whatsappHref,
 } from "@/lib/format"
 import { useMarketplace } from "@/lib/marketplace"
-import { categoryName } from "@/lib/types"
+import { categoryName, type Listing } from "@/lib/types"
 import { cn } from "@/lib/utils"
 
 export function ListingDetail({ id }: { id: string }) {
@@ -133,6 +140,7 @@ export function ListingDetail({ id }: { id: string }) {
               <Fact label="Listed" value={formatPosted(hoursAgoOf(listing))} />
             </dl>
           </section>
+          <PlacePanel listing={listing} />
           {related.length > 0 ? (
             <section className="mt-10">
               <h2 className="text-sm font-medium text-neutral-950">Similar listings</h2>
@@ -210,6 +218,58 @@ export function ListingDetail({ id }: { id: string }) {
         </DialogContent>
       </Dialog>
     </div>
+  )
+}
+
+function PlacePanel({ listing }: { listing: Listing }) {
+  const country = getCountry(listing.country)
+  const resolved = resolvePlace(listing.country, listing.city)
+  const point =
+    typeof listing.latitude === "number" && typeof listing.longitude === "number"
+      ? { lat: listing.latitude, lng: listing.longitude, pinned: true }
+      : { lat: resolved.lat, lng: resolved.lng, pinned: resolved.matched }
+  const { lat, lng } = point
+  const showMap = point.pinned
+  const timeZone = listing.timezone ?? (showMap ? resolved.timezone : country?.timezone ?? resolved.timezone)
+  const localTime = useClientTime(timeZone)
+  const currency = listing.currency ?? "USD"
+  const languages = country?.languages.map((language) => languageLabel(language.code, language.name)) ?? []
+  const pad = 0.08
+  const bbox = `${lng - pad},${lat - pad},${lng + pad},${lat + pad}`
+  const embed = `https://www.openstreetmap.org/export/embed.html?bbox=${bbox}&layer=mapnik&marker=${lat},${lng}`
+  const external = `https://www.openstreetmap.org/?mlat=${lat}&mlon=${lng}#map=12/${lat}/${lng}`
+
+  return (
+    <section className="mt-8">
+      <h2 className="text-sm font-medium text-neutral-950">Place</h2>
+      <dl className="mt-3 grid grid-cols-2 gap-3 text-sm sm:grid-cols-3">
+        <Fact label="Local time" value={localTime ?? timeZone} />
+        <Fact label="Time zone" value={timeZone} />
+        <Fact label="Currency" value={`${currencyLabel(currency)} (${currency})`} />
+        {languages.length > 0 ? <Fact label="Languages" value={languages.join(", ")} /> : null}
+      </dl>
+      {showMap ? (
+        <div className="mt-4 overflow-hidden rounded-2xl border border-neutral-200">
+          <iframe title={`Map of ${listing.city}`} src={embed} className="h-56 w-full" loading="lazy" />
+          <a
+            href={external}
+            target="_blank"
+            rel="noreferrer"
+            className="block border-t px-3 py-2 text-xs text-neutral-500 hover:text-neutral-900"
+          >
+            Open {listing.city} in OpenStreetMap
+          </a>
+        </div>
+      ) : null}
+    </section>
+  )
+}
+
+function useClientTime(timeZone: string): string | null {
+  return useSyncExternalStore(
+    () => () => {},
+    () => formatLocalTime(timeZone),
+    () => null,
   )
 }
 

@@ -21,6 +21,17 @@ Open [http://localhost:3000](http://localhost:3000).
 - Post an ad, with a photo from your computer or a category image
 - Saved ads and your own ads
 
+## Reference data
+
+- **Countries.** ISO 3166-1 codes and names, snapshotted from the open [mledoze/countries](https://github.com/mledoze/countries) dataset (the historical source behind REST Countries). The public REST Countries API v3 is deprecated, and v5 needs a key. `REST_COUNTRIES_API_KEY` is reserved for a later refresh; the app ships the snapshot so it runs with no key.
+- **Cities.** GeoNames places with population over 15,000, each with an IANA time zone. A country’s default zone is its capital’s zone (Tanzania is `Africa/Dar_es_Salaam`).
+- **Currencies.** ISO 4217 codes. Display names come from Unicode CLDR through `Intl.DisplayNames`. Sample ads stay in USD. A new ad defaults to the country’s currency, and USD stays available.
+- **Languages.** ISO 639 codes, with CLDR display names through `Intl`.
+- **Time zones.** IANA Time Zone Database, formatted with `Intl.DateTimeFormat`.
+- **Map and search.** OpenStreetMap embeds on listing pages. City search also asks Nominatim through `/api/places` (one request a second, ten-minute cache). Typed cities that do not match GeoNames or a map suggestion are stored without a pin.
+
+Rebuild the snapshots with `node scripts/build-reference.mjs`.
+
 ## Photos
 
 Sample photos come from Unsplash, Pexels, and Wikimedia Commons. The Toyota HiAce photo is by Lawrence Ruiz and the diesel generator photo is by Biswarup Ganguly, both CC BY-SA via Wikimedia Commons.

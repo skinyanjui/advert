@@ -4,6 +4,7 @@ import { useRouter } from "next/navigation"
 import { useMemo, useState } from "react"
 import { toast } from "sonner"
 
+import { CityField, type ChosenPlace } from "@/components/city-field"
 import { ListingCard } from "@/components/listing-card"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -17,16 +18,15 @@ import {
 } from "@/components/ui/select"
 import { Textarea } from "@/components/ui/textarea"
 import { categoryImage } from "@/lib/catalog"
-import { useMarketplace } from "@/lib/marketplace"
+import { resolvePlace } from "@/lib/cities"
 import {
-  categories,
+  canonicalCountry,
   countries,
-  isCategoryId,
-  isCountryId,
-  type CategoryId,
-  type CountryId,
-  type Listing,
-} from "@/lib/types"
+  currencyLabel,
+  getCountry,
+} from "@/lib/countries"
+import { useMarketplace } from "@/lib/marketplace"
+import { categories, isCategoryId, type CategoryId, type Listing } from "@/lib/types"
 
 const periods = [
   { id: "fixed", label: "Fixed price", suffix: undefined },
@@ -50,8 +50,10 @@ export function PostForm() {
   const [price, setPrice] = useState("")
   const [period, setPeriod] = useState<PeriodId>("fixed")
   const [condition, setCondition] = useState("Used")
-  const [country, setCountry] = useState<CountryId>("kenya")
+  const [country, setCountry] = useState("KE")
+  const [currency, setCurrency] = useState("KES")
   const [city, setCity] = useState("")
+  const [place, setPlace] = useState<ChosenPlace | null>(null)
   const [description, setDescription] = useState("")
   const [phone, setPhone] = useState("")
   const [meta, setMeta] = useState("")
@@ -60,15 +62,22 @@ export function PostForm() {
   const [submitting, setSubmitting] = useState(false)
 
   const suffix = periods.find((item) => item.id === period)?.suffix
+  const callingCode = getCountry(country)?.callingCode
+  const currencies = currencyChoices(country)
+  const countryOptions = [...countries].sort((a, b) => a.name.localeCompare(b.name))
   const preview = useMemo<Listing>(
     () => ({
       id: "preview",
       title: title.trim() || "Your listing title",
       price: Number(price) > 0 ? Number(price) : 0,
+      currency,
       priceSuffix: suffix,
       category,
       country,
       city: city.trim() || "City",
+      latitude: place?.lat,
+      longitude: place?.lng,
+      timezone: place?.timezone,
       hoursAgo: 0,
       postedAt: new Date().toISOString(),
       image: image ?? categoryImage[category],
@@ -78,10 +87,25 @@ export function PostForm() {
       condition,
       sellerName: "Amina K.",
       sellerSince: "2024",
-      phone: phone || "+000",
+      phone: phone || callingCode || "+000",
       mine: true,
     }),
-    [title, price, suffix, category, country, city, image, meta, description, condition, phone],
+    [
+      title,
+      price,
+      currency,
+      suffix,
+      category,
+      country,
+      city,
+      place,
+      image,
+      meta,
+      description,
+      condition,
+      phone,
+      callingCode,
+    ],
   )
 
   function onFile(file: File | undefined) {
@@ -116,12 +140,17 @@ export function PostForm() {
     if (Object.values(nextErrors).some(Boolean)) return
 
     setSubmitting(true)
+    const located = locatedPlace(place, country, city.trim())
     const listing: Listing = {
       ...preview,
       id: `ad-${Date.now()}`,
       title: title.trim(),
       price: Math.round(amount),
-      city: city.trim(),
+      currency,
+      city: located?.name ?? city.trim(),
+      latitude: located?.lat,
+      longitude: located?.lng,
+      timezone: located?.timezone,
       description: description.trim(),
       phone: phone.trim(),
       meta: meta.trim() || undefined,
@@ -205,8 +234,8 @@ export function PostForm() {
               </Select>
             </Field>
           </div>
-          <div className="grid gap-5 sm:grid-cols-2">
-            <Field label="Price (USD)" error={errors.price}>
+          <div className="grid gap-5 sm:grid-cols-3">
+            <Field label={`Price (${currency})`} error={errors.price}>
               <Input
                 inputMode="decimal"
                 value={price}
@@ -214,6 +243,25 @@ export function PostForm() {
                 placeholder="450"
                 className="h-10"
               />
+            </Field>
+            <Field label="Currency">
+              <Select
+                value={currency}
+                onValueChange={(value) => {
+                  if (value && currencies.includes(value)) setCurrency(value)
+                }}
+              >
+                <SelectTrigger className="h-10 w-full">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  {currencies.map((code) => (
+                    <SelectItem key={code} value={code}>
+                      {code} · {currencyLabel(code)}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
             </Field>
             <Field label="Price period">
               <Select
@@ -248,28 +296,28 @@ export function PostForm() {
               <Select
                 value={country}
                 onValueChange={(value) => {
-                  if (isCountryId(value)) setCountry(value)
+                  const code = canonicalCountry(value)
+                  if (!code) return
+                  setCountry(code)
+                  setCity("")
+                  setPlace(null)
+                  setCurrency(getCountry(code)?.currencies[0]?.code ?? "USD")
                 }}
               >
                 <SelectTrigger className="h-10 w-full">
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
-                  {countries.map((item) => (
-                    <SelectItem key={item.id} value={item.id}>
+                  {countryOptions.map((item) => (
+                    <SelectItem key={item.code} value={item.code}>
                       {item.name}
                     </SelectItem>
                   ))}
                 </SelectContent>
               </Select>
             </Field>
-            <Field label="City" error={errors.city}>
-              <Input
-                value={city}
-                onChange={(event) => setCity(event.target.value)}
-                placeholder="Nairobi"
-                className="h-10"
-              />
+            <Field label="City" error={errors.city} hint="Pick a GeoNames city, or search the map.">
+              <CityField country={country} city={city} onCityChange={setCity} onPlace={setPlace} />
             </Field>
           </div>
           <Field label="Description" error={errors.description}>
@@ -280,11 +328,11 @@ export function PostForm() {
               placeholder="What is it, what condition is it in, and how can someone view it?"
             />
           </Field>
-          <Field label="Phone" error={errors.phone}>
+          <Field label="Phone" error={errors.phone} hint={callingCode ? `Calling code ${callingCode}.` : undefined}>
             <Input
               value={phone}
               onChange={(event) => setPhone(event.target.value)}
-              placeholder="+254 7XX XXX XXX"
+              placeholder={callingCode ? `${callingCode} 7XX XXX XXX` : "+254 7XX XXX XXX"}
               className="h-10"
             />
           </Field>
@@ -306,6 +354,23 @@ export function PostForm() {
       </aside>
     </div>
   )
+}
+
+function currencyChoices(countryCode: string): string[] {
+  const local = getCountry(countryCode)?.currencies.map((item) => item.code) ?? []
+  return local.includes("USD") ? local : [...local, "USD"]
+}
+
+function locatedPlace(chosen: ChosenPlace | null, country: string, city: string): ChosenPlace | null {
+  if (chosen) return chosen
+  const resolved = resolvePlace(country, city)
+  if (!resolved.matched) return null
+  return {
+    name: resolved.name,
+    lat: resolved.lat,
+    lng: resolved.lng,
+    timezone: resolved.timezone,
+  }
 }
 
 function Field({

@@ -3,9 +3,9 @@
 import { usePathname, useRouter, useSearchParams } from "next/navigation"
 import { useCallback, useMemo } from "react"
 
+import { canonicalCountry } from "@/lib/countries"
 import {
   isCategoryId,
-  isCountryId,
   isSortId,
   type CategoryId,
   type CountryId,
@@ -37,7 +37,7 @@ export function useListingQuery() {
     const sortParam = searchParams.get("sort")
     return {
       q: searchParams.get("q") ?? "",
-      country: isCountryId(countryParam) ? countryParam : undefined,
+      country: canonicalCountry(countryParam),
       category: isCategoryId(categoryParam) ? categoryParam : undefined,
       sort: isSortId(sortParam) ? sortParam : "relevant",
     }
