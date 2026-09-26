@@ -33,7 +33,7 @@ export function SiteFooter() {
         <div className="flex flex-col gap-2 md:flex-row md:items-center md:justify-between">
         <p>africa classifieds · sample listings for a pan-African board.</p>
         <p className="max-w-xl md:text-right">
-          Countries are ISO 3166 from an open snapshot. Cities and zones are GeoNames and IANA. Currency and language names are Unicode CLDR. Maps use OpenStreetMap. Photos: Unsplash, Pexels, and Wikimedia Commons (Toyota HiAce by Lawrence Ruiz; generator by Biswarup Ganguly, CC BY-SA). Ads you post are stored in the board database. Saved ads and messages stay with this browser.
+          Countries are ISO 3166 from an open snapshot. Cities and zones are GeoNames and IANA. Currency and language names are Unicode CLDR. Maps use OpenStreetMap. Photos: Unsplash, Pexels, and Wikimedia Commons (Toyota HiAce by Lawrence Ruiz; generator by Biswarup Ganguly, CC BY-SA). Ads, saves, and messages are stored in the database and tied to this browser session.
         </p>
         </div>
       </div>
