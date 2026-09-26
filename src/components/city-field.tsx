@@ -1,10 +1,10 @@
 "use client"
 
-import { useEffect, useState } from "react"
+import { useEffect, useRef, useState } from "react"
 
 import { Input } from "@/components/ui/input"
 import { searchCities } from "@/lib/cities"
-import { countryName } from "@/lib/countries"
+import { countryName, fold } from "@/lib/countries"
 
 export type ChosenPlace = {
   name: string
@@ -29,6 +29,7 @@ export function CityField({
   onCityChange: (city: string) => void
   onPlace: (place: ChosenPlace | null) => void
 }) {
+  const inputRef = useRef<HTMLInputElement>(null)
   const [open, setOpen] = useState(false)
   const [remote, setRemote] = useState<{ query: string; places: Suggestion[] }>({
     query: "",
@@ -75,15 +76,32 @@ export function CityField({
   return (
     <div className="relative">
       <Input
+        ref={inputRef}
         value={city}
         onChange={(event) => {
           onCityChange(event.target.value)
           onPlace(null)
           setOpen(true)
         }}
+        onClick={() => setOpen(true)}
         onFocus={() => setOpen(true)}
         onBlur={() => {
           window.setTimeout(() => setOpen(false), 150)
+        }}
+        onKeyDown={(event) => {
+          if (event.key === "Escape") {
+            setOpen(false)
+            return
+          }
+          if (event.key !== "Enter" || !open) return
+          event.preventDefault()
+          const exact = suggestions.find((place) => fold(place.name) === fold(city))
+          const next = exact ?? (suggestions.length === 1 ? suggestions[0] : undefined)
+          if (!next) return
+          onCityChange(next.name)
+          onPlace(next)
+          setOpen(false)
+          inputRef.current?.blur()
         }}
         placeholder={`City in ${countryName(country)}`}
         className="h-10"
@@ -103,6 +121,7 @@ export function CityField({
                   onCityChange(place.name)
                   onPlace(place)
                   setOpen(false)
+                  inputRef.current?.blur()
                 }}
               >
                 <span className="truncate">{place.name}</span>

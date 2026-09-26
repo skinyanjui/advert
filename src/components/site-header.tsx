@@ -2,7 +2,7 @@
 
 import { Bell, ChevronDown, MapPin, MessageCircle, Plus, Search, UserRound } from "lucide-react"
 import Link from "next/link"
-import { usePathname, useSearchParams } from "next/navigation"
+import { usePathname, useRouter, useSearchParams } from "next/navigation"
 import { useEffect, useRef, useState, type ReactNode } from "react"
 
 import { postAdHref } from "@/lib/active-place"
@@ -12,6 +12,7 @@ import { ThemeChoices } from "@/components/theme-choices"
 import { useRememberedPlace } from "@/lib/use-remembered-place"
 import { Button, buttonVariants } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
+import { searchCitiesAnywhere } from "@/lib/cities"
 import { countries, countryName, fold, moreCountries, primaryCountries } from "@/lib/countries"
 import { clearBrowsingEverywhere, markBrowsingEverywhere, useHomePlace, writeHomePlace } from "@/lib/home-place"
 import { useMarketplace } from "@/lib/marketplace"
@@ -165,10 +166,18 @@ function CountryMenu({ label, query }: { label: string; query: ListingQuery }) {
   const homeLabel = home ? placeLabel(home.country, home.city) : undefined
   const currentLabel = query.country ? placeLabel(query.country, query.city) : undefined
   const canSaveDefault = !!currentLabel && currentLabel !== homeLabel
+  const router = useRouter()
   const featured = primaryCountries()
   const rest = moreCountries()
   const matches = filterCountries(locationQuery)
+  const cityHits = searchCitiesAnywhere(locationQuery, 6)
   const searching = locationQuery.trim().length > 0
+
+  function choosePlace(country: string | null, city?: string | null) {
+    if (country) clearBrowsingEverywhere()
+    else markBrowsingEverywhere()
+    router.push(locationHref(pathname, search, country, city))
+  }
 
   return (
     <HeaderMenu
@@ -188,8 +197,32 @@ function CountryMenu({ label, query }: { label: string; query: ListingQuery }) {
         <Input
           value={locationQuery}
           onChange={(event) => setLocationQuery(event.target.value)}
-          placeholder="Country, capital, or code"
-          aria-label="Search countries"
+          onKeyDown={(event) => {
+            if (event.key !== "Enter" || !searching) return
+            event.preventDefault()
+            const exactCountry = matches.find(
+              (country) =>
+                fold(country.name) === fold(locationQuery) || country.code.toLowerCase() === locationQuery.trim().toLowerCase(),
+            )
+            const exactCity = cityHits.find((city) => fold(city.name) === fold(locationQuery))
+            if (exactCountry) {
+              choosePlace(exactCountry.code)
+              return
+            }
+            if (exactCity) {
+              choosePlace(exactCity.country, exactCity.name)
+              return
+            }
+            const country = matches[0]
+            if (country) {
+              choosePlace(country.code)
+              return
+            }
+            const city = cityHits[0]
+            if (city) choosePlace(city.country, city.name)
+          }}
+          placeholder="Country, capital, or city"
+          aria-label="Search countries and cities"
           className="h-8"
         />
       </div>
@@ -257,8 +290,23 @@ function CountryMenu({ label, query }: { label: string; query: ListingQuery }) {
                 search={search}
               />
             ))}
-        {searching && matches.length === 0 ? (
-          <p className="px-2 py-3 text-xs text-neutral-500">No country matches.</p>
+        {searching && cityHits.length > 0 ? (
+          <>
+            {matches.length > 0 ? <div className="mx-1 my-1 h-px bg-neutral-200" /> : null}
+            {cityHits.map((city) => (
+              <MenuLink
+                key={`${city.country}-${city.id}`}
+                href={locationHref(pathname, search, city.country, city.name)}
+                onClick={() => clearBrowsingEverywhere()}
+              >
+                <span className="min-w-0 flex-1 truncate">{city.name}</span>
+                <span className="text-[11px] text-neutral-400">{countryName(city.country)}</span>
+              </MenuLink>
+            ))}
+          </>
+        ) : null}
+        {searching && matches.length === 0 && cityHits.length === 0 ? (
+          <p className="px-2 py-3 text-xs text-neutral-500">No country or city matches.</p>
         ) : null}
       </div>
     </HeaderMenu>

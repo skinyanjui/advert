@@ -57,10 +57,15 @@ export function Browse() {
     [listings, query.country, query.q],
   )
 
-  const cityOptions = useMemo(
-    () => (query.country ? citiesIn(inCountry) : []),
-    [inCountry, query.country],
-  )
+  const cityOptions = useMemo(() => {
+    if (!query.country) return []
+    const pool = inCountry.filter((listing) => {
+      if (query.category && listing.category !== query.category) return false
+      if (query.type && listing.subcategory !== query.type) return false
+      return true
+    })
+    return citiesIn(pool)
+  }, [inCountry, query.category, query.country, query.type])
 
   const inCity = useMemo(() => {
     if (!query.city) return inCountry
@@ -179,6 +184,7 @@ export function Browse() {
             <BoardCitySearch
               country={query.country}
               city={cityLabel}
+              places={cityOptions}
               onSelect={(city) => update({ city })}
             />
             {cityOptions.length > 0 ? (

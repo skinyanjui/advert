@@ -1,74 +1,110 @@
 "use client"
 
-import { useEffect, useState } from "react"
+import { useEffect, useMemo, useRef, useState } from "react"
 
 import { Input } from "@/components/ui/input"
-import { countryName } from "@/lib/countries"
+import { resolvePlace, searchCities } from "@/lib/cities"
+import { countryName, fold } from "@/lib/countries"
 import { osmLinks } from "@/lib/map"
+
+type PlaceSource = "listed" | "geonames" | "nominatim"
 
 type PlaceHit = {
   name: string
   lat: number
   lng: number
   timezone: string
-  source?: "geonames" | "nominatim"
+  source?: PlaceSource
+  count?: number
+}
+
+type ListedCity = {
+  name: string
+  count: number
 }
 
 export function BoardCitySearch({
   country,
   city,
+  places,
   onSelect,
 }: {
   country: string
   city?: string
+  places: ListedCity[]
   onSelect: (city: string | null) => void
 }) {
+  const inputRef = useRef<HTMLInputElement>(null)
   const [open, setOpen] = useState(false)
   const [draft, setDraft] = useState("")
   const [remote, setRemote] = useState<{ key: string; places: PlaceHit[] }>({ key: "", places: [] })
   const value = open ? draft : (city ?? "")
-  const query = value.trim()
-  const key = `${country}|${query.toLowerCase()}`
-  const suggestions = remote.key === key ? remote.places : []
+  const query = draft.trim()
+  const remoteKey = `${country}|${fold(query)}`
+  const local = useMemo(() => listedAndKnownCities(country, query, places), [country, query, places])
+  const mapped = remote.key === remoteKey ? remote.places : []
+  const suggestions = open ? mergePlaces(local, mapped) : []
+  const remoteReady = query.length < 2 || remote.key === remoteKey
 
   useEffect(() => {
     if (!open || query.length < 2) return
     const handle = window.setTimeout(() => {
       const params = new URLSearchParams({ q: query, country })
-      const nextKey = `${country}|${query.toLowerCase()}`
-      Promise.all([
-        fetch(`/api/cities?${params}`).then((response) => (response.ok ? response.json() : { places: [] })),
-        fetch(`/api/places?${params}`).then((response) => (response.ok ? response.json() : { places: [] })),
-      ])
-        .then(([local, mapped]: [{ places?: PlaceHit[] }, { places?: PlaceHit[] }]) => {
-          const geonames = (local.places ?? []).map((place) => ({ ...place, source: "geonames" as const }))
-          const nominatim = (mapped.places ?? []).map((place) => ({ ...place, source: "nominatim" as const }))
-          setRemote({ key: nextKey, places: mergePlaces(geonames, nominatim) })
+      const nextKey = `${country}|${fold(query)}`
+      fetch(`/api/places?${params}`)
+        .then((response) => (response.ok ? response.json() : { places: [] }))
+        .then((payload: { places?: PlaceHit[] }) => {
+          const nominatim = (payload.places ?? []).map((place) => ({ ...place, source: "nominatim" as const }))
+          setRemote({ key: nextKey, places: nominatim })
         })
         .catch(() => setRemote({ key: nextKey, places: [] }))
     }, 200)
     return () => window.clearTimeout(handle)
   }, [open, query, country])
 
+  function begin() {
+    if (open) return
+    setDraft("")
+    setOpen(true)
+  }
+
+  function pick(name: string) {
+    onSelect(name)
+    setDraft(name)
+    setOpen(false)
+    inputRef.current?.blur()
+  }
+
   return (
     <div className="relative w-full sm:w-56">
       <Input
+        ref={inputRef}
         value={value}
         onChange={(event) => {
           setDraft(event.target.value)
           setOpen(true)
         }}
-        onFocus={() => {
-          setDraft(city ?? "")
-          setOpen(true)
-        }}
+        onClick={begin}
+        onFocus={begin}
         onBlur={() => {
           window.setTimeout(() => setOpen(false), 150)
+        }}
+        onKeyDown={(event) => {
+          if (event.key === "Escape") {
+            setOpen(false)
+            return
+          }
+          if (event.key !== "Enter" || !open) return
+          event.preventDefault()
+          const exact = suggestions.find((place) => fold(place.name) === fold(query))
+          const next = exact ?? suggestions[0]
+          if (next) pick(next.name)
         }}
         placeholder={`City in ${countryName(country)}`}
         aria-label={`Search cities in ${countryName(country)}`}
         aria-autocomplete="list"
-        aria-expanded={open && suggestions.length > 0}
+        aria-expanded={open && (suggestions.length > 0 || query.length >= 2)}
+        aria-controls="board-city-list"
         role="combobox"
         className="h-8 rounded-full bg-white pr-8 text-xs"
       />
@@ -84,27 +120,26 @@ export function BoardCitySearch({
         </button>
       ) : null}
       {open && suggestions.length > 0 ? (
-        <ul className="absolute z-30 mt-1 max-h-56 w-full overflow-auto rounded-lg border bg-white p-1 shadow-md">
+        <ul id="board-city-list" role="listbox" className="absolute z-30 mt-1 max-h-56 w-full overflow-auto rounded-lg border bg-white p-1 shadow-md">
           {suggestions.map((place) => (
-            <li key={`${place.source ?? "geonames"}-${place.name}-${place.lat}`}>
+            <li key={`${place.source ?? "geonames"}-${place.name}-${place.lat}`} role="option" aria-selected={fold(place.name) === fold(city ?? "")}>
               <button
                 type="button"
                 className="flex w-full items-center justify-between gap-3 rounded-md px-2 py-1.5 text-left text-sm hover:bg-neutral-100"
                 onMouseDown={(event) => event.preventDefault()}
-                onClick={() => {
-                  onSelect(place.name)
-                  setDraft(place.name)
-                  setOpen(false)
-                }}
+                onClick={() => pick(place.name)}
               >
                 <span className="truncate">{place.name}</span>
-                <span className="shrink-0 text-[11px] text-neutral-400">
-                  {place.source === "nominatim" ? "Map" : "GeoNames"}
-                </span>
+                <span className="shrink-0 text-[11px] text-neutral-400">{placeLabel(place)}</span>
               </button>
             </li>
           ))}
         </ul>
+      ) : null}
+      {open && query.length >= 2 && suggestions.length === 0 && remoteReady ? (
+        <p className="absolute z-30 mt-1 w-full rounded-lg border bg-white px-3 py-2 text-sm text-neutral-500 shadow-md">
+          No cities match
+        </p>
       ) : null}
     </div>
   )
@@ -151,8 +186,42 @@ export function CityMap({ country, city }: { country: string; city: string }) {
   )
 }
 
+function listedAndKnownCities(country: string, query: string, listed: ListedCity[]): PlaceHit[] {
+  const needle = fold(query)
+  const fromAds: PlaceHit[] = listed.flatMap((city) => {
+    if (needle && !fold(city.name).includes(needle)) return []
+    const resolved = resolvePlace(country, city.name)
+    return [
+      {
+        name: city.name,
+        lat: resolved.lat,
+        lng: resolved.lng,
+        timezone: resolved.timezone,
+        source: "listed" as const,
+        count: city.count,
+      },
+    ]
+  })
+  const fromGeo: PlaceHit[] = needle
+    ? searchCities(country, query, 6).map((city) => ({
+        name: city.name,
+        lat: city.lat,
+        lng: city.lng,
+        timezone: city.tz,
+        source: "geonames" as const,
+      }))
+    : []
+  return mergePlaces(fromAds, fromGeo)
+}
+
+function placeLabel(place: PlaceHit): string {
+  if (place.count) return String(place.count)
+  if (place.source === "nominatim") return "Map"
+  return "GeoNames"
+}
+
 function mergePlaces(local: PlaceHit[], remote: PlaceHit[]): PlaceHit[] {
-  const seen = new Set(local.map((place) => place.name.toLowerCase()))
-  const extra = remote.filter((place) => !seen.has(place.name.toLowerCase()))
+  const seen = new Set(local.map((place) => fold(place.name)))
+  const extra = remote.filter((place) => !seen.has(fold(place.name)))
   return [...local, ...extra].slice(0, 8)
 }

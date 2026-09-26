@@ -50,6 +50,19 @@ export function searchCities(country: string, query: string, limit = 8): CityRec
   return matches.slice(0, limit)
 }
 
+export function searchCitiesAnywhere(query: string, limit = 6): CityRecord[] {
+  const needle = fold(query)
+  if (needle.length < 2) return []
+  const matches = cities.filter((city) => fold(city.name).includes(needle))
+  matches.sort((a, b) => {
+    const aStart = fold(a.name).startsWith(needle) ? 0 : 1
+    const bStart = fold(b.name).startsWith(needle) ? 0 : 1
+    if (aStart !== bStart) return aStart - bStart
+    return b.pop - a.pop
+  })
+  return matches.slice(0, limit)
+}
+
 export function resolvePlace(country: string, cityName: string): ResolvedPlace {
   const countryRecord = getCountry(country)
   const match = byName.get(`${country}|${fold(cityName)}`)
