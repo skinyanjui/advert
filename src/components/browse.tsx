@@ -27,13 +27,7 @@ import { distanceKm, listingPoint } from "@/lib/distance"
 import { useHomePlace } from "@/lib/home-place"
 import { resolvePlace } from "@/lib/cities"
 import { useMarketplace } from "@/lib/marketplace"
-import {
-  countryName,
-  currencyLabel,
-  fold,
-  getCountry,
-  languageLabel,
-} from "@/lib/countries"
+import { countryName, fold, getCountry } from "@/lib/countries"
 import {
   categories,
   isSortId,
@@ -42,7 +36,6 @@ import {
   type Listing,
 } from "@/lib/types"
 import { categoryPlan, findSubcategory } from "@/lib/posting"
-import { useClientTime } from "@/lib/use-client-time"
 import { boardSearch, useListingQuery } from "@/lib/use-listing-query"
 
 export function Browse() {
@@ -160,7 +153,6 @@ export function Browse() {
                 {typeName ? ` · ${typeName}` : ""} in {place}
                 {closestFirst ? " · closest first" : ""}
               </p>
-              {query.country ? <CountryStrip code={query.country} /> : null}
             </div>
           </div>
           <Select
@@ -234,38 +226,6 @@ export function Browse() {
           </div>
         )}
       </section>
-    </div>
-  )
-}
-
-function CountryStrip({ code }: { code: string }) {
-  const country = getCountry(code)
-  const localTime = useClientTime(country?.timezone ?? "Africa/Abidjan")
-  if (!country) return null
-  const currency = country.currencies[0]
-  const languages = country.languages.map((language) => languageLabel(language.code, language.name))
-  const shown = languages.slice(0, 3)
-  const extra = languages.length - shown.length
-  const languageText = extra > 0 ? `${shown.join(", ")} +${extra}` : shown.join(", ")
-  const facts = [
-    country.capital,
-    localTime,
-    country.timezone,
-    currency ? `${currency.code} · ${currencyLabel(currency.code)}` : "",
-    languageText,
-    country.callingCode,
-  ].filter(Boolean)
-
-  return (
-    <div className="mt-1.5 flex flex-wrap gap-1.5">
-      {facts.map((fact) => (
-        <span
-          key={fact}
-          className="inline-flex h-6 items-center rounded-full bg-white px-2 text-[11px] text-neutral-600 ring-1 ring-neutral-200"
-        >
-          {fact}
-        </span>
-      ))}
     </div>
   )
 }
