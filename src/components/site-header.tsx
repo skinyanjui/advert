@@ -69,12 +69,12 @@ export function SiteHeader() {
               <DropdownMenuTrigger asChild>
                 <Button
                   variant="outline"
-                  className="h-10 max-w-[9.5rem] rounded-full px-2.5 sm:max-w-48 sm:px-3"
+                  className="h-10 rounded-full px-2.5 sm:max-w-48 sm:px-3"
                   aria-label={`Country: ${locationLabel}`}
                 >
                   <MapPin className="size-4 shrink-0 text-neutral-500" />
-                  <span className="truncate">{locationLabel}</span>
-                  <ChevronDown className="size-4 shrink-0 text-neutral-400" />
+                  <span className="hidden max-w-32 truncate sm:inline">{locationLabel}</span>
+                  <ChevronDown className="hidden size-4 shrink-0 text-neutral-400 sm:block" />
                 </Button>
               </DropdownMenuTrigger>
               <DropdownMenuContent align="end" className="w-64">
