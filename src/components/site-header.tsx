@@ -84,9 +84,9 @@ export function SiteHeader() {
   return (
     <header className="sticky top-0 z-50">
       <div className="border-b border-neutral-200/80 bg-white">
-        <div className="mx-auto max-w-[1720px] px-4 md:px-6">
-        <div className="flex items-center gap-2 py-3 md:gap-3 md:py-3.5">
+        <div className="mx-auto flex max-w-[1720px] items-center">
           <Logo />
+          <div className="flex min-w-0 flex-1 items-center gap-2 px-4 py-3 md:gap-3 md:px-6 md:py-3.5">
           <div className="hidden min-w-0 flex-1 md:block">
             <SearchField value={query.q} onChange={(value) => update({ q: value })} />
           </div>
@@ -280,10 +280,10 @@ export function SiteHeader() {
               ) : null}
             </div>
           </div>
+          </div>
         </div>
-        <div className="pb-3 md:hidden">
+        <div className="px-4 pb-3 md:hidden">
           <SearchField value={query.q} onChange={(value) => update({ q: value })} />
-        </div>
         </div>
       </div>
     </header>
@@ -400,7 +400,7 @@ function filterCountries(query: string) {
 export function HeaderFallback() {
   return (
     <header className="sticky top-0 z-40 border-b border-neutral-200/80 bg-white">
-      <div className="mx-auto flex h-[72px] max-w-[1720px] items-center px-4 md:px-6">
+      <div className="mx-auto flex h-[72px] max-w-[1720px] items-center">
         <Logo />
       </div>
     </header>
