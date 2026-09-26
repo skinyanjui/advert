@@ -122,9 +122,14 @@ function Collection({
             <div key={listing.id} className="flex flex-col gap-2">
               <ListingCard listing={listing} />
               {onRemove ? (
-                <Button variant="ghost" className="self-start" onClick={() => onRemove(listing.id)}>
-                  Remove ad
-                </Button>
+                <div className="flex items-center gap-1">
+                  <Button variant="ghost" className="self-start" asChild>
+                    <Link href={`/post?edit=${listing.id}`}>Edit</Link>
+                  </Button>
+                  <Button variant="ghost" className="self-start" onClick={() => onRemove(listing.id)}>
+                    Remove ad
+                  </Button>
+                </div>
               ) : null}
             </div>
           ))}

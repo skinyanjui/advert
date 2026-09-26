@@ -168,25 +168,33 @@ export function ListingDetail({ id }: { id: string }) {
               <p className="text-xs text-neutral-500">On africa classifieds since {listing.sellerSince}</p>
             </div>
           </div>
-          <div className="mt-4 grid gap-2">
-            <Button className="h-10 rounded-full" onClick={() => setMessageOpen(true)}>
-              {voice.messageLabel}
-            </Button>
-            <Button variant="outline" className="h-10 rounded-full" asChild>
-              <a href={whatsappHref(listing.phone, listing.title)} target="_blank" rel="noreferrer">
-                WhatsApp
-              </a>
-            </Button>
-            <Button
-              variant="outline"
-              className="h-10 rounded-full"
-              onClick={() => setPhoneVisible(true)}
-            >
-              {phoneVisible ? listing.phone : "Show phone number"}
-            </Button>
-          </div>
+          {listing.mine ? (
+            <div className="mt-4 grid gap-2">
+              <p className="text-sm font-medium">This is your ad</p>
+              <Button className="h-10 rounded-full" asChild>
+                <Link href={`/post?edit=${listing.id}`}>Edit ad</Link>
+              </Button>
+              <Button variant="outline" className="h-10 rounded-full" onClick={() => setPhoneVisible(true)}>
+                {phoneVisible ? listing.phone : "Show phone number"}
+              </Button>
+            </div>
+          ) : (
+            <div className="mt-4 grid gap-2">
+              <Button className="h-10 rounded-full" onClick={() => setMessageOpen(true)}>
+                {voice.messageLabel}
+              </Button>
+              <Button variant="outline" className="h-10 rounded-full" asChild>
+                <a href={whatsappHref(listing.phone, listing.title)} target="_blank" rel="noreferrer">
+                  WhatsApp
+                </a>
+              </Button>
+              <Button variant="outline" className="h-10 rounded-full" onClick={() => setPhoneVisible(true)}>
+                {phoneVisible ? listing.phone : "Show phone number"}
+              </Button>
+            </div>
+          )}
           <p className="mt-4 text-xs leading-5 text-neutral-500">
-            {voice.safety} Messages stay in this browser.
+            {listing.mine ? "Changes you save stay on this browser, with the ad." : `${voice.safety} Messages stay in this browser.`}
           </p>
         </aside>
       </div>
@@ -196,9 +204,15 @@ export function ListingDetail({ id }: { id: string }) {
             <p className="truncate text-sm font-semibold">{formatPrice(listing)}</p>
             <p className="truncate text-xs text-neutral-500">{formatPlace(listing)}</p>
           </div>
-          <Button className="shrink-0 rounded-full" onClick={() => setMessageOpen(true)}>
-            {voice.messageLabel}
-          </Button>
+          {listing.mine ? (
+            <Button className="shrink-0 rounded-full" asChild>
+              <Link href={`/post?edit=${listing.id}`}>Edit ad</Link>
+            </Button>
+          ) : (
+            <Button className="shrink-0 rounded-full" onClick={() => setMessageOpen(true)}>
+              {voice.messageLabel}
+            </Button>
+          )}
         </div>
       </div>
       <Dialog open={messageOpen} onOpenChange={setMessageOpen}>

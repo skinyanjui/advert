@@ -22,6 +22,17 @@ export function pricePeriod(id: PricePeriodId) {
   return match ?? pricePeriods[0]
 }
 
+/** The period that produced a stored suffix, falling back to a one-off price. */
+export function periodForSuffix(suffix: string | undefined, periods: readonly PricePeriodId[]): PricePeriodId {
+  const allowed = periods.length > 0 ? periods : (["fixed"] as const)
+  if (suffix) {
+    const match = pricePeriods.find((period) => period.suffix === suffix && allowed.includes(period.id))
+    if (match) return match.id
+  }
+  if (allowed.includes("fixed")) return "fixed"
+  return allowed[0]
+}
+
 export type DetailField = {
   id: string
   label: string

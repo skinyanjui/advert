@@ -1,7 +1,8 @@
 "use client"
 
+import Link from "next/link"
 import { useRouter, useSearchParams } from "next/navigation"
-import { useMemo, useState } from "react"
+import { useEffect, useMemo, useState } from "react"
 import { toast } from "sonner"
 
 import { categoryIcons } from "@/components/category-nav"
@@ -34,6 +35,7 @@ import {
   findSubcategory,
   isPricePeriodId,
   listingMeta,
+  periodForSuffix,
   postingPlans,
   pricePeriod,
   type DetailField,
@@ -48,28 +50,42 @@ const steps = ["Category", "Type", "Details", "Contact"] as const
 type FieldErrors = Partial<Record<string, string>>
 
 export function PostForm() {
+  const searchParams = useSearchParams()
+  const { listings, ready } = useMarketplace()
+  const editId = searchParams.get("edit")?.trim() ?? ""
+  if (!editId) return <AdForm existing={null} />
+  if (!ready) return <p className="px-4 py-8 text-sm text-neutral-500">Loading your ad…</p>
+  const existing = listings.find((item) => item.id === editId && item.mine)
+  if (!existing) return <MissingAd />
+  return <AdForm key={existing.id} existing={existing} />
+}
+
+function AdForm({ existing }: { existing: Listing | null }) {
   const router = useRouter()
   const searchParams = useSearchParams()
-  const startingCountry = canonicalCountry(searchParams.get("country")) ?? "KE"
-  const startingCity = (searchParams.get("city") ?? "").trim().slice(0, 80)
+  const seeded = existing ? findSubcategory(existing.category, existing.subcategory) : undefined
+  const startingCountry = existing
+    ? (canonicalCountry(existing.country) ?? "KE")
+    : (canonicalCountry(searchParams.get("country")) ?? "KE")
+  const startingCity = existing ? existing.city : (searchParams.get("city") ?? "").trim().slice(0, 80)
   const categoryParam = searchParams.get("category")
-  const startingCategory = isCategoryId(categoryParam) ? categoryParam : null
-  const { addListing } = useMarketplace()
+  const startingCategory = existing?.category ?? (isCategoryId(categoryParam) ? categoryParam : null)
+  const { addListing, updateListing } = useMarketplace()
 
-  const [step, setStep] = useState(0)
+  const [step, setStep] = useState(existing ? (seeded ? 2 : 1) : 0)
   const [category, setCategory] = useState<CategoryId | null>(startingCategory)
-  const [subcategoryId, setSubcategoryId] = useState<string | null>(null)
-  const [title, setTitle] = useState("")
-  const [price, setPrice] = useState("")
-  const [period, setPeriod] = useState<PricePeriodId>("fixed")
-  const [details, setDetails] = useState<Record<string, string>>({})
+  const [subcategoryId, setSubcategoryId] = useState<string | null>(seeded?.id ?? null)
+  const [title, setTitle] = useState(existing?.title ?? "")
+  const [price, setPrice] = useState(existing ? String(existing.price) : "")
+  const [period, setPeriod] = useState<PricePeriodId>(periodForSuffix(existing?.priceSuffix, seeded?.periods ?? ["fixed"]))
+  const [details, setDetails] = useState<Record<string, string>>({ ...(existing?.details ?? {}) })
   const [country, setCountry] = useState(startingCountry)
-  const [currency, setCurrency] = useState(getCountry(startingCountry)?.currencies[0]?.code ?? "USD")
+  const [currency, setCurrency] = useState(existing?.currency ?? getCountry(startingCountry)?.currencies[0]?.code ?? "USD")
   const [city, setCity] = useState(startingCity)
-  const [place, setPlace] = useState<ChosenPlace | null>(null)
-  const [description, setDescription] = useState("")
-  const [phone, setPhone] = useState("")
-  const [image, setImage] = useState<string | null>(null)
+  const [place, setPlace] = useState<ChosenPlace | null>(placeFromListing(existing))
+  const [description, setDescription] = useState(existing?.description ?? "")
+  const [phone, setPhone] = useState(existing?.phone ?? "")
+  const [image, setImage] = useState<string | null>(existing?.image ?? null)
   const [errors, setErrors] = useState<FieldErrors>({})
   const [submitting, setSubmitting] = useState(false)
 
@@ -77,9 +93,9 @@ export function PostForm() {
   const subcategory = category ? findSubcategory(category, subcategoryId ?? undefined) : undefined
   const activePeriod = subcategory?.periods.includes(period) ? period : (subcategory?.periods[0] ?? period)
   const suffix = subcategory?.priceSuffix ?? pricePeriod(activePeriod).suffix
-  const prefilledPlace = Boolean(searchParams.get("country") || searchParams.get("city"))
+  const prefilledPlace = !existing && Boolean(searchParams.get("country") || searchParams.get("city"))
   const callingCode = getCountry(country)?.callingCode
-  const currencies = currencyChoices(country)
+  const currencies = currencyChoices(country, currency)
   const countryOptions = [...countries].sort((a, b) => a.name.localeCompare(b.name))
 
   const preview = useMemo<Listing>(() => {
@@ -104,8 +120,8 @@ export function PostForm() {
       badge: nextCategory === "jobs" ? "jobs" : undefined,
       description,
       condition: details.condition || subcategory?.name || "Listed",
-      sellerName: "Amina K.",
-      sellerSince: "2024",
+      sellerName: existing?.sellerName ?? "Amina K.",
+      sellerSince: existing?.sellerSince ?? "2024",
       phone: phone || callingCode || "+000",
       mine: true,
     }
@@ -124,6 +140,7 @@ export function PostForm() {
     description,
     phone,
     callingCode,
+    existing,
   ])
 
   function chooseCategory(id: CategoryId) {
@@ -247,7 +264,7 @@ export function PostForm() {
     )
     const listing: Listing = {
       ...preview,
-      id: `ad-${Date.now()}`,
+      id: existing?.id ?? `ad-${Date.now()}`,
       title: title.trim().slice(0, 80),
       price: Math.round(amount),
       currency,
@@ -260,36 +277,44 @@ export function PostForm() {
       latitude: located?.lat,
       longitude: located?.lng,
       timezone: located?.timezone,
+      hoursAgo: existing?.hoursAgo ?? 0,
+      postedAt: existing?.postedAt ?? new Date().toISOString(),
       description: description.trim().slice(0, 2000),
       phone: phone.trim().slice(0, 30),
       image: image ?? categoryImage[category],
       condition: keptDetails.condition || subcategory.name,
     }
-    const result = addListing(listing)
+    const result = existing ? updateListing(listing) : addListing(listing)
     setSubmitting(false)
     if (!result.ok) {
       toast.error(result.reason)
       return
     }
-    toast.success("Your ad is live")
+    toast.success(existing ? "Changes saved" : "Your ad is live")
     router.push(`/listings/${listing.id}`)
   }
+
+  useEffect(() => {
+    document.title = `${existing ? "Edit your ad" : "Post an ad"} · africa classifieds`
+  }, [existing])
 
   const cardLine = subcategory ? listingMeta(preview) : undefined
 
   return (
     <div className="mx-auto grid w-full max-w-[1100px] gap-8 px-4 py-8 md:px-6 lg:grid-cols-[minmax(0,1fr)_320px]">
       <div>
-        <h1 className="text-2xl font-semibold tracking-tight">Post an ad</h1>
+        <h1 className="text-2xl font-semibold tracking-tight">{existing ? "Edit your ad" : "Post an ad"}</h1>
         <p className="mt-1 max-w-xl text-sm text-neutral-500">
-          Four steps. The type you pick decides the questions, the line on the card, and the headings on the listing.
+          {existing
+            ? "Change the type, the facts, or the phone number. This ad stays on the board."
+            : "Four steps. The type you pick decides the questions, the line on the card, and the headings on the listing."}
         </p>
         <ol className="mt-5 flex flex-wrap gap-2" aria-label="Posting steps">
           {steps.map((label, index) => (
             <li key={label}>
               <button
                 type="button"
-                disabled={index > step}
+                disabled={!existing && index > step}
                 onClick={() => moveTo(index)}
                 className={cn(
                   "inline-flex h-8 items-center gap-2 rounded-full px-3 text-xs whitespace-nowrap",
@@ -310,7 +335,7 @@ export function PostForm() {
           className="mt-6 grid gap-5"
           onSubmit={(event) => {
             event.preventDefault()
-            if (step < 3) goNext()
+            if (step < 3 && !existing) goNext()
             else submit()
           }}
         >
@@ -555,7 +580,7 @@ export function PostForm() {
 
           <div className="flex items-center gap-3">
             {step === 0 ? (
-              <Button type="button" variant="ghost" onClick={() => router.push("/")}>
+              <Button type="button" variant="ghost" onClick={() => router.push(existing ? `/listings/${existing.id}` : "/")}>
                 Cancel
               </Button>
             ) : (
@@ -565,17 +590,19 @@ export function PostForm() {
             )}
             {step < 3 ? (
               <Button
-                type="submit"
+                type={existing ? "button" : "submit"}
                 className="h-10 rounded-full px-5"
                 disabled={(step === 0 && !category) || (step === 1 && !subcategory)}
+                onClick={existing ? goNext : undefined}
               >
                 Continue
               </Button>
-            ) : (
+            ) : null}
+            {existing || step === 3 ? (
               <Button type="submit" disabled={submitting} className="h-10 rounded-full px-5">
-                Publish ad
+                {existing ? "Save changes" : "Publish ad"}
               </Button>
-            )}
+            ) : null}
           </div>
         </form>
       </div>
@@ -642,9 +669,40 @@ function DetailControl({
   }
 }
 
-function currencyChoices(countryCode: string): string[] {
+function currencyChoices(countryCode: string, extra?: string): string[] {
   const local = getCountry(countryCode)?.currencies.map((item) => item.code) ?? []
-  return local.includes("USD") ? local : [...local, "USD"]
+  const codes = local.includes("USD") ? local : [...local, "USD"]
+  if (extra && !codes.includes(extra)) return [extra, ...codes]
+  return codes
+}
+
+function placeFromListing(listing: Listing | null): ChosenPlace | null {
+  if (!listing || typeof listing.latitude !== "number" || typeof listing.longitude !== "number" || !listing.timezone) {
+    return null
+  }
+  return {
+    name: listing.city,
+    lat: listing.latitude,
+    lng: listing.longitude,
+    timezone: listing.timezone,
+  }
+}
+
+function MissingAd() {
+  return (
+    <div className="mx-auto max-w-lg px-4 py-24 text-center">
+      <h1 className="text-xl font-semibold tracking-tight">This ad is not on this browser</h1>
+      <p className="mt-2 text-sm text-neutral-500">It may have been removed, or it was posted in another browser.</p>
+      <div className="mt-5 flex flex-wrap items-center justify-center gap-2">
+        <Button asChild className="rounded-full">
+          <Link href="/my-ads">My ads</Link>
+        </Button>
+        <Button asChild variant="outline" className="rounded-full">
+          <Link href="/post">Post an ad</Link>
+        </Button>
+      </div>
+    </div>
+  )
 }
 
 function locatedPlace(chosen: ChosenPlace | null, country: string, city: string): ChosenPlace | null {

@@ -123,6 +123,7 @@ type MarketplaceContextValue = {
   isSaved: (id: string) => boolean
   toggleSaved: (id: string) => void
   addListing: (listing: Listing) => { ok: true } | { ok: false; reason: string }
+  updateListing: (listing: Listing) => { ok: true } | { ok: false; reason: string }
   removeListing: (id: string) => void
 }
 
@@ -149,6 +150,18 @@ export function MarketplaceProvider({ children }: { children: React.ReactNode })
       addListing: (listing: Listing) => {
         const current = readSnapshot()
         const posted = [listing, ...current.posted.filter((item) => item.id !== listing.id)]
+        const saved = writeStored({ posted, savedIds: current.savedIds })
+        if (!saved) {
+          return { ok: false, reason: "This browser could not store the ad. Try a smaller photo." }
+        }
+        return { ok: true }
+      },
+      updateListing: (listing: Listing) => {
+        const current = readSnapshot()
+        if (!current.posted.some((item) => item.id === listing.id)) {
+          return { ok: false, reason: "This ad is no longer on this browser." }
+        }
+        const posted = current.posted.map((item) => (item.id === listing.id ? listing : item))
         const saved = writeStored({ posted, savedIds: current.savedIds })
         if (!saved) {
           return { ok: false, reason: "This browser could not store the ad. Try a smaller photo." }
