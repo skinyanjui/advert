@@ -14,7 +14,7 @@ const pages = [
 
 export function SiteFooter() {
   return (
-    <footer className="border-t border-neutral-200/80 bg-white">
+    <footer className="relative z-40 border-t border-neutral-200/80 bg-white">
       <div className="mx-auto flex max-w-[1720px] flex-col gap-4 px-4 py-6 text-xs leading-5 text-neutral-500 md:px-6">
         <nav aria-label="Pages" className="flex flex-wrap gap-x-4 gap-y-2">
           {pages.map((page) => (

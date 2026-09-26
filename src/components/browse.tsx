@@ -123,21 +123,8 @@ export function Browse() {
     (!query.country || query.country === home.country) &&
     (!home.city || !query.city || fold(query.city) !== fold(home.city))
   return (
-    <div className="mx-auto flex w-full max-w-[1720px] items-start">
-      <aside className="sticky top-[73px] hidden h-[calc(100dvh-73px)] w-(--sidebar-width) shrink-0 overflow-y-auto border-r border-neutral-200 bg-white md:block">
-        <div className="px-3 py-4">
-          <CategoryNav
-            active={query.category}
-            counts={counts}
-            total={inCity.length}
-            types={types}
-            activeType={query.type}
-            hrefForCategory={hrefForCategory}
-            hrefForType={hrefForType}
-          />
-        </div>
-      </aside>
-      <section className="min-w-0 flex-1 px-4 py-4 pb-16 md:px-6 md:py-5">
+    <div className="mx-auto w-full max-w-[1720px]">
+      <section className="min-w-0 px-4 py-4 pb-16 md:py-5 md:pr-6 md:pl-[calc(var(--sidebar-width)+1.5rem)]">
         <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
           <div className="flex items-center gap-2">
             <Sheet open={sheetOpen} onOpenChange={setSheetOpen}>

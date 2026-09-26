@@ -107,6 +107,7 @@ export function CategoryNav({
                   <Link
                     key={type.id}
                     href={hrefForType(selected ? undefined : type.id)}
+                    scroll={false}
                     onClick={onNavigate}
                     aria-current={selected ? "page" : undefined}
                     className={cn(
@@ -149,6 +150,7 @@ function CategoryButton({
   return (
     <Link
       href={href}
+      scroll={false}
       onClick={onNavigate}
       aria-current={active ? "page" : undefined}
       className={cn(
