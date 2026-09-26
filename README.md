@@ -38,3 +38,4 @@ Rebuild the snapshots with `node scripts/build-reference.mjs`.
 
 Sample photos come from Unsplash, Pexels, and Wikimedia Commons. The Toyota HiAce photo is by Lawrence Ruiz and the diesel generator photo is by Biswarup Ganguly, both CC BY-SA via Wikimedia Commons.
 # advert
+# advert
