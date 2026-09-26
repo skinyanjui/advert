@@ -2,7 +2,7 @@
 
 A classifieds board for buying and selling across Africa: cars, houses, jobs, electronics, and the rest of the usual categories. Search, filter by country and category, save listings, and post an ad.
 
-Listings in the catalog are sample ads. Ads you post are stored in a SQLite database and show on the board for everyone. Saved hearts and messages stay with this browser. City search uses the bundled GeoNames snapshot.
+Listings in the catalog are sample ads. Ads you post, saved hearts, and messages are stored in Supabase. Uploaded photos are served from Supabase Storage. City search uses the bundled GeoNames snapshot and the reference database.
 
 ## Run locally
 
@@ -21,7 +21,7 @@ Open [http://localhost:3000](http://localhost:3000).
 - Listing pages with a message, phone reveal, and WhatsApp link
 - Post an ad, with a photo from your computer or a category image
 - Saved ads and your own ads
-- SQLite database at `data/classifieds.db` (created on first request). It holds posted ads, saves, and messages. Node’s built-in `node:sqlite` is the driver, so there is no database server to start. A host with a read-only disk, including Vercel’s serverless filesystem, keeps that file in temporary storage, so posted ads reset when the server restarts.
+- Supabase Postgres stores posted ads, saves, and messages, and a public Storage bucket serves listing photos. Run `database/board.sql` on the connected Supabase project before deploying the board routes.
 
 ## Reference data
 
@@ -73,6 +73,18 @@ time zones use IANA identifiers supplied by GeoNames. Maps are OpenStreetMap
 embeds; no request goes to the public Nominatim autocomplete API.
 
 ## Photos
+
+User uploads accept JPEG, PNG, or WebP, up to 700 KB in the posting form.
+The server validates the file signature, uploads it to `listing-photos`,
+and stores only the resulting public URL in Postgres. A signed, HTTP-only,
+same-site browser cookie identifies the owner for edits, saves, and messages;
+the server rejects cross-origin writes. The optional `BOARD_SESSION_SECRET`
+can be set to a dedicated random value of at least 32 characters; otherwise
+the server-only Supabase key signs sessions with a separate HMAC context.
+Keep that key private. Clearing browser cookies loses access to existing
+posts, because this demo does not yet offer account sign-in or recovery.
+The earlier temporary SQLite records cannot be recovered from Vercel
+instances; the legacy browser-side export is imported on first load.
 
 Sample photos come from Unsplash, Pexels, and Wikimedia Commons. The Toyota HiAce photo is by Lawrence Ruiz and the diesel generator photo is by Biswarup Ganguly, both CC BY-SA via Wikimedia Commons.
 # advert

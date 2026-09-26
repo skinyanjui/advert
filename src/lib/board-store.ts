@@ -1,276 +1,187 @@
+import "server-only"
+
+import { boardDb } from "@/lib/board-db"
 import { seedListings } from "@/lib/catalog"
-import { database } from "@/lib/db"
 import { hoursAgoOf } from "@/lib/format"
 import { acceptListing } from "@/lib/listing-rules"
 import { isBoardMessage, messageError, sampleReply, type BoardMessage } from "@/lib/messages"
 import { cleanListing, parseBoardState, type BoardState } from "@/lib/board-payload"
 import type { Listing } from "@/lib/types"
 
-const seedIds = new Set(seedListings.map((listing) => listing.id))
-const adIdPattern = /^ad-[a-zA-Z0-9-]{1,64}$/
-const imageLimit = 1_500_000
-const messageLimit = 200
-
 type Result<T> = { ok: true; value: T } | { ok: false; reason: string }
-
-export function listBoard(token: string | undefined): BoardState {
-  const db = database()
-  const posted = db
-    .prepare("SELECT id, owner_token, posted_at, payload FROM listings ORDER BY posted_at DESC")
-    .all()
-    .flatMap((row) => {
-      const listing = listingFromRow(row, token)
-      return listing ? [listing] : []
-    })
-  const savedIds = token
-    ? db
-        .prepare("SELECT listing_id FROM saves WHERE owner_token = ? ORDER BY created_at DESC")
-        .all(token)
-        .flatMap((row) => (typeof row.listing_id === "string" ? [row.listing_id] : []))
-    : []
-  const messages = token
-    ? db
-        .prepare("SELECT payload FROM messages WHERE owner_token = ? ORDER BY sent_at ASC")
-        .all(token)
-        .flatMap((row) => {
-          if (typeof row.payload !== "string") return []
-          try {
-            const parsed: unknown = JSON.parse(row.payload)
-            return isBoardMessage(parsed) ? [parsed] : []
-          } catch {
-            return []
-          }
-        })
-    : []
-  return { posted, savedIds, messages }
+type Row = { id: string; owner_id: string; posted_at: string; payload: unknown }
+const seedIds = new Set(seedListings.map((item) => item.id))
+const listingId = /^ad-[a-zA-Z0-9-]{1,64}$/
+function check(error: { message: string } | null) { if (error) throw new Error(error.message) }
+function unpack(row: Row, owner?: string): Listing | undefined {
+  const listing = cleanListing(row.payload)
+  return listing && { ...listing, id: row.id, postedAt: row.posted_at,
+    hoursAgo: hoursAgoOf({ hoursAgo: listing.hoursAgo, postedAt: row.posted_at }),
+    mine: Boolean(owner) && owner === row.owner_id, featured: undefined }
 }
-
-export function createListing(token: string, input: unknown): Result<Listing> {
+function payload(listing: Listing) { return { ...listing, mine: undefined, featured: undefined } }
+function photoPath(image: string) {
+  const base = `${process.env.SUPABASE_URL ?? process.env.NEXT_PUBLIC_SUPABASE_URL}/storage/v1/object/public/listing-photos/`
+  const path = image.startsWith(base) ? image.slice(base.length) : ""
+  return /^[0-9a-f-]{36}\/[0-9a-f-]{36}\.(jpg|png|webp)$/.test(path) ? path : undefined
+}
+async function storePhoto(image: string, owner: string, previous?: string): Promise<Result<string>> {
+  if (image === previous || /^\/listings\/[\w.-]+$/.test(image)) return { ok: true, value: image }
+  const match = /^data:(image\/(?:jpeg|png|webp));base64,([A-Za-z0-9+/]+={0,2})$/.exec(image)
+  if (!match) return { ok: false, reason: "Upload a JPEG, PNG, or WebP photo." }
+  const bytes = Buffer.from(match[2], "base64")
+  if (!bytes.length || bytes.length > 1_500_000) return { ok: false, reason: "The photo is too large." }
+  const mime = match[1]
+  const valid = mime === "image/jpeg" ? bytes[0] === 255 && bytes[1] === 216 && bytes[2] === 255
+    : mime === "image/png" ? bytes.subarray(0, 8).equals(Buffer.from([137, 80, 78, 71, 13, 10, 26, 10]))
+      : bytes.toString("ascii", 0, 4) === "RIFF" && bytes.toString("ascii", 8, 12) === "WEBP"
+  if (!valid) return { ok: false, reason: "The photo file is invalid." }
+  const path = `${owner}/${crypto.randomUUID()}.${mime === "image/jpeg" ? "jpg" : mime === "image/png" ? "png" : "webp"}`
+  const db = boardDb()
+  const { error } = await db.storage.from("listing-photos").upload(path, bytes, { contentType: mime })
+  check(error)
+  return { ok: true, value: db.storage.from("listing-photos").getPublicUrl(path).data.publicUrl }
+}
+async function removePhoto(image: string) {
+  const path = photoPath(image)
+  if (!path) return
+  const { error } = await boardDb().storage.from("listing-photos").remove([path])
+  if (error) console.error("Could not remove listing photo", error)
+}
+export async function listBoard(owner: string): Promise<BoardState> {
+  const db = boardDb()
+  const [posted, saved, messages] = await Promise.all([
+    db.from("board_listings").select("id,owner_id,posted_at,payload").order("posted_at", { ascending: false }).limit(500),
+    db.from("board_saves").select("listing_id").eq("owner_id", owner).order("created_at", { ascending: false }),
+    db.from("board_messages").select("payload").eq("owner_id", owner).order("sent_at").limit(200),
+  ])
+  check(posted.error); check(saved.error); check(messages.error)
+  return { posted: (posted.data ?? []).flatMap((row) => { const item = unpack(row, owner); return item ? [item] : [] }),
+    savedIds: (saved.data ?? []).map((row) => row.listing_id),
+    messages: (messages.data ?? []).flatMap((row) => isBoardMessage(row.payload) ? [row.payload] : []) }
+}
+export async function createListing(owner: string, input: unknown): Promise<Result<Listing>> {
   const listing = cleanListing(input)
-  if (!listing) return { ok: false, reason: "That ad could not be read." }
+  if (!listing || !listingId.test(listing.id)) return { ok: false, reason: "That ad could not be read." }
   if (seedIds.has(listing.id)) return { ok: false, reason: "That listing is already on the board." }
-  if (!adIdPattern.test(listing.id)) return { ok: false, reason: "That ad could not be read." }
-  if (listing.image.length > imageLimit) return { ok: false, reason: "The photo is too large. Try a smaller one." }
   const accepted = acceptListing({ ...listing, mine: true })
   if (!accepted.ok) return accepted
-  const existing = database().prepare("SELECT id FROM listings WHERE id = ?").get(listing.id)
-  if (existing) return { ok: false, reason: "That listing is already on the board." }
-  const stored = accepted.listing
-  const postedAt = stored.postedAt ?? new Date().toISOString()
-  database()
-    .prepare("INSERT INTO listings (id, owner_token, posted_at, payload) VALUES (?, ?, ?, ?)")
-    .run(stored.id, token, postedAt, payloadOf({ ...stored, postedAt }))
-  const saved = listingFromRow(
-    { id: stored.id, owner_token: token, posted_at: postedAt, payload: payloadOf({ ...stored, postedAt }) },
-    token,
-  )
-  return saved ? { ok: true, value: saved } : { ok: false, reason: "That ad could not be read." }
-}
-
-export function updateListing(token: string, id: string, input: unknown): Result<Listing> {
-  const listing = cleanListing(input)
-  if (!listing || listing.id !== id) return { ok: false, reason: "That ad could not be read." }
-  if (seedIds.has(id)) return { ok: false, reason: "That listing is already on the board." }
-  if (listing.image.length > imageLimit) return { ok: false, reason: "The photo is too large. Try a smaller one." }
-  const row = database().prepare("SELECT id, owner_token, posted_at, payload FROM listings WHERE id = ?").get(id)
-  if (!row) return { ok: false, reason: "This ad is no longer on the board." }
-  if (row.owner_token !== token) return { ok: false, reason: "This ad is not yours." }
-  const accepted = acceptListing({ ...listing, mine: true })
-  if (!accepted.ok) return accepted
-  const postedAt = typeof row.posted_at === "string" ? row.posted_at : new Date().toISOString()
-  const stored = { ...accepted.listing, id, postedAt, hoursAgo: hoursAgoOf({ hoursAgo: 0, postedAt }) }
-  database()
-    .prepare("UPDATE listings SET payload = ?, posted_at = ? WHERE id = ? AND owner_token = ?")
-    .run(payloadOf(stored), postedAt, id, token)
-  const saved = listingFromRow({ id, owner_token: token, posted_at: postedAt, payload: payloadOf(stored) }, token)
-  return saved ? { ok: true, value: saved } : { ok: false, reason: "That ad could not be read." }
-}
-
-export function deleteListing(token: string, id: string): Result<true> {
-  const db = database()
-  const row = db.prepare("SELECT owner_token FROM listings WHERE id = ?").get(id)
-  if (!row) return { ok: false, reason: "This ad is no longer on the board." }
-  if (row.owner_token !== token) return { ok: false, reason: "This ad is not yours." }
-  db.exec("BEGIN")
-  try {
-    db.prepare("DELETE FROM listings WHERE id = ? AND owner_token = ?").run(id, token)
-    db.prepare("DELETE FROM saves WHERE listing_id = ?").run(id)
-    db.exec("COMMIT")
-  } catch (error) {
-    db.exec("ROLLBACK")
-    throw error
+  const photo = await storePhoto(listing.image, owner)
+  if (!photo.ok) return photo
+  const postedAt = new Date().toISOString()
+  const stored = { ...accepted.listing, image: photo.value, postedAt }
+  const { error } = await boardDb().from("board_listings").insert({ id: listing.id, owner_id: owner, posted_at: postedAt, payload: payload(stored) })
+  if (error) {
+    if (photo.value !== listing.image) await removePhoto(photo.value)
+    if (error.code === "23505") return { ok: false, reason: "That listing is already on the board." }
+    check(error)
   }
+  return { ok: true, value: { ...stored, mine: true } }
+}
+export async function updateListing(owner: string, id: string, input: unknown): Promise<Result<Listing>> {
+  const listing = cleanListing(input)
+  if (!listing || listing.id !== id || seedIds.has(id)) return { ok: false, reason: "That ad could not be read." }
+  const db = boardDb()
+  const { data: row, error: readError } = await db.from("board_listings").select("id,owner_id,posted_at,payload").eq("id", id).maybeSingle()
+  check(readError)
+  if (!row) return { ok: false, reason: "This ad is no longer on the board." }
+  if (row.owner_id !== owner) return { ok: false, reason: "This ad is not yours." }
+  const accepted = acceptListing({ ...listing, mine: true })
+  if (!accepted.ok) return accepted
+  const old = cleanListing(row.payload)
+  const photo = await storePhoto(listing.image, owner, old?.image)
+  if (!photo.ok) return photo
+  const stored = { ...accepted.listing, id, image: photo.value, postedAt: row.posted_at,
+    hoursAgo: hoursAgoOf({ hoursAgo: 0, postedAt: row.posted_at }) }
+  const { data, error } = await db.from("board_listings").update({ payload: payload(stored) })
+    .eq("id", id).eq("owner_id", owner).select("id")
+  if (error || !data?.length) {
+    if (photo.value !== listing.image) await removePhoto(photo.value)
+    check(error)
+    return { ok: false, reason: "This ad is no longer on the board." }
+  }
+  if (old?.image && old.image !== photo.value) await removePhoto(old.image)
+  return { ok: true, value: { ...stored, mine: true } }
+}
+export async function deleteListing(owner: string, id: string): Promise<Result<true>> {
+  const db = boardDb()
+  const { data, error } = await db.from("board_listings").delete().eq("id", id).eq("owner_id", owner).select("payload")
+  check(error)
+  if (!data?.length) return { ok: false, reason: "This ad is no longer on the board or is not yours." }
+  const { error: saveError } = await db.from("board_saves").delete().eq("listing_id", id)
+  check(saveError)
+  const old = cleanListing(data[0].payload)
+  if (old) await removePhoto(old.image)
   return { ok: true, value: true }
 }
-
-export function toggleSave(token: string, listingId: string): Result<string[]> {
-  if (!listingId || listingId.length > 80) return { ok: false, reason: "That listing is no longer on the board." }
-  if (!listingExists(listingId)) return { ok: false, reason: "That listing is no longer on the board." }
-  const db = database()
-  const existing = db.prepare("SELECT listing_id FROM saves WHERE owner_token = ? AND listing_id = ?").get(token, listingId)
-  if (existing) {
-    db.prepare("DELETE FROM saves WHERE owner_token = ? AND listing_id = ?").run(token, listingId)
-  } else {
-    db.prepare("INSERT INTO saves (owner_token, listing_id, created_at) VALUES (?, ?, ?)").run(
-      token,
-      listingId,
-      new Date().toISOString(),
-    )
-  }
-  return { ok: true, value: listBoard(token).savedIds }
+async function exists(id: string) {
+  if (seedIds.has(id)) return true
+  const { data, error } = await boardDb().from("board_listings").select("id").eq("id", id).maybeSingle()
+  check(error)
+  return Boolean(data)
 }
-
-export function createMessage(token: string, listingId: string, body: string): Result<BoardMessage[]> {
-  const text = body.trim()
-  const error = messageError(text)
-  if (error) return { ok: false, reason: error }
-  if (!listingExists(listingId)) return { ok: false, reason: "That listing is no longer on the board." }
-  const owned = database().prepare("SELECT id FROM listings WHERE id = ? AND owner_token = ?").get(listingId, token)
-  if (owned) return { ok: false, reason: "This is your ad." }
-  const listing = findListing(listingId)
+export async function toggleSave(owner: string, id: string): Promise<Result<string[]>> {
+  if (!id || id.length > 80 || !await exists(id)) return { ok: false, reason: "That listing is no longer on the board." }
+  const db = boardDb()
+  const { data: existing, error: readError } = await db.from("board_saves").select("listing_id").eq("owner_id", owner).eq("listing_id", id).maybeSingle()
+  check(readError)
+  const { error } = existing ? await db.from("board_saves").delete().eq("owner_id", owner).eq("listing_id", id)
+    : await db.from("board_saves").insert({ owner_id: owner, listing_id: id })
+  check(error)
+  const { data, error: listError } = await db.from("board_saves").select("listing_id").eq("owner_id", owner).order("created_at", { ascending: false })
+  check(listError)
+  return { ok: true, value: (data ?? []).map((row) => row.listing_id) }
+}
+export async function createMessage(owner: string, id: string, body: string): Promise<Result<BoardMessage[]>> {
+  const reason = messageError(body.trim())
+  if (reason) return { ok: false, reason }
+  const db = boardDb()
+  const { data: row, error } = await db.from("board_listings").select("id,owner_id,posted_at,payload").eq("id", id).maybeSingle()
+  check(error)
+  if (row?.owner_id === owner) return { ok: false, reason: "This is your ad." }
+  const listing = seedListings.find((item) => item.id === id) ?? (row ? unpack(row) : undefined)
   if (!listing) return { ok: false, reason: "That listing is no longer on the board." }
-  const sentAt = new Date().toISOString()
-  const yours: BoardMessage = {
-    id: crypto.randomUUID(),
-    listingId,
-    listingTitle: listing.title,
-    sellerName: listing.sellerName,
-    body: text,
-    sentAt,
-    role: "you",
-    read: true,
-  }
-  const reply: BoardMessage = {
-    id: crypto.randomUUID(),
-    listingId,
-    listingTitle: listing.title,
-    sellerName: listing.sellerName,
-    body: sampleReply(listing.title),
-    sentAt: new Date(Date.now() + 1).toISOString(),
-    role: "sample",
-    read: false,
-  }
-  const db = database()
-  db.exec("BEGIN")
-  try {
-    trimMessages(token, 2)
-    insertMessage(token, yours)
-    insertMessage(token, reply)
-    db.exec("COMMIT")
-  } catch (error) {
-    db.exec("ROLLBACK")
-    throw error
-  }
-  return { ok: true, value: listBoard(token).messages }
+  const now = Date.now()
+  const yours: BoardMessage = { id: crypto.randomUUID(), listingId: id, listingTitle: listing.title, sellerName: listing.sellerName,
+    body: body.trim(), sentAt: new Date(now).toISOString(), role: "you", read: true }
+  const reply: BoardMessage = { ...yours, id: crypto.randomUUID(), body: sampleReply(listing.title),
+    sentAt: new Date(now + 1).toISOString(), role: "sample", read: false }
+  const { error: insertError } = await db.from("board_messages").insert([yours, reply].map((message) => ({
+    id: message.id, owner_id: owner, listing_id: id, sent_at: message.sentAt, payload: message,
+  })))
+  check(insertError)
+  return { ok: true, value: (await listBoard(owner)).messages }
 }
-
-export function markMessagesRead(token: string, listingId: string): Result<BoardMessage[]> {
-  const db = database()
-  const rows = db.prepare("SELECT id, payload FROM messages WHERE owner_token = ? AND listing_id = ?").all(token, listingId)
-  db.exec("BEGIN")
-  try {
-    for (const row of rows) {
-      if (typeof row.payload !== "string" || typeof row.id !== "string") continue
-      try {
-        const parsed: unknown = JSON.parse(row.payload)
-        if (!isBoardMessage(parsed) || parsed.read) continue
-        db.prepare("UPDATE messages SET payload = ? WHERE id = ? AND owner_token = ?").run(
-          JSON.stringify({ ...parsed, read: true }),
-          row.id,
-          token,
-        )
-      } catch {
-        continue
-      }
-    }
-    db.exec("COMMIT")
-  } catch (error) {
-    db.exec("ROLLBACK")
-    throw error
+export async function markMessagesRead(owner: string, id: string): Promise<Result<BoardMessage[]>> {
+  const db = boardDb()
+  const { data, error } = await db.from("board_messages").select("id,payload").eq("owner_id", owner).eq("listing_id", id)
+  check(error)
+  for (const row of data ?? []) {
+    if (!isBoardMessage(row.payload) || row.payload.read) continue
+    const { error: updateError } = await db.from("board_messages").update({ payload: { ...row.payload, read: true } })
+      .eq("id", row.id).eq("owner_id", owner)
+    check(updateError)
   }
-  return { ok: true, value: listBoard(token).messages }
+  return { ok: true, value: (await listBoard(owner)).messages }
 }
-
-export function importBoard(token: string, input: unknown): { imported: number } {
+export async function importBoard(owner: string, input: unknown): Promise<{ imported: number }> {
   const state = parseBoardState(input)
   let imported = 0
-  for (const listing of state.posted.slice(0, 40)) {
-    const created = createListing(token, listing)
-    if (created.ok) imported += 1
+  for (const item of state.posted.slice(0, 40)) if ((await createListing(owner, item)).ok) imported++
+  for (const id of state.savedIds.slice(0, 200)) {
+    if (!await exists(id)) continue
+    const { error } = await boardDb().from("board_saves").upsert({ owner_id: owner, listing_id: id }, { onConflict: "owner_id,listing_id" })
+    check(error)
+    imported++
   }
-  const db = database()
-  for (const id of state.savedIds) {
-    if (!listingExists(id)) continue
-    db.prepare("INSERT OR IGNORE INTO saves (owner_token, listing_id, created_at) VALUES (?, ?, ?)").run(
-      token,
-      id,
-      new Date().toISOString(),
-    )
-    imported += 1
-  }
-  for (const message of state.messages) {
-    if (!message.id || message.id.length > 80) continue
-    const changes = db
-      .prepare(
-        "INSERT OR IGNORE INTO messages (id, owner_token, listing_id, sent_at, payload) VALUES (?, ?, ?, ?, ?)",
-      )
-      .run(message.id, token, message.listingId, message.sentAt, JSON.stringify(message)).changes
-    if (changes > 0) imported += 1
+  for (const message of state.messages.slice(-200)) {
+    if (!await exists(message.listingId)) continue
+    const { error } = await boardDb().from("board_messages").upsert({
+      id: message.id, owner_id: owner, listing_id: message.listingId,
+      sent_at: message.sentAt, payload: message,
+    }, { onConflict: "id", ignoreDuplicates: true })
+    check(error)
+    imported++
   }
   return { imported }
-}
-
-function listingExists(id: string): boolean {
-  if (seedIds.has(id)) return true
-  return Boolean(database().prepare("SELECT id FROM listings WHERE id = ?").get(id))
-}
-
-function findListing(id: string): Listing | undefined {
-  const seed = seedListings.find((listing) => listing.id === id)
-  if (seed) return seed
-  const row = database().prepare("SELECT id, owner_token, posted_at, payload FROM listings WHERE id = ?").get(id)
-  return row ? listingFromRow(row, undefined) : undefined
-}
-
-function listingFromRow(row: Record<string, string | number | bigint | null | Uint8Array>, token: string | undefined): Listing | undefined {
-  if (typeof row.payload !== "string" || typeof row.id !== "string") return undefined
-  try {
-    const parsed: unknown = JSON.parse(row.payload)
-    const listing = cleanListing(parsed)
-    if (!listing) return undefined
-    const postedAt = typeof row.posted_at === "string" ? row.posted_at : listing.postedAt
-    const owner = typeof row.owner_token === "string" ? row.owner_token : ""
-    return {
-      ...listing,
-      id: row.id,
-      postedAt,
-      hoursAgo: hoursAgoOf({ hoursAgo: listing.hoursAgo, postedAt }),
-      featured: undefined,
-      mine: Boolean(token) && owner === token,
-    }
-  } catch {
-    return undefined
-  }
-}
-
-function payloadOf(listing: Listing): string {
-  return JSON.stringify({ ...listing, mine: undefined, featured: undefined })
-}
-
-function insertMessage(token: string, message: BoardMessage) {
-  database()
-    .prepare("INSERT INTO messages (id, owner_token, listing_id, sent_at, payload) VALUES (?, ?, ?, ?, ?)")
-    .run(message.id, token, message.listingId, message.sentAt, JSON.stringify(message))
-}
-
-function trimMessages(token: string, incoming: number) {
-  const row = database().prepare("SELECT COUNT(*) AS count FROM messages WHERE owner_token = ?").get(token)
-  const count = typeof row?.count === "number" ? row.count : Number(row?.count ?? 0)
-  const extra = count + incoming - messageLimit
-  if (extra <= 0) return
-  database()
-    .prepare(
-      "DELETE FROM messages WHERE id IN (SELECT id FROM messages WHERE owner_token = ? ORDER BY sent_at ASC LIMIT ?)",
-    )
-    .run(token, extra)
 }

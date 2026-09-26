@@ -8,10 +8,8 @@ import { seedListings } from "@/lib/catalog"
 import type { BoardMessage } from "@/lib/messages"
 import type { Listing } from "@/lib/types"
 
-const ownerKey = "africa-classifieds-owner"
 const legacyKey = "africa-classifieds-v1"
 const migratedKey = "africa-classifieds-migrated"
-const tokenPattern = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i
 
 type Snapshot = BoardState & { ready: boolean }
 
@@ -41,16 +39,8 @@ function getServerSnapshot(): Snapshot {
   return serverSnapshot
 }
 
-function ownerToken(): string {
-  const current = localStorage.getItem(ownerKey)
-  if (current && tokenPattern.test(current)) return current
-  const next = crypto.randomUUID()
-  localStorage.setItem(ownerKey, next)
-  return next
-}
-
 function requestHeaders(): HeadersInit {
-  return { "content-type": "application/json", "x-owner-token": ownerToken() }
+  return { "content-type": "application/json" }
 }
 
 function ensureLoaded(): Promise<void> {
@@ -61,14 +51,16 @@ function ensureLoaded(): Promise<void> {
 
 async function loadBoard() {
   try {
-    await migrateLegacy()
-  } catch {
-    toast.error("Saved ads on this browser could not be moved into the database.")
-  }
-  try {
     const response = await fetch("/api/board", { headers: requestHeaders(), cache: "no-store" })
     if (!response.ok) throw new Error("board")
-    const payload: unknown = await response.json()
+    try {
+      await migrateLegacy()
+    } catch {
+      toast.error("Saved ads on this browser could not be moved into the database.")
+    }
+    const refreshed = await fetch("/api/board", { headers: requestHeaders(), cache: "no-store" })
+    if (!refreshed.ok) throw new Error("board")
+    const payload: unknown = await refreshed.json()
     memory = { ...parseBoardState(payload), ready: true }
   } catch {
     memory = { ...emptyState, ready: true }
