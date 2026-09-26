@@ -7,6 +7,7 @@ import { canonicalCountry } from "@/lib/countries"
 const storageKey = "africa-classifieds-home"
 const anywhereKey = "africa-classifieds-anywhere"
 const changeEvent = "africa-classifieds-home"
+const everywhereEvent = "africa-classifieds-everywhere"
 
 export type HomePlace = {
   country: string
@@ -52,14 +53,29 @@ function serverHome(): HomePlace | null {
 
 export function markBrowsingEverywhere() {
   sessionStorage.setItem(anywhereKey, "1")
+  window.dispatchEvent(new Event(everywhereEvent))
 }
 
 export function clearBrowsingEverywhere() {
   sessionStorage.removeItem(anywhereKey)
+  window.dispatchEvent(new Event(everywhereEvent))
 }
 
 export function isBrowsingEverywhere(): boolean {
   return sessionStorage.getItem(anywhereKey) === "1"
+}
+
+function subscribeEverywhere(listener: () => void) {
+  window.addEventListener(everywhereEvent, listener)
+  window.addEventListener("storage", listener)
+  return () => {
+    window.removeEventListener(everywhereEvent, listener)
+    window.removeEventListener("storage", listener)
+  }
+}
+
+export function useBrowsingEverywhere(): boolean {
+  return useSyncExternalStore(subscribeEverywhere, isBrowsingEverywhere, () => false)
 }
 
 function subscribe(listener: () => void) {

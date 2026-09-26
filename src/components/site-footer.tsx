@@ -1,5 +1,6 @@
 import Link from "next/link"
 
+import { PostLink } from "@/components/post-link"
 import { categories } from "@/lib/types"
 
 const pages = [
@@ -17,11 +18,17 @@ export function SiteFooter() {
     <footer className="relative z-40 border-t border-neutral-200/80 bg-white">
       <div className="mx-auto flex max-w-[1720px] flex-col gap-4 px-4 py-6 text-xs leading-5 text-neutral-500 md:px-6">
         <nav aria-label="Pages" className="flex flex-wrap gap-x-4 gap-y-2">
-          {pages.map((page) => (
-            <Link key={page.href} href={page.href} className="text-neutral-700 hover:text-neutral-950">
-              {page.label}
-            </Link>
-          ))}
+          {pages.map((page) =>
+            page.href === "/post" ? (
+              <PostLink key={page.href} className="text-neutral-700 hover:text-neutral-950">
+                {page.label}
+              </PostLink>
+            ) : (
+              <Link key={page.href} href={page.href} className="text-neutral-700 hover:text-neutral-950">
+                {page.label}
+              </Link>
+            ),
+          )}
         </nav>
         <div className="flex flex-col gap-2 md:flex-row md:items-center md:justify-between">
         <p>africa classifieds · sample listings for a pan-African board.</p>

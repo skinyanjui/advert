@@ -3,7 +3,7 @@
 import { Check, ImagePlus } from "lucide-react"
 import Link from "next/link"
 import { useRouter, useSearchParams } from "next/navigation"
-import { useEffect, useMemo, useRef, useState, type DragEvent, type ReactNode } from "react"
+import { useEffect, useLayoutEffect, useMemo, useRef, useState, type DragEvent, type ReactNode } from "react"
 import { toast } from "sonner"
 
 import { categoryIcons } from "@/components/category-nav"
@@ -13,6 +13,7 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
+import { readPostingPlace } from "@/lib/active-place"
 import { categoryImage } from "@/lib/catalog"
 import { resolvePlace } from "@/lib/cities"
 import {
@@ -59,10 +60,13 @@ export function PostForm() {
 function AdForm({ existing }: { existing: Listing | null }) {
   const router = useRouter()
   const searchParams = useSearchParams()
-  const startingCountry = existing
-    ? (canonicalCountry(existing.country) ?? "KE")
-    : (canonicalCountry(searchParams.get("country")) ?? "KE")
-  const startingCity = existing ? existing.city : (searchParams.get("city") ?? "").trim().slice(0, 80)
+  const urlCountry = existing ? undefined : canonicalCountry(searchParams.get("country"))
+  const startingCountry = existing ? (canonicalCountry(existing.country) ?? "KE") : (urlCountry ?? "KE")
+  const startingCity = existing
+    ? existing.city
+    : urlCountry
+      ? (searchParams.get("city") ?? "").trim().slice(0, 80)
+      : ""
   const categoryParam = searchParams.get("category")
   const startingCategory = existing?.category ?? (isCategoryId(categoryParam) ? categoryParam : null)
   const seeded = existing
@@ -90,6 +94,17 @@ function AdForm({ existing }: { existing: Listing | null }) {
   const [image, setImage] = useState<string | null>(existing?.image ?? null)
   const [errors, setErrors] = useState<FieldErrors>({})
   const [submitting, setSubmitting] = useState(false)
+  const appliedPlace = useRef(false)
+
+  useLayoutEffect(() => {
+    if (appliedPlace.current || existing || urlCountry) return
+    appliedPlace.current = true
+    const place = readPostingPlace()
+    setCountry(place.country)
+    setCity(place.city)
+    setCurrency(getCountry(place.country)?.currencies[0]?.code ?? "USD")
+    setPlace(locatedPlace(null, place.country, place.city))
+  }, [existing, urlCountry])
 
   const plan = category ? categoryPlan(category) : null
   const subcategory = category ? findSubcategory(category, subcategoryId ?? undefined) : undefined

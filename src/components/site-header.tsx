@@ -5,8 +5,11 @@ import Link from "next/link"
 import { usePathname, useSearchParams } from "next/navigation"
 import { useEffect, useRef, useState, type ReactNode } from "react"
 
+import { postAdHref } from "@/lib/active-place"
 import { Logo } from "@/components/logo"
+import { PostLink } from "@/components/post-link"
 import { ThemeChoices } from "@/components/theme-choices"
+import { useRememberedPlace } from "@/lib/use-remembered-place"
 import { Button, buttonVariants } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { countries, countryName, fold, moreCountries, primaryCountries } from "@/lib/countries"
@@ -50,6 +53,8 @@ export function SiteHeader() {
   const unread = notifications.filter((item) => !read.includes(item.id)).length
   const unreadMessages = messages.filter((item) => item.role === "sample" && !item.read).length
   const locationLabel = query.country ? countryName(query.country) : "All Africa"
+  const remembered = useRememberedPlace()
+  const postHref = postAdHref(query.country ? { country: query.country, city: query.city } : remembered)
 
   return (
     <header className="sticky top-0 z-50">
@@ -63,7 +68,7 @@ export function SiteHeader() {
             <div className="ml-auto flex shrink-0 items-center gap-1.5 sm:gap-2">
               <CountryMenu label={locationLabel} query={query} />
               <Button asChild className="h-10 rounded-full bg-neutral-950 px-3 text-white hover:bg-neutral-800 sm:px-4">
-                <Link href="/post" aria-label="Post ad">
+                <Link href={postHref} aria-label="Post ad">
                   <Plus />
                   <span className="hidden sm:inline">Post ad</span>
                 </Link>
@@ -138,7 +143,7 @@ export function SiteHeader() {
                 </MenuLink>
                 <MenuLink href="/saved">Saved ads ({savedIds.length})</MenuLink>
                 <MenuLink href="/my-ads">My ads</MenuLink>
-                <MenuLink href="/post">Post an ad</MenuLink>
+                <MenuLink href={postHref}>Post an ad</MenuLink>
               </HeaderMenu>
             </div>
           </div>
@@ -517,9 +522,9 @@ export function HeaderFallback() {
       <div className="mx-auto flex h-[72px] max-w-[1720px] items-center">
         <Logo />
         <nav aria-label="Account" className="ml-auto flex items-center gap-2 px-4">
-          <Link href="/post" className={cn(buttonVariants(), "h-10 rounded-full bg-neutral-950 px-3 text-white")}>
+          <PostLink className={cn(buttonVariants(), "h-10 rounded-full bg-neutral-950 px-3 text-white")} ariaLabel="Post ad">
             Post ad
-          </Link>
+          </PostLink>
           <Link href="/messages" className={cn(buttonVariants({ variant: "outline", size: "icon-lg" }), "rounded-full")}>
             <MessageCircle />
             <span className="sr-only">Messages</span>

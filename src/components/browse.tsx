@@ -22,6 +22,7 @@ import {
   SheetTitle,
   SheetTrigger,
 } from "@/components/ui/sheet"
+import { postAdHref } from "@/lib/active-place"
 import { matchesQuery, sortListings } from "@/lib/board"
 import { distanceKm, listingPoint } from "@/lib/distance"
 import { useHomePlace } from "@/lib/home-place"
@@ -274,12 +275,7 @@ function EmptyResults({
   onClear: () => void
 }) {
   const place = city && country ? `${city}, ${countryName(country)}` : country ? countryName(country) : undefined
-  const postParams = new URLSearchParams()
-  if (country) postParams.set("country", country)
-  if (city) postParams.set("city", city)
-  if (category) postParams.set("category", category)
-  if (type) postParams.set("type", type)
-  const postHref = postParams.size > 0 ? `/post?${postParams}` : "/post"
+  const postHref = postAdHref(country ? { country, city } : null, { category, type })
 
   return (
     <div className="rounded-2xl border border-dashed border-neutral-300 bg-white px-6 py-16 text-center">

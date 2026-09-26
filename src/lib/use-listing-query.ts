@@ -3,6 +3,7 @@
 import { usePathname, useRouter, useSearchParams } from "next/navigation"
 import { useCallback, useEffect, useMemo, useRef } from "react"
 
+import { writeActivePlace } from "@/lib/active-place"
 import { canonicalCountry } from "@/lib/countries"
 import {
   clearBrowsingEverywhere,
@@ -89,6 +90,14 @@ export function useListingQuery() {
     if (normalizeBoardParams(params, pathCategory)) {
       router.replace(boardHref(pathCategory, params), { scroll: false })
       return
+    }
+    const country = canonicalCountry(params.get("country"))
+    if (country) {
+      if (isBrowsingEverywhere()) clearBrowsingEverywhere()
+      const city = params.get("city")?.trim() ?? ""
+      writeActivePlace(city ? { country, city } : { country })
+    } else if (isBrowsingEverywhere()) {
+      writeActivePlace(null)
     }
     if (!scrollAfterNav.current) return
     scrollAfterNav.current = false

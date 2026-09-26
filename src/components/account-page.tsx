@@ -3,7 +3,9 @@
 import { ChevronRight, MapPin } from "lucide-react"
 import Link from "next/link"
 
+import { postAdHref } from "@/lib/active-place"
 import { ThemeChoices } from "@/components/theme-choices"
+import { useRememberedPlace } from "@/lib/use-remembered-place"
 import { Button } from "@/components/ui/button"
 import { countryName } from "@/lib/countries"
 import { useHomePlace, writeHomePlace } from "@/lib/home-place"
@@ -17,6 +19,7 @@ export function AccountPage() {
   const threads = messageThreads(messages)
   const mine = listings.filter((listing) => listing.mine).length
   const homeLabel = home ? (home.city ? `${home.city}, ${countryName(home.country)}` : countryName(home.country)) : null
+  const postHref = postAdHref(useRememberedPlace())
 
   return (
     <div className="mx-auto w-full max-w-3xl px-4 py-8 md:px-6">
@@ -55,7 +58,7 @@ export function AccountPage() {
         <ProfileLink href="/messages" title="Messages" detail={messageDetail(threads.length, unread)} />
         <ProfileLink href="/saved" title="Saved ads" detail={countDetail(savedIds.length, "saved ad", "saved ads")} />
         <ProfileLink href="/my-ads" title="My ads" detail={countDetail(mine, "ad posted from this browser", "ads posted from this browser")} />
-        <ProfileLink href="/post" title="Post an ad" detail="Cars, houses, jobs, and everything else on the board." />
+        <ProfileLink href={postHref} title="Post an ad" detail="Cars, houses, jobs, and everything else on the board." />
       </ul>
     </div>
   )

@@ -4,6 +4,8 @@ import Link from "next/link"
 import { useState } from "react"
 
 import { ListingCard } from "@/components/listing-card"
+import { postAdHref } from "@/lib/active-place"
+import { useRememberedPlace } from "@/lib/use-remembered-place"
 import { Button } from "@/components/ui/button"
 import {
   Dialog,
@@ -35,6 +37,7 @@ export function SavedPage() {
 export function MyAdsPage() {
   const { ready, listings, removeListing } = useMarketplace()
   const mine = listings.filter((listing) => listing.mine)
+  const postHref = postAdHref(useRememberedPlace())
   const [pendingId, setPendingId] = useState<string | null>(null)
   const pending = mine.find((listing) => listing.id === pendingId)
 
@@ -49,7 +52,7 @@ export function MyAdsPage() {
         emptyBody="Post something for sale, for rent, or a job. It appears at the top of the board."
         listings={mine}
         onRemove={setPendingId}
-        actionHref="/post"
+        actionHref={postHref}
         actionLabel="Post an ad"
       />
       <Dialog open={!!pending} onOpenChange={(open) => !open && setPendingId(null)}>
