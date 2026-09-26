@@ -2,7 +2,7 @@
 
 A classifieds board for buying and selling across Africa: cars, houses, jobs, electronics, and the rest of the usual categories. Search, filter by country and category, save listings, and post an ad.
 
-Listings in the catalog are sample ads. Ads you post are stored in a SQLite database and show on the board for everyone. Saved hearts and messages stay with this browser. City search can ask OpenStreetMap for extra place names.
+Listings in the catalog are sample ads. Ads you post are stored in a SQLite database and show on the board for everyone. Saved hearts and messages stay with this browser. City search uses the bundled GeoNames snapshot.
 
 ## Run locally
 
@@ -21,7 +21,7 @@ Open [http://localhost:3000](http://localhost:3000).
 - Listing pages with a message, phone reveal, and WhatsApp link
 - Post an ad, with a photo from your computer or a category image
 - Saved ads and your own ads
-- SQLite database at `data/classifieds.db` (created on first request). It holds posted ads, saves, messages, and the OpenStreetMap place cache. Node’s built-in `node:sqlite` is the driver, so there is no database server to start. A host with a read-only disk, including Vercel’s serverless filesystem, keeps that file in temporary storage, so posted ads reset when the server restarts.
+- SQLite database at `data/classifieds.db` (created on first request). It holds posted ads, saves, and messages. Node’s built-in `node:sqlite` is the driver, so there is no database server to start. A host with a read-only disk, including Vercel’s serverless filesystem, keeps that file in temporary storage, so posted ads reset when the server restarts.
 
 ## Reference data
 
@@ -30,7 +30,7 @@ Open [http://localhost:3000](http://localhost:3000).
 - **Currencies.** ISO 4217 codes. Display names come from Unicode CLDR through `Intl.DisplayNames`. Sample ads stay in USD. A new ad defaults to the country’s currency, and USD stays available.
 - **Languages.** ISO 639 codes, with CLDR display names through `Intl`.
 - **Time zones.** IANA Time Zone Database, formatted with `Intl.DateTimeFormat`.
-- **Map and search.** OpenStreetMap embeds on listing pages. City search also asks Nominatim through `/api/places` (one request a second, ten-minute cache). Typed cities that do not match GeoNames or a map suggestion are stored without a pin.
+- **Map and search.** OpenStreetMap embeds on listing pages. City suggestions come from the bundled GeoNames snapshot and do not call the public Nominatim search service. Typed cities that do not match GeoNames are stored without a pin.
 
 Rebuild the snapshots with `node scripts/build-reference.mjs`.
 
