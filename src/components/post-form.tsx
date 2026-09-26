@@ -733,6 +733,7 @@ function ChoiceRow({
 }
 
 function CountryField({ country, onChange }: { country: string; onChange: (code: string) => void }) {
+  const inputRef = useRef<HTMLInputElement>(null)
   const [query, setQuery] = useState("")
   const [open, setOpen] = useState(false)
   const needle = fold(query)
@@ -744,11 +745,13 @@ function CountryField({ country, onChange }: { country: string; onChange: (code:
     onChange(code)
     setQuery("")
     setOpen(false)
+    inputRef.current?.blur()
   }
 
   return (
     <div className="relative">
       <Input
+        ref={inputRef}
         value={open ? query : countryName(country)}
         role="combobox"
         aria-expanded={open}
@@ -756,6 +759,7 @@ function CountryField({ country, onChange }: { country: string; onChange: (code:
         aria-autocomplete="list"
         placeholder="Search countries"
         className="h-10 bg-white"
+        onClick={() => setOpen(true)}
         onFocus={() => {
           setQuery("")
           setOpen(true)
