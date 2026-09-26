@@ -31,11 +31,9 @@ import {
 import { listingFieldErrors, type FieldErrors as RuleErrors } from "@/lib/listing-rules"
 import { useMarketplace } from "@/lib/marketplace"
 import {
-  cardFactLabels,
   categoryPlan,
   findSubcategory,
   isPricePeriodId,
-  listingMeta,
   periodForSuffix,
   postingPlans,
   pricePeriod,
@@ -100,7 +98,6 @@ function AdForm({ existing }: { existing: Listing | null }) {
   const subcategory = category ? findSubcategory(category, subcategoryId ?? undefined) : undefined
   const activePeriod = subcategory?.periods.includes(period) ? period : (subcategory?.periods[0] ?? period)
   const suffix = subcategory?.priceSuffix ?? pricePeriod(activePeriod).suffix
-  const prefilledPlace = !existing && Boolean(searchParams.get("country") || searchParams.get("city"))
   const callingCode = getCountry(country)?.callingCode
   const currencies = currencyChoices(country, currency)
   const countryOptions = [...countries].sort((a, b) => a.name.localeCompare(b.name))
@@ -312,17 +309,15 @@ function AdForm({ existing }: { existing: Listing | null }) {
     document.title = `${existing ? "Edit your ad" : "Post an ad"} · africa classifieds`
   }, [existing])
 
-  const cardLine = subcategory ? listingMeta(preview) : undefined
-
   return (
     <div className="mx-auto grid w-full max-w-[1100px] gap-8 px-4 py-8 md:px-6 lg:grid-cols-[minmax(0,1fr)_320px]">
-      <div>
+      <div className="order-2 lg:order-1">
         <h1 className="text-2xl font-semibold tracking-tight">{existing ? "Edit your ad" : "Post an ad"}</h1>
-        <p className="mt-1 max-w-xl text-sm text-neutral-500">
-          {existing
-            ? "Change the type, the facts, or the phone number. This ad stays on the board."
-            : "Four steps. The type you pick decides the questions, the line on the card, and the headings on the listing."}
-        </p>
+        {city.trim() ? (
+          <p className="mt-1 text-sm text-neutral-500">
+            {city.trim()}, {countryName(country)}
+          </p>
+        ) : null}
         <ol className="mt-5 flex flex-wrap gap-2" aria-label="Posting steps">
           {steps.map((label, index) => (
             <li key={label}>
@@ -354,19 +349,7 @@ function AdForm({ existing }: { existing: Listing | null }) {
           }}
         >
           {step === 0 ? (
-            <section className="grid gap-4">
-              <ol className="grid gap-2 text-sm text-neutral-600">
-                <li><span className="font-medium text-neutral-950">1. Category.</span> Vehicles, property, jobs, and the rest of the board.</li>
-                <li><span className="font-medium text-neutral-950">2. Type.</span> A car is not a pickup, and a monthly rental is not a job.</li>
-                <li><span className="font-medium text-neutral-950">3. Details.</span> Only the facts for that type. They are saved on the card and the listing.</li>
-                <li><span className="font-medium text-neutral-950">4. Place and phone.</span> The city, and a number people can actually use.</li>
-              </ol>
-              {prefilledPlace ? (
-                <p className="rounded-xl bg-neutral-50 px-3 py-2 text-sm text-neutral-600">
-                  Starting in {city.trim() || "the city you choose"}, {countryName(country)}. You can change the place on the last step.
-                </p>
-              ) : null}
-              <h2 className="text-sm font-medium">Start with a category</h2>
+            <section>
               <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
                 {postingPlans().map((item) => {
                   const Icon = categoryIcons[item.id]
@@ -392,11 +375,7 @@ function AdForm({ existing }: { existing: Listing | null }) {
           ) : null}
 
           {step === 1 && plan ? (
-            <section className="grid gap-4">
-              <div>
-                <h2 className="text-lg font-semibold tracking-tight">{plan.prompt}</h2>
-                <p className="mt-1 text-sm text-neutral-500">{plan.intro}</p>
-              </div>
+            <section>
               <div className="grid gap-2">
                 {plan.subcategories.map((item) => {
                   const selected = subcategoryId === item.id
@@ -422,16 +401,10 @@ function AdForm({ existing }: { existing: Listing | null }) {
 
           {step === 2 && plan && subcategory ? (
             <section className="grid gap-5">
-              <div>
-                <h2 className="text-lg font-semibold tracking-tight">{categoryName(plan.id)} · {subcategory.name}</h2>
-                <p className="mt-1 text-sm text-neutral-500">{subcategory.summary}</p>
-                <p className="mt-2 text-xs text-neutral-500">
-                  On the card: {subcategory.name}
-                  {cardFactLabels(subcategory).length > 0 ? ` · ${cardFactLabels(subcategory).join(" · ")}` : ""}.
-                  The other answers, and your paragraph, stay on the listing page under {plan.detailHeading} and {plan.aboutHeading}.
-                </p>
-              </div>
-              <Field label="Photo" hint={plan.photoHint} error={errors.image}>
+              <h2 className="text-lg font-semibold tracking-tight">
+                {categoryName(plan.id)} · {subcategory.name}
+              </h2>
+              <Field label="Photo" error={errors.image}>
                 <Input type="file" accept="image/*" onChange={(event) => onFile(event.target.files?.[0])} className="h-10 cursor-pointer" />
               </Field>
               <Field label="Title" error={errors.title}>
@@ -522,23 +495,11 @@ function AdForm({ existing }: { existing: Listing | null }) {
                   placeholder={subcategory.descriptionPlaceholder ?? plan.descriptionPlaceholder}
                 />
               </Field>
-              {cardLine ? (
-                <p className="text-xs text-neutral-500">
-                  Card line: <span className="font-medium text-neutral-800">{cardLine}</span>
-                </p>
-              ) : null}
-              <div className="lg:hidden">
-                <ListingCard listing={preview} linked={false} saveable={false} />
-              </div>
             </section>
           ) : null}
 
           {step === 3 && plan ? (
             <section className="grid gap-5">
-              <div>
-                <h2 className="text-lg font-semibold tracking-tight">Where is it, and how do people reach you?</h2>
-                <p className="mt-1 text-sm text-neutral-500">{plan.phoneHint}</p>
-              </div>
               <div className="grid gap-5 sm:grid-cols-2">
                 <Field label="Country">
                   <Select
@@ -564,7 +525,7 @@ function AdForm({ existing }: { existing: Listing | null }) {
                     </SelectContent>
                   </Select>
                 </Field>
-                <Field label="City" error={errors.city} hint="Pick a GeoNames city, or search the map.">
+                <Field label="City" error={errors.city}>
                   <CityField
                     country={country}
                     city={city}
@@ -576,7 +537,7 @@ function AdForm({ existing }: { existing: Listing | null }) {
                   />
                 </Field>
               </div>
-              <Field label="Phone" error={errors.phone} hint={callingCode ? `Calling code ${callingCode}.` : undefined}>
+              <Field label="Phone" error={errors.phone}>
                 <Input
                   value={phone}
                   onChange={(event) => {
@@ -587,9 +548,6 @@ function AdForm({ existing }: { existing: Listing | null }) {
                   className="h-10"
                 />
               </Field>
-              <div className="lg:hidden">
-                <ListingCard listing={preview} linked={false} saveable={false} />
-              </div>
             </section>
           ) : null}
 
@@ -621,18 +579,11 @@ function AdForm({ existing }: { existing: Listing | null }) {
           </div>
         </form>
       </div>
-      <aside className="hidden lg:block">
-        <p className="mb-3 text-xs font-medium tracking-wide text-neutral-500 uppercase">Card preview</p>
-        <div className="sticky top-[85px]">
-          {category ? (
-            <ListingCard listing={preview} linked={false} saveable={false} />
-          ) : (
-            <p className="rounded-xl border border-dashed border-neutral-300 px-4 py-8 text-sm text-neutral-500">
-              The card appears here after you choose a category.
-            </p>
-          )}
-        </div>
-      </aside>
+      {category ? (
+        <aside className="order-1 lg:sticky lg:top-[85px] lg:order-2 lg:self-start">
+          <ListingCard listing={preview} linked={false} saveable={false} />
+        </aside>
+      ) : null}
     </div>
   )
 }
@@ -651,7 +602,7 @@ function DetailControl({
   switch (field.kind) {
     case "select":
       return (
-        <Field label={field.label} hint={field.hint} error={error}>
+        <Field label={field.label} error={error}>
           <Select
             value={value || undefined}
             onValueChange={(next) => {
@@ -673,7 +624,7 @@ function DetailControl({
       )
     case "text":
       return (
-        <Field label={field.label} hint={field.hint} error={error}>
+        <Field label={field.label} error={error}>
           <Input value={value} onChange={(event) => onChange(event.target.value)} placeholder={field.placeholder} className="h-10" />
         </Field>
       )
@@ -734,12 +685,10 @@ function locatedPlace(chosen: ChosenPlace | null, country: string, city: string)
 
 function Field({
   label,
-  hint,
   error,
   children,
 }: {
   label: string
-  hint?: string
   error?: string
   children: React.ReactNode
 }) {
@@ -752,7 +701,6 @@ function Field({
           {error}
         </span>
       ) : null}
-      {!error && hint ? <span className="text-xs text-neutral-500">{hint}</span> : null}
     </div>
   )
 }

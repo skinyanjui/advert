@@ -11,7 +11,6 @@ import { Button } from "@/components/ui/button"
 import {
   Dialog,
   DialogContent,
-  DialogDescription,
   DialogFooter,
   DialogHeader,
   DialogTitle,
@@ -19,7 +18,7 @@ import {
 import { Textarea } from "@/components/ui/textarea"
 import { relatedListings } from "@/lib/board"
 import { resolvePlace } from "@/lib/cities"
-import { currencyLabel, getCountry, languageLabel } from "@/lib/countries"
+import { getCountry } from "@/lib/countries"
 import {
   formatPlace,
   formatPosted,
@@ -141,7 +140,6 @@ export function ListingDetail({ id }: { id: string }) {
               {facts.map((fact) => (
                 <Fact key={fact.label} label={fact.label} value={fact.value} />
               ))}
-              <Fact label="Listed" value={formatPosted(hoursAgoOf(listing))} />
             </dl>
           </section>
           <section className="mt-8">
@@ -170,41 +168,32 @@ export function ListingDetail({ id }: { id: string }) {
               <p className="text-xs text-neutral-500">On africa classifieds since {listing.sellerSince}</p>
             </div>
           </div>
-          {listing.mine ? (
-            <div className="mt-4 grid gap-2">
-              <p className="text-sm font-medium">This is your ad</p>
+          <div className="mt-4 grid gap-2">
+            {listing.mine ? (
               <Button className="h-10 rounded-full" asChild>
                 <Link href={`/post?edit=${listing.id}`}>Edit ad</Link>
               </Button>
-              <Button variant="outline" className="h-10 rounded-full" onClick={() => setPhoneVisible(true)}>
-                {phoneVisible ? listing.phone : "Show phone number"}
-              </Button>
-            </div>
-          ) : (
-            <div className="mt-4 grid gap-2">
+            ) : (
               <Button className="h-10 rounded-full" onClick={() => setMessageOpen(true)}>
                 {voice.messageLabel}
               </Button>
-              {sentCount > 0 ? (
-                <Button variant="outline" className="h-10 rounded-full" asChild>
-                  <Link href={`/messages?listing=${listing.id}`}>
-                    Your messages ({sentCount})
-                  </Link>
-                </Button>
-              ) : null}
+            )}
+            {sentCount > 0 ? (
+              <Button variant="outline" className="h-10 rounded-full" asChild>
+                <Link href={`/messages?listing=${listing.id}`}>Your messages ({sentCount})</Link>
+              </Button>
+            ) : null}
+            {listing.mine ? null : (
               <Button variant="outline" className="h-10 rounded-full" asChild>
                 <a href={whatsappHref(listing.phone, listing.title)} target="_blank" rel="noreferrer">
                   WhatsApp
                 </a>
               </Button>
-              <Button variant="outline" className="h-10 rounded-full" onClick={() => setPhoneVisible(true)}>
-                {phoneVisible ? listing.phone : "Show phone number"}
-              </Button>
-            </div>
-          )}
-          <p className="mt-4 text-xs leading-5 text-neutral-500">
-            {listing.mine ? "Changes you save stay on the board with the ad." : `${voice.safety} Messages stay with this browser.`}
-          </p>
+            )}
+            <Button variant="outline" className="h-10 rounded-full" onClick={() => setPhoneVisible(true)}>
+              {phoneVisible ? listing.phone : "Show phone number"}
+            </Button>
+          </div>
         </aside>
       </div>
       <div className="fixed inset-x-0 bottom-0 z-30 border-t bg-white p-3 lg:hidden">
@@ -228,9 +217,6 @@ export function ListingDetail({ id }: { id: string }) {
         <DialogContent className="sm:max-w-md">
           <DialogHeader>
             <DialogTitle>Message {listing.sellerName}</DialogTitle>
-            <DialogDescription>
-              {voice.dialogLead} A sample reply is saved with your message on this browser.
-            </DialogDescription>
           </DialogHeader>
           <Textarea
             value={message}
@@ -260,19 +246,12 @@ function PlacePanel({ listing }: { listing: Listing }) {
   const showMap = point.pinned
   const timeZone = listing.timezone ?? (showMap ? resolved.timezone : country?.timezone ?? resolved.timezone)
   const localTime = useClientTime(timeZone)
-  const currency = listing.currency ?? "USD"
-  const languages = country?.languages.map((language) => languageLabel(language.code, language.name)) ?? []
   const links = osmLinks(point.lat, point.lng)
+  if (!localTime && !showMap) return null
 
   return (
     <section className="mt-8">
-      <h2 className="text-sm font-medium text-neutral-950">Place</h2>
-      <dl className="mt-3 grid grid-cols-2 gap-3 text-sm sm:grid-cols-3">
-        <Fact label="Local time" value={localTime ?? timeZone} />
-        <Fact label="Time zone" value={timeZone} />
-        <Fact label="Currency" value={`${currencyLabel(currency)} (${currency})`} />
-        {languages.length > 0 ? <Fact label="Languages" value={languages.join(", ")} /> : null}
-      </dl>
+      {localTime ? <p className="text-sm text-neutral-500">{localTime}</p> : null}
       {showMap ? (
         <div className="mt-4 overflow-hidden rounded-2xl border border-neutral-200">
           <iframe title={`Map of ${listing.city}`} src={links.embed} className="h-56 w-full" loading="lazy" />
