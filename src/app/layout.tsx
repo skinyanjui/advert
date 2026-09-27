@@ -34,7 +34,7 @@ export const metadata: Metadata = {
 export default function RootLayout({ children }: LayoutProps<"/">) {
   return (
     <html lang="en" className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`} suppressHydrationWarning>
-      <body className="flex min-h-full flex-col bg-background font-sans text-foreground">
+      <body className="flex min-h-full flex-col bg-background pb-[calc(env(safe-area-inset-bottom)+9rem)] font-sans text-foreground md:pb-0">
         <script dangerouslySetInnerHTML={{ __html: themeBootScript }} />
         <ThemeSync />
         <MarketplaceProvider>
