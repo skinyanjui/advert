@@ -39,8 +39,8 @@ export function ConversationList({
     <aside className={cn("min-w-0 flex-col border-neutral-200 lg:flex lg:border-r", hidden ? "hidden" : "flex")} aria-label="Conversations">
       <div className="border-b border-neutral-200 p-4">
         <div className="flex items-center justify-between gap-2">
-          <h2 className="text-sm font-semibold text-neutral-950">Conversations</h2>
-          <span className="text-xs text-neutral-500">{threads.length} shown</span>
+          <h2 className="text-sm font-semibold text-neutral-950">Messages</h2>
+          <span className="text-xs text-neutral-500">{sample ? "Sample inbox" : `${threads.length} conversations`}</span>
         </div>
         <div className="relative mt-3">
           <Search className="pointer-events-none absolute top-1/2 left-3 size-4 -translate-y-1/2 text-neutral-400" aria-hidden="true" />
@@ -61,7 +61,7 @@ export function ConversationList({
         </div>
       </div>
       {threads.length ? (
-        <ul className="min-w-0 divide-y divide-neutral-100 lg:max-h-[min(69dvh,47rem)] lg:overflow-y-auto">
+        <ul className="min-w-0 divide-y divide-neutral-100 overflow-y-auto">
           {threads.map((thread) => (
             <ConversationRow key={thread.conversationId} thread={thread} listing={listings.get(thread.listingId)} active={activeId === thread.conversationId} sample={sample} />
           ))}

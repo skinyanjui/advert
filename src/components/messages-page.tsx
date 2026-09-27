@@ -52,9 +52,8 @@ export function MessagesPage() {
 
   if (!ready) {
     return (
-      <div className="mx-auto w-full max-w-7xl px-4 py-8 md:px-6">
-        <h1 className="text-2xl font-semibold tracking-tight">Inbox</h1>
-        <p className="mt-2 text-sm text-neutral-500">Loading your messages…</p>
+      <div className="mx-auto w-full max-w-[1720px] px-4 py-6 md:px-6">
+        <p className="text-sm text-neutral-500">Loading your messages…</p>
       </div>
     )
   }
@@ -79,24 +78,12 @@ export function MessagesPage() {
   }
 
   return (
-    <div className="mx-auto w-full max-w-7xl px-4 py-6 md:px-6 md:py-8">
-      <div>
-        <h1 className="text-2xl font-semibold tracking-tight">Inbox</h1>
-        <p className="mt-1 text-sm text-neutral-500">
-          {showingSamples
-            ? "Example conversations about listings. Your real messages will appear here."
-            : `${threads.length} conversation${threads.length === 1 ? "" : "s"}${unreadTotal ? ` · ${unreadTotal} unread` : ""}`}
-        </p>
-      </div>
-      {showingSamples ? (
-        <p className="mt-4 border-l-2 border-amber-400 pl-3 text-xs text-neutral-600">
-          Sample inbox · These messages are fictional, cannot receive replies, and do not count as notifications.
-        </p>
-      ) : null}
+    <div className="mx-auto w-full max-w-[1720px] px-4 py-3 md:px-6">
+      <h1 className="sr-only">Inbox</h1>
       {missing ? (
-        <p className="mt-4 rounded-lg border border-neutral-200 bg-white px-3 py-2 text-sm text-neutral-600">This conversation is not on this account. Choose one below.</p>
+        <p className="mb-3 rounded-lg border border-neutral-200 bg-white px-3 py-2 text-sm text-neutral-600">This conversation is not on this account. Choose one below.</p>
       ) : null}
-      <div className="mt-4 grid min-w-0 overflow-hidden rounded-xl border border-neutral-200 bg-white lg:min-h-[36rem] lg:grid-cols-[350px_minmax(0,1fr)]">
+      <div className="grid h-[calc(100dvh-14.5rem)] min-h-[26rem] min-w-0 overflow-hidden rounded-xl border border-neutral-200 bg-white md:h-[calc(100dvh-8.5rem)] lg:grid-cols-[360px_minmax(0,1fr)]">
         <ConversationList
           threads={filtered}
           listings={listingsById}

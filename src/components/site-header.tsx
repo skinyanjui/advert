@@ -40,9 +40,10 @@ export function SiteHeader() {
   return (
     <header className="sticky top-0 z-50">
       <div className="border-b border-neutral-200/80 bg-white">
-        <div className="mx-auto flex h-16 max-w-[1720px] items-center gap-1 px-2 md:relative md:h-[72px] md:gap-2 md:px-3">
-          <Logo iconOnly />
-          <div className="relative mx-auto flex min-w-0 flex-1 items-center gap-1 px-1 lg:max-w-xl lg:px-3">
+        <div className="mx-auto flex h-16 max-w-[1720px] items-center gap-1 px-2 md:relative md:h-[72px] md:gap-3 md:px-5 xl:gap-6 xl:px-8">
+          <Logo iconOnly className="xl:hidden" />
+          <Logo className="hidden xl:flex" />
+          <div className="relative mx-auto flex min-w-0 flex-1 items-center gap-1 px-1 md:max-w-[680px] md:gap-2 md:px-0">
             <div className="min-w-0 flex-1">
               <SearchField value={query.q} onChange={(value) => update({ q: value })} />
             </div>
@@ -50,13 +51,13 @@ export function SiteHeader() {
               <CategoryTopNav />
             </div>
           </div>
-          <div className="fixed inset-x-3 bottom-[calc(env(safe-area-inset-bottom)+0.75rem)] z-50 mx-auto flex max-w-lg items-center justify-between rounded-3xl border border-neutral-200 bg-white p-2.5 shadow-lg md:static md:inset-auto md:ml-auto md:max-w-none md:shrink-0 md:gap-2 md:rounded-none md:border-0 md:bg-transparent md:px-4 md:shadow-none">
-            <nav aria-label="Navigation" className="flex w-full items-center justify-between gap-1 md:justify-end md:gap-2">
+          <div className="fixed inset-x-3 bottom-[calc(env(safe-area-inset-bottom)+0.75rem)] z-50 mx-auto flex max-w-lg items-center justify-between rounded-3xl border border-neutral-200 bg-white p-2.5 shadow-lg md:static md:inset-auto md:ml-auto md:max-w-none md:shrink-0 md:rounded-none md:border-0 md:bg-transparent md:p-0 md:shadow-none">
+            <nav aria-label="Navigation" className="flex w-full items-center justify-between gap-1 md:justify-end md:gap-2 lg:gap-3">
               <CountryMenu label={locationLabel} query={query} />
-              <Button asChild className="h-10 rounded-full bg-neutral-950 px-3 text-white hover:bg-neutral-800 md:px-4">
+              <Button asChild className="h-10 rounded-full bg-neutral-950 px-3 text-white hover:bg-neutral-800 md:px-3 xl:px-4">
                 <Link href={postHref} aria-label="Post ad">
                   <Plus />
-                  <span className="hidden 2xl:inline">Post ad</span>
+                  <span className="hidden xl:inline">Post ad</span>
                 </Link>
               </Button>
               <Button asChild variant="outline" size="icon-lg" className="relative rounded-full">
@@ -251,13 +252,13 @@ function CountryMenu({ label, query }: { label: string; query: ListingQuery }) {
   return (
     <HeaderMenu
       label={`Country: ${label}`}
-      summaryClassName="h-10 px-2.5 sm:max-w-48 sm:px-3"
+      summaryClassName="h-10 px-2.5 sm:max-w-48 sm:px-3 lg:max-w-44"
       panelClassName="w-64"
       onOpen={() => setLocationQuery("")}
       summary={
         <>
           <MapPin className="size-4 shrink-0 text-neutral-500" />
-          <span className="hidden max-w-32 truncate sm:inline md:hidden 2xl:inline">{label}</span>
+          <span className="hidden max-w-32 truncate sm:inline md:hidden lg:inline">{label}</span>
           <ChevronDown className="hidden size-4 shrink-0 text-neutral-400 group-open:rotate-180 sm:block" />
         </>
       }
@@ -627,12 +628,13 @@ function filterCountries(query: string) {
 export function HeaderFallback() {
   return (
     <header className="sticky top-0 z-40 border-b border-neutral-200/80 bg-white">
-      <div className="mx-auto flex h-16 max-w-[1720px] items-center gap-1 px-2 md:h-[72px] md:px-3">
-        <Logo iconOnly />
-        <div className="min-w-0 flex-1 px-2 md:mx-auto md:max-w-xl">
+      <div className="mx-auto flex h-16 max-w-[1720px] items-center gap-1 px-2 md:h-[72px] md:gap-3 md:px-5 xl:gap-6 xl:px-8">
+        <Logo iconOnly className="xl:hidden" />
+        <Logo className="hidden xl:flex" />
+        <div className="min-w-0 flex-1 px-2 md:mx-auto md:max-w-[680px] md:px-0">
           <div className="h-11 rounded-full bg-neutral-100" />
         </div>
-        <nav aria-label="Account" className="fixed inset-x-3 bottom-[calc(env(safe-area-inset-bottom)+0.75rem)] z-50 mx-auto flex max-w-lg items-center justify-around rounded-3xl border border-neutral-200 bg-white p-2 shadow-lg md:static md:ml-auto md:max-w-none md:gap-2 md:rounded-none md:border-0 md:bg-transparent md:px-4 md:shadow-none">
+        <nav aria-label="Account" className="fixed inset-x-3 bottom-[calc(env(safe-area-inset-bottom)+0.75rem)] z-50 mx-auto flex max-w-lg items-center justify-around rounded-3xl border border-neutral-200 bg-white p-2 shadow-lg md:static md:ml-auto md:max-w-none md:gap-2 md:rounded-none md:border-0 md:bg-transparent md:p-0 md:shadow-none lg:gap-3">
           <PostLink className={cn(buttonVariants(), "h-10 rounded-full bg-neutral-950 px-3 text-white")} ariaLabel="Post ad">
             Post ad
           </PostLink>

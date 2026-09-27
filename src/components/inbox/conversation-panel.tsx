@@ -27,9 +27,9 @@ export function ConversationPanel({
   onSend: (draft: string) => Promise<boolean>
 }) {
   return (
-    <section className={thread ? "min-w-0" : "hidden min-w-0 lg:block"} aria-label="Selected conversation">
+    <section className={thread ? "min-h-0 min-w-0" : "hidden min-h-0 min-w-0 lg:block"} aria-label="Selected conversation">
       {thread ? (
-        <div className="flex h-full min-w-0 flex-col">
+        <div className="flex h-full min-h-0 min-w-0 flex-col">
           <div className="flex items-center gap-2 border-b border-neutral-200 bg-white px-4 py-3 sm:px-5">
             <Button variant="ghost" size="icon" className="shrink-0 lg:hidden" aria-label="All conversations" onClick={onBack}>
               <ArrowLeft aria-hidden="true" />
@@ -43,7 +43,7 @@ export function ConversationPanel({
           <MessageHistory conversationId={thread.conversationId} messages={thread.messages} sample={sample} />
           {sample ? (
             <div className="border-t border-neutral-200 bg-white px-4 py-4 text-sm text-neutral-600 sm:px-5">
-              Sample conversation · Replies are unavailable. <Link href="/" className="font-medium text-neutral-950 underline underline-offset-2">Browse listings</Link> and choose a live ad to message a seller.
+              Sample messages · Replies unavailable.
             </div>
           ) : (
             <ReplyForm key={thread.conversationId} placeholder={thread.viewerIsSeller ? "Reply to the buyer…" : "Write another message…"} sending={sending} onSend={onSend} />

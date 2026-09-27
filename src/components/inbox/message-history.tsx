@@ -15,7 +15,7 @@ export function MessageHistory({ conversationId, messages, sample }: { conversat
   }, [conversationId, lastId])
 
   return (
-    <ol ref={historyRef} aria-label="Messages about this listing" className="flex min-h-64 max-h-[min(52dvh,38rem)] flex-1 flex-col gap-3 overflow-y-auto bg-neutral-50/60 px-4 py-5 sm:px-5">
+    <ol ref={historyRef} aria-label="Messages about this listing" className="flex min-h-0 flex-1 flex-col gap-3 overflow-y-auto bg-neutral-50/60 px-4 py-5 sm:px-5">
       {messages.map((message) => (
         <MessageBubble key={message.id} role={message.role} fromMe={message.fromMe} body={message.body} sentAt={message.sentAt} sample={sample} />
       ))}
