@@ -1,6 +1,6 @@
 "use client"
 
-import { Bell, ChevronDown, MapPin, MessageCircle, Plus, Search, UserRound } from "lucide-react"
+import { Bell, ChevronDown, Inbox, MapPin, MessageCircle, Plus, RefreshCw, Search, UserRound } from "lucide-react"
 import Link from "next/link"
 import { usePathname, useRouter, useSearchParams } from "next/navigation"
 import { useEffect, useRef, useState, type ReactNode } from "react"
@@ -28,9 +28,8 @@ const summaryClass =
 export function SiteHeader() {
   const pathname = usePathname()
   const { query, update } = useListingQuery()
-  const { savedIds, messages, ready, reloadBoard } = useMarketplace()
+  const { savedIds, messages } = useMarketplace()
   const auth = useAuth()
-  const notifications = recentMessageNotifications(messages)
   const unreadMessages = unreadMessageCount(messages)
   const sellerUnread = unreadMessageCount(messages.filter((item) => item.viewerIsSeller))
   const locationLabel = query.country ? countryName(query.country) : "All Africa"
@@ -70,59 +69,7 @@ export function SiteHeader() {
                   {unreadMessages > 0 ? <UnreadDot /> : null}
                 </Link>
               </Button>
-              <HeaderMenu
-                label={unreadMessages > 0 ? `Notifications, ${unreadMessages} unread` : "Notifications"}
-                summaryClassName="relative size-9 px-0"
-                panelClassName="w-80"
-                onOpen={() => { if (ready) void reloadBoard() }}
-                summary={
-                  <>
-                    <Bell />
-                    {unreadMessages > 0 ? <UnreadDot /> : null}
-                  </>
-                }
-              >
-                <p className="px-2 py-1.5 text-sm font-medium">
-                  Notifications{unreadMessages > 0 ? ` · ${unreadMessages} unread` : ""}
-                </p>
-                <div className="mx-1 mb-1 h-px bg-neutral-200" />
-                {!ready && notifications.length === 0 ? <p className="px-2 py-3 text-xs text-neutral-500">Loading notifications…</p> : null}
-                {ready && notifications.length === 0 ? (
-                  <p className="px-2 py-3 text-xs leading-5 text-neutral-500">
-                    No notifications yet. New messages and replies will appear here.
-                  </p>
-                ) : null}
-                {notifications.map((item) => {
-                  return (
-                    <Link
-                      key={item.id}
-                      href={`/messages?c=${encodeURIComponent(item.conversationId)}`}
-                      role="menuitem"
-                      className="flex h-auto items-start gap-3 rounded-md px-2 py-2 hover:bg-neutral-100"
-                    >
-                      <span
-                        aria-hidden="true"
-                        className={cn("mt-1 size-2 shrink-0 rounded-full", item.read ? "bg-neutral-300" : "bg-neutral-900")}
-                      />
-                      <span className="min-w-0 flex-1 text-left">
-                        <span className="sr-only">{item.read ? "Read: " : "Unread: "}</span>
-                        <span className={cn("block text-sm", item.read ? "font-normal text-neutral-500" : "font-medium")}>
-                          {item.viewerIsSeller ? "Inquiry" : "Reply"} about {item.listingTitle}
-                        </span>
-                        <span className="line-clamp-2 text-xs text-neutral-500">{item.body}</span>
-                      </span>
-                      <time dateTime={item.sentAt} className="shrink-0 text-[11px] text-neutral-500">
-                        {new Date(item.sentAt).toLocaleDateString("en-US", { month: "short", day: "numeric", timeZone: "UTC" })}
-                      </time>
-                    </Link>
-                  )
-                })}
-                {ready && notifications.length > 0 ? (
-                  <MenuLink href="/messages" className="mt-1 border-t border-neutral-200 pt-2 text-neutral-600">
-                    View inbox
-                  </MenuLink>
-                ) : null}
-              </HeaderMenu>
+              <NotificationsMenu />
               <HeaderMenu
                 label="Profile"
                 summaryClassName="relative size-9 px-0"
@@ -166,6 +113,116 @@ export function SiteHeader() {
         </div>
       </div>
     </header>
+  )
+}
+
+function NotificationsMenu() {
+  const { messages, ready, reloadBoard } = useMarketplace()
+  const [view, setView] = useState<"all" | "unread">("all")
+  const unread = unreadMessageCount(messages)
+  const notifications = recentMessageNotifications(messages, 8)
+  const visible = view === "unread" ? notifications.filter((item) => !item.read) : notifications
+
+  return (
+    <HeaderMenu
+      label={unread > 0 ? `Notifications, ${unread} unread` : "Notifications"}
+      summaryClassName="relative size-9 px-0"
+      panelClassName="w-[min(23rem,calc(100vw-1rem))] !p-0"
+      panelRole="region"
+      onOpen={() => { if (ready) void reloadBoard() }}
+      summary={<><Bell />{unread > 0 ? <UnreadDot /> : null}</>}
+    >
+      <div className="flex items-center justify-between gap-3 border-b border-neutral-200 px-4 py-3">
+        <div className="min-w-0">
+          <h2 className="text-base font-semibold text-neutral-950">Notifications</h2>
+          <p className="text-xs text-neutral-500" aria-live="polite">
+            {unread > 0 ? `${unread} unread ${unread === 1 ? "message" : "messages"}` : "Your recent message activity"}
+          </p>
+        </div>
+        <button
+          type="button"
+          aria-label="Refresh notifications"
+          title="Refresh notifications"
+          disabled={!ready}
+          onClick={() => void reloadBoard()}
+          className="flex size-9 shrink-0 items-center justify-center rounded-full border border-neutral-200 text-neutral-600 hover:bg-neutral-100 disabled:opacity-50"
+        >
+          <RefreshCw className={cn("size-4", !ready && "animate-spin")} aria-hidden="true" />
+        </button>
+      </div>
+      <div className="flex gap-1 border-b border-neutral-200 px-3 py-2" aria-label="Filter notifications">
+        {(["all", "unread"] as const).map((option) => (
+          <button
+            key={option}
+            type="button"
+            aria-pressed={view === option}
+            onClick={() => setView(option)}
+            className={cn(
+              "rounded-full px-3 py-1.5 text-xs font-medium transition-colors",
+              view === option ? "bg-neutral-950 text-white" : "text-neutral-600 hover:bg-neutral-100",
+            )}
+          >
+            {option === "all" ? "All" : `Unread${unread ? ` ${unread}` : ""}`}
+          </button>
+        ))}
+      </div>
+      <div className="max-h-[min(21rem,calc(100dvh-16rem))] min-h-40 overflow-y-auto p-2">
+        {!ready && notifications.length === 0 ? (
+          <p role="status" className="px-3 py-10 text-center text-sm text-neutral-500">Loading notifications…</p>
+        ) : null}
+        {ready && visible.length === 0 ? (
+          <div className="flex min-h-40 flex-col items-center justify-center px-5 py-7 text-center">
+            <span className="flex size-10 items-center justify-center rounded-full bg-neutral-100 text-neutral-600">
+              <Inbox className="size-5" aria-hidden="true" />
+            </span>
+            <p className="mt-3 text-sm font-medium text-neutral-950">
+              {view === "unread" ? "You're all caught up" : "Nothing here yet"}
+            </p>
+            <p className="mt-1 max-w-56 text-xs leading-5 text-neutral-500">
+              {view === "unread" ? "New replies and inquiries will appear here." : "Messages from buyers and sellers will appear here."}
+            </p>
+          </div>
+        ) : null}
+        {visible.length > 0 ? (
+          <ul className="space-y-0.5">
+            {visible.map((item) => (
+              <li key={item.id}>
+                <Link
+                  href={`/messages?c=${encodeURIComponent(item.conversationId)}`}
+                  className={cn(
+                    "flex items-start gap-3 rounded-xl px-3 py-3 outline-none hover:bg-neutral-100 focus-visible:ring-2 focus-visible:ring-neutral-950",
+                    !item.read && "bg-neutral-50",
+                  )}
+                >
+                  <span className="mt-0.5 flex size-9 shrink-0 items-center justify-center rounded-full bg-white ring-1 ring-neutral-200">
+                    <MessageCircle className="size-4 text-neutral-700" aria-hidden="true" />
+                  </span>
+                  <span className="min-w-0 flex-1">
+                    <span className="sr-only">{item.read ? "Read: " : "Unread: "}</span>
+                    <span className="flex items-start justify-between gap-2">
+                      <span className={cn("min-w-0 truncate text-sm", item.read ? "text-neutral-700" : "font-semibold text-neutral-950")}>
+                        {item.viewerIsSeller ? "New inquiry" : "Seller reply"}
+                      </span>
+                      {!item.read ? <span className="mt-1 size-2 shrink-0 rounded-full bg-neutral-950" aria-hidden="true" /> : null}
+                    </span>
+                    <span className="block truncate text-xs font-medium text-neutral-600">{item.listingTitle}</span>
+                    <span className="mt-1 line-clamp-2 text-xs leading-5 text-neutral-500">{item.body}</span>
+                    <time dateTime={item.sentAt} className="mt-1 block text-[11px] text-neutral-400">
+                      {new Date(item.sentAt).toLocaleDateString("en-US", { month: "short", day: "numeric", timeZone: "UTC" })}
+                    </time>
+                  </span>
+                </Link>
+              </li>
+            ))}
+          </ul>
+        ) : null}
+      </div>
+      <div className="border-t border-neutral-200 p-2">
+        <Link href="/messages" className="flex h-9 items-center justify-center rounded-full text-xs font-medium text-neutral-700 hover:bg-neutral-100">
+          Open inbox
+        </Link>
+      </div>
+    </HeaderMenu>
   )
 }
 
@@ -357,6 +414,7 @@ function HeaderMenu({
   className,
   summaryClassName,
   panelClassName,
+  panelRole = "menu",
   onOpen,
 }: {
   label: string
@@ -365,6 +423,7 @@ function HeaderMenu({
   className?: string
   summaryClassName?: string
   panelClassName?: string
+  panelRole?: "menu" | "region"
   onOpen?: () => void
 }) {
   const detailsRef = useRef<HTMLDetailsElement>(null)
@@ -423,7 +482,7 @@ function HeaderMenu({
       </summary>
       <div
         data-header-panel
-        role="menu"
+        role={panelRole}
         aria-label={label}
         className={cn(
           "absolute top-full right-0 z-[80] mt-1.5 max-h-[min(24rem,calc(100dvh-5rem))] max-w-[calc(100vw-1rem)] overflow-y-auto rounded-lg bg-white p-1 text-sm shadow-md ring-1 ring-neutral-200",
