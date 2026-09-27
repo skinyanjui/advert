@@ -1,10 +1,10 @@
 "use client"
 
-import { Clock, Heart, MapPin } from "lucide-react"
+import { ArrowRight, Heart, MapPin } from "lucide-react"
 import Image from "next/image"
 import Link from "next/link"
 
-import { formatDistance, formatPlace, formatPosted, formatPrice, hoursAgoOf } from "@/lib/format"
+import { formatDistance, formatPlace, formatPrice } from "@/lib/format"
 import { isListingExpired } from "@/lib/expiry"
 import { useMarketplace } from "@/lib/marketplace"
 import { categoryName, type Listing } from "@/lib/types"
@@ -25,7 +25,6 @@ export function ListingCard({
 }) {
   const { isSaved, toggleSaved } = useMarketplace()
   const saved = isSaved(listing.id)
-  const posted = formatPosted(hoursAgoOf(listing))
   const place = formatPlace(listing)
   const away = distanceKm === undefined ? undefined : formatDistance(distanceKm)
   const body = (
@@ -78,10 +77,11 @@ export function ListingCard({
         </p>
         <div className="grid grid-cols-[minmax(0,1fr)_auto] items-center gap-1.5 text-[11px] leading-none text-neutral-500">
           <span className="truncate">{categoryName(listing.category)}</span>
-          <span className="flex items-center gap-1">
-            <Clock className="size-3 shrink-0" aria-hidden="true" />
-            <span className="whitespace-nowrap">{posted}</span>
-          </span>
+          {linked ? (
+            <span className="inline-flex items-center gap-1 font-medium text-neutral-950">
+              View <ArrowRight className="size-3" aria-hidden="true" />
+            </span>
+          ) : null}
         </div>
       </div>
     </>
