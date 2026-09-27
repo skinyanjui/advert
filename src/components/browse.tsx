@@ -1,11 +1,9 @@
 "use client"
 
-import { SlidersHorizontal } from "lucide-react"
 import Link from "next/link"
-import { useMemo, useState } from "react"
+import { useMemo } from "react"
 
 import { BoardCitySearch, CityMap } from "@/components/board-place"
-import { CategoryNav } from "@/components/category-nav"
 import { ListingCard } from "@/components/listing-card"
 import { Button } from "@/components/ui/button"
 import {
@@ -15,13 +13,6 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select"
-import {
-  Sheet,
-  SheetContent,
-  SheetHeader,
-  SheetTitle,
-  SheetTrigger,
-} from "@/components/ui/sheet"
 import { postAdHref } from "@/lib/active-place"
 import { matchesQuery, sortListings } from "@/lib/board"
 import { distanceKm, listingPoint } from "@/lib/distance"
@@ -31,20 +22,17 @@ import { resolvePlace } from "@/lib/cities"
 import { useMarketplace } from "@/lib/marketplace"
 import { countryName, fold, getCountry } from "@/lib/countries"
 import {
-  categories,
   isSortId,
   sorts,
-  type CategoryId,
   type Listing,
 } from "@/lib/types"
-import { categoryPlan, findSubcategory } from "@/lib/posting"
+import { findSubcategory } from "@/lib/posting"
 import { boardSearch, useListingQuery } from "@/lib/use-listing-query"
 
 export function Browse() {
   const { listings } = useMarketplace()
   const { query, update, clear } = useListingQuery()
   const home = useHomePlace()
-  const [sheetOpen, setSheetOpen] = useState(false)
 
   const origin = useMemo(() => homeOrigin(home, query.country), [home, query.country])
 
@@ -77,26 +65,6 @@ export function Browse() {
     return inCountry.filter((listing) => fold(listing.city) === needle)
   }, [inCountry, query.city])
 
-  const counts = useMemo(() => {
-    const next = Object.fromEntries(categories.map((category) => [category.id, 0])) as Record<
-      CategoryId,
-      number
-    >
-    for (const listing of inCity) next[listing.category] += 1
-    return next
-  }, [inCity])
-
-  const types = useMemo(() => {
-    if (!query.category) return []
-    const pool = inCity.filter((listing) => listing.category === query.category)
-    const plan = categoryPlan(query.category)
-    if (!plan) return []
-    return plan.subcategories.flatMap((subcategory) => {
-      const count = pool.filter((listing) => listing.subcategory === subcategory.id).length
-      return count > 0 ? [{ id: subcategory.id, name: subcategory.name, count }] : []
-    })
-  }, [inCity, query.category])
-
   const visible = useMemo(() => {
     const inCategory = query.category
       ? inCity.filter((listing) => listing.category === query.category)
@@ -117,8 +85,6 @@ export function Browse() {
       : countryName(query.country)
     : "All Africa"
   const preserve = boardSearch(query)
-  const hrefForCategory = (category?: CategoryId) => listingHref(category, undefined, query)
-  const hrefForType = (type?: string) => listingHref(query.category, type, query)
   const closestFirst =
     query.sort === "relevant" &&
     !query.q &&
@@ -128,34 +94,9 @@ export function Browse() {
     (!home.city || !query.city || fold(query.city) !== fold(home.city))
   return (
     <div className="mx-auto w-full max-w-[1720px]">
-      <section className="min-w-0 px-4 py-4 pb-16 md:py-5 md:pr-6 md:pl-[calc(var(--sidebar-width)+1.5rem)]">
+      <section className="min-w-0 px-4 py-4 pb-16 md:px-6 md:py-5">
         <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
           <div className="flex items-center gap-2">
-            <Sheet open={sheetOpen} onOpenChange={setSheetOpen}>
-              <SheetTrigger asChild>
-                <Button variant="outline" className="h-9 rounded-full md:hidden">
-                  <SlidersHorizontal />
-                  Categories
-                </Button>
-              </SheetTrigger>
-              <SheetContent side="left" className="w-[300px] sm:max-w-xs">
-                <SheetHeader>
-                  <SheetTitle>Categories</SheetTitle>
-                </SheetHeader>
-                <div className="px-4 pb-6">
-                  <CategoryNav
-                    active={query.category}
-                    counts={counts}
-                    total={inCity.length}
-                    types={types}
-                    activeType={query.type}
-                    hrefForCategory={hrefForCategory}
-                    hrefForType={hrefForType}
-                    onNavigate={() => setSheetOpen(false)}
-                  />
-                </div>
-              </SheetContent>
-            </Sheet>
             <div>
               <p className="text-sm text-neutral-500">
                 <span className="font-medium text-neutral-900">{visible.length}</span>{" "}
@@ -321,22 +262,6 @@ function EmptyResults({
   )
 }
 
-function listingHref(
-  category: CategoryId | undefined,
-  type: string | undefined,
-  query: { q: string; country?: string; city?: string; sort: string },
-): string {
-  const params = new URLSearchParams()
-  if (query.q) params.set("q", query.q)
-  if (query.country) params.set("country", query.country)
-  if (query.city) params.set("city", query.city)
-  if (type) params.set("type", type)
-  if (query.sort !== "relevant") params.set("sort", query.sort)
-  const qs = params.toString()
-  const path = category ? `/${category}` : "/"
-  return qs ? `${path}?${qs}` : path
-}
-
 function homeOrigin(
   home: { country: string; city?: string } | null,
   boardCountry?: string,
@@ -363,4 +288,3 @@ function citiesIn(listings: Listing[]): { name: string; count: number }[] {
   }
   return [...map.values()].sort((a, b) => b.count - a.count || a.name.localeCompare(b.name))
 }
-

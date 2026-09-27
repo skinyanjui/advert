@@ -11,25 +11,22 @@ import { categoryPlan } from "@/lib/posting"
 import { categories, isSortId, type CategoryId, type Listing } from "@/lib/types"
 import { categoryFromPath, type ListingQuery } from "@/lib/use-listing-query"
 
-const sidebarClass =
-  "fixed top-[73px] bottom-0 left-[max(0px,calc((100%-1720px)/2))] z-30 hidden w-(--sidebar-width) overflow-y-auto border-r border-neutral-200 bg-white md:block"
-
-export function CategorySidebar() {
+export function CategoryTopNav() {
   const pathname = usePathname()
   const active = pathname === "/" ? undefined : categoryFromPath(pathname)
 
   return (
-    <aside id="category-sidebar" className={sidebarClass}>
-      <div className="px-3 py-4">
-        <Suspense fallback={<SidebarFallback active={active} />}>
-          <CategorySidebarNav />
+    <div className="border-b border-neutral-200/80 bg-white">
+      <div className="mx-auto max-w-[1720px]">
+        <Suspense fallback={<TopNavFallback active={active} />}>
+          <CategoryTopNavLinks />
         </Suspense>
       </div>
-    </aside>
+    </div>
   )
 }
 
-function CategorySidebarNav() {
+function CategoryTopNavLinks() {
   const pathname = usePathname()
   const searchParams = useSearchParams()
   const { listings } = useMarketplace()
@@ -57,7 +54,7 @@ function CategorySidebarNav() {
   )
 }
 
-function SidebarFallback({ active }: { active?: CategoryId }) {
+function TopNavFallback({ active }: { active?: CategoryId }) {
   const counts = Object.fromEntries(categories.map((category) => [category.id, 0])) as Record<
     CategoryId,
     number

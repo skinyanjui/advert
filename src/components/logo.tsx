@@ -7,7 +7,7 @@ export function Logo({ className }: { className?: string }) {
     <Link
       href="/"
       className={cn(
-        "flex min-w-0 max-md:flex-1 items-center gap-2 self-stretch px-4 text-neutral-950 md:w-(--sidebar-width) md:shrink-0 md:pr-3 md:pl-4",
+        "flex min-w-0 h-14 items-center gap-2 self-stretch px-4 text-neutral-950 md:h-auto md:shrink-0 md:pr-3 md:pl-4",
         className,
       )}
     >

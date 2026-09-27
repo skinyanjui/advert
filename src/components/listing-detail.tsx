@@ -183,7 +183,7 @@ export function ListingDetail({ id }: { id: string }) {
   }
 
   return (
-    <div className="mx-auto w-full max-w-[1720px] px-4 pt-6 pb-24 md:py-8 md:pr-6 md:pl-[calc(var(--sidebar-width)+1.5rem)] lg:pb-8">
+    <div className="mx-auto w-full max-w-[1720px] px-4 pt-6 pb-24 md:px-6 md:py-8 lg:pb-8">
       <div className="mx-auto w-full max-w-[1100px]">
       <Link
         href={backHref}
@@ -332,7 +332,7 @@ export function ListingDetail({ id }: { id: string }) {
             </section>
           ) : null}
         </div>
-        <aside className="h-fit rounded-2xl border border-neutral-200 bg-white p-4 lg:sticky lg:top-[85px]">
+        <aside className="h-fit rounded-2xl border border-neutral-200 bg-white p-4 lg:sticky lg:top-[145px]">
           <div className="flex items-center gap-3">
             <span className="flex size-11 items-center justify-center rounded-full bg-neutral-950 text-sm font-medium text-white">
               {initials(listing.sellerName)}
@@ -419,7 +419,7 @@ export function ListingDetail({ id }: { id: string }) {
           ) : null}
         </aside>
       </div>
-      <div className="fixed inset-x-0 bottom-0 z-20 border-t bg-white p-3 md:left-[max(0px,calc((100%-1720px)/2))] md:pl-(--sidebar-width) lg:hidden">
+      <div className="fixed inset-x-0 bottom-[calc(env(safe-area-inset-bottom)+5.25rem)] z-20 border-t bg-white p-3 md:bottom-0 lg:hidden">
         <div className="mx-auto flex max-w-[1100px] items-center justify-between gap-3">
           <div className="min-w-0">
             <p className="truncate text-sm font-semibold">{formatPrice(listing)}</p>
@@ -578,7 +578,7 @@ function Fact({ label, value }: { label: string; value: string }) {
 
 function MissingListing() {
   return (
-    <div className="mx-auto max-w-lg px-4 py-24 text-center md:pl-[calc(var(--sidebar-width)+1.5rem)]">
+    <div className="mx-auto max-w-lg px-4 py-24 text-center">
       <h1 className="text-xl font-semibold tracking-tight">This listing is gone</h1>
       <p className="mt-2 text-sm text-neutral-500">
         It may have been removed, or it only existed in another browser.
@@ -592,7 +592,7 @@ function MissingListing() {
 
 function DetailSkeleton() {
   return (
-    <div className="mx-auto w-full max-w-[1720px] px-4 py-8 md:pr-6 md:pl-[calc(var(--sidebar-width)+1.5rem)]">
+    <div className="mx-auto w-full max-w-[1720px] px-4 py-8 md:px-6">
       <div className="h-4 w-28 rounded bg-neutral-200" />
       <div className="mt-4 aspect-[16/10] rounded-2xl bg-neutral-200" />
       <div className="mt-5 h-7 w-48 rounded bg-neutral-200" />

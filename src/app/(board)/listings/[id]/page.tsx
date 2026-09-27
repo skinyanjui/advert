@@ -12,7 +12,7 @@ export default async function ListingPage({ params }: { params: Promise<{ id: st
   return (
     <Suspense
       fallback={
-        <div className="mx-auto w-full max-w-[1720px] px-4 py-8 md:pr-6 md:pl-[calc(var(--sidebar-width)+1.5rem)]">
+        <div className="mx-auto w-full max-w-[1720px] px-4 py-8 md:px-6">
           <div className="h-4 w-28 rounded bg-neutral-200" />
           <div className="mt-4 aspect-[16/10] max-w-[1100px] rounded-2xl bg-neutral-200" />
         </div>

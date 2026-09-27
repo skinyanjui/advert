@@ -7,6 +7,7 @@ import { useEffect, useRef, useState, type ReactNode } from "react"
 
 import { postAdHref } from "@/lib/active-place"
 import { Logo } from "@/components/logo"
+import { CategoryTopNav } from "@/components/category-top-nav"
 import { PostLink } from "@/components/post-link"
 import { ThemeChoices } from "@/components/theme-choices"
 import { useRememberedPlace } from "@/lib/use-remembered-place"
@@ -61,20 +62,18 @@ export function SiteHeader() {
   const postHref = postAdHref(query.country ? { country: query.country, city: query.city } : remembered)
   const profileLabel = auth.signedIn ? auth.email ?? "Signed in" : "Guest on this browser"
   const profileDetail = auth.signedIn ? "Ads stay with your account" : "Sign in to keep ads across devices"
+  const showCategories = pathname === "/" || categoryFromPath(pathname) !== undefined || /^\/listings\/[^/]+$/.test(pathname)
 
   return (
     <header className="sticky top-0 z-50">
       <div className="border-b border-neutral-200/80 bg-white">
-        <div className="mx-auto flex h-14 max-w-[1720px] items-center md:h-auto">
+        <div className="mx-auto flex max-w-[1720px] flex-col md:h-[72px] md:flex-row md:items-center">
           <Logo />
-          <div className="fixed inset-x-3 bottom-[calc(env(safe-area-inset-bottom)+0.75rem)] z-50 mx-auto flex max-w-lg flex-col gap-2 rounded-3xl border border-neutral-200 bg-white p-2.5 shadow-lg md:static md:inset-auto md:ml-0 md:max-w-none md:min-w-0 md:flex-1 md:flex-row md:items-center md:gap-3 md:rounded-none md:border-0 md:bg-transparent md:px-6 md:py-3.5 md:shadow-none">
-            <div className="hidden min-w-0 flex-1 md:block">
-              <SearchField value={query.q} onChange={(value) => update({ q: value })} />
-            </div>
-            <div className="md:hidden">
-              <SearchField value={query.q} onChange={(value) => update({ q: value })} />
-            </div>
-            <nav aria-label="Navigation" className="flex items-center justify-between gap-1 md:ml-auto md:justify-end md:gap-2">
+          <div className="w-full px-4 pb-3 md:mx-auto md:min-w-0 md:max-w-xl md:flex-1 md:px-3 md:py-0">
+            <SearchField value={query.q} onChange={(value) => update({ q: value })} />
+          </div>
+          <div className="fixed inset-x-3 bottom-[calc(env(safe-area-inset-bottom)+0.75rem)] z-50 mx-auto flex max-w-lg items-center justify-between rounded-3xl border border-neutral-200 bg-white p-2.5 shadow-lg md:static md:inset-auto md:ml-0 md:max-w-none md:shrink-0 md:gap-2 md:rounded-none md:border-0 md:bg-transparent md:px-4 md:shadow-none">
+            <nav aria-label="Navigation" className="flex w-full items-center justify-between gap-1 md:justify-end md:gap-2">
               <CountryMenu label={locationLabel} query={query} />
               <Button asChild className="h-10 rounded-full bg-neutral-950 px-3 text-white hover:bg-neutral-800 md:px-4">
                 <Link href={postHref} aria-label="Post ad">
@@ -171,6 +170,7 @@ export function SiteHeader() {
           </div>
         </div>
       </div>
+      {showCategories ? <CategoryTopNav /> : null}
     </header>
   )
 }
@@ -588,8 +588,11 @@ function filterCountries(query: string) {
 export function HeaderFallback() {
   return (
     <header className="sticky top-0 z-40 border-b border-neutral-200/80 bg-white">
-      <div className="mx-auto flex h-14 max-w-[1720px] items-center md:h-[72px]">
+      <div className="mx-auto flex max-w-[1720px] flex-col md:h-[72px] md:flex-row md:items-center">
         <Logo />
+        <div className="w-full px-4 pb-3 md:mx-auto md:max-w-xl md:flex-1 md:pb-0">
+          <div className="h-11 rounded-full bg-neutral-100" />
+        </div>
         <nav aria-label="Account" className="fixed inset-x-3 bottom-[calc(env(safe-area-inset-bottom)+0.75rem)] z-50 mx-auto flex max-w-lg items-center justify-around rounded-3xl border border-neutral-200 bg-white p-2 shadow-lg md:static md:ml-auto md:max-w-none md:gap-2 md:rounded-none md:border-0 md:bg-transparent md:px-4 md:shadow-none">
           <PostLink className={cn(buttonVariants(), "h-10 rounded-full bg-neutral-950 px-3 text-white")} ariaLabel="Post ad">
             Post ad
