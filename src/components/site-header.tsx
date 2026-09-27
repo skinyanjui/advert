@@ -67,18 +67,18 @@ export function SiteHeader() {
   return (
     <header className="sticky top-0 z-50">
       <div className="border-b border-neutral-200/80 bg-white">
-        <div className="mx-auto flex max-w-[1720px] flex-col md:h-[72px] md:flex-row md:items-center">
+        <div className="mx-auto flex max-w-[1720px] flex-col md:relative md:h-[72px] md:flex-row md:items-center">
           <Logo />
-          <div className="w-full px-4 pb-3 md:mx-auto md:min-w-0 md:max-w-xl md:flex-1 md:px-3 md:py-0">
+          <div className="w-full px-4 pb-3 md:absolute md:left-1/2 md:w-[calc(100%-35rem)] md:max-w-xl md:-translate-x-1/2 md:px-3 md:py-0">
             <SearchField value={query.q} onChange={(value) => update({ q: value })} />
           </div>
-          <div className="fixed inset-x-3 bottom-[calc(env(safe-area-inset-bottom)+0.75rem)] z-50 mx-auto flex max-w-lg items-center justify-between rounded-3xl border border-neutral-200 bg-white p-2.5 shadow-lg md:static md:inset-auto md:ml-0 md:max-w-none md:shrink-0 md:gap-2 md:rounded-none md:border-0 md:bg-transparent md:px-4 md:shadow-none">
+          <div className="fixed inset-x-3 bottom-[calc(env(safe-area-inset-bottom)+0.75rem)] z-50 mx-auto flex max-w-lg items-center justify-between rounded-3xl border border-neutral-200 bg-white p-2.5 shadow-lg md:static md:inset-auto md:ml-auto md:max-w-none md:shrink-0 md:gap-2 md:rounded-none md:border-0 md:bg-transparent md:px-4 md:shadow-none">
             <nav aria-label="Navigation" className="flex w-full items-center justify-between gap-1 md:justify-end md:gap-2">
               <CountryMenu label={locationLabel} query={query} />
               <Button asChild className="h-10 rounded-full bg-neutral-950 px-3 text-white hover:bg-neutral-800 md:px-4">
                 <Link href={postHref} aria-label="Post ad">
                   <Plus />
-                  <span className="hidden md:inline">Post ad</span>
+                  <span className="hidden 2xl:inline">Post ad</span>
                 </Link>
               </Button>
               <Button asChild variant="outline" size="icon-lg" className="relative rounded-full">
@@ -206,7 +206,7 @@ function CountryMenu({ label, query }: { label: string; query: ListingQuery }) {
       summary={
         <>
           <MapPin className="size-4 shrink-0 text-neutral-500" />
-          <span className="hidden max-w-32 truncate sm:inline">{label}</span>
+          <span className="hidden max-w-32 truncate sm:inline md:hidden 2xl:inline">{label}</span>
           <ChevronDown className="hidden size-4 shrink-0 text-neutral-400 group-open:rotate-180 sm:block" />
         </>
       }
