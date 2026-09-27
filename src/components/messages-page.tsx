@@ -30,8 +30,8 @@ export function MessagesPage() {
   const requestedConversation = params.get("c")
   const requestedListing = params.get("listing")
   const selected =
-    filtered.find((thread) => thread.conversationId === requestedConversation) ??
-    filtered.find((thread) => thread.listingId === requestedListing) ??
+    threads.find((thread) => thread.conversationId === requestedConversation) ??
+    threads.find((thread) => thread.listingId === requestedListing) ??
     null
   const wide = useWide()
   const missing = Boolean(requestedConversation || requestedListing) && !threads.some((thread) =>
@@ -216,15 +216,18 @@ function ReplyForm({
   onSend: (draft: string) => Promise<boolean>
 }) {
   const [draft, setDraft] = useState("")
+  const submitting = useRef(false)
   return (
     <form
       className="grid gap-2 border-t border-neutral-200 px-4 py-3"
       onSubmit={(event) => {
         event.preventDefault()
-        if (sending) return
-        void onSend(draft).then((ok) => {
-          if (ok) setDraft("")
-        })
+        if (sending || submitting.current) return
+        submitting.current = true
+        void onSend(draft)
+          .then((ok) => { if (ok) setDraft("") })
+          .catch(() => toast.error("Could not send the message."))
+          .finally(() => { submitting.current = false })
       }}
     >
       <Textarea
