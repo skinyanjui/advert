@@ -35,7 +35,7 @@ export function ListingCard({
           src={listing.image}
           alt=""
           fill
-          sizes="(max-width: 640px) 100vw, 18vw"
+          sizes="(max-width: 640px) 50vw, (max-width: 1280px) 33vw, 20vw"
           unoptimized={listing.image.startsWith("data:")}
           className="object-cover transition duration-300 group-hover:scale-[1.03]"
         />
