@@ -66,10 +66,14 @@ export function SiteHeader() {
     <header className="sticky top-0 z-50">
       <div className="border-b border-neutral-200/80 bg-white">
         <div className="mx-auto flex h-16 max-w-[1720px] items-center gap-1 px-2 md:relative md:h-[72px] md:gap-2 md:px-3">
-          <CategoryTopNav />
           <Logo iconOnly />
-          <div className="min-w-0 flex-1 px-1 md:absolute md:left-1/2 md:w-[calc(100%-35rem)] md:max-w-xl md:-translate-x-1/2 md:px-3">
-            <SearchField value={query.q} onChange={(value) => update({ q: value })} />
+          <div className="relative flex min-w-0 flex-1 items-center gap-1 px-1 lg:absolute lg:left-1/2 lg:w-[calc(100%-40rem)] lg:max-w-xl lg:-translate-x-1/2 lg:px-3">
+            <div className="min-w-0 flex-1">
+              <SearchField value={query.q} onChange={(value) => update({ q: value })} />
+            </div>
+            <div className="shrink-0 lg:absolute lg:top-1/2 lg:left-full lg:ml-1 lg:-translate-y-1/2">
+              <CategoryTopNav />
+            </div>
           </div>
           <div className="fixed inset-x-3 bottom-[calc(env(safe-area-inset-bottom)+0.75rem)] z-50 mx-auto flex max-w-lg items-center justify-between rounded-3xl border border-neutral-200 bg-white p-2.5 shadow-lg md:static md:inset-auto md:ml-auto md:max-w-none md:shrink-0 md:gap-2 md:rounded-none md:border-0 md:bg-transparent md:px-4 md:shadow-none">
             <nav aria-label="Navigation" className="flex w-full items-center justify-between gap-1 md:justify-end md:gap-2">
