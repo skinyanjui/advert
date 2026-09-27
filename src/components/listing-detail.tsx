@@ -4,7 +4,7 @@ import { ArrowLeft, ChevronLeft, ChevronRight, Clock, Flag, Heart, MapPin, Share
 import Image from "next/image"
 import Link from "next/link"
 import { useRouter, useSearchParams } from "next/navigation"
-import { useEffect, useState } from "react"
+import { useEffect, useRef, useState } from "react"
 import { toast } from "sonner"
 
 import { ListingCard } from "@/components/listing-card"
@@ -26,6 +26,7 @@ import {
 } from "@/components/ui/select"
 import { Textarea } from "@/components/ui/textarea"
 import { relatedListings } from "@/lib/board"
+import { seedListings } from "@/lib/catalog"
 import { resolvePlace } from "@/lib/cities"
 import { getCountry } from "@/lib/countries"
 import {
@@ -38,6 +39,7 @@ import {
 } from "@/lib/format"
 import { osmLinks } from "@/lib/map"
 import { useMarketplace } from "@/lib/marketplace"
+import { messageError } from "@/lib/messages"
 import { daysUntilExpiry, isListingExpired, isListingExpiringSoon } from "@/lib/expiry"
 import { listingFacts, listingVoice } from "@/lib/posting"
 import { listingImages } from "@/lib/photos"
@@ -45,6 +47,8 @@ import { reportReasons } from "@/lib/reports"
 import { useClientTime } from "@/lib/use-client-time"
 import { categoryName, type Listing } from "@/lib/types"
 import { cn } from "@/lib/utils"
+
+const sampleIds = new Set(seedListings.map((item) => item.id))
 
 export function ListingDetail({ id }: { id: string }) {
   const searchParams = useSearchParams()
@@ -55,6 +59,8 @@ export function ListingDetail({ id }: { id: string }) {
   const [phoneVisible, setPhoneVisible] = useState(false)
   const [messageOpen, setMessageOpen] = useState(false)
   const [message, setMessage] = useState("")
+  const [messageSending, setMessageSending] = useState(false)
+  const messageSendingRef = useRef(false)
   const [reportOpen, setReportOpen] = useState(false)
   const [reportReason, setReportReason] = useState("")
   const [reportNote, setReportNote] = useState("")
@@ -80,6 +86,7 @@ export function ListingDetail({ id }: { id: string }) {
   }
 
   const ad = listing
+  const isSample = sampleIds.has(ad.id)
   const saved = isSaved(ad.id)
   const listingMessages = messages.filter((item) => item.listingId === ad.id)
   const threadCount = new Set(listingMessages.map((item) => item.conversationId)).size
@@ -90,8 +97,8 @@ export function ListingDetail({ id }: { id: string }) {
   const related = relatedListings(listings, ad)
   const backSearch = keptSearch(searchParams, ad.subcategory)
   const backHref = backSearch ? `/${ad.category}?${backSearch}` : `/${ad.category}`
-  const contactOpen = !ad.sold && !ad.mine && !isListingExpired(ad.expiresAt)
   const expired = isListingExpired(ad.expiresAt)
+  const contactOpen = !isSample && !ad.sold && !ad.mine && !expired
   const expiringSoon = isListingExpiringSoon(ad.expiresAt)
   const daysLeft = daysUntilExpiry(ad.expiresAt)
 
@@ -105,9 +112,17 @@ export function ListingDetail({ id }: { id: string }) {
     }
   }
 
-  const submitMessage = () => {
-    void (async () => {
-      const result = await sendMessage(ad.id, message)
+  async function submitMessage() {
+    if (messageSendingRef.current || !contactOpen) return
+    const validationError = messageError(message)
+    if (validationError) {
+      toast.error(validationError)
+      return
+    }
+    messageSendingRef.current = true
+    setMessageSending(true)
+    try {
+      const result = await sendMessage(ad.id, message.trim())
       if (!result.ok) {
         toast.error(result.reason)
         return
@@ -115,7 +130,12 @@ export function ListingDetail({ id }: { id: string }) {
       setMessageOpen(false)
       setMessage("")
       toast.success(`Message sent to ${ad.sellerName}`)
-    })()
+    } catch {
+      toast.error("Could not send your message. Please try again.")
+    } finally {
+      messageSendingRef.current = false
+      setMessageSending(false)
+    }
   }
 
   async function onSold() {
@@ -198,7 +218,7 @@ export function ListingDetail({ id }: { id: string }) {
             <div className="relative">
               <Image
                 src={activePhoto ?? listing.image}
-                alt=""
+                alt={`${listing.title}, photo ${Math.min(photoIndex, gallery.length - 1) + 1} of ${gallery.length}`}
                 width={1600}
                 height={1000}
                 unoptimized={(activePhoto ?? listing.image).startsWith("data:")}
@@ -262,6 +282,9 @@ export function ListingDetail({ id }: { id: string }) {
           <div className="mt-5">
             <div className="flex flex-wrap items-start justify-between gap-3">
               <div>
+                {isSample ? (
+                  <p className="mb-1 text-xs font-semibold tracking-wide text-amber-800 uppercase">Sample ad · contact unavailable</p>
+                ) : null}
                 {listing.sold ? (
                   <p className="mb-1 text-xs font-medium tracking-wide text-neutral-500 uppercase">Sold</p>
                 ) : null}
@@ -333,6 +356,13 @@ export function ListingDetail({ id }: { id: string }) {
           ) : null}
         </div>
         <aside className="h-fit rounded-2xl border border-neutral-200 bg-white p-4 lg:sticky lg:top-[145px]">
+          {isSample ? (
+            <div className="rounded-xl bg-amber-50 p-4 text-sm text-amber-950">
+              <p className="font-semibold">Sample listing</p>
+              <p className="mt-1 leading-5">This ad is an example. Its seller and contact details are fictional, so messaging and calls are unavailable.</p>
+            </div>
+          ) : (
+          <>
           <div className="flex items-center gap-3">
             <span className="flex size-11 items-center justify-center rounded-full bg-neutral-950 text-sm font-medium text-white">
               {initials(listing.sellerName)}
@@ -417,6 +447,8 @@ export function ListingDetail({ id }: { id: string }) {
               Report this ad
             </Button>
           ) : null}
+          </>
+          )}
         </aside>
       </div>
       <div className="fixed inset-x-0 bottom-[calc(env(safe-area-inset-bottom)+5.25rem)] z-20 border-t bg-white p-3 md:bottom-0 lg:hidden">
@@ -429,9 +461,9 @@ export function ListingDetail({ id }: { id: string }) {
             <Button className="shrink-0 rounded-full" asChild>
               <Link href={`/post?edit=${listing.id}`}>Edit ad</Link>
             </Button>
-          ) : listing.sold ? (
+          ) : !contactOpen ? (
             <Button className="shrink-0 rounded-full" disabled>
-              Sold
+              {isSample ? "Sample ad" : expired ? "Expired" : "Sold"}
             </Button>
           ) : (
             <Button className="shrink-0 rounded-full" onClick={() => setMessageOpen(true)}>
@@ -440,22 +472,30 @@ export function ListingDetail({ id }: { id: string }) {
           )}
         </div>
       </div>
-      <Dialog open={messageOpen} onOpenChange={setMessageOpen}>
+      <Dialog open={messageOpen && contactOpen} onOpenChange={setMessageOpen}>
         <DialogContent className="sm:max-w-md">
           <DialogHeader>
             <DialogTitle>Message {listing.sellerName}</DialogTitle>
           </DialogHeader>
           <Textarea
+            aria-label="Your message"
             value={message}
             onChange={(event) => setMessage(event.target.value)}
             placeholder={voice.messagePlaceholder}
             rows={4}
+            maxLength={1000}
+            disabled={messageSending}
           />
+          {message && messageError(message) ? (
+            <p className="text-xs text-amber-700">{messageError(message)}</p>
+          ) : null}
           <DialogFooter>
-            <Button variant="outline" onClick={() => setMessageOpen(false)}>
+            <Button variant="outline" disabled={messageSending} onClick={() => setMessageOpen(false)}>
               Cancel
             </Button>
-            <Button onClick={submitMessage}>Send</Button>
+            <Button disabled={messageSending || !!messageError(message)} onClick={() => void submitMessage()}>
+              {messageSending ? "Sending…" : "Send"}
+            </Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
