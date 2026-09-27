@@ -42,11 +42,11 @@ export function SiteHeader() {
       <div className="border-b border-neutral-200/80 bg-white">
         <div className="mx-auto flex h-16 max-w-[1720px] items-center gap-1 px-2 md:relative md:h-[72px] md:gap-2 md:px-3">
           <Logo iconOnly />
-          <div className="relative flex min-w-0 flex-1 items-center gap-1 px-1 lg:absolute lg:left-1/2 lg:w-[calc(100%-40rem)] lg:max-w-xl lg:-translate-x-1/2 lg:px-3">
+          <div className="relative mx-auto flex min-w-0 flex-1 items-center gap-1 px-1 lg:max-w-xl lg:px-3">
             <div className="min-w-0 flex-1">
               <SearchField value={query.q} onChange={(value) => update({ q: value })} />
             </div>
-            <div className="shrink-0 lg:absolute lg:top-1/2 lg:left-full lg:ml-1 lg:-translate-y-1/2">
+            <div className="shrink-0">
               <CategoryTopNav />
             </div>
           </div>

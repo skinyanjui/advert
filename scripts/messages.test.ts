@@ -67,6 +67,17 @@ test("messageThreads groups by conversation and sorts by latest", () => {
   assert.equal(threads[1]?.conversationId, "c-old")
 })
 
+test("conversations about different listings keep their own offer context", () => {
+  const threads = messageThreads([
+    sample({ id: "a", conversationId: "car", listingId: "car-1", listingTitle: "Pickup truck", peerName: "Buyer" }),
+    sample({ id: "b", conversationId: "house", listingId: "house-1", listingTitle: "House for rent", peerName: "Buyer" }),
+  ])
+  assert.deepEqual(threads.map(({ listingId, listingTitle }) => [listingId, listingTitle]), [
+    ["car-1", "Pickup truck"],
+    ["house-1", "House for rent"],
+  ])
+})
+
 test("unreadMessageCount ignores own messages", () => {
   const messages = [
     sample({ id: "a", fromMe: false, read: false }),
