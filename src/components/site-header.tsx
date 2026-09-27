@@ -18,32 +18,9 @@ import { searchCitiesAnywhere } from "@/lib/cities"
 import { countries, countryName, fold, moreCountries, primaryCountries } from "@/lib/countries"
 import { clearBrowsingEverywhere, markBrowsingEverywhere, useHomePlace, writeHomePlace } from "@/lib/home-place"
 import { useMarketplace } from "@/lib/marketplace"
-import { unreadMessageCount } from "@/lib/messages"
+import { recentMessageNotifications, unreadMessageCount } from "@/lib/messages"
 import { categoryFromPath, useListingQuery, type ListingQuery } from "@/lib/use-listing-query"
 import { cn } from "@/lib/utils"
-
-const notifications = [
-  {
-    id: "land-cruiser",
-    title: "Similar vehicle listed",
-    body: "A Land Cruiser was just posted in Nairobi.",
-    time: "2h",
-  },
-  {
-    id: "jobs",
-    title: "Jobs near you",
-    body: "New full-time roles in Nairobi this morning.",
-    time: "4h",
-  },
-  {
-    id: "farm",
-    title: "Saved search",
-    body: "Fresh farmland listings around Arusha.",
-    time: "1d",
-  },
-] as const
-
-type NotificationId = (typeof notifications)[number]["id"]
 
 const summaryClass =
   "menu-summary cursor-pointer list-none rounded-full [&::-webkit-details-marker]:hidden [&::marker]:content-none"
@@ -51,10 +28,9 @@ const summaryClass =
 export function SiteHeader() {
   const pathname = usePathname()
   const { query, update } = useListingQuery()
-  const { savedIds, messages } = useMarketplace()
+  const { savedIds, messages, ready, reloadBoard } = useMarketplace()
   const auth = useAuth()
-  const [read, setRead] = useState<string[]>([])
-  const unread = notifications.filter((item) => !read.includes(item.id)).length
+  const notifications = recentMessageNotifications(messages)
   const unreadMessages = unreadMessageCount(messages)
   const sellerUnread = unreadMessageCount(messages.filter((item) => item.viewerIsSeller))
   const locationLabel = query.country ? countryName(query.country) : "All Africa"
@@ -95,41 +71,57 @@ export function SiteHeader() {
                 </Link>
               </Button>
               <HeaderMenu
-                label="Notifications"
+                label={unreadMessages > 0 ? `Notifications, ${unreadMessages} unread` : "Notifications"}
                 summaryClassName="relative size-9 px-0"
                 panelClassName="w-80"
+                onOpen={() => { if (ready) void reloadBoard() }}
                 summary={
                   <>
                     <Bell />
-                    {unread > 0 ? <UnreadDot /> : null}
+                    {unreadMessages > 0 ? <UnreadDot /> : null}
                   </>
                 }
               >
-                <p className="px-2 py-1.5 text-sm font-medium">Notifications</p>
+                <p className="px-2 py-1.5 text-sm font-medium">
+                  Notifications{unreadMessages > 0 ? ` · ${unreadMessages} unread` : ""}
+                </p>
                 <div className="mx-1 mb-1 h-px bg-neutral-200" />
+                {!ready && notifications.length === 0 ? <p className="px-2 py-3 text-xs text-neutral-500">Loading notifications…</p> : null}
+                {ready && notifications.length === 0 ? (
+                  <p className="px-2 py-3 text-xs leading-5 text-neutral-500">
+                    No notifications yet. New messages and replies will appear here.
+                  </p>
+                ) : null}
                 {notifications.map((item) => {
-                  const seen = read.includes(item.id)
                   return (
                     <Link
                       key={item.id}
-                      href={notificationHref(item.id)}
+                      href={`/messages?c=${encodeURIComponent(item.conversationId)}`}
                       role="menuitem"
                       className="flex h-auto items-start gap-3 rounded-md px-2 py-2 hover:bg-neutral-100"
-                      onClick={() => setRead((current) => (current.includes(item.id) ? current : [...current, item.id]))}
                     >
                       <span
-                        className={cn("mt-1 size-2 shrink-0 rounded-full", seen ? "bg-neutral-300" : "bg-neutral-900")}
+                        aria-hidden="true"
+                        className={cn("mt-1 size-2 shrink-0 rounded-full", item.read ? "bg-neutral-300" : "bg-neutral-900")}
                       />
                       <span className="min-w-0 flex-1 text-left">
-                        <span className={cn("block text-sm", seen ? "font-normal text-neutral-500" : "font-medium")}>
-                          {item.title}
+                        <span className="sr-only">{item.read ? "Read: " : "Unread: "}</span>
+                        <span className={cn("block text-sm", item.read ? "font-normal text-neutral-500" : "font-medium")}>
+                          {item.viewerIsSeller ? "Inquiry" : "Reply"} about {item.listingTitle}
                         </span>
-                        <span className="block text-xs text-neutral-500">{item.body}</span>
+                        <span className="line-clamp-2 text-xs text-neutral-500">{item.body}</span>
                       </span>
-                      <span className="text-[11px] text-neutral-500">{item.time}</span>
+                      <time dateTime={item.sentAt} className="shrink-0 text-[11px] text-neutral-500">
+                        {new Date(item.sentAt).toLocaleDateString("en-US", { month: "short", day: "numeric", timeZone: "UTC" })}
+                      </time>
                     </Link>
                   )
                 })}
+                {ready && notifications.length > 0 ? (
+                  <MenuLink href="/messages" className="mt-1 border-t border-neutral-200 pt-2 text-neutral-600">
+                    View inbox
+                  </MenuLink>
+                ) : null}
               </HeaderMenu>
               <HeaderMenu
                 label="Profile"
@@ -539,20 +531,6 @@ function placeHeaderPanel(details: HTMLDetailsElement) {
   panel.style.maxHeight = `${Math.max(120, Math.round(openAbove ? trigger.top - top - 6 : window.innerHeight - top - margin))}px`
 }
 
-function notificationHref(id: NotificationId): string {
-  switch (id) {
-    case "land-cruiser":
-      return "/?q=Land%20Cruiser"
-    case "jobs":
-      return "/jobs"
-    case "farm":
-      return "/?q=farm&country=TZ"
-    default: {
-      const unreachable: never = id
-      return unreachable
-    }
-  }
-}
 
 function locationHref(pathname: string, search: string, country: string | null, city?: string | null): string {
   const pathCategory = categoryFromPath(pathname)

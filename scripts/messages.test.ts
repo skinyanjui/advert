@@ -5,6 +5,7 @@ import {
   isBoardMessage,
   messageError,
   messageThreads,
+  recentMessageNotifications,
   unreadMessageCount,
   type BoardMessage,
 } from "../src/lib/messages"
@@ -73,6 +74,18 @@ test("unreadMessageCount ignores own messages", () => {
     sample({ id: "c", fromMe: false, read: true }),
   ]
   assert.equal(unreadMessageCount(messages), 1)
+})
+
+test("notifications prioritize unread incoming messages and keep their stored read state", () => {
+  const messages = [
+    sample({ id: "read-new", read: true, sentAt: "2026-09-26T13:00:00.000Z" }),
+    sample({ id: "sent", fromMe: true, sentAt: "2026-09-26T14:00:00.000Z" }),
+    sample({ id: "unread-old", sentAt: "2026-09-26T09:00:00.000Z" }),
+  ]
+  assert.deepEqual(recentMessageNotifications(messages, 1).map((item) => item.id), ["unread-old"])
+  assert.deepEqual(recentMessageNotifications(messages, 2).map((item) => item.id), ["unread-old", "read-new"])
+  assert.equal(unreadMessageCount(messages), 1)
+  assert.equal(unreadMessageCount(messages.map((item) => ({ ...item, read: true }))), 0)
 })
 
 test("isBoardMessage rejects legacy sample-reply shape", () => {

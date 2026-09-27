@@ -70,6 +70,15 @@ export function unreadMessageCount(messages: BoardMessage[]): number {
   return messages.filter((item) => !item.read && !item.fromMe).length
 }
 
+/** Show unread incoming messages first, then the latest messages already opened in the inbox. */
+export function recentMessageNotifications(messages: BoardMessage[], limit = 6): BoardMessage[] {
+  const incoming = messages.filter((message) => !message.fromMe)
+  const newestFirst = (left: BoardMessage, right: BoardMessage) => right.sentAt.localeCompare(left.sentAt)
+  const unread = incoming.filter((message) => !message.read).sort(newestFirst).slice(0, limit)
+  const read = incoming.filter((message) => message.read).sort(newestFirst).slice(0, limit - unread.length)
+  return [...unread, ...read]
+}
+
 export function isBoardMessage(value: unknown): value is BoardMessage {
   if (!value || typeof value !== "object") return false
   const message = value as Partial<BoardMessage>
