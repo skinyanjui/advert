@@ -26,7 +26,7 @@ export function CategoryTopNav() {
           <Menu className="size-5" />
         </Button>
       </SheetTrigger>
-      <SheetContent side="left" className="w-[min(22rem,calc(100vw-2rem))] overflow-y-auto p-0">
+      <SheetContent side="right" className="w-[min(22rem,calc(100vw-2rem))] overflow-y-auto p-0">
         <SheetHeader>
           <SheetTitle>Categories</SheetTitle>
         </SheetHeader>
