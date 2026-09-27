@@ -1,9 +1,12 @@
 "use client"
 
-import { Suspense, useMemo } from "react"
+import { Menu } from "lucide-react"
+import { Suspense, useMemo, useState } from "react"
 import { usePathname, useSearchParams } from "next/navigation"
 
 import { CategoryNav } from "@/components/category-nav"
+import { Button } from "@/components/ui/button"
+import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from "@/components/ui/sheet"
 import { matchesQuery } from "@/lib/board"
 import { canonicalCountry, fold } from "@/lib/countries"
 import { useMarketplace } from "@/lib/marketplace"
@@ -14,19 +17,30 @@ import { categoryFromPath, type ListingQuery } from "@/lib/use-listing-query"
 export function CategoryTopNav() {
   const pathname = usePathname()
   const active = pathname === "/" ? undefined : categoryFromPath(pathname)
+  const [open, setOpen] = useState(false)
 
   return (
-    <div className="border-b border-neutral-200/80 bg-white">
-      <div className="mx-auto max-w-[1720px]">
-        <Suspense fallback={<TopNavFallback active={active} />}>
-          <CategoryTopNavLinks />
-        </Suspense>
-      </div>
-    </div>
+    <Sheet open={open} onOpenChange={setOpen}>
+      <SheetTrigger asChild>
+        <Button type="button" variant="ghost" size="icon-lg" className="shrink-0 rounded-full" aria-label="Browse categories">
+          <Menu className="size-5" />
+        </Button>
+      </SheetTrigger>
+      <SheetContent side="left" className="w-[min(22rem,calc(100vw-2rem))] overflow-y-auto p-0">
+        <SheetHeader>
+          <SheetTitle>Categories</SheetTitle>
+        </SheetHeader>
+        <div className="px-3 pb-6">
+          <Suspense fallback={<TopNavFallback active={active} onNavigate={() => setOpen(false)} />}>
+            <CategoryTopNavLinks onNavigate={() => setOpen(false)} />
+          </Suspense>
+        </div>
+      </SheetContent>
+    </Sheet>
   )
 }
 
-function CategoryTopNavLinks() {
+function CategoryTopNavLinks({ onNavigate }: { onNavigate: () => void }) {
   const pathname = usePathname()
   const searchParams = useSearchParams()
   const { listings } = useMarketplace()
@@ -50,11 +64,12 @@ function CategoryTopNavLinks() {
       activeType={activeType}
       hrefForCategory={(category) => listingHref(category, undefined, query)}
       hrefForType={(type) => listingHref(active, type, query)}
+      onNavigate={onNavigate}
     />
   )
 }
 
-function TopNavFallback({ active }: { active?: CategoryId }) {
+function TopNavFallback({ active, onNavigate }: { active?: CategoryId; onNavigate: () => void }) {
   const counts = Object.fromEntries(categories.map((category) => [category.id, 0])) as Record<
     CategoryId,
     number
@@ -66,6 +81,7 @@ function TopNavFallback({ active }: { active?: CategoryId }) {
       total={0}
       hrefForCategory={(category) => (category ? `/${category}` : "/")}
       hrefForType={() => (active ? `/${active}` : "/")}
+      onNavigate={onNavigate}
     />
   )
 }

@@ -62,14 +62,13 @@ export function SiteHeader() {
   const postHref = postAdHref(query.country ? { country: query.country, city: query.city } : remembered)
   const profileLabel = auth.signedIn ? auth.email ?? "Signed in" : "Guest on this browser"
   const profileDetail = auth.signedIn ? "Ads stay with your account" : "Sign in to keep ads across devices"
-  const showCategories = pathname === "/" || categoryFromPath(pathname) !== undefined || /^\/listings\/[^/]+$/.test(pathname)
-
   return (
     <header className="sticky top-0 z-50">
       <div className="border-b border-neutral-200/80 bg-white">
-        <div className="mx-auto flex max-w-[1720px] flex-col md:relative md:h-[72px] md:flex-row md:items-center">
-          <Logo />
-          <div className="w-full px-4 pb-3 md:absolute md:left-1/2 md:w-[calc(100%-35rem)] md:max-w-xl md:-translate-x-1/2 md:px-3 md:py-0">
+        <div className="mx-auto flex h-16 max-w-[1720px] items-center gap-1 px-2 md:relative md:h-[72px] md:gap-2 md:px-3">
+          <CategoryTopNav />
+          <Logo iconOnly />
+          <div className="min-w-0 flex-1 px-1 md:absolute md:left-1/2 md:w-[calc(100%-35rem)] md:max-w-xl md:-translate-x-1/2 md:px-3">
             <SearchField value={query.q} onChange={(value) => update({ q: value })} />
           </div>
           <div className="fixed inset-x-3 bottom-[calc(env(safe-area-inset-bottom)+0.75rem)] z-50 mx-auto flex max-w-lg items-center justify-between rounded-3xl border border-neutral-200 bg-white p-2.5 shadow-lg md:static md:inset-auto md:ml-auto md:max-w-none md:shrink-0 md:gap-2 md:rounded-none md:border-0 md:bg-transparent md:px-4 md:shadow-none">
@@ -170,7 +169,6 @@ export function SiteHeader() {
           </div>
         </div>
       </div>
-      {showCategories ? <CategoryTopNav /> : null}
     </header>
   )
 }
@@ -588,9 +586,9 @@ function filterCountries(query: string) {
 export function HeaderFallback() {
   return (
     <header className="sticky top-0 z-40 border-b border-neutral-200/80 bg-white">
-      <div className="mx-auto flex max-w-[1720px] flex-col md:h-[72px] md:flex-row md:items-center">
-        <Logo />
-        <div className="w-full px-4 pb-3 md:mx-auto md:max-w-xl md:flex-1 md:pb-0">
+      <div className="mx-auto flex h-16 max-w-[1720px] items-center gap-1 px-2 md:h-[72px] md:px-3">
+        <Logo iconOnly />
+        <div className="min-w-0 flex-1 px-2 md:mx-auto md:max-w-xl">
           <div className="h-11 rounded-full bg-neutral-100" />
         </div>
         <nav aria-label="Account" className="fixed inset-x-3 bottom-[calc(env(safe-area-inset-bottom)+0.75rem)] z-50 mx-auto flex max-w-lg items-center justify-around rounded-3xl border border-neutral-200 bg-white p-2 shadow-lg md:static md:ml-auto md:max-w-none md:gap-2 md:rounded-none md:border-0 md:bg-transparent md:px-4 md:shadow-none">
