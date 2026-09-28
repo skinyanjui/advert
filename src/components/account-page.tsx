@@ -9,6 +9,7 @@ import { toast } from "sonner"
 import { CityField } from "@/components/city-field"
 import { ContactPhoneField } from "@/components/contact-phone-field"
 import { EmptyPanel } from "@/components/empty-panel"
+import { FormField } from "@/components/form-field"
 import { KeepAdsPrompt } from "@/components/sign-in-form"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { Button } from "@/components/ui/button"
@@ -36,6 +37,12 @@ import { canonicalCountry, countries } from "@/lib/countries"
 import { writeHomePlace } from "@/lib/home-place"
 import { useMarketplace } from "@/lib/marketplace"
 import { contactPhoneError } from "@/lib/contact-phone"
+import {
+  passwordError,
+  passwordStrength,
+  passwordStrengthLabel,
+  passwordsMatchError,
+} from "@/lib/password"
 import {
   avatarFileError,
   cityError,
@@ -71,7 +78,7 @@ export function AccountPage() {
       ) : !auth.signedIn ? (
         <EmptyPanel
           title="Sign in to edit your Profile"
-          body="Email code sign-in. No password. Keep ads, saves, and messages on this account."
+          body="Email code, magic link, or optional password. Keep ads, saves, and Messages on this account."
           actionHref="/sign-in"
           actionLabel="Sign in"
           className="mt-0"
@@ -81,8 +88,12 @@ export function AccountPage() {
       ) : (
         <SignedInProfile
           email={auth.email}
+          pendingEmail={auth.pendingEmail}
           createdAt={auth.user?.created_at ?? null}
           signOut={() => auth.signOut()}
+          signOutAll={() => auth.signOutAll()}
+          updatePassword={(password) => auth.updatePassword(password)}
+          updateEmail={(email) => auth.updateEmail(email)}
         />
       )}
 
@@ -101,12 +112,20 @@ export function AccountPage() {
 
 function SignedInProfile({
   email,
+  pendingEmail,
   createdAt,
   signOut,
+  signOutAll,
+  updatePassword,
+  updateEmail,
 }: {
   email: string | null
+  pendingEmail: string | null
   createdAt: string | null
   signOut: () => Promise<void>
+  signOutAll: () => Promise<void>
+  updatePassword: (password: string) => Promise<{ ok: true } | { ok: false; reason: string }>
+  updateEmail: (email: string) => Promise<{ ok: true } | { ok: false; reason: string }>
 }) {
   const router = useRouter()
   const fileRef = useRef<HTMLInputElement>(null)
@@ -130,6 +149,12 @@ function SignedInProfile({
   const [deleteOpen, setDeleteOpen] = useState(false)
   const [deleteConfirm, setDeleteConfirm] = useState("")
   const [deleting, setDeleting] = useState(false)
+  const [newEmail, setNewEmail] = useState("")
+  const [savingEmail, setSavingEmail] = useState(false)
+  const [newPassword, setNewPassword] = useState("")
+  const [confirmPassword, setConfirmPassword] = useState("")
+  const [savingPassword, setSavingPassword] = useState(false)
+  const [signingOutAll, setSigningOutAll] = useState(false)
 
   useEffect(() => {
     let active = true
@@ -306,7 +331,47 @@ function SignedInProfile({
     }
   }
 
+  async function saveEmail() {
+    setSavingEmail(true)
+    const result = await updateEmail(newEmail)
+    setSavingEmail(false)
+    if (!result.ok) {
+      toast.error(result.reason)
+      return
+    }
+    setNewEmail("")
+    toast.success("Confirm the new email from your inbox")
+  }
+
+  async function savePassword() {
+    const reason = passwordError(newPassword) ?? passwordsMatchError(newPassword, confirmPassword)
+    if (reason) {
+      toast.error(reason)
+      return
+    }
+    setSavingPassword(true)
+    const result = await updatePassword(newPassword)
+    setSavingPassword(false)
+    if (!result.ok) {
+      toast.error(result.reason)
+      return
+    }
+    setNewPassword("")
+    setConfirmPassword("")
+    toast.success("Password saved")
+  }
+
+  async function onSignOutAll() {
+    setSigningOutAll(true)
+    await signOutAll()
+    setSigningOutAll(false)
+    router.replace("/")
+    router.refresh()
+  }
+
   if (loading) return <ProfileSkeleton />
+
+  const passwordHint = newPassword ? passwordStrengthLabel(passwordStrength(newPassword)) : undefined
 
   return (
     <>
@@ -462,13 +527,91 @@ function SignedInProfile({
             <Label htmlFor="account-email">Email</Label>
             <Input id="account-email" value={email ?? ""} readOnly aria-readonly="true" />
           </div>
+          {pendingEmail ? (
+            <p className="rounded-lg bg-amber-50 px-3 py-2 text-sm text-amber-950">
+              Pending confirmation for <span className="font-medium">{pendingEmail}</span>. Check that
+              inbox (and your current email if Secure email change is on).
+            </p>
+          ) : null}
+          <FormField
+            label="New email"
+            htmlFor="account-new-email"
+            hint="We’ll send a confirmation link before the change takes effect."
+          >
+            <Input
+              id="account-new-email"
+              type="email"
+              autoComplete="email"
+              value={newEmail}
+              onChange={(event) => setNewEmail(event.target.value)}
+              placeholder="new@example.com"
+            />
+          </FormField>
           {sinceYear ? (
             <p className="text-sm text-muted-foreground">Member since {sinceYear}</p>
           ) : null}
         </CardContent>
-        <CardFooter className="justify-between gap-2">
-          <Button type="button" variant="outline" onClick={() => void signOut()}>
-            Sign out
+        <CardFooter className="flex-wrap justify-between gap-2">
+          <div className="flex flex-wrap gap-2">
+            <Button type="button" variant="outline" onClick={() => void signOut()}>
+              Sign out
+            </Button>
+            <Button
+              type="button"
+              variant="ghost"
+              disabled={signingOutAll}
+              onClick={() => void onSignOutAll()}
+            >
+              {signingOutAll ? <Loader2 className="animate-spin" /> : null}
+              Sign out of all devices
+            </Button>
+          </div>
+          <Button
+            type="button"
+            disabled={!newEmail.trim() || savingEmail}
+            onClick={() => void saveEmail()}
+          >
+            {savingEmail ? <Loader2 className="animate-spin" /> : null}
+            {savingEmail ? "Sending…" : "Change email"}
+          </Button>
+        </CardFooter>
+      </Card>
+
+      <Card>
+        <CardHeader>
+          <CardTitle>Password</CardTitle>
+          <CardDescription>
+            Optional. Sign in with email and password as well as an email code.
+          </CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-3">
+          <FormField label="New password" htmlFor="account-password" hint={passwordHint}>
+            <Input
+              id="account-password"
+              type="password"
+              autoComplete="new-password"
+              value={newPassword}
+              onChange={(event) => setNewPassword(event.target.value)}
+            />
+          </FormField>
+          <FormField label="Confirm password" htmlFor="account-password-confirm">
+            <Input
+              id="account-password-confirm"
+              type="password"
+              autoComplete="new-password"
+              value={confirmPassword}
+              onChange={(event) => setConfirmPassword(event.target.value)}
+            />
+          </FormField>
+        </CardContent>
+        <CardFooter className="justify-end">
+          <Button
+            type="button"
+            disabled={!newPassword || savingPassword}
+            onClick={() => void savePassword()}
+          >
+            {savingPassword ? <Loader2 className="animate-spin" /> : null}
+            {savingPassword ? "Saving…" : "Save password"}
           </Button>
         </CardFooter>
       </Card>

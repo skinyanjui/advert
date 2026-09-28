@@ -4,9 +4,12 @@ import { createContext, useCallback, useContext, useEffect, useMemo, useState } 
 import type { Session, User } from "@supabase/supabase-js"
 import { toast } from "sonner"
 
-import { createBrowserSupabase } from "@/lib/supabase/client"
-import { phoneAuthEnabled } from "@/lib/supabase/env"
+import { mapAuthError } from "@/lib/auth-errors"
+import { DEFAULT_AUTH_NEXT, safeAuthNext } from "@/lib/auth-redirect"
 import { reloadBoard } from "@/lib/marketplace"
+import { passwordError } from "@/lib/password"
+import { createBrowserSupabase } from "@/lib/supabase/client"
+import { googleAuthEnabled, phoneAuthEnabled } from "@/lib/supabase/env"
 
 function authConfigured(): boolean {
   return Boolean(
@@ -15,26 +18,45 @@ function authConfigured(): boolean {
   )
 }
 
+type AuthResult =
+  | { ok: true; session?: boolean; needsEmailConfirm?: boolean }
+  | { ok: false; reason: string }
+
 type AuthContextValue = {
   ready: boolean
   configured: boolean
   phoneEnabled: boolean
+  googleEnabled: boolean
   user: User | null
   email: string | null
+  pendingEmail: string | null
   signedIn: boolean
-  sendEmailCode: (email: string) => Promise<{ ok: true } | { ok: false; reason: string }>
-  verifyEmailCode: (email: string, token: string) => Promise<{ ok: true } | { ok: false; reason: string }>
-  sendPhoneCode: (phone: string) => Promise<{ ok: true } | { ok: false; reason: string }>
-  verifyPhoneCode: (phone: string, token: string) => Promise<{ ok: true } | { ok: false; reason: string }>
+  sendEmailCode: (email: string, next?: string) => Promise<AuthResult>
+  verifyEmailCode: (email: string, token: string) => Promise<AuthResult>
+  signInWithPassword: (email: string, password: string) => Promise<AuthResult>
+  signUpWithPassword: (email: string, password: string, next?: string) => Promise<AuthResult>
+  requestPasswordReset: (email: string) => Promise<AuthResult>
+  updatePassword: (password: string) => Promise<AuthResult>
+  updateEmail: (email: string) => Promise<AuthResult>
+  signInWithGoogle: (next?: string) => Promise<AuthResult>
+  sendPhoneCode: (phone: string) => Promise<AuthResult>
+  verifyPhoneCode: (phone: string, token: string) => Promise<AuthResult>
   signOut: () => Promise<void>
+  signOutAll: () => Promise<void>
   claimBrowserSession: () => Promise<void>
 }
 
 const AuthContext = createContext<AuthContextValue | null>(null)
 
+function callbackRedirect(next?: string): string {
+  const safe = safeAuthNext(next, DEFAULT_AUTH_NEXT)
+  return `${window.location.origin}/auth/callback?next=${encodeURIComponent(safe)}`
+}
+
 export function AuthProvider({ children }: { children: React.ReactNode }) {
   const configured = authConfigured()
   const phoneEnabled = phoneAuthEnabled()
+  const googleEnabled = googleAuthEnabled()
   const [ready, setReady] = useState(!configured)
   const [user, setUser] = useState<User | null>(null)
 
@@ -85,75 +107,202 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     void claimBrowserSession()
   }, [user, claimBrowserSession])
 
-  const sendEmailCode = useCallback(async (email: string) => {
-    if (!configured) return { ok: false as const, reason: "Sign-in is not configured yet." }
-    const trimmed = email.trim().toLowerCase()
-    if (!trimmed.includes("@")) return { ok: false as const, reason: "Enter a valid email address." }
-    const supabase = createBrowserSupabase()
-    const { error } = await supabase.auth.signInWithOtp({
-      email: trimmed,
-      options: {
-        shouldCreateUser: true,
-        emailRedirectTo: `${window.location.origin}/auth/confirm?next=${encodeURIComponent("/account")}`,
-      },
-    })
-    if (error) return { ok: false as const, reason: error.message }
-    return { ok: true as const }
-  }, [configured])
+  const sendEmailCode = useCallback(
+    async (email: string, next?: string) => {
+      if (!configured) return { ok: false as const, reason: "Sign-in is not configured yet." }
+      const trimmed = email.trim().toLowerCase()
+      if (!trimmed.includes("@")) return { ok: false as const, reason: "Enter a valid email address." }
+      const supabase = createBrowserSupabase()
+      const { error } = await supabase.auth.signInWithOtp({
+        email: trimmed,
+        options: {
+          shouldCreateUser: true,
+          emailRedirectTo: callbackRedirect(next),
+        },
+      })
+      if (error) return { ok: false as const, reason: mapAuthError(error) }
+      return { ok: true as const }
+    },
+    [configured],
+  )
 
-  const verifyEmailCode = useCallback(async (email: string, token: string) => {
-    if (!configured) return { ok: false as const, reason: "Sign-in is not configured yet." }
-    const supabase = createBrowserSupabase()
-    const { error } = await supabase.auth.verifyOtp({
-      email: email.trim().toLowerCase(),
-      token: token.trim(),
-      type: "email",
-    })
-    if (error) return { ok: false as const, reason: error.message }
-    await claimBrowserSession()
-    return { ok: true as const }
-  }, [configured, claimBrowserSession])
+  const verifyEmailCode = useCallback(
+    async (email: string, token: string) => {
+      if (!configured) return { ok: false as const, reason: "Sign-in is not configured yet." }
+      const supabase = createBrowserSupabase()
+      const { error } = await supabase.auth.verifyOtp({
+        email: email.trim().toLowerCase(),
+        token: token.trim(),
+        type: "email",
+      })
+      if (error) return { ok: false as const, reason: mapAuthError(error) }
+      await claimBrowserSession()
+      return { ok: true as const }
+    },
+    [configured, claimBrowserSession],
+  )
 
-  const sendPhoneCode = useCallback(async (phone: string) => {
-    if (!phoneEnabled) {
-      return {
-        ok: false as const,
-        reason: "Phone sign-in needs an SMS provider on Supabase (for example Twilio).",
+  const signInWithPassword = useCallback(
+    async (email: string, password: string) => {
+      if (!configured) return { ok: false as const, reason: "Sign-in is not configured yet." }
+      const trimmed = email.trim().toLowerCase()
+      if (!trimmed.includes("@")) return { ok: false as const, reason: "Enter a valid email address." }
+      if (!password) return { ok: false as const, reason: "Enter your password." }
+      const supabase = createBrowserSupabase()
+      const { error } = await supabase.auth.signInWithPassword({ email: trimmed, password })
+      if (error) return { ok: false as const, reason: mapAuthError(error) }
+      await claimBrowserSession()
+      return { ok: true as const }
+    },
+    [configured, claimBrowserSession],
+  )
+
+  const signUpWithPassword = useCallback(
+    async (email: string, password: string, next?: string) => {
+      if (!configured) return { ok: false as const, reason: "Sign-in is not configured yet." }
+      const trimmed = email.trim().toLowerCase()
+      if (!trimmed.includes("@")) return { ok: false as const, reason: "Enter a valid email address." }
+      const reason = passwordError(password)
+      if (reason) return { ok: false as const, reason }
+      const supabase = createBrowserSupabase()
+      const { data, error } = await supabase.auth.signUp({
+        email: trimmed,
+        password,
+        options: { emailRedirectTo: callbackRedirect(next) },
+      })
+      if (error) return { ok: false as const, reason: mapAuthError(error) }
+      if (data.session) {
+        await claimBrowserSession()
+        return { ok: true as const, session: true }
       }
-    }
-    const digits = phone.replace(/[^\d+]/g, "")
-    if (digits.replace(/\D/g, "").length < 10) return { ok: false as const, reason: "Enter a full phone number with country code." }
-    const supabase = createBrowserSupabase()
-    const { error } = await supabase.auth.signInWithOtp({
-      phone: digits,
-      options: { shouldCreateUser: true },
-    })
-    if (error) return { ok: false as const, reason: error.message }
-    return { ok: true as const }
-  }, [phoneEnabled])
+      return { ok: true as const, needsEmailConfirm: true }
+    },
+    [configured, claimBrowserSession],
+  )
 
-  const verifyPhoneCode = useCallback(async (phone: string, token: string) => {
-    if (!phoneEnabled) {
-      return { ok: false as const, reason: "Phone sign-in is not enabled." }
-    }
-    const supabase = createBrowserSupabase()
-    const { error } = await supabase.auth.verifyOtp({
-      phone: phone.replace(/[^\d+]/g, ""),
-      token: token.trim(),
-      type: "sms",
-    })
-    if (error) return { ok: false as const, reason: error.message }
-    await claimBrowserSession()
-    return { ok: true as const }
-  }, [phoneEnabled, claimBrowserSession])
+  const requestPasswordReset = useCallback(
+    async (email: string) => {
+      if (!configured) return { ok: false as const, reason: "Sign-in is not configured yet." }
+      const trimmed = email.trim().toLowerCase()
+      if (!trimmed.includes("@")) return { ok: false as const, reason: "Enter a valid email address." }
+      const supabase = createBrowserSupabase()
+      const { error } = await supabase.auth.resetPasswordForEmail(trimmed, {
+        redirectTo: `${window.location.origin}/auth/callback?next=${encodeURIComponent("/auth/reset")}`,
+      })
+      if (error) return { ok: false as const, reason: mapAuthError(error) }
+      return { ok: true as const }
+    },
+    [configured],
+  )
+
+  const updatePassword = useCallback(
+    async (password: string) => {
+      if (!configured) return { ok: false as const, reason: "Sign-in is not configured yet." }
+      const reason = passwordError(password)
+      if (reason) return { ok: false as const, reason }
+      const supabase = createBrowserSupabase()
+      const { error } = await supabase.auth.updateUser({ password })
+      if (error) return { ok: false as const, reason: mapAuthError(error) }
+      const { data } = await supabase.auth.getUser()
+      setUser(data.user ?? null)
+      return { ok: true as const }
+    },
+    [configured],
+  )
+
+  const updateEmail = useCallback(
+    async (email: string) => {
+      if (!configured) return { ok: false as const, reason: "Sign-in is not configured yet." }
+      const trimmed = email.trim().toLowerCase()
+      if (!trimmed.includes("@")) return { ok: false as const, reason: "Enter a valid email address." }
+      if (trimmed === (user?.email ?? "").toLowerCase()) {
+        return { ok: false as const, reason: "That is already your email." }
+      }
+      const supabase = createBrowserSupabase()
+      const { error } = await supabase.auth.updateUser(
+        { email: trimmed },
+        { emailRedirectTo: callbackRedirect("/account") },
+      )
+      if (error) return { ok: false as const, reason: mapAuthError(error) }
+      const { data } = await supabase.auth.getUser()
+      setUser(data.user ?? null)
+      return { ok: true as const }
+    },
+    [configured, user?.email],
+  )
+
+  const signInWithGoogle = useCallback(
+    async (next?: string) => {
+      if (!configured) return { ok: false as const, reason: "Sign-in is not configured yet." }
+      if (!googleEnabled) return { ok: false as const, reason: "Google sign-in is not enabled." }
+      const supabase = createBrowserSupabase()
+      const { error } = await supabase.auth.signInWithOAuth({
+        provider: "google",
+        options: { redirectTo: callbackRedirect(next) },
+      })
+      if (error) return { ok: false as const, reason: mapAuthError(error) }
+      return { ok: true as const }
+    },
+    [configured, googleEnabled],
+  )
+
+  const sendPhoneCode = useCallback(
+    async (phone: string) => {
+      if (!phoneEnabled) {
+        return {
+          ok: false as const,
+          reason: "Phone sign-in needs an SMS provider on Supabase (for example Twilio).",
+        }
+      }
+      const digits = phone.replace(/[^\d+]/g, "")
+      if (digits.replace(/\D/g, "").length < 10) {
+        return { ok: false as const, reason: "Enter a full phone number with country code." }
+      }
+      const supabase = createBrowserSupabase()
+      const { error } = await supabase.auth.signInWithOtp({
+        phone: digits,
+        options: { shouldCreateUser: true },
+      })
+      if (error) return { ok: false as const, reason: mapAuthError(error) }
+      return { ok: true as const }
+    },
+    [phoneEnabled],
+  )
+
+  const verifyPhoneCode = useCallback(
+    async (phone: string, token: string) => {
+      if (!phoneEnabled) {
+        return { ok: false as const, reason: "Phone sign-in is not enabled." }
+      }
+      const supabase = createBrowserSupabase()
+      const { error } = await supabase.auth.verifyOtp({
+        phone: phone.replace(/[^\d+]/g, ""),
+        token: token.trim(),
+        type: "sms",
+      })
+      if (error) return { ok: false as const, reason: mapAuthError(error) }
+      await claimBrowserSession()
+      return { ok: true as const }
+    },
+    [phoneEnabled, claimBrowserSession],
+  )
 
   const signOut = useCallback(async () => {
     if (!configured) return
     const supabase = createBrowserSupabase()
-    await supabase.auth.signOut()
+    await supabase.auth.signOut({ scope: "local" })
     setUser(null)
     await reloadBoard()
     toast.success("Signed out")
+  }, [configured])
+
+  const signOutAll = useCallback(async () => {
+    if (!configured) return
+    const supabase = createBrowserSupabase()
+    await supabase.auth.signOut({ scope: "global" })
+    setUser(null)
+    await reloadBoard()
+    toast.success("Signed out of all devices")
   }, [configured])
 
   const value = useMemo<AuthContextValue>(
@@ -161,26 +310,43 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       ready,
       configured,
       phoneEnabled,
+      googleEnabled,
       user,
       email: user?.email ?? user?.phone ?? null,
+      pendingEmail: user?.new_email ?? null,
       signedIn: Boolean(user),
       sendEmailCode,
       verifyEmailCode,
+      signInWithPassword,
+      signUpWithPassword,
+      requestPasswordReset,
+      updatePassword,
+      updateEmail,
+      signInWithGoogle,
       sendPhoneCode,
       verifyPhoneCode,
       signOut,
+      signOutAll,
       claimBrowserSession,
     }),
     [
       ready,
       configured,
       phoneEnabled,
+      googleEnabled,
       user,
       sendEmailCode,
       verifyEmailCode,
+      signInWithPassword,
+      signUpWithPassword,
+      requestPasswordReset,
+      updatePassword,
+      updateEmail,
+      signInWithGoogle,
       sendPhoneCode,
       verifyPhoneCode,
       signOut,
+      signOutAll,
       claimBrowserSession,
     ],
   )

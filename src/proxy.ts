@@ -1,6 +1,7 @@
 import { createServerClient } from "@supabase/ssr"
 import { NextResponse, type NextRequest } from "next/server"
 
+import { isProtectedAuthPath, signInHref } from "@/lib/auth-redirect"
 import { publicSupabaseKey, publicSupabaseUrl } from "@/lib/supabase/env"
 
 export async function proxy(request: NextRequest) {
@@ -22,15 +23,28 @@ export async function proxy(request: NextRequest) {
         for (const { name, value, options } of cookiesToSet) {
           response.cookies.set(name, value, options)
         }
-        for (const [key, value] of Object.entries(headers)) {
-          response.headers.set(key, value)
+        for (const [headerKey, value] of Object.entries(headers)) {
+          response.headers.set(headerKey, value)
         }
       },
     },
   })
 
   // Verifies the JWT; refreshes cookies when needed. Do not use getSession() here.
-  await supabase.auth.getClaims()
+  const { data } = await supabase.auth.getClaims()
+  const signedIn = Boolean(data?.claims?.sub)
+
+  const { pathname, search } = request.nextUrl
+  if (isProtectedAuthPath(pathname) && !signedIn) {
+    const next = `${pathname}${search}`
+    const redirectUrl = request.nextUrl.clone()
+    const href = signInHref(next)
+    const parsed = new URL(href, request.nextUrl.origin)
+    redirectUrl.pathname = parsed.pathname
+    redirectUrl.search = parsed.search
+    return NextResponse.redirect(redirectUrl)
+  }
+
   return response
 }
 
