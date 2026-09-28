@@ -301,7 +301,7 @@ function MyAdRow({
 
   return (
     <li className="relative overflow-hidden bg-white">
-      <div className="absolute inset-y-0 left-0 flex md:hidden">
+      <div className="absolute inset-y-0 right-0 flex md:hidden">
         <button
           type="button"
           disabled={busy || expired}
@@ -321,7 +321,7 @@ function MyAdRow({
           Delete
         </button>
       </div>
-      <div className="absolute inset-y-0 right-0 flex md:hidden">
+      <div className="absolute inset-y-0 left-0 flex md:hidden">
         {canRenew && expired ? (
           <button
             type="button"
