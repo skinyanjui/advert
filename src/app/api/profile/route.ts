@@ -1,3 +1,5 @@
+import { NextResponse } from "next/server"
+
 import { fail, ok } from "@/lib/api"
 import { resolveMutationOwner, resolveOwner } from "@/lib/board-session"
 import { deleteAccount, getProfile, updateProfile } from "@/lib/profile-store"
@@ -61,7 +63,15 @@ export async function DELETE(request: Request) {
       return fail('Type DELETE to confirm account deletion.')
     }
     const result = await deleteAccount(owner.id)
-    if (!result.ok) return fail(result.reason, 500)
+    if (!result.ok) {
+      if (result.authDeleted) {
+        return NextResponse.json(
+          { ok: false, authDeleted: true, reason: result.reason },
+          { status: 500 },
+        )
+      }
+      return fail(result.reason, 500)
+    }
     return ok({ deleted: true })
   } catch {
     return fail("Could not delete your account.", 500)

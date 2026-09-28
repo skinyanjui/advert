@@ -13,6 +13,16 @@ import type { Listing } from "@/lib/types"
 
 type Result<T> = { ok: true; value: T } | { ok: false; reason: string }
 
+export type DeleteAccountResult =
+  | { ok: true; value: true }
+  | { ok: false; reason: string; authDeleted?: boolean }
+
+type CleanupIssue = {
+  step: string
+  message: string
+  ids?: string[]
+}
+
 export type ProfilePublic = {
   displayName: string | null
   avatarUrl: string | null
@@ -61,12 +71,16 @@ function listingPhotoPath(image: string) {
   return /^[0-9a-f-]{36}\/[0-9a-f-]{36}\.(jpg|png|webp)$/i.test(path) ? path : undefined
 }
 
-async function removeAvatar(image: string | null | undefined) {
-  if (!image) return
+async function removeAvatar(image: string | null | undefined): Promise<string | null> {
+  if (!image) return null
   const path = avatarStoragePath(image)
-  if (!path) return
+  if (!path) return null
   const { error } = await boardDb().storage.from("avatars").remove([path])
-  if (error) console.error("Could not remove avatar", error)
+  if (error) {
+    console.error("Could not remove avatar", error)
+    return error.message
+  }
+  return null
 }
 
 async function storeAvatar(image: string, owner: string, previous?: string | null): Promise<Result<string>> {
@@ -220,7 +234,7 @@ export async function updateProfile(
   return { ok: true, value: profile }
 }
 
-async function removeListingPhotos(listing: Listing) {
+async function removeListingPhotos(listing: Listing): Promise<string | null> {
   const images =
     Array.isArray(listing.images) && listing.images.length > 0
       ? listing.images
@@ -232,8 +246,12 @@ async function removeListingPhotos(listing: Listing) {
     const path = listingPhotoPath(image)
     if (!path) continue
     const { error } = await db.storage.from("listing-photos").remove([path])
-    if (error) console.error("Could not remove listing photo", error)
+    if (error) {
+      console.error("Could not remove listing photo", error)
+      return error.message
+    }
   }
+  return null
 }
 
 /**
@@ -241,8 +259,9 @@ async function removeListingPhotos(listing: Listing) {
  * Auth user is removed first so a failed auth delete leaves the account intact.
  * board_profiles and board_session_claims cascade from auth.users; listings,
  * saves, messages, and conversations have no FK and are cleaned up after.
+ * Cleanup failures after auth delete return identifiers so orphans can be found.
  */
-export async function deleteAccount(userId: string): Promise<Result<true>> {
+export async function deleteAccount(userId: string): Promise<DeleteAccountResult> {
   const db = boardDb()
 
   const { data: profileRow, error: profileReadError } = await db
@@ -259,6 +278,7 @@ export async function deleteAccount(userId: string): Promise<Result<true>> {
     .select("id,payload")
     .eq("owner_id", userId)
   check(listingsError)
+  const listingIds = (listings ?? []).map((row) => row.id as string)
 
   const { data: conversations, error: conversationsError } = await db
     .from("board_conversations")
@@ -272,21 +292,37 @@ export async function deleteAccount(userId: string): Promise<Result<true>> {
     return { ok: false, reason: authError.message || "Could not delete the sign-in account." }
   }
 
+  const issues: CleanupIssue[] = []
+
   for (const row of listings ?? []) {
+    const listingId = row.id as string
     const listing = cleanListing(row.payload)
-    if (listing) await removeListingPhotos(listing)
-    const { error: saveError } = await db.from("board_saves").delete().eq("listing_id", row.id)
-    if (saveError) console.error("Could not remove saves for deleted listing", saveError)
+    if (listing) {
+      const photoError = await removeListingPhotos(listing)
+      if (photoError) {
+        issues.push({ step: "listing_photos", message: photoError, ids: [listingId] })
+      }
+    }
+    const { error: saveError } = await db.from("board_saves").delete().eq("listing_id", listingId)
+    if (saveError) {
+      issues.push({ step: "listing_saves", message: saveError.message, ids: [listingId] })
+    }
   }
 
   const { error: deleteListingsError } = await db.from("board_listings").delete().eq("owner_id", userId)
-  if (deleteListingsError) console.error("Could not remove listings after auth delete", deleteListingsError)
+  if (deleteListingsError) {
+    issues.push({ step: "board_listings", message: deleteListingsError.message, ids: listingIds })
+  }
 
   const { error: savesError } = await db.from("board_saves").delete().eq("owner_id", userId)
-  if (savesError) console.error("Could not remove saves after auth delete", savesError)
+  if (savesError) {
+    issues.push({ step: "board_saves", message: savesError.message, ids: [userId] })
+  }
 
   const { error: legacyMessagesError } = await db.from("board_messages").delete().eq("owner_id", userId)
-  if (legacyMessagesError) console.error("Could not remove legacy messages after auth delete", legacyMessagesError)
+  if (legacyMessagesError) {
+    issues.push({ step: "board_messages", message: legacyMessagesError.message, ids: [userId] })
+  }
 
   if (conversationIds.length > 0) {
     const { error: deleteConversationsError } = await db
@@ -294,11 +330,41 @@ export async function deleteAccount(userId: string): Promise<Result<true>> {
       .delete()
       .in("id", conversationIds)
     if (deleteConversationsError) {
-      console.error("Could not remove conversations after auth delete", deleteConversationsError)
+      issues.push({
+        step: "board_conversations",
+        message: deleteConversationsError.message,
+        ids: conversationIds,
+      })
     }
   }
 
-  if (avatar && ownedAvatarPath(avatar, userId)) await removeAvatar(avatar)
+  const avatarPath = avatar ? ownedAvatarPath(avatar, userId) : undefined
+  if (avatar && avatarPath) {
+    const avatarError = await removeAvatar(avatar)
+    if (avatarError) {
+      issues.push({ step: "avatar", message: avatarError, ids: [avatarPath] })
+    }
+  }
+
+  if (issues.length > 0) {
+    const orphan = {
+      userId,
+      listingIds,
+      conversationIds,
+      avatarPath: avatarPath ?? null,
+      issues,
+    }
+    console.error("Account auth deleted but board cleanup incomplete", orphan)
+    const steps = issues.map((issue) => issue.step).join(",")
+    return {
+      ok: false,
+      authDeleted: true,
+      reason:
+        `Sign-in removed, but some account data could not be cleaned up. ` +
+        `userId=${userId}; listings=${listingIds.join(",") || "none"}; ` +
+        `conversations=${conversationIds.join(",") || "none"}; steps=${steps}`,
+    }
+  }
 
   return { ok: true, value: true }
 }
