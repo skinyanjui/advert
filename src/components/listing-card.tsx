@@ -7,7 +7,13 @@ import Link from "next/link"
 import { formatDistance, formatPlace, formatPrice } from "@/lib/format"
 import { isListingExpired } from "@/lib/expiry"
 import { useMarketplace } from "@/lib/marketplace"
-import { categoryName, type Listing } from "@/lib/types"
+import {
+  formatPostedDate,
+  formatRelativePosted,
+  hoursAgoOf,
+  postedDateTime,
+} from "@/lib/relative-time"
+import type { Listing } from "@/lib/types"
 import { cn } from "@/lib/utils"
 
 export function ListingCard({
@@ -76,7 +82,7 @@ export function ListingCard({
           <span className="truncate">{place}</span>
         </p>
         <div className="grid grid-cols-[minmax(0,1fr)_auto] items-center gap-1.5 text-[11px] leading-none text-neutral-500">
-          <span className="truncate">{categoryName(listing.category)}</span>
+          <PostedLabel listing={listing} />
           {linked ? (
             <span className="inline-flex items-center gap-1 font-medium text-neutral-950">
               View <ArrowRight className="size-3" aria-hidden="true" />
@@ -111,5 +117,25 @@ export function ListingCard({
         </button>
       ) : null}
     </article>
+  )
+}
+
+function PostedLabel({ listing }: { listing: Listing }) {
+  // Prefer the stored hoursAgo for seed ads (no postedAt) so SSR/client match.
+  // When postedAt exists, recompute from now and suppress hydration warning on <time>.
+  const hasPostedAt = Boolean(listing.postedAt)
+  const hours = hasPostedAt ? hoursAgoOf(listing) : listing.hoursAgo
+  const label = formatRelativePosted(hours)
+  const dateTime = postedDateTime(listing)
+  const fullDate = formatPostedDate(listing.postedAt)
+  return (
+    <time
+      className="truncate"
+      dateTime={dateTime}
+      title={fullDate}
+      suppressHydrationWarning={hasPostedAt}
+    >
+      {label}
+    </time>
   )
 }

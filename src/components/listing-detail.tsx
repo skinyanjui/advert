@@ -29,20 +29,19 @@ import { relatedListings } from "@/lib/board"
 import { seedListings } from "@/lib/catalog"
 import { resolvePlace } from "@/lib/cities"
 import { getCountry } from "@/lib/countries"
-import {
-  formatPlace,
-  formatPosted,
-  formatPrice,
-  hoursAgoOf,
-  initials,
-  whatsappHref,
-} from "@/lib/format"
+import { formatPlace, formatPrice, initials, whatsappHref } from "@/lib/format"
 import { osmLinks } from "@/lib/map"
 import { useMarketplace } from "@/lib/marketplace"
 import { messageError } from "@/lib/messages"
 import { daysUntilExpiry, isListingExpired, isListingExpiringSoon } from "@/lib/expiry"
 import { listingFacts, listingVoice } from "@/lib/posting"
 import { listingImages } from "@/lib/photos"
+import {
+  formatPostedDate,
+  formatRelativePosted,
+  hoursAgoOf,
+  postedDateTime,
+} from "@/lib/relative-time"
 import { reportReasons } from "@/lib/reports"
 import { useClientTime } from "@/lib/use-client-time"
 import { categoryName, type Listing } from "@/lib/types"
@@ -93,7 +92,10 @@ export function ListingDetail({ id }: { id: string }) {
   const unreadHere = listingMessages.filter((item) => !item.read && !item.fromMe).length
   const myMessageCount = listingMessages.filter((item) => item.fromMe).length
   const voice = listingVoice(ad)
-  const facts = listingFacts(ad)
+  const facts = [
+    ...(voice.typeName ? [{ label: "Type", value: voice.typeName }] : []),
+    ...listingFacts(ad),
+  ]
   const related = relatedListings(listings, ad)
   const backSearch = keptSearch(searchParams, ad.subcategory)
   const backHref = backSearch ? `/${ad.category}?${backSearch}` : `/${ad.category}`
@@ -101,6 +103,16 @@ export function ListingDetail({ id }: { id: string }) {
   const contactOpen = !isSample && !ad.sold && !ad.mine && !expired
   const expiringSoon = isListingExpiringSoon(ad.expiresAt)
   const daysLeft = daysUntilExpiry(ad.expiresAt)
+  const postedHours = ad.postedAt ? hoursAgoOf(ad) : ad.hoursAgo
+  const postedLabel = formatRelativePosted(postedHours)
+  const postedFull = formatPostedDate(ad.postedAt)
+  const postedIso = postedDateTime(ad)
+  const expiryLabel =
+    !expired && daysLeft !== undefined && daysLeft > 0
+      ? daysLeft === 1
+        ? "Expires in 1 day"
+        : `Expires in ${daysLeft} days`
+      : undefined
 
   async function share() {
     const url = window.location.href
@@ -291,7 +303,7 @@ export function ListingDetail({ id }: { id: string }) {
           </div>
           <div className="mt-5">
             <div className="flex flex-wrap items-start justify-between gap-3">
-              <div>
+              <div className="min-w-0">
                 {isSample ? (
                   <p className="mb-1 text-xs font-semibold tracking-wide text-amber-800 uppercase">Sample ad · contact unavailable</p>
                 ) : null}
@@ -305,7 +317,7 @@ export function ListingDetail({ id }: { id: string }) {
                   <p className="mb-1 text-xs font-medium tracking-wide text-neutral-500 uppercase">Expired</p>
                 ) : listing.mine && expiringSoon ? (
                   <p className="mb-1 text-xs font-medium tracking-wide text-amber-700 uppercase">
-                    Expires in {daysLeft === 1 ? "1 day" : `${daysLeft} days`}
+                    {expiryLabel ?? "Expiring soon"}
                   </p>
                 ) : null}
                 <p className="text-2xl font-semibold tracking-tight">{formatPrice(listing)}</p>
@@ -324,32 +336,45 @@ export function ListingDetail({ id }: { id: string }) {
                 </Button>
               </div>
             </div>
-            <div className="mt-3 flex flex-wrap items-center gap-x-4 gap-y-1 text-sm text-neutral-500">
-              <span className="inline-flex items-center gap-1">
-                <MapPin className="size-4" />
-                {formatPlace(listing)}
+            <div className="mt-3 flex flex-wrap items-center gap-x-3 gap-y-1 text-sm text-neutral-500">
+              <span className="inline-flex min-w-0 items-center gap-1">
+                <MapPin className="size-4 shrink-0" />
+                <span className="truncate">{formatPlace(listing)}</span>
               </span>
-              <span className="inline-flex items-center gap-1">
-                <Clock className="size-4" />
-                {formatPosted(hoursAgoOf(listing))}
+              <span className="text-neutral-300" aria-hidden="true">
+                ·
               </span>
-              <span>
-                <Link href={backHref} className="hover:text-neutral-900">
-                  {categoryName(listing.category)}
-                </Link>
-                {voice.typeName ? ` · ${voice.typeName}` : ""}
-              </span>
+              <time
+                dateTime={postedIso}
+                title={postedFull}
+                suppressHydrationWarning={Boolean(postedIso)}
+                className="inline-flex items-center gap-1"
+              >
+                <Clock className="size-4 shrink-0" />
+                {postedLabel}
+                {postedFull ? <span className="text-neutral-400">({postedFull})</span> : null}
+              </time>
+              {expiryLabel && !(listing.mine && (expired || expiringSoon)) ? (
+                <>
+                  <span className="text-neutral-300" aria-hidden="true">
+                    ·
+                  </span>
+                  <span>{expiryLabel}</span>
+                </>
+              ) : null}
             </div>
           </div>
-          <section className="mt-8">
-            <h2 className="text-sm font-medium text-neutral-950">{voice.detailHeading}</h2>
-            <dl className="mt-3 grid grid-cols-2 gap-3 text-sm sm:grid-cols-3">
-              {facts.map((fact) => (
-                <Fact key={fact.label} label={fact.label} value={fact.value} />
-              ))}
-            </dl>
-          </section>
-          <section className="mt-8">
+          {facts.length > 0 ? (
+            <section className="mt-6">
+              <h2 className="text-sm font-medium text-neutral-950">{voice.detailHeading}</h2>
+              <dl className="mt-3 grid grid-cols-2 gap-x-4 gap-y-3 text-sm sm:grid-cols-3">
+                {facts.map((fact) => (
+                  <Fact key={fact.label} label={fact.label} value={fact.value} />
+                ))}
+              </dl>
+            </section>
+          ) : null}
+          <section className="mt-6">
             <h2 className="text-sm font-medium text-neutral-950">{voice.aboutHeading}</h2>
             <p className="mt-2 max-w-2xl text-sm leading-6 text-neutral-700">{listing.description}</p>
           </section>
@@ -372,7 +397,7 @@ export function ListingDetail({ id }: { id: string }) {
             </span>
             <div>
               <p className="font-medium">{listing.sellerName}</p>
-              <p className="text-xs text-neutral-500">On africa classifieds since {listing.sellerSince}</p>
+              <p className="text-xs text-neutral-500">Member since {listing.sellerSince}</p>
             </div>
           </div>
           <div className="mt-4 grid gap-2">
@@ -433,22 +458,28 @@ export function ListingDetail({ id }: { id: string }) {
               </Button>
             ) : null}
           </div>
-          <p className="mt-4 text-xs leading-5 text-neutral-500">{voice.safety}</p>
-          {!listing.mine && contactOpen ? (
-            <p className="mt-2 text-xs leading-5 text-neutral-500">
-              Prefer WhatsApp or a call using the number above. On-site messages go to the seller’s inbox on this board —
-              they can reply here, and you will see it in Messages.
-            </p>
-          ) : null}
+          <SafetyNote
+            safety={voice.safety}
+            messagingHint={
+              !listing.mine && contactOpen
+                ? "Prefer WhatsApp or a call using the number above. On-site messages go to the seller’s inbox on this board."
+                : undefined
+            }
+          />
           {!listing.mine && listing.id.startsWith("ad-") ? (
-            <Button
-              variant="ghost"
-              className="mt-3 h-9 w-full justify-start rounded-full px-2 text-neutral-500"
-              onClick={() => setReportOpen(true)}
-            >
-              <Flag className="size-4" />
-              Report this ad
-            </Button>
+            <div className="mt-3 border-t border-neutral-100 pt-3">
+              <Button
+                variant="ghost"
+                className="h-9 w-full justify-start rounded-full px-2 text-neutral-500"
+                onClick={() => setReportOpen(true)}
+              >
+                <Flag className="size-4" />
+                Report this ad
+              </Button>
+              <p className="mt-1 px-2 text-[11px] text-neutral-400">Listing ID {listing.id}</p>
+            </div>
+          ) : listing.id ? (
+            <p className="mt-3 text-[11px] text-neutral-400">Listing ID {listing.id}</p>
           ) : null}
           </>
           )}
@@ -624,23 +655,36 @@ function WhatsAppIcon({ className }: { className?: string }) {
 }
 
 function PlacePanel({ listing }: { listing: Listing }) {
+  const [mapOpen, setMapOpen] = useState(false)
   const country = getCountry(listing.country)
   const resolved = resolvePlace(listing.country, listing.city)
   const point =
     typeof listing.latitude === "number" && typeof listing.longitude === "number"
       ? { lat: listing.latitude, lng: listing.longitude, pinned: true }
       : { lat: resolved.lat, lng: resolved.lng, pinned: resolved.matched }
-  const showMap = point.pinned
-  const timeZone = listing.timezone ?? (showMap ? resolved.timezone : country?.timezone ?? resolved.timezone)
+  const canMap = point.pinned
+  const timeZone = listing.timezone ?? (canMap ? resolved.timezone : country?.timezone ?? resolved.timezone)
   const localTime = useClientTime(timeZone)
   const links = osmLinks(point.lat, point.lng)
-  if (!localTime && !showMap) return null
+  if (!localTime && !canMap) return null
 
   return (
-    <section className="mt-8">
-      {localTime ? <p className="text-sm text-neutral-500">{localTime}</p> : null}
-      {showMap ? (
-        <div className="mt-4 overflow-hidden rounded-2xl border border-neutral-200">
+    <section className="mt-6">
+      <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-sm text-neutral-500">
+        {localTime ? <p>{localTime}</p> : null}
+        {canMap ? (
+          <button
+            type="button"
+            className="text-neutral-700 underline-offset-2 hover:underline"
+            aria-expanded={mapOpen}
+            onClick={() => setMapOpen((open) => !open)}
+          >
+            {mapOpen ? "Hide map" : "Show map"}
+          </button>
+        ) : null}
+      </div>
+      {canMap && mapOpen ? (
+        <div className="mt-3 overflow-hidden rounded-xl border border-neutral-200">
           <iframe title={`Map of ${listing.city}`} src={links.embed} className="h-56 w-full" loading="lazy" />
           <a
             href={links.external}
@@ -656,9 +700,50 @@ function PlacePanel({ listing }: { listing: Listing }) {
   )
 }
 
+function SafetyNote({ safety, messagingHint }: { safety: string; messagingHint?: string }) {
+  const [open, setOpen] = useState(false)
+  const firstStop = safety.indexOf(". ")
+  const lead = firstStop === -1 ? safety : safety.slice(0, firstStop + 1)
+  const rest = firstStop === -1 ? "" : safety.slice(firstStop + 2).trim()
+  const hasMore = Boolean(rest || messagingHint)
+
+  return (
+    <div className="mt-4 text-xs leading-5 text-neutral-500">
+      <p>
+        {lead}
+        {hasMore && !open ? (
+          <>
+            {" "}
+            <button
+              type="button"
+              className="font-medium text-neutral-700 underline-offset-2 hover:underline"
+              onClick={() => setOpen(true)}
+            >
+              More
+            </button>
+          </>
+        ) : null}
+      </p>
+      {open ? (
+        <div className="mt-1 space-y-1">
+          {rest ? <p>{rest}</p> : null}
+          {messagingHint ? <p>{messagingHint}</p> : null}
+          <button
+            type="button"
+            className="font-medium text-neutral-700 underline-offset-2 hover:underline"
+            onClick={() => setOpen(false)}
+          >
+            Less
+          </button>
+        </div>
+      ) : null}
+    </div>
+  )
+}
+
 function Fact({ label, value }: { label: string; value: string }) {
   return (
-    <div className="rounded-xl bg-neutral-50 px-3 py-2">
+    <div>
       <dt className="text-xs text-neutral-500">{label}</dt>
       <dd className="mt-0.5 font-medium text-neutral-900">{value}</dd>
     </div>
