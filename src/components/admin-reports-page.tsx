@@ -4,6 +4,7 @@ import { useState } from "react"
 import Link from "next/link"
 import { toast } from "sonner"
 
+import { EmptyPanel } from "@/components/empty-panel"
 import { Button } from "@/components/ui/button"
 import { reportReasonLabel, type ReportReasonId } from "@/lib/reports"
 
@@ -59,10 +60,7 @@ export function AdminReportsClient({
         <p className="mt-4 text-sm text-rose-600">Could not load reports. Refresh and try again.</p>
       ) : null}
       {reports.length === 0 && !loadError ? (
-        <div className="mt-8 rounded-2xl border border-dashed border-neutral-300 bg-white px-6 py-16 text-center">
-          <h2 className="text-lg font-semibold tracking-tight">No pending reports</h2>
-          <p className="mx-auto mt-2 max-w-sm text-sm text-neutral-500">New reports from listing pages appear here.</p>
-        </div>
+        <EmptyPanel title="No pending reports" body="New reports from listing pages appear here." />
       ) : (
         <ul className="mt-6 grid gap-3">
           {reports.map((report) => (

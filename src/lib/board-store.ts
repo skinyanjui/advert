@@ -21,6 +21,7 @@ import {
 } from "@/lib/listing-status"
 import { sendEmail } from "@/lib/email"
 import { applySellerProfile, profilesByUserIds } from "@/lib/profile-store"
+import { site } from "@/lib/site"
 import type { Listing } from "@/lib/types"
 
 type Result<T> = { ok: true; value: T } | { ok: false; reason: string }
@@ -1079,7 +1080,7 @@ export async function sendExpiryReminders(): Promise<ExpiryReminderSummary> {
       to: email,
       subject: `Your ad “${listing.title}” expires in ${days} day${days === 1 ? "" : "s"}`,
       text: [
-        `Your africa classifieds ad “${listing.title}” expires in ${days} day${days === 1 ? "" : "s"}.`,
+        `Your ${site.name} ad “${listing.title}” expires in ${days} day${days === 1 ? "" : "s"}.`,
         "Renew it from My ads to keep it on the board for another 60 days.",
         "",
         "If you did not post this ad, you can ignore this message.",

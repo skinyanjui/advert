@@ -9,6 +9,7 @@ import { SidebarInset, SidebarProvider } from "@/components/ui/sidebar"
 import { Toaster } from "@/components/ui/sonner"
 import { AuthProvider } from "@/lib/auth"
 import { MarketplaceProvider } from "@/lib/marketplace"
+import { site, siteTitleTemplate } from "@/lib/site"
 import { themeBootScript } from "@/lib/theme"
 
 import "./globals.css"
@@ -26,11 +27,10 @@ const geistMono = Geist_Mono({
 export const metadata: Metadata = {
   metadataBase: new URL(`https://${process.env.VERCEL_PROJECT_PRODUCTION_URL ?? "adverts-murex.vercel.app"}`),
   title: {
-    default: "africa classifieds",
-    template: "%s · africa classifieds",
+    default: site.name,
+    template: siteTitleTemplate(),
   },
-  description:
-    "Buy and sell across Africa. Cars, houses, jobs, electronics, and everything in between.",
+  description: site.tagline,
 }
 
 export default function RootLayout({ children }: LayoutProps<"/">) {

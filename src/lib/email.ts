@@ -1,5 +1,7 @@
 import "server-only"
 
+import { siteEmailFrom } from "@/lib/site"
+
 export type OutboundEmail = {
   to: string
   subject: string
@@ -22,7 +24,7 @@ export async function sendEmail(message: OutboundEmail): Promise<EmailSendResult
     return { ok: true, provider: "noop" }
   }
 
-  const from = process.env.RESEND_FROM_EMAIL?.trim() || "africa classifieds <onboarding@resend.dev>"
+  const from = process.env.RESEND_FROM_EMAIL?.trim() || siteEmailFrom()
   try {
     const response = await fetch("https://api.resend.com/emails", {
       method: "POST",

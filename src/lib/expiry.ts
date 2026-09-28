@@ -16,12 +16,25 @@ export function isListingExpired(expiresAt: string | undefined, now = Date.now()
 }
 
 /** True when the ad is still live but within the notice window. */
-export function isListingExpiringSoon(expiresAt: string | undefined, now = Date.now()): boolean {
+export function isListingExpiringSoon(
+  expiresAt: string | undefined,
+  now = Date.now(),
+  withinDays: number = expiryNoticeDays,
+): boolean {
   if (!expiresAt || isListingExpired(expiresAt, now)) return false
   const time = new Date(expiresAt).getTime()
   if (Number.isNaN(time)) return false
-  const windowMs = expiryNoticeDays * 24 * 60 * 60 * 1000
+  const windowMs = withinDays * 24 * 60 * 60 * 1000
   return time - now <= windowMs
+}
+
+/** Expired, or live and expiring within `withinDays` (default 3 for nav badges). */
+export function isListingNeedingAttention(
+  expiresAt: string | undefined,
+  now = Date.now(),
+  withinDays = 3,
+): boolean {
+  return isListingExpired(expiresAt, now) || isListingExpiringSoon(expiresAt, now, withinDays)
 }
 
 export function daysUntilExpiry(expiresAt: string | undefined, now = Date.now()): number | undefined {

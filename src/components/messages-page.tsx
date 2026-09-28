@@ -79,7 +79,7 @@ export function MessagesPage() {
 
   return (
     <div className="mx-auto w-full max-w-[1720px] px-4 py-3 md:px-6">
-      <h1 className="sr-only">Inbox</h1>
+      <h1 className="sr-only">Messages</h1>
       {missing ? (
         <p className="mb-3 rounded-lg border border-neutral-200 bg-white px-3 py-2 text-sm text-neutral-600">This conversation is not on this account. Choose one below.</p>
       ) : null}
