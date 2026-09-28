@@ -4,7 +4,7 @@ import { ArrowRight, Heart, MapPin } from "lucide-react"
 import Image from "next/image"
 import Link from "next/link"
 
-import { formatDistance, formatPlace, formatPrice } from "@/lib/format"
+import { countryCodeOf, formatDistance, formatPlace, formatPrice } from "@/lib/format"
 import { isListingExpired } from "@/lib/expiry"
 import { useMarketplace } from "@/lib/marketplace"
 import {
@@ -31,7 +31,8 @@ export function ListingCard({
 }) {
   const { isSaved, toggleSaved } = useMarketplace()
   const saved = isSaved(listing.id)
-  const place = formatPlace(listing)
+  const placeFull = formatPlace(listing)
+  const countryCode = countryCodeOf(listing)
   const away = distanceKm === undefined ? undefined : formatDistance(distanceKm)
   const body = (
     <>
@@ -77,9 +78,14 @@ export function ListingCard({
           {formatPrice(listing)}
         </p>
         <h3 className="truncate text-[13px] leading-4 text-neutral-800">{listing.title}</h3>
-        <p className="flex min-w-0 items-center gap-1 truncate text-[11px] leading-3.5 text-neutral-600" title={place}>
+        <p
+          className="flex min-w-0 items-center gap-1 text-[11px] leading-3.5 text-neutral-600"
+          title={placeFull}
+          aria-label={placeFull}
+        >
           <MapPin className="size-3 shrink-0" aria-hidden="true" />
-          <span className="truncate">{place}</span>
+          <span className="min-w-0 truncate">{listing.city}</span>
+          <span className="shrink-0">, {countryCode}</span>
         </p>
         <div className="grid grid-cols-[minmax(0,1fr)_auto] items-center gap-1.5 text-[11px] leading-none text-neutral-500">
           <PostedLabel listing={listing} />
