@@ -1,12 +1,13 @@
 "use client"
 
-import { Bell, ChevronDown, MapPin, MessageCircle, Plus, Search, UserRound } from "lucide-react"
+import { Bell, ChevronDown, Inbox, MapPin, MessageCircle, Plus, RefreshCw, Search, UserRound } from "lucide-react"
 import Link from "next/link"
 import { usePathname, useRouter, useSearchParams } from "next/navigation"
 import { useEffect, useRef, useState, type ReactNode } from "react"
 
 import { postAdHref } from "@/lib/active-place"
 import { Logo } from "@/components/logo"
+import { CategoryTopNav } from "@/components/category-top-nav"
 import { PostLink } from "@/components/post-link"
 import { ThemeChoices } from "@/components/theme-choices"
 import { useRememberedPlace } from "@/lib/use-remembered-place"
@@ -17,32 +18,9 @@ import { searchCitiesAnywhere } from "@/lib/cities"
 import { countries, countryName, fold, moreCountries, primaryCountries } from "@/lib/countries"
 import { clearBrowsingEverywhere, markBrowsingEverywhere, useHomePlace, writeHomePlace } from "@/lib/home-place"
 import { useMarketplace } from "@/lib/marketplace"
-import { unreadMessageCount } from "@/lib/messages"
+import { recentMessageNotifications, unreadMessageCount } from "@/lib/messages"
 import { categoryFromPath, useListingQuery, type ListingQuery } from "@/lib/use-listing-query"
 import { cn } from "@/lib/utils"
-
-const notifications = [
-  {
-    id: "land-cruiser",
-    title: "Similar vehicle listed",
-    body: "A Land Cruiser was just posted in Nairobi.",
-    time: "2h",
-  },
-  {
-    id: "jobs",
-    title: "Jobs near you",
-    body: "New full-time roles in Nairobi this morning.",
-    time: "4h",
-  },
-  {
-    id: "farm",
-    title: "Saved search",
-    body: "Fresh farmland listings around Arusha.",
-    time: "1d",
-  },
-] as const
-
-type NotificationId = (typeof notifications)[number]["id"]
 
 const summaryClass =
   "menu-summary cursor-pointer list-none rounded-full [&::-webkit-details-marker]:hidden [&::marker]:content-none"
@@ -52,8 +30,6 @@ export function SiteHeader() {
   const { query, update } = useListingQuery()
   const { savedIds, messages } = useMarketplace()
   const auth = useAuth()
-  const [read, setRead] = useState<string[]>([])
-  const unread = notifications.filter((item) => !read.includes(item.id)).length
   const unreadMessages = unreadMessageCount(messages)
   const sellerUnread = unreadMessageCount(messages.filter((item) => item.viewerIsSeller))
   const locationLabel = query.country ? countryName(query.country) : "All Africa"
@@ -61,22 +37,27 @@ export function SiteHeader() {
   const postHref = postAdHref(query.country ? { country: query.country, city: query.city } : remembered)
   const profileLabel = auth.signedIn ? auth.email ?? "Signed in" : "Guest on this browser"
   const profileDetail = auth.signedIn ? "Ads stay with your account" : "Sign in to keep ads across devices"
-
   return (
     <header data-site-header className="sticky top-0 z-50">
       <div className="border-b border-neutral-200/80 bg-white">
-        <div className="mx-auto flex max-w-[1720px] items-center">
-          <Logo />
-          <div className="flex shrink-0 items-center gap-1.5 px-3 py-3 sm:gap-2 sm:px-4 md:min-w-0 md:flex-1 md:gap-3 md:px-6 md:py-3.5">
-            <div className="hidden min-w-0 flex-1 md:block">
+        <div className="mx-auto flex h-16 max-w-[1720px] items-center gap-1 px-2 md:relative md:h-[72px] md:gap-3 md:px-5 xl:gap-6 xl:px-8">
+          <Logo iconOnly className="xl:hidden" />
+          <Logo className="hidden xl:flex" />
+          <div className="relative mx-auto flex min-w-0 flex-1 items-center gap-1 px-1 md:max-w-[680px] md:gap-2 md:px-0">
+            <div className="min-w-0 flex-1">
               <SearchField value={query.q} onChange={(value) => update({ q: value })} />
             </div>
-            <div className="ml-auto flex shrink-0 items-center gap-1.5 sm:gap-2">
+            <div className="shrink-0">
+              <CategoryTopNav />
+            </div>
+          </div>
+          <div className="fixed inset-x-3 bottom-[calc(env(safe-area-inset-bottom)+0.75rem)] z-50 mx-auto flex max-w-lg items-center justify-between rounded-3xl border border-neutral-200 bg-white p-2.5 shadow-lg md:static md:inset-auto md:ml-auto md:max-w-none md:shrink-0 md:rounded-none md:border-0 md:bg-transparent md:p-0 md:shadow-none">
+            <nav aria-label="Navigation" className="flex w-full items-center justify-between gap-1 md:justify-end md:gap-2 lg:gap-3">
               <CountryMenu label={locationLabel} query={query} />
-              <Button asChild className="h-10 rounded-full bg-neutral-950 px-3 text-white hover:bg-neutral-800 sm:px-4">
+              <Button asChild className="h-10 rounded-full bg-neutral-950 px-3 text-white hover:bg-neutral-800 md:px-3 xl:px-4">
                 <Link href={postHref} aria-label="Post ad">
                   <Plus />
-                  <span className="hidden sm:inline">Post ad</span>
+                  <span className="hidden xl:inline">Post ad</span>
                 </Link>
               </Button>
               <Button asChild variant="outline" size="icon-lg" className="relative rounded-full">
@@ -89,43 +70,7 @@ export function SiteHeader() {
                   {unreadMessages > 0 ? <UnreadDot /> : null}
                 </Link>
               </Button>
-              <HeaderMenu
-                label="Notifications"
-                summaryClassName="relative size-9 px-0"
-                panelClassName="w-80"
-                summary={
-                  <>
-                    <Bell />
-                    {unread > 0 ? <UnreadDot /> : null}
-                  </>
-                }
-              >
-                <p className="px-2 py-1.5 text-sm font-medium">Notifications</p>
-                <div className="mx-1 mb-1 h-px bg-neutral-200" />
-                {notifications.map((item) => {
-                  const seen = read.includes(item.id)
-                  return (
-                    <Link
-                      key={item.id}
-                      href={notificationHref(item.id)}
-                      role="menuitem"
-                      className="flex h-auto items-start gap-3 rounded-md px-2 py-2 hover:bg-neutral-100"
-                      onClick={() => setRead((current) => (current.includes(item.id) ? current : [...current, item.id]))}
-                    >
-                      <span
-                        className={cn("mt-1 size-2 shrink-0 rounded-full", seen ? "bg-neutral-300" : "bg-neutral-900")}
-                      />
-                      <span className="min-w-0 flex-1 text-left">
-                        <span className={cn("block text-sm", seen ? "font-normal text-neutral-500" : "font-medium")}>
-                          {item.title}
-                        </span>
-                        <span className="block text-xs text-neutral-500">{item.body}</span>
-                      </span>
-                      <span className="text-[11px] text-neutral-500">{item.time}</span>
-                    </Link>
-                  )
-                })}
-              </HeaderMenu>
+              <NotificationsMenu />
               <HeaderMenu
                 label="Profile"
                 summaryClassName="relative size-9 px-0"
@@ -164,14 +109,121 @@ export function SiteHeader() {
                   </button>
                 ) : null}
               </HeaderMenu>
-            </div>
+            </nav>
           </div>
-        </div>
-        <div className="px-4 pb-3 md:hidden">
-          <SearchField value={query.q} onChange={(value) => update({ q: value })} />
         </div>
       </div>
     </header>
+  )
+}
+
+function NotificationsMenu() {
+  const { messages, ready, reloadBoard } = useMarketplace()
+  const [view, setView] = useState<"all" | "unread">("all")
+  const unread = unreadMessageCount(messages)
+  const notifications = recentMessageNotifications(messages, 8)
+  const visible = view === "unread" ? notifications.filter((item) => !item.read) : notifications
+
+  return (
+    <HeaderMenu
+      label={unread > 0 ? `Notifications, ${unread} unread` : "Notifications"}
+      summaryClassName="relative size-9 px-0"
+      panelClassName="w-[min(23rem,calc(100vw-1rem))] !p-0"
+      panelRole="region"
+      onOpen={() => { if (ready) void reloadBoard() }}
+      summary={<><Bell />{unread > 0 ? <UnreadDot /> : null}</>}
+    >
+      <div className="flex items-center justify-between gap-3 border-b border-neutral-200 px-4 py-3">
+        <div className="min-w-0">
+          <h2 className="text-base font-semibold text-neutral-950">Notifications</h2>
+          <p className="text-xs text-neutral-500" aria-live="polite">
+            {unread > 0 ? `${unread} unread ${unread === 1 ? "message" : "messages"}` : "Your recent message activity"}
+          </p>
+        </div>
+        <button
+          type="button"
+          aria-label="Refresh notifications"
+          title="Refresh notifications"
+          disabled={!ready}
+          onClick={() => void reloadBoard()}
+          className="flex size-9 shrink-0 items-center justify-center rounded-full border border-neutral-200 text-neutral-600 hover:bg-neutral-100 disabled:opacity-50"
+        >
+          <RefreshCw className={cn("size-4", !ready && "animate-spin")} aria-hidden="true" />
+        </button>
+      </div>
+      <div className="flex gap-1 border-b border-neutral-200 px-3 py-2" aria-label="Filter notifications">
+        {(["all", "unread"] as const).map((option) => (
+          <button
+            key={option}
+            type="button"
+            aria-pressed={view === option}
+            onClick={() => setView(option)}
+            className={cn(
+              "rounded-full px-3 py-1.5 text-xs font-medium transition-colors",
+              view === option ? "bg-neutral-950 text-white" : "text-neutral-600 hover:bg-neutral-100",
+            )}
+          >
+            {option === "all" ? "All" : `Unread${unread ? ` ${unread}` : ""}`}
+          </button>
+        ))}
+      </div>
+      <div className="max-h-[min(21rem,calc(100dvh-16rem))] min-h-40 overflow-y-auto p-2">
+        {!ready && notifications.length === 0 ? (
+          <p role="status" className="px-3 py-10 text-center text-sm text-neutral-500">Loading notifications…</p>
+        ) : null}
+        {ready && visible.length === 0 ? (
+          <div className="flex min-h-40 flex-col items-center justify-center px-5 py-7 text-center">
+            <span className="flex size-10 items-center justify-center rounded-full bg-neutral-100 text-neutral-600">
+              <Inbox className="size-5" aria-hidden="true" />
+            </span>
+            <p className="mt-3 text-sm font-medium text-neutral-950">
+              {view === "unread" ? "You're all caught up" : "Nothing here yet"}
+            </p>
+            <p className="mt-1 max-w-56 text-xs leading-5 text-neutral-500">
+              {view === "unread" ? "New replies and inquiries will appear here." : "Messages from buyers and sellers will appear here."}
+            </p>
+          </div>
+        ) : null}
+        {visible.length > 0 ? (
+          <ul className="space-y-0.5">
+            {visible.map((item) => (
+              <li key={item.id}>
+                <Link
+                  href={`/messages?c=${encodeURIComponent(item.conversationId)}`}
+                  className={cn(
+                    "flex items-start gap-3 rounded-xl px-3 py-3 outline-none hover:bg-neutral-100 focus-visible:ring-2 focus-visible:ring-neutral-950",
+                    !item.read && "bg-neutral-50",
+                  )}
+                >
+                  <span className="mt-0.5 flex size-9 shrink-0 items-center justify-center rounded-full bg-white ring-1 ring-neutral-200">
+                    <MessageCircle className="size-4 text-neutral-700" aria-hidden="true" />
+                  </span>
+                  <span className="min-w-0 flex-1">
+                    <span className="sr-only">{item.read ? "Read: " : "Unread: "}</span>
+                    <span className="flex items-start justify-between gap-2">
+                      <span className={cn("min-w-0 truncate text-sm", item.read ? "text-neutral-700" : "font-semibold text-neutral-950")}>
+                        {item.viewerIsSeller ? "New inquiry" : "Seller reply"}
+                      </span>
+                      {!item.read ? <span className="mt-1 size-2 shrink-0 rounded-full bg-neutral-950" aria-hidden="true" /> : null}
+                    </span>
+                    <span className="block truncate text-xs font-medium text-neutral-600">{item.listingTitle}</span>
+                    <span className="mt-1 line-clamp-2 text-xs leading-5 text-neutral-500">{item.body}</span>
+                    <time dateTime={item.sentAt} className="mt-1 block text-[11px] text-neutral-400">
+                      {new Date(item.sentAt).toLocaleDateString("en-US", { month: "short", day: "numeric", timeZone: "UTC" })}
+                    </time>
+                  </span>
+                </Link>
+              </li>
+            ))}
+          </ul>
+        ) : null}
+      </div>
+      <div className="border-t border-neutral-200 p-2">
+        <Link href="/messages" className="flex h-9 items-center justify-center rounded-full text-xs font-medium text-neutral-700 hover:bg-neutral-100">
+          Open inbox
+        </Link>
+      </div>
+    </HeaderMenu>
   )
 }
 
@@ -200,13 +252,13 @@ function CountryMenu({ label, query }: { label: string; query: ListingQuery }) {
   return (
     <HeaderMenu
       label={`Country: ${label}`}
-      summaryClassName="h-10 px-2.5 sm:max-w-48 sm:px-3"
+      summaryClassName="h-10 px-2.5 sm:max-w-48 sm:px-3 lg:max-w-44"
       panelClassName="w-64"
       onOpen={() => setLocationQuery("")}
       summary={
         <>
           <MapPin className="size-4 shrink-0 text-neutral-500" />
-          <span className="hidden max-w-32 truncate sm:inline">{label}</span>
+          <span className="hidden max-w-32 truncate sm:inline md:hidden lg:inline">{label}</span>
           <ChevronDown className="hidden size-4 shrink-0 text-neutral-400 group-open:rotate-180 sm:block" />
         </>
       }
@@ -363,6 +415,7 @@ function HeaderMenu({
   className,
   summaryClassName,
   panelClassName,
+  panelRole = "menu",
   onOpen,
 }: {
   label: string
@@ -371,6 +424,7 @@ function HeaderMenu({
   className?: string
   summaryClassName?: string
   panelClassName?: string
+  panelRole?: "menu" | "region"
   onOpen?: () => void
 }) {
   const detailsRef = useRef<HTMLDetailsElement>(null)
@@ -429,7 +483,7 @@ function HeaderMenu({
       </summary>
       <div
         data-header-panel
-        role="menu"
+        role={panelRole}
         aria-label={label}
         className={cn(
           "absolute top-full right-0 z-[80] mt-1.5 max-h-[min(24rem,calc(100dvh-5rem))] max-w-[calc(100vw-1rem)] overflow-y-auto rounded-lg bg-white p-1 text-sm shadow-md ring-1 ring-neutral-200",
@@ -524,30 +578,19 @@ function placeHeaderPanel(details: HTMLDetailsElement) {
   let left = trigger.right - width
   if (left < margin) left = margin
   if (left + width > window.innerWidth - margin) left = Math.max(margin, window.innerWidth - margin - width)
-  const top = trigger.bottom + 6
+  const below = window.innerHeight - trigger.bottom
+  const above = trigger.top
+  const openAbove = below < 260 && above > below
+  const top = openAbove ? Math.max(margin, trigger.top - Math.min(384, above - margin) - 6) : trigger.bottom + 6
   panel.style.position = "fixed"
   panel.style.top = `${top}px`
   panel.style.left = `${Math.round(left)}px`
   panel.style.right = "auto"
   panel.style.marginTop = "0"
   panel.style.zIndex = "80"
-  panel.style.maxHeight = `${Math.max(180, Math.round(window.innerHeight - top - margin))}px`
+  panel.style.maxHeight = `${Math.max(120, Math.round(openAbove ? trigger.top - top - 6 : window.innerHeight - top - margin))}px`
 }
 
-function notificationHref(id: NotificationId): string {
-  switch (id) {
-    case "land-cruiser":
-      return "/?q=Land%20Cruiser"
-    case "jobs":
-      return "/jobs"
-    case "farm":
-      return "/?q=farm&country=TZ"
-    default: {
-      const unreachable: never = id
-      return unreachable
-    }
-  }
-}
 
 function locationHref(pathname: string, search: string, country: string | null, city?: string | null): string {
   const pathCategory = categoryFromPath(pathname)
@@ -585,9 +628,13 @@ function filterCountries(query: string) {
 export function HeaderFallback() {
   return (
     <header className="sticky top-0 z-40 border-b border-neutral-200/80 bg-white">
-      <div className="mx-auto flex h-[72px] max-w-[1720px] items-center">
-        <Logo />
-        <nav aria-label="Account" className="ml-auto flex items-center gap-2 px-4">
+      <div className="mx-auto flex h-16 max-w-[1720px] items-center gap-1 px-2 md:h-[72px] md:gap-3 md:px-5 xl:gap-6 xl:px-8">
+        <Logo iconOnly className="xl:hidden" />
+        <Logo className="hidden xl:flex" />
+        <div className="min-w-0 flex-1 px-2 md:mx-auto md:max-w-[680px] md:px-0">
+          <div className="h-11 rounded-full bg-neutral-100" />
+        </div>
+        <nav aria-label="Account" className="fixed inset-x-3 bottom-[calc(env(safe-area-inset-bottom)+0.75rem)] z-50 mx-auto flex max-w-lg items-center justify-around rounded-3xl border border-neutral-200 bg-white p-2 shadow-lg md:static md:ml-auto md:max-w-none md:gap-2 md:rounded-none md:border-0 md:bg-transparent md:p-0 md:shadow-none lg:gap-3">
           <PostLink className={cn(buttonVariants(), "h-10 rounded-full bg-neutral-950 px-3 text-white")} ariaLabel="Post ad">
             Post ad
           </PostLink>

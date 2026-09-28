@@ -1,34 +1,50 @@
 "use client"
 
-import { ArrowLeft } from "lucide-react"
-import Link from "next/link"
 import { useRouter, useSearchParams } from "next/navigation"
-import { useEffect, useState, useSyncExternalStore } from "react"
+import { useEffect, useMemo, useState, useSyncExternalStore } from "react"
 import { toast } from "sonner"
 
-import { Button } from "@/components/ui/button"
-import { Textarea } from "@/components/ui/textarea"
-import { formatPosted } from "@/lib/format"
-import { messageThreads, type MessageRole } from "@/lib/messages"
+import { ConversationList, type InboxFilter } from "@/components/inbox/conversation-list"
+import { ConversationPanel } from "@/components/inbox/conversation-panel"
+import { messageThreads } from "@/lib/messages"
 import { useMarketplace } from "@/lib/marketplace"
+import { sampleThreads } from "@/lib/sample-conversations"
 
 export function MessagesPage() {
-  const { ready, messages, markThreadRead, sendMessage } = useMarketplace()
+  const { ready, messages, listings, markThreadRead, sendMessage } = useMarketplace()
   const params = useSearchParams()
   const router = useRouter()
-  const threads = messageThreads(messages)
+  const threads = useMemo(() => messageThreads(messages), [messages])
+  const listingsById = useMemo(() => new Map(listings.map((listing) => [listing.id, listing])), [listings])
+  const showingSamples = threads.length === 0
+  const displayThreads = showingSamples ? sampleThreads : threads
+  const [search, setSearch] = useState("")
+  const [filter, setFilter] = useState<InboxFilter>("all")
+  const [sending, setSending] = useState(false)
+  const wide = useWide()
+
+  const filtered = useMemo(() => {
+    const term = search.trim().toLocaleLowerCase()
+    return displayThreads.filter((thread) => {
+      if (filter === "unread" && !thread.unread) return false
+      if (!term) return true
+      return `${thread.peerName} ${thread.listingTitle} ${thread.messages.map((message) => message.body).join(" ")}`.toLocaleLowerCase().includes(term)
+    })
+  }, [displayThreads, filter, search])
+
   const requestedConversation = params.get("c")
   const requestedListing = params.get("listing")
+  const requestedSample = showingSamples ? params.get("demo") : null
   const selected =
     threads.find((thread) => thread.conversationId === requestedConversation) ??
     threads.find((thread) => thread.listingId === requestedListing) ??
+    (requestedSample ? sampleThreads.find((thread) => thread.conversationId === requestedSample) : null) ??
     null
-  const wide = useWide()
-  const missing = Boolean(requestedConversation || requestedListing) && !selected
-  const visible = selected ?? (!requestedConversation && !requestedListing && wide ? (threads[0] ?? null) : null)
+  const missing = Boolean(requestedConversation || requestedListing || requestedSample) && !selected
+  const visible = selected ?? (!missing && wide ? (filtered[0] ?? null) : null)
+  const unreadTotal = threads.reduce((count, thread) => count + thread.unread, 0)
   const visibleId = visible?.conversationId
-  const visibleUnread = visible?.unread ?? 0
-  const [sending, setSending] = useState(false)
+  const visibleUnread = showingSamples ? 0 : (visible?.unread ?? 0)
 
   useEffect(() => {
     if (visibleId && visibleUnread > 0) markThreadRead(visibleId)
@@ -36,203 +52,61 @@ export function MessagesPage() {
 
   if (!ready) {
     return (
-      <div className="mx-auto w-full max-w-5xl px-4 py-8 md:px-6">
-        <h1 className="text-2xl font-semibold tracking-tight">Messages</h1>
-        <p className="mt-2 text-sm text-neutral-500">Loading your messages…</p>
+      <div className="mx-auto w-full max-w-[1720px] px-4 py-6 md:px-6">
+        <p className="text-sm text-neutral-500">Loading your messages…</p>
       </div>
     )
   }
 
-  async function reply(draft: string) {
-    if (!visible) return { ok: false as const, reason: "Choose a conversation." }
+  async function sendReply(draft: string): Promise<boolean> {
+    if (!visible || showingSamples) return false
     setSending(true)
-    const result = await sendMessage(visible.listingId, draft, visible.conversationId)
-    setSending(false)
-    if (!result.ok) return result
-    toast.success("Reply sent")
-    return result
+    try {
+      const result = await sendMessage(visible.listingId, draft, visible.conversationId)
+      if (!result.ok) {
+        toast.error(result.reason)
+        return false
+      }
+      toast.success("Reply sent")
+      return true
+    } catch {
+      toast.error("Could not send the message.")
+      return false
+    } finally {
+      setSending(false)
+    }
   }
 
   return (
-    <div className="mx-auto w-full max-w-5xl px-4 py-8 md:px-6">
-      <h1 className="text-2xl font-semibold tracking-tight">Messages</h1>
-      <p className="mt-1 text-sm text-neutral-500">
-        Conversations with buyers and sellers on your live ads. Both sides see the same thread.
-      </p>
-      {threads.length === 0 ? (
-        <div className="mt-8 rounded-2xl border border-dashed border-neutral-300 bg-white px-6 py-16 text-center">
-          <h2 className="text-lg font-semibold tracking-tight">No messages yet</h2>
-          <p className="mx-auto mt-2 max-w-sm text-sm text-neutral-500">
-            Buyers write from a listing. Sellers reply here. Sample catalog ads do not take messages.
-          </p>
-          <Button asChild className="mt-5 rounded-full">
-            <Link href="/">Browse listings</Link>
-          </Button>
-        </div>
-      ) : (
-        <>
-          {missing ? (
-            <p className="mt-4 text-sm text-neutral-500">This conversation is not on this account.</p>
-          ) : null}
-          <div className="mt-6 grid min-w-0 gap-4 lg:grid-cols-[280px_minmax(0,1fr)]">
-            <ul className={visible && !wide ? "hidden" : "grid min-w-0 gap-2 overflow-hidden"}>
-              {threads.map((thread) => {
-                const active = visible?.conversationId === thread.conversationId
-                const preview = thread.messages[thread.messages.length - 1]
-                return (
-                  <li key={thread.conversationId} className="min-w-0">
-                    <Link
-                      href={`/messages?c=${thread.conversationId}`}
-                      className={`block min-w-0 overflow-hidden rounded-2xl border px-3 py-3 ${
-                        active ? "border-neutral-950 bg-white" : "border-neutral-200 bg-white hover:border-neutral-400"
-                      }`}
-                    >
-                      <span className="flex items-center gap-2">
-                        <span className="min-w-0 flex-1 truncate text-sm font-medium">{thread.peerName}</span>
-                        {thread.unread > 0 ? (
-                          <span className="rounded-full bg-rose-500 px-1.5 text-[10px] font-medium text-white">
-                            {thread.unread}
-                          </span>
-                        ) : null}
-                      </span>
-                      <span className="mt-0.5 block truncate text-xs text-neutral-500">
-                        {thread.viewerIsSeller ? "Your ad · " : ""}
-                        {thread.listingTitle}
-                      </span>
-                      {preview ? (
-                        <span className="mt-1 block truncate text-xs text-neutral-600">{preview.body}</span>
-                      ) : null}
-                    </Link>
-                  </li>
-                )
-              })}
-            </ul>
-            <section className={visible ? "min-w-0" : "hidden lg:block"}>
-              {visible ? (
-                <div className="rounded-2xl border border-neutral-200 bg-white">
-                  <div className="flex items-start gap-3 border-b px-4 py-3">
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      className="lg:hidden"
-                      aria-label="All messages"
-                      onClick={() => router.push("/messages")}
-                    >
-                      <ArrowLeft />
-                    </Button>
-                    <div className="min-w-0">
-                      <p className="truncate font-medium">{visible.peerName}</p>
-                      <Link
-                        href={`/listings/${visible.listingId}`}
-                        className="block truncate text-xs text-neutral-500 hover:text-neutral-900"
-                      >
-                        {visible.listingTitle}
-                      </Link>
-                    </div>
-                  </div>
-                  <ol className="grid gap-3 px-4 py-4">
-                    {visible.messages.map((message) => (
-                      <MessageBubble
-                        key={message.id}
-                        role={message.role}
-                        fromMe={message.fromMe}
-                        body={message.body}
-                        sentAt={message.sentAt}
-                      />
-                    ))}
-                  </ol>
-                  <ReplyForm
-                    key={visible.conversationId}
-                    placeholder={visible.viewerIsSeller ? "Reply to the buyer…" : "Write another message…"}
-                    sending={sending}
-                    onSend={async (draft) => {
-                      const result = await reply(draft)
-                      if (!result.ok) toast.error(result.reason)
-                      return result.ok
-                    }}
-                  />
-                </div>
-              ) : (
-                <div className="rounded-2xl border border-dashed border-neutral-300 px-6 py-16 text-center">
-                  <p className="text-sm text-neutral-500">Choose a conversation.</p>
-                </div>
-              )}
-            </section>
-          </div>
-        </>
-      )}
+    <div className="mx-auto w-full max-w-[1720px] px-4 py-3 md:px-6">
+      <h1 className="sr-only">Inbox</h1>
+      {missing ? (
+        <p className="mb-3 rounded-lg border border-neutral-200 bg-white px-3 py-2 text-sm text-neutral-600">This conversation is not on this account. Choose one below.</p>
+      ) : null}
+      <div className="grid h-[calc(100dvh-11rem)] min-h-[26rem] min-w-0 overflow-hidden rounded-xl border border-neutral-200 bg-white md:h-[calc(100dvh-6rem)] lg:grid-cols-[360px_minmax(0,1fr)]">
+        <ConversationList
+          threads={filtered}
+          listings={listingsById}
+          activeId={visible?.conversationId}
+          sample={showingSamples}
+          search={search}
+          onSearch={setSearch}
+          filter={filter}
+          onFilter={setFilter}
+          unread={unreadTotal}
+          hidden={Boolean(visible && !wide)}
+        />
+        <ConversationPanel
+          thread={visible}
+          listing={visible ? listingsById.get(visible.listingId) : undefined}
+          sample={showingSamples}
+          sending={sending}
+          onBack={() => router.push("/messages")}
+          onSend={sendReply}
+        />
+      </div>
     </div>
   )
-}
-
-function ReplyForm({
-  placeholder,
-  sending,
-  onSend,
-}: {
-  placeholder: string
-  sending: boolean
-  onSend: (draft: string) => Promise<boolean>
-}) {
-  const [draft, setDraft] = useState("")
-  return (
-    <form
-      className="grid gap-2 border-t px-4 py-3"
-      onSubmit={(event) => {
-        event.preventDefault()
-        if (sending) return
-        void onSend(draft).then((ok) => {
-          if (ok) setDraft("")
-        })
-      }}
-    >
-      <Textarea
-        value={draft}
-        onChange={(event) => setDraft(event.target.value)}
-        placeholder={placeholder}
-        rows={3}
-      />
-      <Button type="submit" disabled={sending || draft.trim().length < 8} className="justify-self-end rounded-full">
-        {sending ? "Sending…" : "Send"}
-      </Button>
-    </form>
-  )
-}
-
-function MessageBubble({
-  role,
-  fromMe,
-  body,
-  sentAt,
-}: {
-  role: MessageRole
-  fromMe: boolean
-  body: string
-  sentAt: string
-}) {
-  const when = formatWhen(sentAt)
-  const label = role === "seller" ? "Seller" : "Buyer"
-  if (fromMe) {
-    return (
-      <li className="ml-auto max-w-[85%] rounded-2xl bg-neutral-950 px-3 py-2 text-sm text-white">
-        <p className="leading-6 break-words">{body}</p>
-        <p className="mt-1 text-[11px] text-neutral-300">{when}</p>
-      </li>
-    )
-  }
-  return (
-    <li className="max-w-[85%] rounded-2xl bg-neutral-100 px-3 py-2 text-sm text-neutral-900">
-      <p className="text-[11px] font-medium text-neutral-500">{label}</p>
-      <p className="mt-1 leading-6 break-words">{body}</p>
-      <p className="mt-1 text-[11px] text-neutral-500">{when}</p>
-    </li>
-  )
-}
-
-function formatWhen(sentAt: string): string {
-  const time = new Date(sentAt).getTime()
-  if (Number.isNaN(time)) return ""
-  return formatPosted((Date.now() - time) / 3_600_000)
 }
 
 function useWide() {

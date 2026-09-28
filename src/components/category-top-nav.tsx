@@ -1,9 +1,13 @@
 "use client"
 
-import { Suspense, useMemo } from "react"
+import { Menu } from "lucide-react"
+import { Suspense, useMemo, useState } from "react"
 import { usePathname, useSearchParams } from "next/navigation"
 
 import { CategoryNav } from "@/components/category-nav"
+import { SiteFooter } from "@/components/site-footer"
+import { Button } from "@/components/ui/button"
+import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from "@/components/ui/sheet"
 import { matchesQuery } from "@/lib/board"
 import { canonicalCountry, fold } from "@/lib/countries"
 import { useMarketplace } from "@/lib/marketplace"
@@ -11,25 +15,34 @@ import { categoryPlan } from "@/lib/posting"
 import { categories, isSortId, type CategoryId, type Listing } from "@/lib/types"
 import { categoryFromPath, type ListingQuery } from "@/lib/use-listing-query"
 
-const sidebarClass =
-  "fixed top-[73px] bottom-0 left-[max(0px,calc((100%-1720px)/2))] z-30 hidden w-(--sidebar-width) overflow-y-auto border-r border-neutral-200 bg-white md:block"
-
-export function CategorySidebar() {
+export function CategoryTopNav() {
   const pathname = usePathname()
   const active = pathname === "/" ? undefined : categoryFromPath(pathname)
+  const [open, setOpen] = useState(false)
 
   return (
-    <aside id="category-sidebar" className={sidebarClass}>
-      <div className="px-3 py-4">
-        <Suspense fallback={<SidebarFallback active={active} />}>
-          <CategorySidebarNav />
-        </Suspense>
-      </div>
-    </aside>
+    <Sheet open={open} onOpenChange={setOpen}>
+      <SheetTrigger asChild>
+        <Button type="button" variant="ghost" size="icon-lg" className="shrink-0 rounded-full" aria-label="Browse categories">
+          <Menu className="size-5" />
+        </Button>
+      </SheetTrigger>
+      <SheetContent side="right" className="w-[min(22rem,calc(100vw-2rem))] gap-0 overflow-hidden p-0">
+        <SheetHeader>
+          <SheetTitle>Categories</SheetTitle>
+        </SheetHeader>
+        <div className="min-h-0 flex-1 overflow-y-auto px-3 pb-4">
+          <Suspense fallback={<TopNavFallback active={active} onNavigate={() => setOpen(false)} />}>
+            <CategoryTopNavLinks onNavigate={() => setOpen(false)} />
+          </Suspense>
+        </div>
+        <SiteFooter onNavigate={() => setOpen(false)} />
+      </SheetContent>
+    </Sheet>
   )
 }
 
-function CategorySidebarNav() {
+function CategoryTopNavLinks({ onNavigate }: { onNavigate: () => void }) {
   const pathname = usePathname()
   const searchParams = useSearchParams()
   const { listings } = useMarketplace()
@@ -53,11 +66,12 @@ function CategorySidebarNav() {
       activeType={activeType}
       hrefForCategory={(category) => listingHref(category, undefined, query)}
       hrefForType={(type) => listingHref(active, type, query)}
+      onNavigate={onNavigate}
     />
   )
 }
 
-function SidebarFallback({ active }: { active?: CategoryId }) {
+function TopNavFallback({ active, onNavigate }: { active?: CategoryId; onNavigate: () => void }) {
   const counts = Object.fromEntries(categories.map((category) => [category.id, 0])) as Record<
     CategoryId,
     number
@@ -69,6 +83,7 @@ function SidebarFallback({ active }: { active?: CategoryId }) {
       total={0}
       hrefForCategory={(category) => (category ? `/${category}` : "/")}
       hrefForType={() => (active ? `/${active}` : "/")}
+      onNavigate={onNavigate}
     />
   )
 }

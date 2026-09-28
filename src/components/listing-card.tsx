@@ -1,14 +1,13 @@
 "use client"
 
-import { Clock, Heart, MapPin } from "lucide-react"
+import { ArrowRight, Heart, MapPin } from "lucide-react"
 import Image from "next/image"
 import Link from "next/link"
 
-import { formatDistance, formatPlace, formatPosted, formatPrice, hoursAgoOf } from "@/lib/format"
+import { formatDistance, formatPlace, formatPrice } from "@/lib/format"
 import { isListingExpired } from "@/lib/expiry"
-import { listingMeta } from "@/lib/posting"
 import { useMarketplace } from "@/lib/marketplace"
-import type { Listing } from "@/lib/types"
+import { categoryName, type Listing } from "@/lib/types"
 import { cn } from "@/lib/utils"
 
 export function ListingCard({
@@ -26,7 +25,7 @@ export function ListingCard({
 }) {
   const { isSaved, toggleSaved } = useMarketplace()
   const saved = isSaved(listing.id)
-  const posted = formatPosted(hoursAgoOf(listing))
+  const place = formatPlace(listing)
   const away = distanceKm === undefined ? undefined : formatDistance(distanceKm)
   const body = (
     <>
@@ -35,7 +34,7 @@ export function ListingCard({
           src={listing.image}
           alt=""
           fill
-          sizes="(max-width: 640px) 100vw, 18vw"
+          sizes="(max-width: 640px) 50vw, (max-width: 1280px) 33vw, 20vw"
           unoptimized={listing.image.startsWith("data:")}
           className="object-cover transition duration-300 group-hover:scale-[1.03]"
         />
@@ -72,16 +71,17 @@ export function ListingCard({
           {formatPrice(listing)}
         </p>
         <h3 className="truncate text-[13px] leading-4 text-neutral-800">{listing.title}</h3>
-        <p className="truncate text-[11px] leading-3.5 text-neutral-500">{listingMeta(listing)}</p>
+        <p className="flex min-w-0 items-center gap-1 truncate text-[11px] leading-3.5 text-neutral-600" title={place}>
+          <MapPin className="size-3 shrink-0" aria-hidden="true" />
+          <span className="truncate">{place}</span>
+        </p>
         <div className="grid grid-cols-[minmax(0,1fr)_auto] items-center gap-1.5 text-[11px] leading-none text-neutral-500">
-          <span className="flex min-w-0 items-center gap-1">
-            <MapPin className="size-3 shrink-0" />
-            <span className="truncate">{formatPlace(listing)}</span>
-          </span>
-          <span className="flex items-center gap-1">
-            <Clock className="size-3 shrink-0" />
-            <span className="whitespace-nowrap">{posted}</span>
-          </span>
+          <span className="truncate">{categoryName(listing.category)}</span>
+          {linked ? (
+            <span className="inline-flex items-center gap-1 font-medium text-neutral-950">
+              View <ArrowRight className="size-3" aria-hidden="true" />
+            </span>
+          ) : null}
         </div>
       </div>
     </>

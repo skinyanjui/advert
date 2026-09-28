@@ -3,7 +3,6 @@ import { Geist, Geist_Mono } from "next/font/google"
 import { Suspense } from "react"
 
 import { HeaderFallback, SiteHeader } from "@/components/site-header"
-import { SiteFooter } from "@/components/site-footer"
 import { ThemeSync } from "@/components/theme-choices"
 import { Toaster } from "@/components/ui/sonner"
 import { AuthProvider } from "@/lib/auth"
@@ -23,6 +22,7 @@ const geistMono = Geist_Mono({
 })
 
 export const metadata: Metadata = {
+  metadataBase: new URL(`https://${process.env.VERCEL_PROJECT_PRODUCTION_URL ?? "adverts-murex.vercel.app"}`),
   title: {
     default: "africa classifieds",
     template: "%s · africa classifieds",
@@ -34,7 +34,7 @@ export const metadata: Metadata = {
 export default function RootLayout({ children }: LayoutProps<"/">) {
   return (
     <html lang="en" className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`} suppressHydrationWarning>
-      <body className="flex min-h-full flex-col bg-background font-sans text-foreground">
+      <body className="flex min-h-full flex-col bg-background pb-[calc(env(safe-area-inset-bottom)+6rem)] font-sans text-foreground md:pb-0">
         <script dangerouslySetInnerHTML={{ __html: themeBootScript }} />
         <ThemeSync />
         <MarketplaceProvider>
@@ -43,7 +43,6 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
               <SiteHeader />
             </Suspense>
             <main className="flex-1">{children}</main>
-            <SiteFooter />
             <Toaster />
           </AuthProvider>
         </MarketplaceProvider>

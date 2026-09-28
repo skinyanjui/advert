@@ -123,12 +123,10 @@ export function Browse() {
     (!home.city || !query.city || fold(query.city) !== fold(home.city))
   return (
     <div className="mx-auto w-full max-w-[1720px]">
-      <section className="min-w-0 px-4 pb-16 md:py-5 md:pr-6 md:pl-[calc(var(--sidebar-width)+1.5rem)]">
-        {/* Mobile: stick categories + sort/filter under the site header while scrolling. */}
+      <section className="min-w-0 px-4 py-4 pb-16 md:px-6 md:py-5">
+        {/* Sticky board chrome: mobile category chips + count/sort under the site header. */}
         <div
-          className={cn(
-            "sticky z-40 -mx-4 mb-4 border-b border-neutral-200/80 bg-white px-4 pt-3 pb-3 md:static md:z-auto md:mx-0 md:mb-4 md:border-0 md:bg-transparent md:px-0 md:pt-0 md:pb-0",
-          )}
+          className="sticky z-40 -mx-4 mb-4 border-b border-neutral-200/80 bg-background px-4 py-3 shadow-sm md:-mx-6 md:px-6"
           style={{ top: "var(--site-header-offset)" }}
         >
           <nav
@@ -176,7 +174,7 @@ export function Browse() {
               <SelectTrigger className="h-9 shrink-0 rounded-full" aria-label="Sort listings">
                 <SelectValue />
               </SelectTrigger>
-              <SelectContent align="end">
+              <SelectContent align="end" className="z-[60]">
                 {sorts.map((sort) => (
                   <SelectItem key={sort.id} value={sort.id}>
                     {sort.name}
@@ -228,7 +226,7 @@ export function Browse() {
             }}
           />
         ) : (
-          <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5">
+          <div className="grid grid-cols-2 gap-3 lg:grid-cols-3 xl:grid-cols-5">
             {visible.map((listing) => (
               <ListingCard
                 key={listing.id}
@@ -425,4 +423,3 @@ function citiesIn(listings: Listing[]): { name: string; count: number }[] {
   }
   return [...map.values()].sort((a, b) => b.count - a.count || a.name.localeCompare(b.name))
 }
-

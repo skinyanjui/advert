@@ -44,6 +44,9 @@ create table if not exists public.reference_country_currencies (
   currency_code text not null references public.reference_currencies(code),
   primary key (country_code, currency_code)
 );
+create index if not exists reference_country_currencies_currency_code
+  on public.reference_country_currencies (currency_code);
+
 create table if not exists public.reference_languages (
   code text primary key,
   name text not null,
@@ -54,6 +57,9 @@ create table if not exists public.reference_country_languages (
   language_code text not null references public.reference_languages(code),
   primary key (country_code, language_code)
 );
+create index if not exists reference_country_languages_language_code
+  on public.reference_country_languages (language_code);
+
 create table if not exists public.reference_timezones (
   tzid text primary key,
   updated_at timestamptz not null default now()

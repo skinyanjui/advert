@@ -10,14 +10,16 @@ export function PostLink({
   children,
   className,
   ariaLabel,
+  onClick,
 }: {
   children: ReactNode
   className?: string
   ariaLabel?: string
+  onClick?: () => void
 }) {
   const place = useRememberedPlace()
   return (
-    <Link href={postAdHref(place)} className={className} aria-label={ariaLabel}>
+    <Link href={postAdHref(place)} className={className} aria-label={ariaLabel} onClick={onClick}>
       {children}
     </Link>
   )

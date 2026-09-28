@@ -5,6 +5,7 @@ import {
   isBoardMessage,
   messageError,
   messageThreads,
+  recentMessageNotifications,
   unreadMessageCount,
   type BoardMessage,
 } from "../src/lib/messages"
@@ -66,6 +67,17 @@ test("messageThreads groups by conversation and sorts by latest", () => {
   assert.equal(threads[1]?.conversationId, "c-old")
 })
 
+test("conversations about different listings keep their own offer context", () => {
+  const threads = messageThreads([
+    sample({ id: "a", conversationId: "car", listingId: "car-1", listingTitle: "Pickup truck", peerName: "Buyer" }),
+    sample({ id: "b", conversationId: "house", listingId: "house-1", listingTitle: "House for rent", peerName: "Buyer" }),
+  ])
+  assert.deepEqual(threads.map(({ listingId, listingTitle }) => [listingId, listingTitle]), [
+    ["car-1", "Pickup truck"],
+    ["house-1", "House for rent"],
+  ])
+})
+
 test("unreadMessageCount ignores own messages", () => {
   const messages = [
     sample({ id: "a", fromMe: false, read: false }),
@@ -73,6 +85,18 @@ test("unreadMessageCount ignores own messages", () => {
     sample({ id: "c", fromMe: false, read: true }),
   ]
   assert.equal(unreadMessageCount(messages), 1)
+})
+
+test("notifications prioritize unread incoming messages and keep their stored read state", () => {
+  const messages = [
+    sample({ id: "read-new", read: true, sentAt: "2026-09-26T13:00:00.000Z" }),
+    sample({ id: "sent", fromMe: true, sentAt: "2026-09-26T14:00:00.000Z" }),
+    sample({ id: "unread-old", sentAt: "2026-09-26T09:00:00.000Z" }),
+  ]
+  assert.deepEqual(recentMessageNotifications(messages, 1).map((item) => item.id), ["unread-old"])
+  assert.deepEqual(recentMessageNotifications(messages, 2).map((item) => item.id), ["unread-old", "read-new"])
+  assert.equal(unreadMessageCount(messages), 1)
+  assert.equal(unreadMessageCount(messages.map((item) => ({ ...item, read: true }))), 0)
 })
 
 test("isBoardMessage rejects legacy sample-reply shape", () => {
