@@ -693,6 +693,18 @@ function AdForm({ existing }: { existing: Listing | null }) {
                 <p className="mt-0.5 text-sm text-neutral-700">{Number(price) > 0 ? formatPrice(preview) : "Add a price"}</p>
                 {choiceLine ? <p className="mt-0.5 truncate text-xs text-neutral-500">{choiceLine}</p> : null}
               </div>
+              {!country ? (
+                <p className="rounded-xl border border-amber-200 bg-amber-50 px-3 py-2 text-sm text-amber-950">
+                  Choose a country for this ad, or{" "}
+                  <Link
+                    href="/account"
+                    className="font-medium underline underline-offset-2 hover:text-amber-900"
+                  >
+                    set your country on Profile
+                  </Link>
+                  .
+                </p>
+              ) : null}
               <div className="grid grid-cols-2 gap-3">
                 <Field label="Country" required>
                   <CountryField
