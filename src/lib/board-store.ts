@@ -336,7 +336,12 @@ async function ownedRow(owner: string, id: string): Promise<Result<Row>> {
   return { ok: true, value: row as Row }
 }
 
-export async function setListingSold(owner: string, id: string, sold: boolean): Promise<Result<Listing>> {
+export async function setListingSold(
+  owner: string,
+  id: string,
+  sold: boolean,
+  resumeTo?: "active" | "paused",
+): Promise<Result<Listing>> {
   const owned = await ownedRow(owner, id)
   if (!owned.ok) return owned
   const current = cleanListing(owned.value.payload)
@@ -345,7 +350,9 @@ export async function setListingSold(owner: string, id: string, sold: boolean): 
     ? "sold"
     : isListingExpired(owned.value.expires_at ?? undefined)
       ? "expired"
-      : "active"
+      : resumeTo === "paused"
+        ? "paused"
+        : "active"
   const soldAt = sold ? new Date().toISOString() : null
   const stored = {
     ...current,
@@ -794,7 +801,9 @@ export async function createReport(
 
   const listing = unpack(row as Row)
   if (!listing) return { ok: false, reason: "That listing is no longer on the board." }
-  if (isListingExpired(listing.expiresAt)) return { ok: false, reason: "That listing has expired." }
+  if (!isPubliclyVisibleListing(listing)) {
+    return { ok: false, reason: "That listing is no longer on the board." }
+  }
 
   const { error: insertError } = await db.from("board_reports").insert({
     id: crypto.randomUUID(),
@@ -1002,7 +1011,7 @@ export async function sendExpiryReminders(): Promise<ExpiryReminderSummary> {
   const soon = new Date(now.getTime() + expiryNoticeDays * 24 * 60 * 60 * 1000).toISOString()
   const { data: rows, error } = await db
     .from("board_listings")
-    .select("id,owner_id,posted_at,payload,expires_at,expiry_reminder_sent_at")
+    .select(`${listingSelect},expiry_reminder_sent_at`)
     .is("expiry_reminder_sent_at", null)
     .gt("expires_at", now.toISOString())
     .lte("expires_at", soon)
@@ -1014,7 +1023,9 @@ export async function sendExpiryReminders(): Promise<ExpiryReminderSummary> {
   let failed = 0
   for (const row of rows ?? []) {
     const listing = unpack(row as Row)
-    if (!listing || listing.sold) continue
+    if (!listing) continue
+    const status = effectiveListingStatus(listing)
+    if (status === "sold" || status === "paused") continue
     const { data: profile, error: profileError } = await db
       .from("board_profiles")
       .select("email")

@@ -42,8 +42,11 @@ export async function DELETE(request: Request, context: Context) {
 
 async function patchListing(owner: string, id: string, body: unknown) {
   if (body && typeof body === "object" && !Array.isArray(body)) {
-    const action = body as { sold?: unknown; renew?: unknown; paused?: unknown }
-    if (typeof action.sold === "boolean") return setListingSold(owner, id, action.sold)
+    const action = body as { sold?: unknown; renew?: unknown; paused?: unknown; resumeTo?: unknown }
+    if (typeof action.sold === "boolean") {
+      const resumeTo = action.resumeTo === "paused" || action.resumeTo === "active" ? action.resumeTo : undefined
+      return setListingSold(owner, id, action.sold, resumeTo)
+    }
     if (typeof action.paused === "boolean") return setListingPaused(owner, id, action.paused)
     if (action.renew === true) return renewListing(owner, id)
   }

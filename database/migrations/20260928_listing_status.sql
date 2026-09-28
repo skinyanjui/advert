@@ -31,23 +31,15 @@ where status is null;
 alter table public.board_listings
   alter column status set default 'active';
 
-do $$
-begin
-  alter table public.board_listings alter column status set not null;
-exception
-  when others then null;
-end $$;
+alter table public.board_listings
+  alter column status set not null;
 
-do $$
-begin
-  alter table public.board_listings
-    drop constraint if exists board_listings_status_check;
-  alter table public.board_listings
-    add constraint board_listings_status_check
-    check (status in ('active', 'paused', 'sold', 'expired'));
-exception
-  when others then null;
-end $$;
+alter table public.board_listings
+  drop constraint if exists board_listings_status_check;
+
+alter table public.board_listings
+  add constraint board_listings_status_check
+  check (status in ('active', 'paused', 'sold', 'expired'));
 
 -- Drop sold from JSON payload once mirrored on the column (idempotent).
 update public.board_listings

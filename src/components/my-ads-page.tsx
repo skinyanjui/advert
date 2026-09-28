@@ -45,12 +45,16 @@ import { useRememberedPlace } from "@/lib/use-remembered-place"
 import type { Listing } from "@/lib/types"
 import { cn } from "@/lib/utils"
 
+type ResumeStatus = "active" | "paused"
+
 const filters: ListingStatusFilter[] = ["all", "active", "paused", "sold", "expired"]
 const swipeReveal = 144
 
 export function MyAdsPage() {
-  const { ready, listings, removeListing, setListingSold, setListingPaused, renewListing } = useMarketplace()
+  const { ready, listings, messages, removeListing, setListingSold, setListingPaused, renewListing } =
+    useMarketplace()
   const mine = useMemo(() => listings.filter((listing) => listing.mine), [listings])
+  const unreadByListing = useMemo(() => unreadByListingId(messages), [messages])
   const postHref = postAdHref(useRememberedPlace())
   const [filter, setFilter] = useState<ListingStatusFilter>("all")
   const [pendingId, setPendingId] = useState<string | null>(null)
@@ -89,6 +93,8 @@ export function MyAdsPage() {
   }, [])
 
   async function onSold(listing: Listing, sold: boolean) {
+    const prior = effectiveListingStatus(listing)
+    const resumeTo: ResumeStatus = prior === "paused" ? "paused" : "active"
     setBusyId(listing.id)
     const result = await setListingSold(listing.id, sold)
     setBusyId(null)
@@ -98,9 +104,9 @@ export function MyAdsPage() {
     }
     if (sold) {
       withUndo("Marked as sold", async () => {
-        const undo = await setListingSold(listing.id, false)
+        const undo = await setListingSold(listing.id, false, resumeTo)
         if (!undo.ok) throw new Error(undo.reason)
-        toast.success("Marked as available")
+        toast.success(resumeTo === "paused" ? "Ad paused again" : "Marked as available")
       })
     } else {
       toast.success("Marked as available")
@@ -223,6 +229,7 @@ export function MyAdsPage() {
               <MyAdRow
                 key={listing.id}
                 listing={listing}
+                unread={unreadByListing.get(listing.id) ?? 0}
                 busy={busyId === listing.id}
                 swipeOpen={openSwipeId === listing.id}
                 onSwipeOpen={(open) => setOpenSwipeId(open ? listing.id : null)}
@@ -261,6 +268,7 @@ export function MyAdsPage() {
 
 function MyAdRow({
   listing,
+  unread,
   busy,
   swipeOpen,
   onSwipeOpen,
@@ -271,6 +279,7 @@ function MyAdRow({
   onDelete,
 }: {
   listing: Listing
+  unread: number
   busy: boolean
   swipeOpen: boolean
   onSwipeOpen: (open: boolean) => void
@@ -347,10 +356,10 @@ function MyAdRow({
 
       <div
         className={cn(
-          "relative flex min-w-0 items-stretch gap-3 bg-white px-4 py-4",
+          "relative flex min-w-0 touch-pan-y items-stretch gap-3 bg-white px-4 py-4",
           !reduceMotion && "transition-transform duration-200 ease-out",
         )}
-        style={{ transform: `translateX(${offset}px)` }}
+        style={{ transform: `translateX(${offset}px)`, touchAction: "pan-y" }}
         onPointerDown={handlers.onPointerDown}
         onPointerMove={handlers.onPointerMove}
         onPointerUp={handlers.onPointerUp}
@@ -373,6 +382,18 @@ function MyAdRow({
             <span className="mt-1 block truncate text-xs text-neutral-500">{meta}</span>
           </span>
         </Link>
+        {unread > 0 ? (
+          <Button
+            variant="ghost"
+            size="sm"
+            className="h-11 shrink-0 self-center px-2 text-xs text-rose-600"
+            asChild
+          >
+            <Link href={`/messages?listing=${encodeURIComponent(listing.id)}`}>
+              {unread === 1 ? "1 unread" : `${unread} unread`}
+            </Link>
+          </Button>
+        ) : null}
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
             <Button
@@ -390,6 +411,13 @@ function MyAdRow({
             <DropdownMenuItem asChild>
               <Link href={`/post?edit=${encodeURIComponent(listing.id)}`}>Edit</Link>
             </DropdownMenuItem>
+            {unread > 0 ? (
+              <DropdownMenuItem asChild>
+                <Link href={`/messages?listing=${encodeURIComponent(listing.id)}`}>
+                  {unread === 1 ? "1 unread message" : `${unread} unread messages`}
+                </Link>
+              </DropdownMenuItem>
+            ) : null}
             {!expired ? (
               <DropdownMenuItem disabled={busy} onSelect={() => onSold(!sold)}>
                 {sold ? "Mark as available" : "Mark as sold"}
@@ -461,6 +489,17 @@ function usePrefersReducedMotion() {
   return reduced
 }
 
+function unreadByListingId(
+  messages: { listingId: string; read: boolean; fromMe: boolean; viewerIsSeller: boolean }[],
+) {
+  const counts = new Map<string, number>()
+  for (const message of messages) {
+    if (!message.viewerIsSeller || message.fromMe || message.read) continue
+    counts.set(message.listingId, (counts.get(message.listingId) ?? 0) + 1)
+  }
+  return counts
+}
+
 function useSwipeOffset({
   open,
   onOpenChange,
@@ -481,6 +520,9 @@ function useSwipeOffset({
   const startOffset = useRef(0)
   const axis = useRef<"undecided" | "x" | "y">("undecided")
   const tracking = useRef(false)
+  const captured = useRef(false)
+  const targetRef = useRef<HTMLDivElement | null>(null)
+  const pointerIdRef = useRef<number | null>(null)
   const dragRef = useRef<number | null>(null)
 
   const resting = !open ? 0 : openSide === "right" ? swipeReveal : -swipeReveal
@@ -495,22 +537,29 @@ function useSwipeOffset({
       if (window.matchMedia("(min-width: 768px)").matches) return
       if (event.pointerType === "mouse" && event.buttons !== 1) return
       tracking.current = true
+      captured.current = false
       axis.current = "undecided"
       startX.current = event.clientX
       startY.current = event.clientY
       startOffset.current = dragRef.current ?? resting
-      event.currentTarget.setPointerCapture(event.pointerId)
+      targetRef.current = event.currentTarget
+      pointerIdRef.current = event.pointerId
+      // Do not setPointerCapture yet — a tap must still activate the listing link.
     },
     onPointerMove: (event: ReactPointerEvent<HTMLDivElement>) => {
       if (!tracking.current) return
       const dx = event.clientX - startX.current
       const dy = event.clientY - startY.current
       if (axis.current === "undecided") {
-        if (Math.abs(dx) < 6 && Math.abs(dy) < 6) return
+        if (Math.abs(dx) < 8 && Math.abs(dy) < 8) return
         axis.current = Math.abs(dx) > Math.abs(dy) ? "x" : "y"
         if (axis.current === "y") {
           tracking.current = false
           return
+        }
+        if (!captured.current && targetRef.current && pointerIdRef.current !== null) {
+          targetRef.current.setPointerCapture(pointerIdRef.current)
+          captured.current = true
         }
       }
       if (axis.current !== "x") return
@@ -524,13 +573,15 @@ function useSwipeOffset({
       }
       setDragOffset(next)
     },
-    onPointerUp: () => {
-      if (!tracking.current && axis.current !== "x") {
-        tracking.current = false
-        return
+    onPointerUp: (event: ReactPointerEvent<HTMLDivElement>) => {
+      const wasHorizontal = tracking.current && axis.current === "x"
+      if (captured.current && targetRef.current?.hasPointerCapture(event.pointerId)) {
+        targetRef.current.releasePointerCapture(event.pointerId)
       }
       tracking.current = false
-      if (axis.current !== "x") return
+      captured.current = false
+      pointerIdRef.current = null
+      if (!wasHorizontal) return
       const current = dragRef.current ?? resting
       const snapLeft = current <= -swipeReveal / 2
       const snapRight = current >= swipeReveal / 2
@@ -547,8 +598,13 @@ function useSwipeOffset({
         onOpenChange(false)
       }
     },
-    onPointerCancel: () => {
+    onPointerCancel: (event: ReactPointerEvent<HTMLDivElement>) => {
+      if (captured.current && targetRef.current?.hasPointerCapture(event.pointerId)) {
+        targetRef.current.releasePointerCapture(event.pointerId)
+      }
       tracking.current = false
+      captured.current = false
+      pointerIdRef.current = null
       setDragOffset(null)
     },
   }

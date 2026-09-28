@@ -70,4 +70,6 @@ test("listing status migration adds status sold_at and owner index without publi
   assert.match(migration, /revoke all on table public\.board_listings from anon, authenticated/i)
   assert.doesNotMatch(migration, /grant select on (table )?public\.board_listings/i)
   assert.doesNotMatch(migration, /create policy .*board_listings.*using \(true\)/i)
+  assert.doesNotMatch(migration, /exception\s+when others then null/i)
+  assert.match(migration, /alter column status set not null/i)
 })
