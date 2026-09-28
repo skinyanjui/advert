@@ -10,7 +10,6 @@ import {
   Sidebar,
   SidebarContent,
   SidebarFooter,
-  SidebarHeader,
   SidebarRail,
   SidebarTrigger,
   useSidebar,
@@ -29,10 +28,7 @@ export function CategorySidebar() {
       collapsible="offcanvas"
       className="top-16! bottom-auto! z-40 h-[calc(100svh-4rem)]! border-r border-sidebar-border md:top-[72px]! md:h-[calc(100svh-72px)]!"
     >
-      <SidebarHeader className="border-b border-sidebar-border px-4 py-3">
-        <p className="text-sm font-semibold text-sidebar-foreground">Categories</p>
-      </SidebarHeader>
-      <SidebarContent className="px-3 py-3">
+      <SidebarContent className="px-2 pt-3 pb-2">
         <Suspense fallback={<TopNavFallback />}>
           <CategoryTopNavLinks />
         </Suspense>
