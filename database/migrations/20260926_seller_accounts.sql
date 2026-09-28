@@ -90,9 +90,10 @@ create policy "Owners manage profile"
 --        https://adverts-murex.vercel.app/**
 --        http://localhost:3000/**
 --        https://*-skinyanjui.vercel.app/**
--- 3. Authentication → Email templates: paste HTML from supabase/templates/
---      (confirm-signup, magic-link, reset-password, change-email). Prefer
---      token_hash links to /auth/confirm (and recovery → /auth/reset).
+-- 3. Authentication → Email templates: custom SMTP is required first before you
+--      can install HTML from supabase/templates/ (confirm-signup, magic-link,
+--      reset-password, change-email). Until SMTP is configured, keep Supabase
+--      default ConfirmationURL emails (magic-link / PKCE callback flow).
 -- 4. Phone / SMS OTP: leave off until an SMS provider is attached, then set
 --      NEXT_PUBLIC_AUTH_PHONE=1. Google: configure provider, then
 --      NEXT_PUBLIC_AUTH_GOOGLE=1.

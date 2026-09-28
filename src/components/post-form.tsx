@@ -1,24 +1,26 @@
 "use client"
 
+import type { User } from "@supabase/supabase-js"
 import { Check, ChevronLeft, ChevronRight, ImagePlus } from "lucide-react"
 import Link from "next/link"
-import type { User } from "@supabase/supabase-js"
 import { useRouter, useSearchParams } from "next/navigation"
 import { useEffect, useLayoutEffect, useMemo, useRef, useState, type DragEvent, type ReactNode } from "react"
 import { toast } from "sonner"
 
-import { categoryIcons } from "@/lib/categories"
 import { CityField, type ChosenPlace } from "@/components/city-field"
 import { ContactPhoneField } from "@/components/contact-phone-field"
+import { EmptyPanel } from "@/components/empty-panel"
 import { FormField } from "@/components/form-field"
 import { ListingCard } from "@/components/listing-card"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
-import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group"
 import { Textarea } from "@/components/ui/textarea"
+import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group"
 import { readPostingPlace } from "@/lib/active-place"
 import { useAuth } from "@/lib/auth"
+import { signInHref } from "@/lib/auth-redirect"
 import { categoryImage } from "@/lib/catalog"
+import { categoryIcons } from "@/lib/categories"
 import { resolvePlace } from "@/lib/cities"
 import { normalizeContactPhone, prefillListingPhone } from "@/lib/contact-phone"
 import { resolvePostingCountry } from "@/lib/posting-country"
@@ -36,6 +38,7 @@ import { formatPrice } from "@/lib/format"
 import { listingFieldErrors, type FieldErrors as RuleErrors } from "@/lib/listing-rules"
 import { useMarketplace } from "@/lib/marketplace"
 import { listingImages, maxListingPhotos, photoFileError, withCoverImage } from "@/lib/photos"
+import { clearPostDraft, readPostDraft, writePostDraft } from "@/lib/post-draft"
 import type { BoardProfile } from "@/lib/profile"
 import { siteTitle } from "@/lib/site"
 import {
@@ -109,12 +112,15 @@ function AdForm({ existing }: { existing: Listing | null }) {
   const [photos, setPhotos] = useState<string[]>(existing ? listingImages(existing) : [])
   const [errors, setErrors] = useState<FieldErrors>({})
   const [submitting, setSubmitting] = useState(false)
+  const [draftUnlocked, setDraftUnlocked] = useState(false)
   const appliedPlace = useRef(false)
   const appliedProfile = useRef(Boolean(existing))
+  const restoredDraft = useRef(false)
+  const omittedPhotosToastShown = useRef(false)
 
   useLayoutEffect(() => {
     // Client-only: apply saved board/home place after hydration (no invented KE default).
-    if (appliedPlace.current || existing || urlCountry) return
+    if (appliedPlace.current || existing || urlCountry || restoredDraft.current) return
     appliedPlace.current = true
     const saved = readPostingPlace()
     const nextCountry = resolvePostingCountry({
@@ -129,6 +135,33 @@ function AdForm({ existing }: { existing: Listing | null }) {
     setPlace(locatedPlace(null, nextCountry, saved.city))
     /* eslint-enable react-hooks/set-state-in-effect */
   }, [existing, urlCountry])
+
+  useEffect(() => {
+    if (existing || restoredDraft.current) return
+    const draft = readPostDraft()
+    if (!draft) return
+    restoredDraft.current = true
+    // Defer so restore is not a synchronous setState-in-effect cascade.
+    const timer = window.setTimeout(() => {
+      setDraftUnlocked(true)
+      setStep(draft.step)
+      setCategory(draft.category)
+      setSubcategoryId(draft.subcategoryId)
+      setTitle(draft.title)
+      setPrice(draft.price)
+      setPeriod(draft.period)
+      setDetails(draft.details)
+      setCountry(draft.country)
+      setCurrency(draft.currency)
+      setCity(draft.city)
+      setDescription(draft.description)
+      setPhone(draft.phone)
+      setPhotos(draft.photos)
+      setPlace(locatedPlace(null, draft.country, draft.city))
+      if (auth.signedIn) toast.success("Restored your draft")
+    }, 0)
+    return () => window.clearTimeout(timer)
+  }, [existing, auth.signedIn])
 
   useEffect(() => {
     if (existing || appliedProfile.current || !auth.ready) return
@@ -168,6 +201,60 @@ function AdForm({ existing }: { existing: Listing | null }) {
   const suffix = subcategory?.priceSuffix ?? pricePeriod(activePeriod).suffix
   const callingCode = getCountry(country)?.callingCode
   const currencies = currencyChoices(country, currency)
+
+  useEffect(() => {
+    if (existing) return
+    if (!draftUnlocked && !auth.signedIn) return
+    const hasContent =
+      Boolean(category) ||
+      Boolean(subcategoryId) ||
+      title.trim().length > 0 ||
+      price.trim().length > 0 ||
+      description.trim().length > 0 ||
+      phone.trim().length > 0 ||
+      photos.length > 0 ||
+      Object.values(details).some((value) => value.trim().length > 0)
+    if (!hasContent) return
+    const timer = window.setTimeout(() => {
+      const result = writePostDraft({
+        step,
+        category,
+        subcategoryId,
+        title,
+        price,
+        period: activePeriod,
+        details,
+        country,
+        currency,
+        city,
+        description,
+        phone,
+        photos,
+      })
+      if (result.ok && result.omittedPhotos && !omittedPhotosToastShown.current) {
+        omittedPhotosToastShown.current = true
+        toast.message("Draft saved without photos — storage on this device is full.")
+      }
+    }, 400)
+    return () => window.clearTimeout(timer)
+  }, [
+    existing,
+    draftUnlocked,
+    auth.signedIn,
+    step,
+    category,
+    subcategoryId,
+    title,
+    price,
+    activePeriod,
+    details,
+    country,
+    currency,
+    city,
+    description,
+    phone,
+    photos,
+  ])
 
   const preview = useMemo<Listing>(() => {
     const nextCategory = category ?? "vehicles"
@@ -396,9 +483,28 @@ function AdForm({ existing }: { existing: Listing | null }) {
       condition: keptDetails.condition || subcategory.name,
       sold: existing?.sold,
     }
-    if (!existing && auth.configured && !auth.signedIn) {
-      toast.error("Sign in to post an ad")
-      router.push(`/sign-in?next=${encodeURIComponent("/post")}`)
+    if (auth.configured && !auth.signedIn) {
+      const draftResult = writePostDraft({
+        step,
+        category,
+        subcategoryId,
+        title,
+        price,
+        period: activePeriod,
+        details,
+        country,
+        currency,
+        city,
+        description,
+        phone,
+        photos,
+      })
+      if (draftResult.ok && draftResult.omittedPhotos && !omittedPhotosToastShown.current) {
+        omittedPhotosToastShown.current = true
+        toast.message("Draft saved without photos — storage on this device is full.")
+      }
+      toast.error(existing ? "Sign in to edit this ad" : "Sign in to post an ad")
+      router.push(signInHref(existing ? `/post?edit=${existing.id}` : "/post"))
       return
     }
     setSubmitting(true)
@@ -408,6 +514,7 @@ function AdForm({ existing }: { existing: Listing | null }) {
       toast.error(result.reason)
       return
     }
+    if (!existing) clearPostDraft()
     toast.success(existing ? "Changes saved" : "Your ad is live")
     router.push(`/listings/${listing.id}`)
   }
@@ -419,12 +526,51 @@ function AdForm({ existing }: { existing: Listing | null }) {
   const placeLine = [city.trim(), countryName(country)].filter(Boolean).join(", ")
   const choiceLine = [category ? categoryName(category) : null, subcategory?.name].filter(Boolean).join(" · ")
   const summaryLine = [choiceLine, placeLine].filter(Boolean).join(" · ")
+  const needsSignIn = auth.ready && auth.configured && !auth.signedIn
+  const showForm = !needsSignIn || draftUnlocked || Boolean(existing)
+
+  if (needsSignIn && !showForm) {
+    return (
+      <div className="mx-auto w-full max-w-3xl px-4 py-8 md:px-6">
+        <EmptyPanel
+          title="Sign in to post an ad"
+          body="Drafts you start on this device are saved and restored after you sign in."
+          actionHref={signInHref("/post")}
+          actionLabel="Sign in"
+          className="mt-0"
+          headingLevel={1}
+        >
+          <Button
+            type="button"
+            variant="outline"
+            className="mt-4 rounded-full"
+            onClick={() => setDraftUnlocked(true)}
+          >
+            Start a draft on this device
+          </Button>
+        </EmptyPanel>
+      </div>
+    )
+  }
 
   return (
     <div className="mx-auto grid w-full max-w-[1100px] items-start gap-8 px-4 pt-6 pb-24 md:px-6 md:py-8 lg:grid-cols-[minmax(0,1fr)_300px]">
       <div>
         <h1 className="text-2xl font-semibold tracking-tight">{existing ? "Edit your ad" : "Post an ad"}</h1>
         {summaryLine ? <p className="mt-1 text-sm text-neutral-500">{summaryLine}</p> : null}
+        {needsSignIn ? (
+          <p className="mt-3 rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-sm text-amber-950">
+            {existing
+              ? "Sign in to manage this ad. Ads from this browser move onto your account when you sign in. "
+              : "Sign in before publishing. Your draft is saved on this device. "}
+            <Link
+              href={signInHref(existing ? `/post?edit=${existing.id}` : "/post")}
+              className="font-medium underline underline-offset-2"
+            >
+              Sign in
+            </Link>
+          </p>
+        ) : null}
 
         <ol className="mt-6 grid grid-cols-4 gap-2" aria-label="Posting steps">
           {steps.map((label, index) => {

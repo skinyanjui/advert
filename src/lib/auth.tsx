@@ -4,7 +4,7 @@ import { createContext, useCallback, useContext, useEffect, useMemo, useState } 
 import type { Session, User } from "@supabase/supabase-js"
 import { toast } from "sonner"
 
-import { mapAuthError } from "@/lib/auth-errors"
+import { isReauthenticationRequired, mapAuthError } from "@/lib/auth-errors"
 import { DEFAULT_AUTH_NEXT, safeAuthNext } from "@/lib/auth-redirect"
 import { reloadBoard } from "@/lib/marketplace"
 import { passwordError } from "@/lib/password"
@@ -13,7 +13,7 @@ import { authConfigured, googleAuthEnabled, phoneAuthEnabled } from "@/lib/supab
 
 type AuthResult =
   | { ok: true; session?: boolean; needsEmailConfirm?: boolean }
-  | { ok: false; reason: string }
+  | { ok: false; reason: string; needsReauth?: boolean }
 
 type AuthContextValue = {
   ready: boolean
@@ -29,7 +29,8 @@ type AuthContextValue = {
   signInWithPassword: (email: string, password: string) => Promise<AuthResult>
   signUpWithPassword: (email: string, password: string, next?: string) => Promise<AuthResult>
   requestPasswordReset: (email: string) => Promise<AuthResult>
-  updatePassword: (password: string) => Promise<AuthResult>
+  updatePassword: (password: string, nonce?: string) => Promise<AuthResult>
+  requestPasswordReauth: () => Promise<AuthResult>
   updateEmail: (email: string) => Promise<AuthResult>
   signInWithGoogle: (next?: string) => Promise<AuthResult>
   sendPhoneCode: (phone: string) => Promise<AuthResult>
@@ -179,6 +180,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       const trimmed = email.trim().toLowerCase()
       if (!trimmed.includes("@")) return { ok: false as const, reason: "Enter a valid email address." }
       const supabase = createBrowserSupabase()
+      // Default Supabase emails use ConfirmationURL → PKCE at /auth/callback.
+      // Open the link on the same device that requested the reset.
       const { error } = await supabase.auth.resetPasswordForEmail(trimmed, {
         redirectTo: `${window.location.origin}/auth/callback?next=${encodeURIComponent("/auth/reset")}`,
       })
@@ -188,14 +191,37 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     [configured],
   )
 
+  const requestPasswordReauth = useCallback(async () => {
+    if (!configured) return { ok: false as const, reason: "Sign-in is not configured yet." }
+    const supabase = createBrowserSupabase()
+    const { error } = await supabase.auth.reauthenticate()
+    if (error) return { ok: false as const, reason: mapAuthError(error) }
+    return { ok: true as const }
+  }, [configured])
+
   const updatePassword = useCallback(
-    async (password: string) => {
+    async (password: string, nonce?: string) => {
       if (!configured) return { ok: false as const, reason: "Sign-in is not configured yet." }
       const reason = passwordError(password)
       if (reason) return { ok: false as const, reason }
       const supabase = createBrowserSupabase()
-      const { error } = await supabase.auth.updateUser({ password })
-      if (error) return { ok: false as const, reason: mapAuthError(error) }
+      const { error } = await supabase.auth.updateUser(
+        nonce ? { password, nonce } : { password },
+      )
+      if (error) {
+        if (isReauthenticationRequired(error)) {
+          const reauth = await supabase.auth.reauthenticate()
+          if (reauth.error) {
+            return { ok: false as const, reason: mapAuthError(reauth.error), needsReauth: true }
+          }
+          return {
+            ok: false as const,
+            reason: mapAuthError(error),
+            needsReauth: true,
+          }
+        }
+        return { ok: false as const, reason: mapAuthError(error) }
+      }
       const { data } = await supabase.auth.getUser()
       setUser(data.user ?? null)
       return { ok: true as const }
@@ -314,6 +340,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       signUpWithPassword,
       requestPasswordReset,
       updatePassword,
+      requestPasswordReauth,
       updateEmail,
       signInWithGoogle,
       sendPhoneCode,
@@ -334,6 +361,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       signUpWithPassword,
       requestPasswordReset,
       updatePassword,
+      requestPasswordReauth,
       updateEmail,
       signInWithGoogle,
       sendPhoneCode,

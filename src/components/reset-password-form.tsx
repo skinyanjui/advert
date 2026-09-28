@@ -1,6 +1,7 @@
 "use client"
 
 import { Loader2 } from "lucide-react"
+import Link from "next/link"
 import { useRouter, useSearchParams } from "next/navigation"
 import { useEffect, useState } from "react"
 import { toast } from "sonner"
@@ -11,6 +12,7 @@ import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
 import { useAuth } from "@/lib/auth"
+import { signInHref } from "@/lib/auth-redirect"
 import {
   passwordError,
   passwordStrength,
@@ -26,12 +28,17 @@ export function ResetPasswordForm() {
   const [confirm, setConfirm] = useState("")
   const [busy, setBusy] = useState(false)
   const claimed = searchParams.get("claimed") === "1"
+  const deviceError = searchParams.get("error") === "device"
 
   useEffect(() => {
-    if (auth.ready && !auth.signedIn && !claimed) {
-      toast.error("Open the reset link from your email to choose a new password.")
+    if (deviceError) {
+      toast.error(
+        "Open the reset link on the same device and browser that requested it, or request a new link.",
+      )
+    } else if (auth.ready && !auth.signedIn && !claimed) {
+      toast.error("Open the reset link from your email on this device.")
     }
-  }, [auth.ready, auth.signedIn, claimed])
+  }, [auth.ready, auth.signedIn, claimed, deviceError])
 
   if (!auth.configured) {
     return (
@@ -49,13 +56,25 @@ export function ResetPasswordForm() {
   if (auth.ready && !auth.signedIn) {
     return (
       <EmptyPanel
-        title="Reset link required"
-        body="Open the password reset link from your email on this device, then choose a new password."
-        actionHref="/sign-in"
-        actionLabel="Sign in"
+        title={deviceError ? "Open the link on this device" : "Reset link required"}
+        body={
+          deviceError
+            ? "Open the reset link on the same device and browser that requested it, or request a new link from this device."
+            : "Open the password reset link from your email on this same device and browser, then choose a new password."
+        }
+        actionHref={signInHref("/auth/reset")}
+        actionLabel="Request a new reset link"
         className="mt-0 py-10"
         headingLevel={1}
-      />
+      >
+        <p className="mx-auto mt-4 max-w-sm text-sm text-muted-foreground">
+          Or{" "}
+          <Link href="/sign-in" className="font-medium underline underline-offset-2">
+            sign in
+          </Link>{" "}
+          with an email link.
+        </p>
+      </EmptyPanel>
     )
   }
 
@@ -83,7 +102,7 @@ export function ResetPasswordForm() {
       <header>
         <h1 className="text-2xl font-semibold tracking-tight">Choose a new password</h1>
         <p className="mt-1 text-sm text-muted-foreground">
-          You can also keep using an email code to sign in.
+          You can also keep signing in with an email link.
         </p>
       </header>
 

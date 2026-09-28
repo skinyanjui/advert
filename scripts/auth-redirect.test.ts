@@ -1,9 +1,11 @@
 import assert from "node:assert/strict"
 import { test } from "node:test"
 
+import { decideAuthCallback } from "../src/lib/auth-callback"
 import { mapAuthError } from "../src/lib/auth-errors"
 import {
   DEFAULT_AUTH_NEXT,
+  applySafeAuthNext,
   isProtectedAuthPath,
   safeAuthNext,
   signInHref,
@@ -15,15 +17,57 @@ import {
   passwordStrengthLabel,
   passwordsMatchError,
 } from "../src/lib/password"
+import { DRAFT_MAX_AGE_MS, isPostDraftExpired } from "../src/lib/post-draft"
 
 test("auth next path rejects open redirects", () => {
   assert.equal(safeAuthNext(null), DEFAULT_AUTH_NEXT)
   assert.equal(safeAuthNext("/my-ads"), "/my-ads")
   assert.equal(safeAuthNext("/messages?thread=1"), "/messages?thread=1")
+  assert.equal(safeAuthNext("/account#profile"), "/account#profile")
   assert.equal(safeAuthNext("//evil.example"), DEFAULT_AUTH_NEXT)
   assert.equal(safeAuthNext("https://evil.example"), DEFAULT_AUTH_NEXT)
   assert.equal(safeAuthNext("http://evil.example/phish"), DEFAULT_AUTH_NEXT)
   assert.equal(safeAuthNext("/\\evil"), DEFAULT_AUTH_NEXT)
+  assert.equal(safeAuthNext("/\\\\evil.com"), DEFAULT_AUTH_NEXT)
+})
+
+test("auth next path rejects control characters and whitespace open redirects", () => {
+  assert.equal(safeAuthNext("/\t/evil.com"), DEFAULT_AUTH_NEXT)
+  assert.equal(safeAuthNext("/\n/evil.com"), DEFAULT_AUTH_NEXT)
+  assert.equal(safeAuthNext("/\r/evil.com"), DEFAULT_AUTH_NEXT)
+  assert.equal(safeAuthNext(" /my-ads"), DEFAULT_AUTH_NEXT)
+  assert.equal(safeAuthNext("/my-ads "), DEFAULT_AUTH_NEXT)
+  assert.equal(safeAuthNext("/my ads"), DEFAULT_AUTH_NEXT)
+  // Encoded controls decode before safeAuthNext (as URLSearchParams does).
+  assert.equal(safeAuthNext(decodeURIComponent("/%09/evil.com")), DEFAULT_AUTH_NEXT)
+  assert.equal(safeAuthNext(decodeURIComponent("/%0A/evil.com")), DEFAULT_AUTH_NEXT)
+  assert.equal(safeAuthNext(decodeURIComponent("/%0D/evil.com")), DEFAULT_AUTH_NEXT)
+  assert.equal(safeAuthNext(decodeURIComponent("%20/my-ads")), DEFAULT_AUTH_NEXT)
+  assert.equal(safeAuthNext(decodeURIComponent("/%5Cevil")), DEFAULT_AUTH_NEXT)
+})
+
+test("safeAuthNext never resolves to an external host via URL()", () => {
+  for (const candidate of [
+    "/\t/evil.com",
+    "/\n/evil.com",
+    "//evil.com",
+    "/\\evil.com",
+    "https://evil.com",
+    "  //evil.com",
+  ]) {
+    const safe = safeAuthNext(candidate)
+    const resolved = new URL(safe, "https://adverts-murex.vercel.app")
+    assert.equal(resolved.host, "adverts-murex.vercel.app")
+  }
+})
+
+test("applySafeAuthNext sets pathname search and hash separately", () => {
+  const target = new URL("https://adverts-murex.vercel.app/sign-in?error=link")
+  applySafeAuthNext(target, "/messages?c=1#top")
+  assert.equal(target.pathname, "/messages")
+  assert.equal(target.search, "?c=1")
+  assert.equal(target.hash, "#top")
+  assert.equal(target.host, "adverts-murex.vercel.app")
 })
 
 test("callback and confirm share the same next-param safety", () => {
@@ -59,6 +103,12 @@ test("mapAuthError covers rate limits, expired codes, unconfirmed, and wrong pas
   assert.match(mapAuthError({ message: "Email not confirmed" }), /Confirm your email/)
   assert.match(mapAuthError({ message: "Invalid login credentials" }), /Wrong email or password/)
   assert.match(mapAuthError({ message: "token is invalid" }), /invalid/)
+  assert.match(mapAuthError({ code: "reauthentication_needed", message: "Reauthentication required" }), /verification code/i)
+})
+
+test("mapAuthError uses a generic fallback for unknown errors", () => {
+  assert.equal(mapAuthError({ message: "weird upstream boom xyz" }), "Something went wrong. Try again.")
+  assert.equal(mapAuthError({}), "Something went wrong. Try again.")
 })
 
 test("password validation and strength hint", () => {
@@ -92,6 +142,70 @@ test("authConfigured matches public Supabase URL + publishable key", async () =>
         process.env.SUPABASE_ANON_KEY),
   )
   assert.equal(authConfigured(), expected)
+})
+
+test("auth callback prefers existing session over re-exchanging the code", () => {
+  assert.deepEqual(
+    decideAuthCallback({
+      hasSession: true,
+      code: "abc",
+      accessToken: null,
+      refreshToken: null,
+      errorDescription: null,
+      goingToReset: false,
+    }),
+    { action: "succeed" },
+  )
+  assert.deepEqual(
+    decideAuthCallback({
+      hasSession: false,
+      code: "abc",
+      accessToken: null,
+      refreshToken: null,
+      errorDescription: null,
+      goingToReset: false,
+    }),
+    { action: "exchange-code", code: "abc" },
+  )
+  assert.deepEqual(
+    decideAuthCallback({
+      hasSession: false,
+      code: null,
+      accessToken: "at",
+      refreshToken: "rt",
+      errorDescription: null,
+      goingToReset: false,
+    }),
+    { action: "set-session", accessToken: "at", refreshToken: "rt" },
+  )
+  assert.deepEqual(
+    decideAuthCallback({
+      hasSession: false,
+      code: null,
+      accessToken: null,
+      refreshToken: null,
+      errorDescription: null,
+      goingToReset: true,
+    }),
+    { action: "fail", kind: "device" },
+  )
+  assert.deepEqual(
+    decideAuthCallback({
+      hasSession: false,
+      code: "abc",
+      accessToken: null,
+      refreshToken: null,
+      errorDescription: "access_denied",
+      goingToReset: false,
+    }),
+    { action: "fail", kind: "link" },
+  )
+})
+
+test("post drafts expire after seven days", () => {
+  const now = Date.UTC(2026, 8, 28)
+  assert.equal(isPostDraftExpired(now - DRAFT_MAX_AGE_MS + 1, now), false)
+  assert.equal(isPostDraftExpired(now - DRAFT_MAX_AGE_MS - 1, now), true)
 })
 
 test("createListingAuthError requires auth when configured", async () => {

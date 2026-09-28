@@ -15,7 +15,10 @@ type Context = { params: Promise<{ id: string }> }
 
 export async function PATCH(request: Request, context: Context) {
   const owner = await resolveMutationOwner(request)
-  if (!owner) return fail("A valid browser session is required.", 403)
+  // Guests must sign in to manage browser-session ads; claim moves them on sign-in.
+  if (!owner || owner.kind !== "auth") {
+    return fail("Sign in to manage this ad.", 401)
+  }
   const { id } = await context.params
   try {
     const body: unknown = await request.json()
@@ -29,7 +32,9 @@ export async function PATCH(request: Request, context: Context) {
 
 export async function DELETE(request: Request, context: Context) {
   const owner = await resolveMutationOwner(request)
-  if (!owner) return fail("A valid browser session is required.", 403)
+  if (!owner || owner.kind !== "auth") {
+    return fail("Sign in to manage this ad.", 401)
+  }
   const { id } = await context.params
   try {
     const result = await deleteListing(owner.id, id)
