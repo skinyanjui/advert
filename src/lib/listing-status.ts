@@ -1,4 +1,4 @@
-import { isListingExpired } from "@/lib/expiry"
+import { isListingExpired, isListingNeedingAttention } from "@/lib/expiry"
 
 export const listingStatuses = ["active", "paused", "sold", "expired"] as const
 
@@ -25,6 +25,25 @@ export function effectiveListingStatus(
   if (isListingExpired(listing.expiresAt, now) || listing.status === "expired") return "expired"
   if (listing.status === "paused") return "paused"
   return "active"
+}
+
+/**
+ * Nav badge for My ads: only active ads that are expiring soon, or ads that
+ * expired while still active. Sold and paused never contribute.
+ */
+export function listingNeedsMyAdsAttention(
+  listing: {
+    status?: ListingStatus
+    sold?: boolean
+    expiresAt?: string
+  },
+  now = Date.now(),
+  withinDays = 3,
+): boolean {
+  if (listing.status === "sold" || listing.sold === true) return false
+  if (listing.status === "paused") return false
+  if (listing.status === "expired") return true
+  return isListingNeedingAttention(listing.expiresAt, now, withinDays)
 }
 
 /** True when non-owners may see the ad on browse/search/detail. */

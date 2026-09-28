@@ -6,6 +6,7 @@ import {
   effectiveListingStatus,
   isListingStatus,
   isPubliclyVisibleListing,
+  listingNeedsMyAdsAttention,
   listingStatusLabel,
 } from "../src/lib/listing-status"
 
@@ -56,6 +57,48 @@ test("listingStatusLabel covers every status", () => {
   assert.equal(listingStatusLabel("paused"), "Paused")
   assert.equal(listingStatusLabel("sold"), "Sold")
   assert.equal(listingStatusLabel("expired"), "Expired")
+})
+
+test("listingNeedsMyAdsAttention only counts active expiring soon or expired-while-active", () => {
+  const now = Date.parse("2026-09-28T12:00:00.000Z")
+  // Active, expiring within 3 days
+  assert.equal(
+    listingNeedsMyAdsAttention({ status: "active", expiresAt: "2026-09-30T00:00:00.000Z" }, now),
+    true,
+  )
+  // Active, already past expiry (expired while active)
+  assert.equal(
+    listingNeedsMyAdsAttention({ status: "active", expiresAt: "2026-09-01T00:00:00.000Z" }, now),
+    true,
+  )
+  // Stored expired status
+  assert.equal(
+    listingNeedsMyAdsAttention({ status: "expired", expiresAt: "2026-09-01T00:00:00.000Z" }, now),
+    true,
+  )
+  // Active but plenty of time left
+  assert.equal(
+    listingNeedsMyAdsAttention({ status: "active", expiresAt: "2026-11-01T00:00:00.000Z" }, now),
+    false,
+  )
+  // Sold — never, even if past expiry
+  assert.equal(
+    listingNeedsMyAdsAttention({ status: "sold", expiresAt: "2026-09-01T00:00:00.000Z" }, now),
+    false,
+  )
+  assert.equal(
+    listingNeedsMyAdsAttention({ sold: true, expiresAt: "2026-09-30T00:00:00.000Z" }, now),
+    false,
+  )
+  // Paused — never, even if past expiry or within notice window
+  assert.equal(
+    listingNeedsMyAdsAttention({ status: "paused", expiresAt: "2026-09-01T00:00:00.000Z" }, now),
+    false,
+  )
+  assert.equal(
+    listingNeedsMyAdsAttention({ status: "paused", expiresAt: "2026-09-30T00:00:00.000Z" }, now),
+    false,
+  )
 })
 
 test("listing status migration adds status sold_at and owner index without public grants", () => {

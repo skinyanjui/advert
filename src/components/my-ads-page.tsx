@@ -31,6 +31,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
+import { useHorizontalScrollFades } from "@/hooks/use-scroll-fades"
 import { postAdHref } from "@/lib/active-place"
 import { daysUntilExpiry, isListingExpiringSoon } from "@/lib/expiry"
 import { formatPosted, formatPrice, hoursAgoOf } from "@/lib/format"
@@ -174,75 +175,53 @@ export function MyAdsPage() {
     toast.success("Ad removed")
   }
 
-  if (!ready) {
-    return (
-      <div className="mx-auto w-full max-w-[1720px] px-4 py-3 md:px-6">
-        <p className="text-sm text-neutral-500">Loading your ads…</p>
-      </div>
-    )
-  }
-
   return (
     <div className="mx-auto w-full max-w-[1720px] px-4 py-3 md:px-6">
-      <div className="overflow-hidden rounded-xl border border-neutral-200 bg-white">
-        <div className="border-b border-neutral-200 p-4">
-          <div className="flex items-center justify-between gap-2">
-            <h1 className="text-sm font-semibold text-neutral-950">My ads</h1>
-            <Button asChild size="sm" className="h-8 rounded-lg px-3 text-xs">
-              <Link href={postHref}>Post an ad</Link>
-            </Button>
-          </div>
-          <KeepAdsPrompt className="mt-3 rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-xs text-amber-950" />
-          <div
-            className="mt-3 flex gap-1 overflow-x-auto pb-0.5 [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
-            aria-label="Filter ads"
-          >
-            {filters.map((option) => (
-              <button
-                key={option}
-                type="button"
-                aria-pressed={filter === option}
-                onClick={() => setFilter(option)}
-                className={cn(
-                  "shrink-0 rounded-full px-3 py-1 text-xs font-medium",
-                  filter === option ? "bg-neutral-950 text-white" : "text-neutral-600 hover:bg-neutral-100",
-                )}
-              >
-                {option === "all" ? "All" : listingStatusLabel(option)}
-                <span className="ml-1 tabular-nums opacity-70">{counts[option]}</span>
-              </button>
-            ))}
-          </div>
-        </div>
-
-        {visible.length === 0 ? (
-          <p className="px-5 py-12 text-center text-sm text-neutral-500">
-            {mine.length === 0
-              ? "You have not posted an ad yet."
-              : filter === "all"
-                ? "No ads to show."
-                : `No ${listingStatusLabel(filter).toLowerCase()} ads.`}
-          </p>
-        ) : (
-          <ul className="min-w-0 divide-y divide-neutral-100">
-            {visible.map((listing) => (
-              <MyAdRow
-                key={listing.id}
-                listing={listing}
-                unread={unreadByListing.get(listing.id) ?? 0}
-                busy={busyId === listing.id}
-                swipeOpen={openSwipeId === listing.id}
-                onSwipeOpen={(open) => setOpenSwipeId(open ? listing.id : null)}
-                onSold={(sold) => void onSold(listing, sold)}
-                onPause={(paused) => void onPause(listing, paused)}
-                onRenew={() => void onRenew(listing)}
-                onShare={() => void onShare(listing)}
-                onDelete={() => setPendingId(listing.id)}
-              />
-            ))}
-          </ul>
-        )}
+      <div className="mb-3 flex items-center justify-between gap-2">
+        <h1 className="text-2xl font-semibold tracking-tight">My ads</h1>
+        <Button asChild size="sm" className="h-8 rounded-lg px-3 text-xs">
+          <Link href={postHref}>Post an ad</Link>
+        </Button>
       </div>
+
+      {!ready ? (
+        <p className="text-sm text-neutral-500">Loading your ads…</p>
+      ) : (
+        <div className="overflow-hidden rounded-xl border border-neutral-200 bg-white">
+          <div className="space-y-3 border-b border-neutral-200 p-4">
+            <KeepAdsPrompt className="rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-xs text-amber-950" />
+            <StatusFilterChips filter={filter} counts={counts} onChange={setFilter} />
+          </div>
+
+          {visible.length === 0 ? (
+            <p className="px-5 py-12 text-center text-sm text-neutral-500">
+              {mine.length === 0
+                ? "You have not posted an ad yet."
+                : filter === "all"
+                  ? "No ads to show."
+                  : `No ${listingStatusLabel(filter).toLowerCase()} ads.`}
+            </p>
+          ) : (
+            <ul className="min-w-0 divide-y divide-neutral-100">
+              {visible.map((listing) => (
+                <MyAdRow
+                  key={listing.id}
+                  listing={listing}
+                  unread={unreadByListing.get(listing.id) ?? 0}
+                  busy={busyId === listing.id}
+                  swipeOpen={openSwipeId === listing.id}
+                  onSwipeOpen={(open) => setOpenSwipeId(open ? listing.id : null)}
+                  onSold={(sold) => void onSold(listing, sold)}
+                  onPause={(paused) => void onPause(listing, paused)}
+                  onRenew={() => void onRenew(listing)}
+                  onShare={() => void onShare(listing)}
+                  onDelete={() => setPendingId(listing.id)}
+                />
+              ))}
+            </ul>
+          )}
+        </div>
+      )}
 
       <Dialog open={!!pending} onOpenChange={(open) => !open && setPendingId(null)}>
         <DialogContent>
@@ -262,6 +241,59 @@ export function MyAdsPage() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+    </div>
+  )
+}
+
+function StatusFilterChips({
+  filter,
+  counts,
+  onChange,
+}: {
+  filter: ListingStatusFilter
+  counts: Record<ListingStatusFilter, number>
+  onChange: (next: ListingStatusFilter) => void
+}) {
+  const scrollerRef = useRef<HTMLDivElement>(null)
+  const { left, right } = useHorizontalScrollFades(scrollerRef)
+
+  return (
+    <div className="relative min-w-0">
+      <div
+        ref={scrollerRef}
+        className="flex min-w-0 gap-1 overflow-x-auto overscroll-x-contain pb-0.5 [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
+        aria-label="Filter ads"
+      >
+        {filters.map((option) => (
+          <button
+            key={option}
+            type="button"
+            aria-pressed={filter === option}
+            onClick={() => onChange(option)}
+            className={cn(
+              "shrink-0 rounded-full px-3 py-1 text-xs font-medium",
+              filter === option ? "bg-neutral-950 text-white" : "text-neutral-600 hover:bg-neutral-100",
+            )}
+          >
+            {option === "all" ? "All" : listingStatusLabel(option)}
+            <span className="ml-1 tabular-nums opacity-70">{counts[option]}</span>
+          </button>
+        ))}
+      </div>
+      <div
+        aria-hidden
+        className={cn(
+          "pointer-events-none absolute inset-y-0 left-0 z-[1] w-6 bg-gradient-to-r from-white to-transparent transition-opacity duration-200 motion-reduce:transition-none",
+          left ? "opacity-100" : "opacity-0",
+        )}
+      />
+      <div
+        aria-hidden
+        className={cn(
+          "pointer-events-none absolute inset-y-0 right-0 z-[1] w-6 bg-gradient-to-l from-white to-transparent transition-opacity duration-200 motion-reduce:transition-none",
+          right ? "opacity-100" : "opacity-0",
+        )}
+      />
     </div>
   )
 }

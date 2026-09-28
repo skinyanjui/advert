@@ -2,7 +2,7 @@
 
 import { useMemo } from "react"
 
-import { isListingNeedingAttention } from "@/lib/expiry"
+import { listingNeedsMyAdsAttention } from "@/lib/listing-status"
 import { useMarketplace } from "@/lib/marketplace"
 import { unreadMessageCount } from "@/lib/messages"
 import type { NavItemId } from "@/lib/nav"
@@ -11,7 +11,7 @@ export type NavCounts = Partial<Record<NavItemId, number>>
 
 /**
  * Single source for nav badge counts.
- * Messages = unread incoming; My ads = expired or expiring within 3 days.
+ * Messages = unread incoming; My ads = active expiring soon or expired while active.
  * Board refresh on focus/visibility lives in MarketplaceProvider (soft refresh).
  */
 export function useNavCounts(): NavCounts {
@@ -20,7 +20,7 @@ export function useNavCounts(): NavCounts {
   return useMemo(() => {
     const unread = unreadMessageCount(messages)
     const myAdsAttention = listings.filter(
-      (listing) => listing.mine && isListingNeedingAttention(listing.expiresAt),
+      (listing) => listing.mine && listingNeedsMyAdsAttention(listing),
     ).length
     return {
       messages: unread,
