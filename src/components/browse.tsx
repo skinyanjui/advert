@@ -17,7 +17,7 @@ import {
 import { postAdHref } from "@/lib/active-place"
 import { matchesQuery, sortListings } from "@/lib/board"
 import { distanceKm, listingPoint } from "@/lib/distance"
-import { isListingExpired } from "@/lib/expiry"
+import { isPubliclyVisibleListing } from "@/lib/listing-status"
 import { useHomePlace } from "@/lib/home-place"
 import { resolvePlace } from "@/lib/cities"
 import { useMarketplace } from "@/lib/marketplace"
@@ -41,9 +41,7 @@ export function Browse() {
     () =>
       listings.filter(
         (listing) =>
-          !listing.sold &&
-          !listing.hidden &&
-          !isListingExpired(listing.expiresAt) &&
+          isPubliclyVisibleListing(listing) &&
           (!query.country || listing.country === query.country) &&
           matchesQuery(listing, query.q),
       ),

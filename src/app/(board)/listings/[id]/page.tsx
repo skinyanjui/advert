@@ -5,7 +5,7 @@ import { ListingDetail } from "@/components/listing-detail"
 import { boardDb } from "@/lib/board-db"
 import { cleanListing } from "@/lib/board-payload"
 import { seedListings } from "@/lib/catalog"
-import { isListingExpired } from "@/lib/expiry"
+import { isPubliclyVisibleListing } from "@/lib/listing-status"
 import type { Listing } from "@/lib/types"
 
 async function publicListing(id: string): Promise<Listing | undefined> {
@@ -16,11 +16,19 @@ async function publicListing(id: string): Promise<Listing | undefined> {
   try {
     const { data, error } = await boardDb()
       .from("board_listings")
-      .select("payload,hidden_at,expires_at")
+      .select("payload,hidden_at,expires_at,status,sold_at")
       .eq("id", id)
       .maybeSingle()
-    if (error || !data || data.hidden_at || isListingExpired(data.expires_at ?? undefined)) return undefined
-    return cleanListing(data.payload)
+    if (error || !data || data.hidden_at) return undefined
+    const listing = cleanListing({
+      ...(typeof data.payload === "object" && data.payload ? data.payload : {}),
+      expiresAt: data.expires_at ?? undefined,
+      status: data.status ?? undefined,
+      soldAt: data.sold_at ?? undefined,
+      sold: data.status === "sold" ? true : undefined,
+    })
+    if (!listing || !isPubliclyVisibleListing(listing)) return undefined
+    return listing
   } catch {
     return undefined
   }

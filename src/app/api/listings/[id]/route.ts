@@ -1,6 +1,12 @@
 import { fail, ok } from "@/lib/api"
 import { resolveMutationOwner } from "@/lib/board-session"
-import { deleteListing, renewListing, setListingSold, updateListing } from "@/lib/board-store"
+import {
+  deleteListing,
+  renewListing,
+  setListingPaused,
+  setListingSold,
+  updateListing,
+} from "@/lib/board-store"
 
 export const dynamic = "force-dynamic"
 export const runtime = "nodejs"
@@ -36,8 +42,9 @@ export async function DELETE(request: Request, context: Context) {
 
 async function patchListing(owner: string, id: string, body: unknown) {
   if (body && typeof body === "object" && !Array.isArray(body)) {
-    const action = body as { sold?: unknown; renew?: unknown }
+    const action = body as { sold?: unknown; renew?: unknown; paused?: unknown }
     if (typeof action.sold === "boolean") return setListingSold(owner, id, action.sold)
+    if (typeof action.paused === "boolean") return setListingPaused(owner, id, action.paused)
     if (action.renew === true) return renewListing(owner, id)
   }
   return updateListing(owner, id, body)

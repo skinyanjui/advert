@@ -184,16 +184,37 @@ async function removeListing(id: string): Promise<StoreResult> {
 
 async function setListingSold(id: string, sold: boolean): Promise<StoreResult> {
   await ensureLoaded()
+  const previous = memory.posted
+  const optimistic = memory.posted.map((item) =>
+    item.id === id
+      ? {
+          ...item,
+          sold: sold ? true : undefined,
+          status: (sold ? "sold" : "active") as Listing["status"],
+          soldAt: sold ? new Date().toISOString() : undefined,
+        }
+      : item,
+  )
+  memory = { ...memory, posted: optimistic, ready: true }
+  emit()
   try {
     const response = await fetch(`/api/listings/${encodeURIComponent(id)}`, {
       method: "PATCH",
       headers: requestHeaders(),
       body: JSON.stringify({ sold }),
     })
-    if (!response.ok) return { ok: false, reason: await readFailure(response, "Could not update that ad.") }
+    if (!response.ok) {
+      memory = { ...memory, posted: previous, ready: true }
+      emit()
+      return { ok: false, reason: await readFailure(response, "Could not update that ad.") }
+    }
     const payload = (await response.json()) as { listing?: unknown }
     const saved = parseBoardState({ posted: [payload.listing], savedIds: [], messages: [] }).posted[0]
-    if (!saved) return { ok: false, reason: "That ad could not be read." }
+    if (!saved) {
+      memory = { ...memory, posted: previous, ready: true }
+      emit()
+      return { ok: false, reason: "That ad could not be read." }
+    }
     memory = {
       ...memory,
       posted: memory.posted.map((item) => (item.id === saved.id ? saved : item)),
@@ -202,6 +223,54 @@ async function setListingSold(id: string, sold: boolean): Promise<StoreResult> {
     emit()
     return { ok: true }
   } catch {
+    memory = { ...memory, posted: previous, ready: true }
+    emit()
+    return { ok: false, reason: "Could not update that ad." }
+  }
+}
+
+async function setListingPaused(id: string, paused: boolean): Promise<StoreResult> {
+  await ensureLoaded()
+  const previous = memory.posted
+  const optimistic = memory.posted.map((item) =>
+    item.id === id
+      ? {
+          ...item,
+          status: (paused ? "paused" : "active") as Listing["status"],
+          sold: undefined,
+        }
+      : item,
+  )
+  memory = { ...memory, posted: optimistic, ready: true }
+  emit()
+  try {
+    const response = await fetch(`/api/listings/${encodeURIComponent(id)}`, {
+      method: "PATCH",
+      headers: requestHeaders(),
+      body: JSON.stringify({ paused }),
+    })
+    if (!response.ok) {
+      memory = { ...memory, posted: previous, ready: true }
+      emit()
+      return { ok: false, reason: await readFailure(response, "Could not update that ad.") }
+    }
+    const payload = (await response.json()) as { listing?: unknown }
+    const saved = parseBoardState({ posted: [payload.listing], savedIds: [], messages: [] }).posted[0]
+    if (!saved) {
+      memory = { ...memory, posted: previous, ready: true }
+      emit()
+      return { ok: false, reason: "That ad could not be read." }
+    }
+    memory = {
+      ...memory,
+      posted: memory.posted.map((item) => (item.id === saved.id ? saved : item)),
+      ready: true,
+    }
+    emit()
+    return { ok: true }
+  } catch {
+    memory = { ...memory, posted: previous, ready: true }
+    emit()
     return { ok: false, reason: "Could not update that ad." }
   }
 }
@@ -312,6 +381,7 @@ type MarketplaceContextValue = {
   updateListing: (listing: Listing) => Promise<StoreResult>
   removeListing: (id: string) => Promise<StoreResult>
   setListingSold: (id: string, sold: boolean) => Promise<StoreResult>
+  setListingPaused: (id: string, paused: boolean) => Promise<StoreResult>
   renewListing: (id: string) => Promise<StoreResult>
   sendMessage: (listingId: string, body: string, conversationId?: string) => Promise<StoreResult>
   markThreadRead: (conversationId: string) => void
@@ -337,6 +407,7 @@ export function MarketplaceProvider({ children }: { children: React.ReactNode })
       updateListing,
       removeListing,
       setListingSold,
+      setListingPaused,
       renewListing,
       sendMessage,
       markThreadRead,

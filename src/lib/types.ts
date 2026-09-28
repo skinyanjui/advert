@@ -1,3 +1,5 @@
+import type { ListingStatus } from "@/lib/listing-status"
+
 export const categories = [
   { id: "vehicles", name: "Vehicles" },
   { id: "parts", name: "Vehicle parts" },
@@ -36,6 +38,8 @@ export type SortId = (typeof sorts)[number]["id"]
 
 export type ListingBadge = "featured" | "jobs"
 
+export type { ListingStatus }
+
 export type Listing = {
   id: string
   title: string
@@ -67,8 +71,12 @@ export type Listing = {
   sellerName: string
   sellerSince: string
   phone: string
+  /** Owner lifecycle: active | paused | sold | expired (column + effective). */
+  status?: ListingStatus
   /** Owner marked the ad as sold; hidden from the main board. */
   sold?: boolean
+  /** When the owner marked the ad sold (ISO). */
+  soldAt?: string
   /** Moderators hid the ad (reports or admin); dropped from browse. */
   hidden?: boolean
   /** ISO timestamp when the ad leaves browse/search unless renewed. */
