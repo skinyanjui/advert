@@ -488,7 +488,7 @@ export function ListingDetail({ id }: { id: string }) {
       {related.length > 0 ? (
         <section className="mt-10">
           <h2 className="text-sm font-medium text-neutral-950">Similar listings</h2>
-          <div className="mt-3 grid grid-cols-2 gap-4 lg:grid-cols-4">
+          <div className="mt-3 grid grid-cols-2 gap-4 lg:grid-cols-3 xl:grid-cols-4">
             {related.map((item) => (
               <ListingCard key={item.id} listing={item} preserve={keptSearch(searchParams, item.subcategory)} />
             ))}
