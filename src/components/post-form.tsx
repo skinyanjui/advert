@@ -12,6 +12,7 @@ import { ContactPhoneField } from "@/components/contact-phone-field"
 import { EmptyPanel } from "@/components/empty-panel"
 import { FormField } from "@/components/form-field"
 import { ListingCard } from "@/components/listing-card"
+import { TermsNotice } from "@/components/terms-notice"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Textarea } from "@/components/ui/textarea"
@@ -109,6 +110,7 @@ function AdForm({ existing }: { existing: Listing | null }) {
   const [place, setPlace] = useState<ChosenPlace | null>(placeFromListing(existing))
   const [description, setDescription] = useState(existing?.description ?? "")
   const [phone, setPhone] = useState(existing?.phone ?? "")
+  const [sponsored, setSponsored] = useState(existing?.sponsored === true)
   const [photos, setPhotos] = useState<string[]>(existing ? listingImages(existing) : [])
   const [errors, setErrors] = useState<FieldErrors>({})
   const [submitting, setSubmitting] = useState(false)
@@ -283,6 +285,7 @@ function AdForm({ existing }: { existing: Listing | null }) {
       sellerName: existing?.sellerName ?? "Amina K.",
       sellerSince: existing?.sellerSince ?? sellerSinceFromUser(auth.user),
       phone: phone || callingCode || "+000",
+      sponsored: sponsored || undefined,
       mine: true,
     }
   }, [
@@ -300,6 +303,7 @@ function AdForm({ existing }: { existing: Listing | null }) {
     description,
     phone,
     callingCode,
+    sponsored,
     existing,
     auth.user,
   ])
@@ -482,6 +486,7 @@ function AdForm({ existing }: { existing: Listing | null }) {
       images: preview.images,
       condition: keptDetails.condition || subcategory.name,
       sold: existing?.sold,
+      sponsored: sponsored || undefined,
     }
     if (auth.configured && !auth.signedIn) {
       const draftResult = writePostDraft({
@@ -889,6 +894,15 @@ function AdForm({ existing }: { existing: Listing | null }) {
                   setErrors((current) => ({ ...current, phone: undefined }))
                 }}
               />
+              <label className="flex items-start gap-2 text-sm text-neutral-700">
+                <input
+                  type="checkbox"
+                  className="mt-0.5 size-4 shrink-0 rounded border-neutral-300"
+                  checked={sponsored}
+                  onChange={(event) => setSponsored(event.target.checked)}
+                />
+                <span>Sponsored / paid promotion</span>
+              </label>
               <p className="text-xs leading-5 text-neutral-500">
                 Buyers can call, open WhatsApp with this number, or leave an on-site note. Prefer a number you check often.
               </p>
@@ -901,7 +915,9 @@ function AdForm({ existing }: { existing: Listing | null }) {
             </p>
           ) : null}
 
-          <div className="fixed inset-x-0 bottom-0 z-[45] flex items-center gap-3 border-t border-neutral-200 bg-background/95 px-4 py-3 backdrop-blur md:static md:inset-auto md:z-auto md:border-0 md:bg-transparent md:px-0 md:py-0 md:backdrop-blur-none">
+          <div className="fixed inset-x-0 bottom-0 z-[45] flex flex-col gap-2 border-t border-neutral-200 bg-background/95 px-4 py-3 backdrop-blur md:static md:inset-auto md:z-auto md:border-0 md:bg-transparent md:px-0 md:py-0 md:backdrop-blur-none">
+            {step === 3 ? <TermsNotice /> : null}
+            <div className="flex items-center gap-3">
             {step === 0 ? (
               <Button type="button" variant="ghost" onClick={() => router.push(existing ? `/listings/${existing.id}` : "/")}>
                 Cancel
@@ -927,6 +943,7 @@ function AdForm({ existing }: { existing: Listing | null }) {
                 {submitting ? (existing ? "Saving…" : "Publishing…") : existing ? "Save changes" : "Publish ad"}
               </Button>
             )}
+            </div>
           </div>
         </form>
       </div>

@@ -54,8 +54,10 @@ Apply in order on the board Supabase project (SQL editor), after `database/board
 6. `database/migrations/20260926_lock_listings_reads.sql` — revoke public `SELECT` on board tables; all reads go through the server secret key
 7. `database/migrations/20260927_reference_relation_indexes.sql` (if using the reference schema indexes)
 8. `database/migrations/20260928_listing_status.sql`
-9. `supabase/migrations/20260928_profile_settings.sql`
-10. `supabase/migrations/20260928_profile_buyer_contact.sql`
+9. `database/migrations/20260928_terms_acceptance.sql` — append-only Terms/Privacy acceptance log
+10. `database/migrations/20260928_sponsored_ads.sql` — `board_listings.sponsored`, `undisclosed_promo` report reason, `moderation_actions`
+11. `supabase/migrations/20260928_profile_settings.sql`
+12. `supabase/migrations/20260928_profile_buyer_contact.sql`
 
 After the lock migration, anyone with only the publishable key must not be able to read `board_listings` (including phones).
 

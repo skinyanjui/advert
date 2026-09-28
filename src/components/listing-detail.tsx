@@ -9,6 +9,7 @@ import { toast } from "sonner"
 
 import { ListingCard } from "@/components/listing-card"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
+import { TermsNotice } from "@/components/terms-notice"
 import { Button } from "@/components/ui/button"
 import {
   Dialog,
@@ -339,6 +340,9 @@ export function ListingDetail({ id }: { id: string }) {
                 {isSample ? (
                   <p className="mb-1 text-xs font-semibold tracking-wide text-amber-800 uppercase">Sample ad · contact unavailable</p>
                 ) : null}
+                {listing.sponsored ? (
+                  <p className="mb-1 text-xs font-medium tracking-wide text-sky-800 uppercase">Sponsored</p>
+                ) : null}
                 {listing.sold || status === "sold" ? (
                   <p className="mb-1 text-xs font-medium tracking-wide text-neutral-500 uppercase">Sold</p>
                 ) : null}
@@ -602,6 +606,7 @@ export function ListingDetail({ id }: { id: string }) {
           {message && messageError(message) ? (
             <p className="text-xs text-amber-700">{messageError(message)}</p>
           ) : null}
+          <TermsNotice />
           <DialogFooter>
             <Button variant="outline" disabled={messageSending} onClick={() => setMessageOpen(false)}>
               Cancel

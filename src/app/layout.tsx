@@ -4,6 +4,7 @@ import { Suspense } from "react"
 
 import { CategorySidebar } from "@/components/category-top-nav"
 import { HeaderFallback, SiteHeader } from "@/components/site-header"
+import { TermsReacceptDialog } from "@/components/terms-reaccept-dialog"
 import { ThemeSync } from "@/components/theme-choices"
 import { SidebarInset, SidebarProvider } from "@/components/ui/sidebar"
 import { Toaster } from "@/components/ui/sonner"
@@ -52,6 +53,7 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
                 </SidebarInset>
               </div>
               <Toaster />
+              <TermsReacceptDialog />
             </SidebarProvider>
           </AuthProvider>
         </MarketplaceProvider>

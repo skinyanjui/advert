@@ -1,6 +1,7 @@
 import { fail, ok } from "@/lib/api"
 import { resolveMutationOwner } from "@/lib/board-session"
 import { createMessage, markMessagesRead, replyToConversation } from "@/lib/board-store"
+import { requireCurrentTerms } from "@/lib/terms-gate"
 
 export const dynamic = "force-dynamic"
 export const runtime = "nodejs"
@@ -10,6 +11,8 @@ export async function POST(request: Request) {
   if (!owner || owner.kind !== "auth") {
     return fail("Sign in to send a message.", 401)
   }
+  const termsBlock = await requireCurrentTerms(owner.id)
+  if (termsBlock) return termsBlock
   try {
     const body = (await request.json()) as {
       listingId?: unknown
@@ -34,6 +37,8 @@ export async function PATCH(request: Request) {
   if (!owner || owner.kind !== "auth") {
     return fail("Sign in to update messages.", 401)
   }
+  const termsBlock = await requireCurrentTerms(owner.id)
+  if (termsBlock) return termsBlock
   try {
     const body = (await request.json()) as { conversationId?: unknown; listingId?: unknown }
     const conversationId = typeof body.conversationId === "string" ? body.conversationId : ""

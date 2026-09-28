@@ -10,6 +10,7 @@ import { reloadBoard } from "@/lib/marketplace"
 import { passwordError } from "@/lib/password"
 import { createBrowserSupabase } from "@/lib/supabase/client"
 import { authConfigured, googleAuthEnabled, phoneAuthEnabled } from "@/lib/supabase/env"
+import { recordPendingTermsAcceptance } from "@/lib/terms-client"
 
 type AuthResult =
   | { ok: true; session?: boolean; needsEmailConfirm?: boolean }
@@ -96,10 +97,17 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }
   }, [])
 
+  const recordTermsAfterSignIn = useCallback(async () => {
+    await recordPendingTermsAcceptance("signup")
+  }, [])
+
   useEffect(() => {
     if (!user) return
-    void claimBrowserSession()
-  }, [user, claimBrowserSession])
+    void (async () => {
+      await claimBrowserSession()
+      await recordTermsAfterSignIn()
+    })()
+  }, [user, claimBrowserSession, recordTermsAfterSignIn])
 
   const sendEmailCode = useCallback(
     async (email: string, next?: string) => {

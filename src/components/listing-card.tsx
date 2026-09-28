@@ -62,6 +62,10 @@ export function ListingCard({
           <span className="absolute top-2 left-2 rounded-full bg-neutral-600 px-2 py-0.5 text-[10px] font-medium text-white">
             Expired
           </span>
+        ) : listing.sponsored ? (
+          <span className="absolute top-2 left-2 rounded-full bg-sky-700 px-2 py-0.5 text-[10px] font-medium text-white">
+            Sponsored
+          </span>
         ) : listing.badge === "jobs" ? (
           <span className="absolute top-2 left-2 rounded-full bg-emerald-500 px-2 py-0.5 text-[10px] font-medium text-white">
             Jobs

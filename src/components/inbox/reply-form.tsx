@@ -4,6 +4,7 @@ import { Send } from "lucide-react"
 import { useRef, useState } from "react"
 import { toast } from "sonner"
 
+import { TermsNotice } from "@/components/terms-notice"
 import { Button } from "@/components/ui/button"
 import { Textarea } from "@/components/ui/textarea"
 
@@ -33,10 +34,13 @@ export function ReplyForm({ placeholder, sending, onSend }: { placeholder: strin
         rows={2}
         className="resize-none rounded-xl"
       />
-      <Button type="submit" disabled={sending || draft.trim().length < 8} className="justify-self-end rounded-full">
-        <Send className="size-4" aria-hidden="true" />
-        {sending ? "Sending…" : "Send"}
-      </Button>
+      <div className="flex flex-wrap items-center justify-between gap-2">
+        <TermsNotice />
+        <Button type="submit" disabled={sending || draft.trim().length < 8} className="rounded-full">
+          <Send className="size-4" aria-hidden="true" />
+          {sending ? "Sending…" : "Send"}
+        </Button>
+      </div>
     </form>
   )
 }
