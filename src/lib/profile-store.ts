@@ -34,7 +34,7 @@ function check(error: { message: string } | null) {
 }
 
 const profileSelect =
-  "user_id,email,display_name,avatar_url,city,country_code,phone,created_at"
+  "user_id,email,display_name,avatar_url,city,country_code,phone,language,currency,created_at"
 
 type ProfileRow = {
   user_id: string
@@ -44,6 +44,8 @@ type ProfileRow = {
   city?: string | null
   country_code?: string | null
   phone?: string | null
+  language?: string | null
+  currency?: string | null
   created_at: string | null
 }
 
@@ -56,6 +58,8 @@ function unpackProfile(row: ProfileRow): BoardProfile {
     city: typeof row.city === "string" ? row.city : null,
     countryCode: typeof row.country_code === "string" ? row.country_code : null,
     phone: typeof row.phone === "string" ? row.phone : null,
+    language: typeof row.language === "string" ? row.language : null,
+    currency: typeof row.currency === "string" ? row.currency : null,
     createdAt: typeof row.created_at === "string" ? row.created_at : null,
   }
 }
@@ -217,6 +221,8 @@ export async function updateProfile(
   if (input.countryCode !== undefined) patch.country_code = normalized.value.countryCode
   if (input.avatarUrl !== undefined) patch.avatar_url = avatarUrl
   if (input.phone !== undefined) patch.phone = normalized.value.phone ?? null
+  if (input.language !== undefined) patch.language = normalized.value.language ?? null
+  if (input.currency !== undefined) patch.currency = normalized.value.currency ?? null
   if (email) patch.email = email
 
   const db = boardDb()

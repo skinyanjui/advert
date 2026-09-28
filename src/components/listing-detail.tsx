@@ -8,6 +8,7 @@ import { useEffect, useRef, useState } from "react"
 import { toast } from "sonner"
 
 import { ListingCard } from "@/components/listing-card"
+import { ListingPrice } from "@/components/listing-price"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { TermsNotice } from "@/components/terms-notice"
 import { Button } from "@/components/ui/button"
@@ -33,7 +34,8 @@ import { relatedListings } from "@/lib/board"
 import { seedListings } from "@/lib/catalog"
 import { resolvePlace } from "@/lib/cities"
 import { getCountry } from "@/lib/countries"
-import { formatPlace, formatPrice, initials, whatsappHref } from "@/lib/format"
+import { formatPlace, initials, whatsappHref } from "@/lib/format"
+import { listingGridClassNameLoose } from "@/lib/listing-grid"
 import { osmLinks } from "@/lib/map"
 import { useMarketplace } from "@/lib/marketplace"
 import { messageError } from "@/lib/messages"
@@ -359,7 +361,9 @@ export function ListingDetail({ id }: { id: string }) {
                     {expiryLabel ?? "Expiring soon"}
                   </p>
                 ) : null}
-                <p className="text-2xl font-semibold tracking-tight">{formatPrice(listing)}</p>
+                <p className="text-2xl font-semibold tracking-tight">
+                  <ListingPrice listing={listing} secondaryClassName="text-sm text-neutral-500" />
+                </p>
                 <h1 className="mt-1 text-xl font-semibold tracking-tight text-neutral-950">
                   {listing.title}
                 </h1>
@@ -539,7 +543,7 @@ export function ListingDetail({ id }: { id: string }) {
       {related.length > 0 ? (
         <section className="mt-10">
           <h2 className="text-sm font-medium text-neutral-950">Similar listings</h2>
-          <div className="mt-3 grid grid-cols-2 gap-4 lg:grid-cols-3 xl:grid-cols-4">
+          <div className={`mt-3 ${listingGridClassNameLoose}`}>
             {related.map((item) => (
               <ListingCard key={item.id} listing={item} preserve={keptSearch(searchParams, item.subcategory)} />
             ))}
@@ -549,7 +553,9 @@ export function ListingDetail({ id }: { id: string }) {
       <div className="fixed inset-x-0 bottom-[calc(env(safe-area-inset-bottom)+5.25rem)] z-20 border-t bg-white p-3 md:bottom-0 lg:hidden">
         <div className="mx-auto flex max-w-[1100px] items-center gap-2 sm:gap-3">
           <div className="min-w-0 flex-1">
-            <p className="truncate text-sm font-semibold">{formatPrice(listing)}</p>
+            <p className="truncate text-sm font-semibold">
+              <ListingPrice listing={listing} secondaryClassName="text-[10px]" />
+            </p>
             <p className="truncate text-xs text-neutral-500">{formatPlace(listing)}</p>
           </div>
           {listing.mine ? (
