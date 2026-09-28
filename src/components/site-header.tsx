@@ -7,15 +7,11 @@ import { useEffect, useRef, useState, type ReactNode } from "react"
 
 import { Logo } from "@/components/logo"
 import { CategoryTopNav } from "@/components/category-top-nav"
-import { LanguageCurrencyFields } from "@/components/language-currency-fields"
-import { NavBadge } from "@/components/nav-badge"
 import { PostLink, usePostAdHref } from "@/components/post-link"
+import { ProfileMenu } from "@/components/profile-menu"
 import { usePrefs } from "@/components/prefs-provider"
-import { ThemeChoices } from "@/components/theme-choices"
 import { Button, buttonVariants } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
-import { useNavCounts, navCountAriaLabel } from "@/hooks/use-nav-counts"
-import { useAuth } from "@/lib/auth"
 import { searchCitiesAnywhere } from "@/lib/cities"
 import { countries, countryName, fold, moreCountries, primaryCountries } from "@/lib/countries"
 import { formatPlaceLabel } from "@/lib/format"
@@ -31,38 +27,14 @@ const summaryClass =
 
 export function SiteHeader() {
   const { query, update } = useListingQuery()
-  const { savedIds, ready, refreshBoard } = useMarketplace()
-  const auth = useAuth()
   const { t } = usePrefs()
-  const navCounts = useNavCounts()
-  const unreadMessages = navCounts.messages ?? 0
-  const myAdsAttention = navCounts["my-ads"] ?? 0
-  const profileAttention = unreadMessages + myAdsAttention
   const locationLabel = query.country ? countryName(query.country) : t("nav.allAfrica")
   const pathname = usePathname()
   const homeNav = navItem("home")
   const postNav = navItem("post")
-  const messagesNav = navItem("messages")
-  const savedNav = navItem("saved")
-  const myAdsNav = navItem("my-ads")
-  const profileNav = navItem("profile")
   const HomeIcon = homeNav.icon
   const PostIcon = postNav.icon
-  const ProfileIcon = profileNav.icon
   const postHref = usePostAdHref()
-  const profileLabel = auth.signedIn ? auth.email ?? "Signed in" : t("nav.guestBrowser")
-  const profileDetail = auth.signedIn ? t("nav.signedInDetail") : t("nav.guestDetail")
-  const profileMenuLabel = [
-    t("nav.profile"),
-    unreadMessages > 0 ? t("nav.unreadMessages", { count: unreadMessages }) : null,
-    myAdsAttention > 0
-      ? myAdsAttention === 1
-        ? t("nav.needsAttentionOne")
-        : t("nav.needsAttentionMany", { count: myAdsAttention })
-      : null,
-  ]
-    .filter(Boolean)
-    .join(", ")
   return (
     <header className="sticky top-0 z-50">
       <div className="border-b border-neutral-200/80 bg-white">
@@ -101,74 +73,7 @@ export function SiteHeader() {
                   <span className="hidden xl:inline">{t("nav.postShort")}</span>
                 </Link>
               </Button>
-              <HeaderMenu
-                label={profileMenuLabel}
-                summaryClassName="relative size-9 px-0"
-                panelClassName="w-[min(23rem,calc(100vw-1rem))] !p-0 max-h-[min(36rem,calc(100dvh-5rem))]"
-                panelRole="menu"
-                onOpen={() => {
-                  if (ready) void refreshBoard()
-                }}
-                summary={
-                  <>
-                    <ProfileIcon />
-                    {profileAttention > 0 ? (
-                      <NavBadge
-                        count={profileAttention}
-                        ariaLabel={
-                          unreadMessages > 0
-                            ? t("nav.unreadMessages", { count: unreadMessages })
-                            : t("nav.needsAttentionMany", { count: myAdsAttention })
-                        }
-                      />
-                    ) : null}
-                  </>
-                }
-              >
-                <div className="px-3 py-2">
-                  <p className="truncate text-sm font-medium">{profileLabel}</p>
-                  <p className="text-xs text-neutral-500">{profileDetail}</p>
-                  <ThemeChoices className="mt-2" />
-                </div>
-                <LanguageCurrencyFields layout="menu" />
-                <div className="mx-2 my-1 h-px bg-neutral-200" />
-                <div className="p-1">
-                  {auth.signedIn ? null : <MenuLink href="/sign-in">{t("nav.signIn")}</MenuLink>}
-                  <MenuLink href={profileNav.href}>{t("nav.profile")}</MenuLink>
-                  <MenuLink
-                    href={messagesNav.href}
-                    className="justify-between gap-2"
-                    aria-label={navCountAriaLabel(t("nav.messages"), "messages", navCounts)}
-                  >
-                    <span>{t("nav.messages")}</span>
-                    <NavBadge count={unreadMessages} placement="inline" />
-                  </MenuLink>
-                  <MenuLink href={savedNav.href}>
-                    {t("nav.saved")} ({savedIds.length})
-                  </MenuLink>
-                  <MenuLink
-                    href={myAdsNav.href}
-                    className="justify-between gap-2"
-                    aria-label={navCountAriaLabel(t("nav.myAds"), "my-ads", navCounts)}
-                  >
-                    <span>{t("nav.myAds")}</span>
-                    <NavBadge count={myAdsAttention} placement="inline" />
-                  </MenuLink>
-                  <MenuLink href={postHref}>{t("nav.post")}</MenuLink>
-                  {auth.signedIn ? (
-                    <button
-                      type="button"
-                      role="menuitem"
-                      className="flex h-8 w-full cursor-pointer items-center rounded-md px-2 text-left text-sm hover:bg-neutral-100"
-                      onClick={() => void auth.signOut()}
-                    >
-                      {t("nav.signOut")}
-                    </button>
-                  ) : null}
-                </div>
-                <div className="mx-2 my-1 h-px bg-neutral-200" />
-                <ProfileNotifications />
-              </HeaderMenu>
+              <ProfileMenu notifications={<ProfileNotifications />} />
             </nav>
           </div>
         </div>

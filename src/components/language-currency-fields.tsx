@@ -20,21 +20,23 @@ import {
 
 export function LanguageCurrencyFields({
   layout = "stack",
+  idPrefix = "pref",
 }: {
   layout?: "stack" | "menu"
+  idPrefix?: string
 }) {
   const { language, currency, setLanguage, setCurrency, t } = usePrefs()
   const currencies = boardCurrencyOptions()
 
   const languageField = (
-    <FormField label={t("prefs.language")} htmlFor="pref-language">
+    <FormField label={t("prefs.language")} htmlFor={`${idPrefix}-language`}>
       <Select
         value={language}
         onValueChange={(value) => {
           if (isLocale(value) && offeredLocales.includes(value)) setLanguage(value)
         }}
       >
-        <SelectTrigger id="pref-language" className={layout === "menu" ? "w-full" : "w-full max-w-xs"}>
+        <SelectTrigger id={`${idPrefix}-language`} className={layout === "menu" ? "w-full" : "w-full max-w-xs"}>
           <SelectValue />
         </SelectTrigger>
         <SelectContent className="z-[90]">
@@ -51,7 +53,7 @@ export function LanguageCurrencyFields({
   const currencyField = (
     <FormField
       label={t("prefs.currency")}
-      htmlFor="pref-currency"
+      htmlFor={`${idPrefix}-currency`}
       hint={layout === "stack" ? t("prefs.currencyHint") : undefined}
     >
       <Select
@@ -60,7 +62,7 @@ export function LanguageCurrencyFields({
           if (isCurrencyPreference(value)) setCurrency(value as CurrencyPreference)
         }}
       >
-        <SelectTrigger id="pref-currency" className={layout === "menu" ? "w-full" : "w-full max-w-xs"}>
+        <SelectTrigger id={`${idPrefix}-currency`} className={layout === "menu" ? "w-full" : "w-full max-w-xs"}>
           <SelectValue />
         </SelectTrigger>
         <SelectContent className="z-[90] max-h-72">

@@ -96,19 +96,19 @@ test("protected-route sign-in href preserves next", () => {
 })
 
 test("mapAuthError covers rate limits, expired codes, unconfirmed, and wrong password", () => {
-  assert.match(mapAuthError({ status: 429, message: "over_email_send_rate_limit" }), /Too many emails/)
-  assert.match(mapAuthError({ message: "Email rate limit exceeded" }), /Too many emails/)
+  assert.match(mapAuthError({ status: 429, message: "over_email_send_rate_limit" }), /Too many attempts/)
+  assert.match(mapAuthError({ message: "Email rate limit exceeded" }), /Too many attempts/)
   assert.match(mapAuthError({ message: "Token has expired or is invalid" }), /expired|invalid/i)
   assert.match(mapAuthError({ message: "otp_expired" }), /expired/)
   assert.match(mapAuthError({ message: "Email not confirmed" }), /Confirm your email/)
-  assert.match(mapAuthError({ message: "Invalid login credentials" }), /Wrong email or password/)
+  assert.match(mapAuthError({ message: "Invalid login credentials" }), /Incorrect email or password/)
   assert.match(mapAuthError({ message: "token is invalid" }), /invalid/)
   assert.match(mapAuthError({ code: "reauthentication_needed", message: "Reauthentication required" }), /verification code/i)
 })
 
 test("mapAuthError uses a generic fallback for unknown errors", () => {
-  assert.equal(mapAuthError({ message: "weird upstream boom xyz" }), "Something went wrong. Try again.")
-  assert.equal(mapAuthError({}), "Something went wrong. Try again.")
+  assert.equal(mapAuthError({ message: "weird upstream boom xyz" }), "Something went wrong. Please try again.")
+  assert.equal(mapAuthError({}), "Something went wrong. Please try again.")
 })
 
 test("password validation and strength hint", () => {

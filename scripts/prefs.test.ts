@@ -81,8 +81,11 @@ test("listing grids use 5 columns from xl (1280px) and keep 2 cols on small scre
 
 test("header moves notifications into the profile menu and drops top-nav message/bell icons", () => {
   const header = readFileSync(new URL("../src/components/site-header.tsx", import.meta.url), "utf8")
+  const profileMenu = readFileSync(new URL("../src/components/profile-menu.tsx", import.meta.url), "utf8")
   assert.match(header, /ProfileNotifications/)
-  assert.match(header, /LanguageCurrencyFields/)
+  assert.match(header, /<ProfileMenu notifications=\{<ProfileNotifications \/>\}/)
+  assert.match(profileMenu, /LanguageCurrencyFields/)
+  assert.match(profileMenu, /href="\/messages"/)
   assert.match(header, /navItem\("home"\)/)
   assert.match(header, /md:hidden/)
   assert.doesNotMatch(header, /NavIconLink/)
