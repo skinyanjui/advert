@@ -43,6 +43,9 @@ export async function PATCH(request: Request) {
       ...(Object.prototype.hasOwnProperty.call(body, "avatarUrl")
         ? { avatarUrl: typeof body.avatarUrl === "string" || body.avatarUrl === null ? body.avatarUrl : undefined }
         : {}),
+      ...(Object.prototype.hasOwnProperty.call(body, "phone")
+        ? { phone: typeof body.phone === "string" || body.phone === null ? body.phone : undefined }
+        : {}),
     }
     const result = await updateProfile(owner.id, input, owner.email)
     if (!result.ok) return fail(result.reason)

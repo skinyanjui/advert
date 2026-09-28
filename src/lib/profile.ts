@@ -1,3 +1,4 @@
+import { contactPhoneError, normalizeContactPhone } from "@/lib/contact-phone"
 import { canonicalCountry } from "@/lib/countries"
 import { photoFileError } from "@/lib/photos"
 
@@ -8,6 +9,8 @@ export type BoardProfile = {
   avatarUrl: string | null
   city: string | null
   countryCode: string | null
+  /** Saved call/WhatsApp number for prefilling new ads. Never on public seller overlay. */
+  phone: string | null
   createdAt: string | null
 }
 
@@ -16,6 +19,7 @@ export type ProfileUpdateInput = {
   city?: string | null
   countryCode?: string | null
   avatarUrl?: string | null
+  phone?: string | null
 }
 
 const displayNameMax = 80
@@ -52,6 +56,7 @@ export function normalizeProfileUpdate(input: ProfileUpdateInput): {
     city: string | null
     countryCode: string | null
     avatarUrl?: string | null
+    phone?: string | null
   }
 } | { ok: false; reason: string } {
   const displayName =
@@ -86,6 +91,17 @@ export function normalizeProfileUpdate(input: ProfileUpdateInput): {
   const countryCode =
     countryRaw === undefined ? undefined : countryRaw === null ? null : canonicalCountry(countryRaw) ?? null
 
+  let phone: string | null | undefined
+  if (input.phone !== undefined) {
+    if (input.phone === null || !input.phone.trim()) {
+      phone = null
+    } else {
+      const reason = contactPhoneError(input.phone, { required: false })
+      if (reason) return { ok: false, reason }
+      phone = normalizeContactPhone(input.phone) || null
+    }
+  }
+
   return {
     ok: true,
     value: {
@@ -93,6 +109,7 @@ export function normalizeProfileUpdate(input: ProfileUpdateInput): {
       city: city === undefined ? null : city || null,
       countryCode: countryCode === undefined ? null : countryCode,
       ...(input.avatarUrl !== undefined ? { avatarUrl: input.avatarUrl } : {}),
+      ...(phone !== undefined ? { phone } : {}),
     },
   }
 }

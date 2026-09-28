@@ -1,3 +1,4 @@
+import { contactPhoneError, normalizeContactPhone } from "@/lib/contact-phone"
 import { getCountry } from "@/lib/countries"
 import { findSubcategory, isPricePeriodId, pricePeriod } from "@/lib/posting"
 import type { CategoryId, Listing } from "@/lib/types"
@@ -67,9 +68,8 @@ export function listingFieldErrors(input: ListingFields): FieldErrors {
     errors.description = "Write at least 20 characters. This is the paragraph on the listing."
   }
   if (input.city.trim().length < 2) errors.city = "Add the city."
-  const digits = input.phone.replace(/[^\d]/g, "").length
-  if (digits < 7) errors.phone = "Add a phone number people can use."
-  else if (digits > 15) errors.phone = "Use a shorter phone number."
+  const phoneReason = contactPhoneError(input.phone, { required: true })
+  if (phoneReason) errors.phone = phoneReason
 
   const combined = `${input.title} ${input.description}`
   if (prohibited.test(combined)) {
@@ -127,7 +127,7 @@ function normalizeListing(listing: Listing): Listing {
     currency: listing.currency ?? "USD",
     description: listing.description.trim().slice(0, 2000),
     city: listing.city.trim().slice(0, 80),
-    phone: listing.phone.trim().slice(0, 30),
+    phone: normalizeContactPhone(listing.phone),
     subcategory: subcategory?.id,
     details,
     condition: details?.condition || subcategory?.name || listing.condition,
