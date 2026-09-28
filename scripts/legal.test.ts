@@ -11,7 +11,7 @@ import {
   TERMS_VERSION,
   isTermsAcceptanceContext,
 } from "../src/lib/legal"
-import { site, siteSupportMailto } from "../src/lib/site"
+import { site, siteSupportMailto, SUPPORT_CONTACT_PLACEHOLDER } from "../src/lib/site"
 
 test("legal versions and effective date are set", () => {
   assert.ok(TERMS_VERSION.length > 0)
@@ -38,9 +38,11 @@ test("terms outdated message matches the product copy", () => {
   assert.equal(TERMS_OUTDATED_MESSAGE, "Accept the updated Terms to continue.")
 })
 
-test("support contact is configured for Contact mailto", () => {
-  assert.equal(site.supportEmail, "samuel.kinyanjui.sk@gmail.com")
-  assert.equal(siteSupportMailto(), "mailto:samuel.kinyanjui.sk@gmail.com")
+test("support contact is unset until a public address is configured", () => {
+  assert.equal(site.supportEmail, undefined)
+  assert.equal(siteSupportMailto(), undefined)
+  assert.match(SUPPORT_CONTACT_PLACEHOLDER, /support address to be added/i)
+  assert.match(SUPPORT_CONTACT_PLACEHOLDER, /Report on any listing/i)
 })
 
 test("terms acceptance migration is append-only with RLS and no public grants", () => {

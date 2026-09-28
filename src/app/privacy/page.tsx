@@ -2,12 +2,12 @@ import type { Metadata } from "next"
 import Link from "next/link"
 
 import { LEGAL_EFFECTIVE_DATE, PRIVACY_VERSION, TERMS_VERSION } from "@/lib/legal"
-import { site, siteSupportMailto } from "@/lib/site"
+import { SUPPORT_CONTACT_PLACEHOLDER, site, siteSupportMailto } from "@/lib/site"
 
 export const metadata: Metadata = { title: "Privacy Policy" }
 
 export default function PrivacyPage() {
-  const contact = site.supportEmail ?? "samuel.kinyanjui.sk@gmail.com"
+  const contactHref = siteSupportMailto()
   return (
     <div className="mx-auto w-full max-w-2xl px-4 py-10 md:px-6">
       <div
@@ -80,11 +80,17 @@ export default function PrivacyPage() {
       <section className="mt-8 space-y-3">
         <h2 className="text-base font-medium text-neutral-950">Contact</h2>
         <p className="text-sm leading-6 text-neutral-700">
-          Privacy questions:{" "}
-          <a href={siteSupportMailto()} className="underline underline-offset-2">
-            {contact}
-          </a>
-          .
+          {contactHref && site.supportEmail ? (
+            <>
+              Privacy questions:{" "}
+              <a href={contactHref} className="underline underline-offset-2">
+                {site.supportEmail}
+              </a>
+              .
+            </>
+          ) : (
+            SUPPORT_CONTACT_PLACEHOLDER
+          )}
         </p>
       </section>
 

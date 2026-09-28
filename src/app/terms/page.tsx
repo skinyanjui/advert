@@ -7,11 +7,12 @@ import {
   PROHIBITED_ITEM_SUMMARY,
   TERMS_VERSION,
 } from "@/lib/legal"
-import { site } from "@/lib/site"
+import { SUPPORT_CONTACT_PLACEHOLDER, site, siteSupportMailto } from "@/lib/site"
 
 export const metadata: Metadata = { title: "Terms of use" }
 
 export default function TermsPage() {
+  const contactHref = siteSupportMailto()
   return (
     <div className="mx-auto w-full max-w-2xl px-4 py-10 md:px-6">
       <div
@@ -137,6 +138,23 @@ export default function TermsPage() {
           and ask you to accept the new versions before posting ads or sending messages. We may also
           notify you by email or an in-product notice. Continued use after you accept means you agree
           to the updated versions.
+        </p>
+      </section>
+
+      <section className="mt-8 space-y-3">
+        <h2 className="text-base font-medium text-neutral-950">12. Contact</h2>
+        <p className="text-sm leading-6 text-neutral-700">
+          {contactHref && site.supportEmail ? (
+            <>
+              Support:{" "}
+              <a href={contactHref} className="underline underline-offset-2">
+                {site.supportEmail}
+              </a>
+              .
+            </>
+          ) : (
+            SUPPORT_CONTACT_PLACEHOLDER
+          )}
         </p>
       </section>
 
