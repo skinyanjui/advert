@@ -1,6 +1,7 @@
 import assert from "node:assert/strict"
 import { test } from "node:test"
 
+import { decideAuthCallback } from "../src/lib/auth-callback"
 import { mapAuthError } from "../src/lib/auth-errors"
 import {
   DEFAULT_AUTH_NEXT,
@@ -16,6 +17,7 @@ import {
   passwordStrengthLabel,
   passwordsMatchError,
 } from "../src/lib/password"
+import { DRAFT_MAX_AGE_MS, isPostDraftExpired } from "../src/lib/post-draft"
 
 test("auth next path rejects open redirects", () => {
   assert.equal(safeAuthNext(null), DEFAULT_AUTH_NEXT)
@@ -128,4 +130,80 @@ test("phone auth flag is off unless explicitly enabled", () => {
 
 test("google auth flag is off unless explicitly enabled", () => {
   assert.notEqual(process.env.NEXT_PUBLIC_AUTH_GOOGLE, "1")
+})
+
+test("authConfigured matches public Supabase URL + publishable key", async () => {
+  const { authConfigured } = await import("../src/lib/supabase/env")
+  const expected = Boolean(
+    (process.env.NEXT_PUBLIC_SUPABASE_URL ?? process.env.SUPABASE_URL) &&
+      (process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY ??
+        process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY ??
+        process.env.SUPABASE_PUBLISHABLE_KEY ??
+        process.env.SUPABASE_ANON_KEY),
+  )
+  assert.equal(authConfigured(), expected)
+})
+
+test("auth callback prefers existing session over re-exchanging the code", () => {
+  assert.deepEqual(
+    decideAuthCallback({
+      hasSession: true,
+      code: "abc",
+      accessToken: null,
+      refreshToken: null,
+      errorDescription: null,
+      goingToReset: false,
+    }),
+    { action: "succeed" },
+  )
+  assert.deepEqual(
+    decideAuthCallback({
+      hasSession: false,
+      code: "abc",
+      accessToken: null,
+      refreshToken: null,
+      errorDescription: null,
+      goingToReset: false,
+    }),
+    { action: "exchange-code", code: "abc" },
+  )
+  assert.deepEqual(
+    decideAuthCallback({
+      hasSession: false,
+      code: null,
+      accessToken: "at",
+      refreshToken: "rt",
+      errorDescription: null,
+      goingToReset: false,
+    }),
+    { action: "set-session", accessToken: "at", refreshToken: "rt" },
+  )
+  assert.deepEqual(
+    decideAuthCallback({
+      hasSession: false,
+      code: null,
+      accessToken: null,
+      refreshToken: null,
+      errorDescription: null,
+      goingToReset: true,
+    }),
+    { action: "fail", kind: "device" },
+  )
+  assert.deepEqual(
+    decideAuthCallback({
+      hasSession: false,
+      code: "abc",
+      accessToken: null,
+      refreshToken: null,
+      errorDescription: "access_denied",
+      goingToReset: false,
+    }),
+    { action: "fail", kind: "link" },
+  )
+})
+
+test("post drafts expire after seven days", () => {
+  const now = Date.UTC(2026, 8, 28)
+  assert.equal(isPostDraftExpired(now - DRAFT_MAX_AGE_MS + 1, now), false)
+  assert.equal(isPostDraftExpired(now - DRAFT_MAX_AGE_MS - 1, now), true)
 })

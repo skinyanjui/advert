@@ -59,7 +59,7 @@ export function ResetPasswordForm() {
         title={deviceError ? "Open the link on this device" : "Reset link required"}
         body={
           deviceError
-            ? "Default Supabase reset links only work in the browser that asked for the reset. Request a new link from this device, then open the email here."
+            ? "Open the reset link on the same device and browser that requested it, or request a new link from this device."
             : "Open the password reset link from your email on this same device and browser, then choose a new password."
         }
         actionHref={signInHref("/auth/reset")}

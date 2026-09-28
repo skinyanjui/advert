@@ -178,7 +178,7 @@ function AdForm({ existing }: { existing: Listing | null }) {
   useEffect(() => {
     if (existing) return
     const timer = window.setTimeout(() => {
-      writePostDraft({
+      const result = writePostDraft({
         step,
         category,
         subcategoryId,
@@ -193,6 +193,9 @@ function AdForm({ existing }: { existing: Listing | null }) {
         phone,
         photos,
       })
+      if (result.ok && result.omittedPhotos) {
+        toast.message("Draft saved without photos — storage on this device is full.")
+      }
     }, 400)
     return () => window.clearTimeout(timer)
   }, [
@@ -440,7 +443,7 @@ function AdForm({ existing }: { existing: Listing | null }) {
       sold: existing?.sold,
     }
     if (auth.configured && !auth.signedIn) {
-      writePostDraft({
+      const draftResult = writePostDraft({
         step,
         category,
         subcategoryId,
@@ -455,6 +458,9 @@ function AdForm({ existing }: { existing: Listing | null }) {
         phone,
         photos,
       })
+      if (draftResult.ok && draftResult.omittedPhotos) {
+        toast.message("Draft saved without photos — storage on this device is full.")
+      }
       toast.error(existing ? "Sign in to edit this ad" : "Sign in to post an ad")
       router.push(signInHref(existing ? `/post?edit=${existing.id}` : "/post"))
       return
@@ -485,27 +491,21 @@ function AdForm({ existing }: { existing: Listing | null }) {
     return (
       <div className="mx-auto w-full max-w-3xl px-4 py-8 md:px-6">
         <EmptyPanel
-          title={existing ? "Sign in to edit this ad" : "Sign in to post an ad"}
-          body={
-            existing
-              ? "Your browser-session ads move onto your account when you sign in."
-              : "Drafts you start on this device are saved and restored after you sign in."
-          }
-          actionHref={signInHref(existing ? `/post?edit=${existing.id}` : "/post")}
+          title="Sign in to post an ad"
+          body="Drafts you start on this device are saved and restored after you sign in."
+          actionHref={signInHref("/post")}
           actionLabel="Sign in"
           className="mt-0"
           headingLevel={1}
         >
-          {!existing ? (
-            <Button
-              type="button"
-              variant="outline"
-              className="mt-4 rounded-full"
-              onClick={() => setDraftUnlocked(true)}
-            >
-              Start a draft on this device
-            </Button>
-          ) : null}
+          <Button
+            type="button"
+            variant="outline"
+            className="mt-4 rounded-full"
+            onClick={() => setDraftUnlocked(true)}
+          >
+            Start a draft on this device
+          </Button>
         </EmptyPanel>
       </div>
     )
@@ -518,7 +518,9 @@ function AdForm({ existing }: { existing: Listing | null }) {
         {summaryLine ? <p className="mt-1 text-sm text-neutral-500">{summaryLine}</p> : null}
         {needsSignIn ? (
           <p className="mt-3 rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-sm text-amber-950">
-            Sign in before publishing. Your draft is saved on this device.{" "}
+            {existing
+              ? "Sign in to manage this ad. Ads from this browser move onto your account when you sign in. "
+              : "Sign in before publishing. Your draft is saved on this device. "}
             <Link
               href={signInHref(existing ? `/post?edit=${existing.id}` : "/post")}
               className="font-medium underline underline-offset-2"

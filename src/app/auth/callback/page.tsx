@@ -3,6 +3,7 @@
 import { useRouter, useSearchParams } from "next/navigation"
 import { Suspense, useEffect, useRef, useState } from "react"
 
+import { decideAuthCallback } from "@/lib/auth-callback"
 import { applySafeAuthNext, safeAuthNext } from "@/lib/auth-redirect"
 import { createBrowserSupabase } from "@/lib/supabase/client"
 
@@ -46,39 +47,63 @@ function AuthCallbackInner() {
         searchParams.get("error") ??
         hashParams.get("error_description") ??
         hashParams.get("error")
-
-      if (errorDescription) {
-        setMessage("That link could not be completed.")
-        fail(goingToReset ? "device" : "link")
-        return
-      }
-
       const code = searchParams.get("code")
+      const accessToken = hashParams.get("access_token")
+      const refreshToken = hashParams.get("refresh_token")
+
       try {
         const supabase = createBrowserSupabase()
-        if (code) {
-          const { error } = await supabase.auth.exchangeCodeForSession(code)
-          if (error) {
-            setMessage("That link could not be completed.")
-            fail("device")
+        // detectSessionInUrl may already have exchanged ?code= — check first.
+        const { data: sessionData } = await supabase.auth.getSession()
+        const decision = decideAuthCallback({
+          hasSession: Boolean(sessionData.session),
+          code,
+          accessToken,
+          refreshToken,
+          errorDescription,
+          goingToReset,
+        })
+
+        switch (decision.action) {
+          case "succeed":
+            succeed()
+            return
+          case "exchange-code": {
+            const { error } = await supabase.auth.exchangeCodeForSession(decision.code)
+            if (error) {
+              setMessage("That link could not be completed.")
+              fail(goingToReset ? "device" : "link")
+              return
+            }
+            succeed()
             return
           }
-          succeed()
-          return
-        }
-
-        // Legacy / hash redirects: let the browser client absorb tokens from the URL.
-        const { data, error } = await supabase.auth.getSession()
-        if (!error && data.session) {
-          succeed()
-          return
+          case "set-session": {
+            const { error } = await supabase.auth.setSession({
+              access_token: decision.accessToken,
+              refresh_token: decision.refreshToken,
+            })
+            if (error) {
+              setMessage("That link could not be completed.")
+              fail(goingToReset ? "device" : "link")
+              return
+            }
+            succeed()
+            return
+          }
+          case "fail":
+            setMessage("That link could not be completed.")
+            fail(decision.kind)
+            return
+          default: {
+            const _exhaustive: never = decision
+            return _exhaustive
+          }
         }
       } catch {
-        // Fall through to failure.
+        setMessage("That link could not be completed.")
+        fail(goingToReset ? "device" : "link")
       }
-
-      setMessage("That link could not be completed.")
-      fail(goingToReset ? "device" : "link")
     })()
   }, [router, searchParams])
 

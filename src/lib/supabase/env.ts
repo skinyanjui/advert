@@ -11,6 +11,11 @@ export function publicSupabaseKey(): string | undefined {
   )
 }
 
+/** True when the public Supabase URL and publishable key are present (sign-in is available). */
+export function authConfigured(): boolean {
+  return Boolean(publicSupabaseUrl() && publicSupabaseKey())
+}
+
 /** Phone OTP UI is off until the owner attaches an SMS provider and sets this flag. */
 export function phoneAuthEnabled(): boolean {
   return process.env.NEXT_PUBLIC_AUTH_PHONE === "1"

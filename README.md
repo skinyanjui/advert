@@ -2,7 +2,7 @@
 
 A classifieds board for buying and selling across Africa: cars, houses, jobs, electronics, and the rest of the usual categories. Search, filter by country and category, save listings, and post an ad.
 
-Listings in the catalog are sample ads. Ads you post, saved hearts, and messages are stored in Supabase. Uploaded photos are served from Supabase Storage. City search uses the bundled GeoNames snapshot and the reference database.
+Listings in the catalog are sample ads. Ads you post, saved hearts, messages, reports, and profiles are stored in Supabase. Uploaded photos are served from Supabase Storage. City search uses the bundled GeoNames snapshot and the reference database.
 
 ## Run locally
 
@@ -17,11 +17,47 @@ Open [http://localhost:3000](http://localhost:3000).
 
 - Browse, search, and sort. A selected country shows its capital, local time, time zone, currency, languages, and calling code. Search any city in that country, or filter to cities that already have ads. A city with no ads shows a map and opens the post form with that place filled in. Price sort keeps each currency together.
 - The country control in the top bar searches by country, capital, or ISO code.
-- A category sidebar
-- Listing pages with a message, phone reveal, and WhatsApp link
-- Post an ad, with a photo from your computer or a category image
-- Saved ads and your own ads
-- Supabase Postgres stores posted ads, saves, and messages, and a public Storage bucket serves listing photos. Run `database/board.sql` on the connected Supabase project before deploying the board routes.
+- A category sidebar (desktop) and category sheet (mobile)
+- Listing pages with messaging, phone reveal, WhatsApp, and “Report this ad”
+- Post an ad with up to 6 photos (cover + gallery) or a category image; ads expire after 60 days and can be renewed
+- Seller accounts: email OTP / magic link, optional password, Profile settings, and session claim so guest cookie posts move onto the account
+- My ads with active / paused / sold / expired actions
+- Messages inbox for real buyer–seller threads
+- Saved ads
+- Admin report review at `/admin/reports` for emails listed in `ADMIN_EMAILS`
+- Supabase Postgres stores board data; a public Storage bucket serves listing photos. Apply `database/board.sql`, then the migrations below, on the connected Supabase project before deploying the board routes.
+
+## Auth
+
+Sign-in lives at `/sign-in`. When `NEXT_PUBLIC_SUPABASE_URL` and a publishable key are set, new ads require a signed-in account (the post form and `POST /api/listings` both enforce this). Guests who posted earlier still keep cookie ownership for edits until they sign in; `POST /api/auth/claim` moves cookie-owned listings, saves, and conversations onto `auth.users.id`.
+
+Supported flows:
+
+- Email one-time code and magic link (`/auth/confirm`, `/auth/callback`)
+- Optional email + password (sign-in, sign-up, forgot/reset at `/auth/reset`)
+- Change email and password from Profile; sign out of this device or all devices
+- Phone/SMS and Google OAuth stay hidden until `NEXT_PUBLIC_AUTH_PHONE=1` or `NEXT_PUBLIC_AUTH_GOOGLE=1` after those providers are configured in Supabase
+
+Paste the HTML under `supabase/templates/` into Supabase Dashboard → Authentication → Email Templates (Confirm signup, Magic Link, Reset password, Change email). Prefer `token_hash` links over Management API calls. Site URL and redirect allow lists must include `/auth/confirm` and `/auth/callback` for production, previews, and localhost.
+
+Protected routes (`/my-ads`, `/messages`, `/admin/reports`) redirect unsigned visitors to `/sign-in?next=…`.
+
+## Board database migrations
+
+Apply in order on the board Supabase project (SQL editor), after `database/board.sql`:
+
+1. `database/migrations/20260926_seller_accounts.sql`
+2. `database/migrations/20260926_seller_inbox.sql`
+3. `database/migrations/20260926_report_listing.sql`
+4. `database/migrations/20260926_ad_expiry.sql`
+5. `database/migrations/20260926_multi_photo.sql` (documenting payload-only multi-photo; noop)
+6. `database/migrations/20260926_lock_listings_reads.sql` — revoke public `SELECT` on board tables; all reads go through the server secret key
+7. `database/migrations/20260927_reference_relation_indexes.sql` (if using the reference schema indexes)
+8. `database/migrations/20260928_listing_status.sql`
+9. `supabase/migrations/20260928_profile_settings.sql`
+10. `supabase/migrations/20260928_profile_buyer_contact.sql`
+
+After the lock migration, anyone with only the publishable key must not be able to read `board_listings` (including phones).
 
 ## Reference data
 
@@ -74,20 +110,29 @@ embeds; no request goes to the public Nominatim autocomplete API.
 
 ## Photos
 
-User uploads accept JPEG, PNG, or WebP, up to 700 KB in the posting form.
-The server validates the file signature, uploads it to `listing-photos`,
-and stores only the resulting public URL in Postgres. A signed, HTTP-only,
-same-site browser cookie identifies the owner for edits, saves, and messages;
-the server rejects cross-origin writes. The optional `BOARD_SESSION_SECRET`
-can be set to a dedicated random value of at least 32 characters; otherwise
-the server-only Supabase key signs sessions with a separate HMAC context.
-Keep that key private. Clearing browser cookies loses access to existing
-posts, because this demo does not yet offer account sign-in or recovery.
-The earlier temporary SQLite records cannot be recovered from Vercel
-instances; the legacy browser-side export is imported on first load.
+User uploads accept JPEG, PNG, or WebP, up to 700 KB each, and up to 6 photos
+per ad. The cover photo is stored as `image` and mirrored as the first entry in
+`images[]`. The server validates each file signature, uploads to
+`listing-photos`, and stores only the resulting public URLs in Postgres.
+Sellers can add, remove, reorder, and set the cover when editing.
+
+A signed, HTTP-only, same-site `board_session` cookie still identifies guest
+owners for legacy posts, saves, and messages; the server rejects cross-origin
+writes. Prefer signing in so ownership survives cookie clears and other devices.
+The optional `BOARD_SESSION_SECRET` can be set to a dedicated random value of at
+least 32 characters; otherwise the server-only Supabase key signs sessions with
+a separate HMAC context. Keep that key private.
 
 Sample photos come from Unsplash, Pexels, and Wikimedia Commons. The Toyota HiAce photo is by Lawrence Ruiz and the diesel generator photo is by Biswarup Ganguly, both CC BY-SA via Wikimedia Commons.
-# advert
-# advert
 
-Production `adverts` is linked to `skinyanjui/advert` on `main` and its dedicated Supabase project is attached only to the Production environment. Each update to `main` creates a Production deployment. The webhook secret is a Vercel Secret scoped to Production; after changing environment variables, redeploy for the new value to take effect. Reference tables are readable through RLS, while snapshot imports use the server-only key.
+## Expiry reminders
+
+Ads expire 60 days after `posted_at` (or renew). `vercel.json` schedules
+`GET /api/cron/expiry-reminders` daily at 08:00 UTC. Set `CRON_SECRET` and call
+with `Authorization: Bearer <CRON_SECRET>`. Optional `RESEND_API_KEY` and
+`RESEND_FROM_EMAIL` send reminder email to signed-in sellers; without Resend the
+route still advances reminder markers as a no-op send.
+
+## Production
+
+Production `adverts` is linked to `skinyanjui/advert` on `main` and its dedicated Supabase project is attached only to the Production environment. Each update to `main` creates a Production deployment. The webhook secret is a Vercel Secret scoped to Production; after changing environment variables, redeploy for the new value to take effect. Reference tables are readable through RLS, while snapshot imports use the server-only key. Board listing rows are not readable with the publishable key after the lock-listings migration.

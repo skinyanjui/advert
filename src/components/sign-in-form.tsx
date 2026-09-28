@@ -278,7 +278,7 @@ export function SignInForm({ nextHref }: { nextHref?: string } = {}) {
             <CardDescription>
               {channel === "email"
                 ? sent
-                  ? "Open the link on this device to finish signing in. Links from the free email provider don’t include a typed code."
+                  ? "Open the link on this device to finish signing in."
                   : "We’ll email a one-time sign-in link. Open it on this device."
                 : sent
                   ? "Enter the SMS code."

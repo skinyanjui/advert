@@ -15,6 +15,7 @@ type Context = { params: Promise<{ id: string }> }
 
 export async function PATCH(request: Request, context: Context) {
   const owner = await resolveMutationOwner(request)
+  // Guests must sign in to manage browser-session ads; claim moves them on sign-in.
   if (!owner || owner.kind !== "auth") {
     return fail("Sign in to manage this ad.", 401)
   }
