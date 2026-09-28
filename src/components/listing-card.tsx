@@ -84,8 +84,10 @@ export function ListingCard({
           aria-label={placeFull}
         >
           <MapPin className="size-3 shrink-0" aria-hidden="true" />
-          <span className="min-w-0 truncate">{listing.city}</span>
-          <span className="shrink-0">, {countryCode}</span>
+          <span className="flex min-w-0 items-baseline">
+            <span className="min-w-0 truncate">{listing.city}</span>
+            <span className="shrink-0">, {countryCode}</span>
+          </span>
         </p>
         <div className="grid grid-cols-[minmax(0,1fr)_auto] items-center gap-1.5 text-[11px] leading-none text-neutral-500">
           <PostedLabel listing={listing} />
