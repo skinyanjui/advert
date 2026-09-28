@@ -95,7 +95,7 @@ export function Browse() {
   return (
     <div className="mx-auto w-full max-w-[1720px]">
       <section className="min-w-0 px-4 py-4 pb-16 md:px-6 md:py-5">
-        <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
+        <div className="sticky top-16 z-40 -mx-4 mb-4 flex flex-wrap items-center justify-between gap-3 border-b border-neutral-200/80 bg-background px-4 py-3 shadow-sm md:top-[72px] md:-mx-6 md:px-6">
           <div className="flex items-center gap-2">
             <div>
               <p className="text-sm text-neutral-500">
@@ -115,7 +115,7 @@ export function Browse() {
             <SelectTrigger className="h-9 rounded-full" aria-label="Sort listings">
               <SelectValue />
             </SelectTrigger>
-            <SelectContent align="end">
+            <SelectContent align="end" className="z-[60]">
               {sorts.map((sort) => (
                 <SelectItem key={sort.id} value={sort.id}>
                   {sort.name}
