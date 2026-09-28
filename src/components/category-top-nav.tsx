@@ -11,7 +11,6 @@ import {
   Sidebar,
   SidebarContent,
   SidebarFooter,
-  SidebarRail,
   SidebarTrigger,
   useSidebar,
 } from "@/components/ui/sidebar"
@@ -29,18 +28,22 @@ function prefersReducedMotion(): boolean {
 }
 
 export function CategorySidebar() {
+  const { isMobile } = useSidebar()
   return (
     <Sidebar
       side="left"
-      collapsible="offcanvas"
-      className="top-16! bottom-auto! z-40 h-[calc(100svh-4rem)]! border-r border-sidebar-border md:top-[72px]! md:h-[calc(100svh-72px)]!"
+      collapsible={isMobile ? "offcanvas" : "none"}
+      className={
+        isMobile
+          ? undefined
+          : "sticky top-16 z-40 h-[calc(100svh-4rem)] border-r border-sidebar-border md:top-[72px] md:h-[calc(100svh-72px)]"
+      }
     >
       <CategorySidebarHeader />
       <CategorySidebarScroller />
       <SidebarFooter className="p-0">
         <CategorySidebarFooter />
       </SidebarFooter>
-      <SidebarRail />
     </Sidebar>
   )
 }
