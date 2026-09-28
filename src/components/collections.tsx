@@ -4,21 +4,24 @@ import type { ReactNode } from "react"
 
 import { EmptyPanel } from "@/components/empty-panel"
 import { ListingCard } from "@/components/listing-card"
+import { usePrefs } from "@/components/prefs-provider"
 import { listingGridClassName } from "@/lib/listing-grid"
 import { useMarketplace } from "@/lib/marketplace"
 
 export function SavedPage() {
   const { ready, listings, savedIds } = useMarketplace()
+  const { t } = usePrefs()
   const saved = listings.filter((listing) => savedIds.includes(listing.id))
 
-  if (!ready) return <PageSkeleton title="Saved ads" />
+  if (!ready) return <PageSkeleton title={t("saved.title")} />
 
   return (
     <Collection
-      title="Saved ads"
+      title={t("saved.title")}
       description="Saved hearts stay with your account when you are signed in."
-      emptyTitle="No saved ads yet"
-      emptyBody="Tap the heart on a listing and it will wait for you here."
+      emptyTitle={t("saved.emptyTitle")}
+      emptyBody={t("saved.emptyBody")}
+      actionLabel={t("saved.browse")}
       listings={saved}
     />
   )
@@ -31,7 +34,7 @@ function Collection({
   emptyBody,
   listings,
   actionHref = "/",
-  actionLabel = "Browse listings",
+  actionLabel,
   banner,
 }: {
   title: string
@@ -40,7 +43,7 @@ function Collection({
   emptyBody: string
   listings: { id: string }[]
   actionHref?: string
-  actionLabel?: string
+  actionLabel: string
   banner?: ReactNode
 }) {
   const { listings: all } = useMarketplace()

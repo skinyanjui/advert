@@ -2,6 +2,7 @@
 
 import { useEffect, useMemo, useRef, useState } from "react"
 
+import { usePrefs } from "@/components/prefs-provider"
 import { Input } from "@/components/ui/input"
 import { resolvePlace, searchCities } from "@/lib/cities"
 import { countryName, fold } from "@/lib/countries"
@@ -34,6 +35,7 @@ export function BoardCitySearch({
   places: ListedCity[]
   onSelect: (city: string | null) => void
 }) {
+  const { t } = usePrefs()
   const inputRef = useRef<HTMLInputElement>(null)
   const [open, setOpen] = useState(false)
   const [draft, setDraft] = useState("")
@@ -43,6 +45,7 @@ export function BoardCitySearch({
   const local = useMemo(() => listedAndKnownCities(country, query, places), [country, query, places])
   const key = `${country}|${query}`
   const suggestions = open ? mergePlaces(local, remote.key === key ? remote.places : []) : []
+  const countryLabel = countryName(country)
 
   useEffect(() => {
     if (!open || query.length < 2) return
@@ -97,8 +100,8 @@ export function BoardCitySearch({
           const next = exact ?? suggestions[0]
           if (next) pick(next.name)
         }}
-        placeholder={`City in ${countryName(country)}`}
-        aria-label={`Search cities in ${countryName(country)}`}
+        placeholder={t("board.cityIn", { country: countryLabel })}
+        aria-label={t("board.searchCities", { country: countryLabel })}
         aria-autocomplete="list"
         aria-expanded={open && (suggestions.length > 0 || query.length >= 2)}
         aria-controls="board-city-list"
@@ -108,7 +111,7 @@ export function BoardCitySearch({
       {city && !open ? (
         <button
           type="button"
-          aria-label="Clear city"
+          aria-label={t("board.clearCity")}
           className="absolute top-1/2 right-2 -translate-y-1/2 px-1 text-sm text-neutral-400 hover:text-neutral-900"
           onMouseDown={(event) => event.preventDefault()}
           onClick={() => onSelect(null)}
@@ -127,7 +130,7 @@ export function BoardCitySearch({
                 onClick={() => pick(place.name)}
               >
                 <span className="truncate">{place.name}</span>
-                <span className="shrink-0 text-[11px] text-neutral-400">{placeLabel(place)}</span>
+                <span className="shrink-0 text-[11px] text-neutral-400">{placeLabel(place, t("board.geoNames"))}</span>
               </button>
             </li>
           ))}
@@ -135,7 +138,7 @@ export function BoardCitySearch({
       ) : null}
       {open && query.length >= 2 && suggestions.length === 0 ? (
         <p className="absolute z-30 mt-1 w-full rounded-lg border bg-white px-3 py-2 text-sm text-neutral-500 shadow-md">
-          No cities match
+          {t("board.noCities")}
         </p>
       ) : null}
     </div>
@@ -143,6 +146,7 @@ export function BoardCitySearch({
 }
 
 export function CityMap({ country, city }: { country: string; city: string }) {
+  const { t } = usePrefs()
   const [resolved, setResolved] = useState<{ key: string; place: PlaceHit | null }>({
     key: "",
     place: null,
@@ -170,14 +174,14 @@ export function CityMap({ country, city }: { country: string; city: string }) {
   const links = osmLinks(place.lat, place.lng)
   return (
     <div className="mb-4 overflow-hidden rounded-2xl border border-neutral-200 bg-white">
-      <iframe title={`Map of ${place.name}`} src={links.embed} className="h-40 w-full" loading="lazy" />
+      <iframe title={t("board.mapOf", { name: place.name })} src={links.embed} className="h-40 w-full" loading="lazy" />
       <a
         href={links.external}
         target="_blank"
         rel="noreferrer"
         className="block border-t px-3 py-2 text-xs text-neutral-500 hover:text-neutral-900"
       >
-        Open {place.name} in OpenStreetMap
+        {t("board.openMap", { name: place.name })}
       </a>
     </div>
   )
@@ -211,9 +215,9 @@ function listedAndKnownCities(country: string, query: string, listed: ListedCity
   return mergePlaces(fromAds, fromGeo)
 }
 
-function placeLabel(place: PlaceHit): string {
+function placeLabel(place: PlaceHit, geoNamesLabel: string): string {
   if (place.count) return String(place.count)
-  return "GeoNames"
+  return geoNamesLabel
 }
 
 function mergePlaces(local: PlaceHit[], remote: PlaceHit[]): PlaceHit[] {

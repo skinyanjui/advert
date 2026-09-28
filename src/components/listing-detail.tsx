@@ -9,6 +9,7 @@ import { toast } from "sonner"
 
 import { ListingCard } from "@/components/listing-card"
 import { ListingPrice } from "@/components/listing-price"
+import { usePrefs } from "@/components/prefs-provider"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { TermsNotice } from "@/components/terms-notice"
 import { Button } from "@/components/ui/button"
@@ -49,9 +50,10 @@ import {
   hoursAgoOf,
   postedDateTime,
 } from "@/lib/relative-time"
-import { reportReasons } from "@/lib/reports"
+import { reportReasonLabel, reportReasons } from "@/lib/reports"
 import { useClientTime } from "@/lib/use-client-time"
-import { categoryName, type Listing } from "@/lib/types"
+import type { MessageKey } from "@/lib/i18n"
+import type { Listing } from "@/lib/types"
 import { cn } from "@/lib/utils"
 
 const sampleIds = new Set(seedListings.map((item) => item.id))
@@ -60,6 +62,7 @@ export function ListingDetail({ id }: { id: string }) {
   const searchParams = useSearchParams()
   const router = useRouter()
   const auth = useAuth()
+  const { t, language } = usePrefs()
   const { listings, ready, isSaved, toggleSaved, messages, sendMessage, setListingSold, setListingPaused, renewListing, removeListing } =
     useMarketplace()
   const listing = listings.find((item) => item.id === id)
@@ -101,7 +104,7 @@ export function ListingDetail({ id }: { id: string }) {
   const myMessageCount = listingMessages.filter((item) => item.fromMe).length
   const voice = listingVoice(ad)
   const facts = [
-    ...(voice.typeName ? [{ label: "Type", value: voice.typeName }] : []),
+    ...(voice.typeName ? [{ label: t("listing.type"), value: voice.typeName }] : []),
     ...listingFacts(ad),
   ]
   const related = relatedListings(listings, ad)
@@ -113,29 +116,29 @@ export function ListingDetail({ id }: { id: string }) {
   const expiringSoon = isListingExpiringSoon(ad.expiresAt)
   const daysLeft = daysUntilExpiry(ad.expiresAt)
   const postedHours = ad.postedAt ? hoursAgoOf(ad) : ad.hoursAgo
-  const postedLabel = formatRelativePosted(postedHours)
-  const postedFull = formatPostedDate(ad.postedAt)
+  const postedLabel = formatRelativePosted(postedHours, language)
+  const postedFull = formatPostedDate(ad.postedAt, language)
   const postedIso = postedDateTime(ad)
   const expiryLabel =
     !expired && daysLeft !== undefined && daysLeft > 0
       ? daysLeft === 1
-        ? "Expires in 1 day"
-        : `Expires in ${daysLeft} days`
+        ? t("listing.expiresInOneDay")
+        : t("listing.expiresInDays", { count: daysLeft })
       : undefined
 
   async function share() {
     const url = window.location.href
     try {
       await navigator.clipboard.writeText(url)
-      toast.success("Link copied")
+      toast.success(t("toast.linkCopied"))
     } catch {
-      toast.error("Could not copy the link")
+      toast.error(t("toast.copyError"))
     }
   }
 
   function openMessageComposer() {
     if (auth.configured && !auth.signedIn) {
-      toast.error("Sign in to send a message")
+      toast.error(t("toast.signInToMessage"))
       router.push(signInHref(`/listings/${ad.id}`))
       return
     }
@@ -145,13 +148,15 @@ export function ListingDetail({ id }: { id: string }) {
   async function submitMessage() {
     if (messageSendingRef.current || !contactOpen) return
     if (auth.configured && !auth.signedIn) {
-      toast.error("Sign in to send a message")
+      toast.error(t("toast.signInToMessage"))
       router.push(signInHref(`/listings/${ad.id}`))
       return
     }
     const validationError = messageError(message)
     if (validationError) {
-      toast.error(validationError)
+      toast.error(
+        message.trim().length < 8 ? t("listing.messageTooShort") : t("listing.messageTooLong"),
+      )
       return
     }
     messageSendingRef.current = true
@@ -164,9 +169,9 @@ export function ListingDetail({ id }: { id: string }) {
       }
       setMessageOpen(false)
       setMessage("")
-      toast.success(`Message sent to ${ad.sellerName}`)
+      toast.success(t("listing.toast.messageSent", { name: ad.sellerName }))
     } catch {
-      toast.error("Could not send your message. Please try again.")
+      toast.error(t("toast.messageError"))
     } finally {
       messageSendingRef.current = false
       setMessageSending(false)
@@ -182,7 +187,7 @@ export function ListingDetail({ id }: { id: string }) {
       toast.error(result.reason)
       return
     }
-    toast.success(next ? "Marked as sold" : "Marked as available")
+    toast.success(next ? t("myAds.toast.sold") : t("myAds.toast.available"))
   }
 
   async function onPause() {
@@ -194,7 +199,7 @@ export function ListingDetail({ id }: { id: string }) {
       toast.error(result.reason)
       return
     }
-    toast.success(next ? "Ad paused" : "Ad resumed")
+    toast.success(next ? t("myAds.toast.paused") : t("myAds.toast.resumed"))
   }
 
   async function onRenew() {
@@ -205,7 +210,7 @@ export function ListingDetail({ id }: { id: string }) {
       toast.error(result.reason)
       return
     }
-    toast.success("Ad renewed")
+    toast.success(t("listing.toast.renewed"))
   }
 
   async function onRemove() {
@@ -217,7 +222,7 @@ export function ListingDetail({ id }: { id: string }) {
       toast.error(result.reason)
       return
     }
-    toast.success("Ad removed")
+    toast.success(t("myAds.toast.removed"))
     router.push("/my-ads")
   }
 
@@ -235,15 +240,15 @@ export function ListingDetail({ id }: { id: string }) {
       })
       const payload = (await response.json()) as { reason?: string }
       if (!response.ok) {
-        toast.error(payload.reason ?? "Could not send the report.")
+        toast.error(payload.reason ?? t("report.toast.error"))
         return
       }
       setReportOpen(false)
       setReportReason("")
       setReportNote("")
-      toast.success("Report sent. Thanks for helping keep the board safe.")
+      toast.success(t("report.toast.sent"))
     } catch {
-      toast.error("Could not send the report.")
+      toast.error(t("report.toast.error"))
     } finally {
       setReportBusy(false)
     }
@@ -267,7 +272,7 @@ export function ListingDetail({ id }: { id: string }) {
         className="inline-flex items-center gap-1.5 text-sm text-neutral-500 hover:text-neutral-900"
       >
         <ArrowLeft className="size-4" />
-        {categoryName(listing.category)}
+        {t(`category.${listing.category}` as MessageKey)}
       </Link>
       <div className="mt-4 grid gap-6 lg:grid-cols-[minmax(0,1fr)_320px]">
         <div>
@@ -275,7 +280,11 @@ export function ListingDetail({ id }: { id: string }) {
             <div className="relative">
               <Image
                 src={activePhoto ?? listing.image}
-                alt={`${listing.title}, photo ${Math.min(photoIndex, gallery.length - 1) + 1} of ${gallery.length}`}
+                alt={t("listing.photoAlt", {
+                  title: listing.title,
+                  current: Math.min(photoIndex, gallery.length - 1) + 1,
+                  total: gallery.length,
+                })}
                 width={1600}
                 height={1000}
                 unoptimized={(activePhoto ?? listing.image).startsWith("data:")}
@@ -288,7 +297,7 @@ export function ListingDetail({ id }: { id: string }) {
                     variant="secondary"
                     size="icon"
                     className="absolute top-1/2 left-2 size-9 -translate-y-1/2 rounded-full bg-white/95"
-                    aria-label="Previous photo"
+                    aria-label={t("listing.previousPhoto")}
                     onClick={() => setPhotoIndex((index) => (index - 1 + gallery.length) % gallery.length)}
                   >
                     <ChevronLeft className="size-4" />
@@ -298,7 +307,7 @@ export function ListingDetail({ id }: { id: string }) {
                     variant="secondary"
                     size="icon"
                     className="absolute top-1/2 right-2 size-9 -translate-y-1/2 rounded-full bg-white/95"
-                    aria-label="Next photo"
+                    aria-label={t("listing.nextPhoto")}
                     onClick={() => setPhotoIndex((index) => (index + 1) % gallery.length)}
                   >
                     <ChevronRight className="size-4" />
@@ -315,7 +324,7 @@ export function ListingDetail({ id }: { id: string }) {
                   <button
                     key={`${index}-${photo.slice(0, 24)}`}
                     type="button"
-                    aria-label={`Show photo ${index + 1}`}
+                    aria-label={t("listing.showPhoto", { index: index + 1 })}
                     aria-current={index === photoIndex}
                     className={cn(
                       "relative h-16 w-20 shrink-0 overflow-hidden rounded-lg border",
@@ -340,25 +349,25 @@ export function ListingDetail({ id }: { id: string }) {
             <div className="flex flex-wrap items-start justify-between gap-3">
               <div className="min-w-0">
                 {isSample ? (
-                  <p className="mb-1 text-xs font-semibold tracking-wide text-amber-800 uppercase">Sample ad · contact unavailable</p>
+                  <p className="mb-1 text-xs font-semibold tracking-wide text-amber-800 uppercase">{t("listing.sampleContactUnavailable")}</p>
                 ) : null}
                 {listing.sponsored ? (
-                  <p className="mb-1 text-xs font-medium tracking-wide text-sky-800 uppercase">Sponsored</p>
+                  <p className="mb-1 text-xs font-medium tracking-wide text-sky-800 uppercase">{t("listing.sponsored")}</p>
                 ) : null}
                 {listing.sold || status === "sold" ? (
-                  <p className="mb-1 text-xs font-medium tracking-wide text-neutral-500 uppercase">Sold</p>
+                  <p className="mb-1 text-xs font-medium tracking-wide text-neutral-500 uppercase">{t("listing.sold")}</p>
                 ) : null}
                 {status === "paused" && listing.mine ? (
-                  <p className="mb-1 text-xs font-medium tracking-wide text-amber-700 uppercase">Paused</p>
+                  <p className="mb-1 text-xs font-medium tracking-wide text-amber-700 uppercase">{t("listing.paused")}</p>
                 ) : null}
                 {listing.hidden && listing.mine ? (
-                  <p className="mb-1 text-xs font-medium tracking-wide text-amber-700 uppercase">Hidden from the board</p>
+                  <p className="mb-1 text-xs font-medium tracking-wide text-amber-700 uppercase">{t("listing.hiddenFromBoard")}</p>
                 ) : null}
                 {listing.mine && (expired || status === "expired") ? (
-                  <p className="mb-1 text-xs font-medium tracking-wide text-neutral-500 uppercase">Expired</p>
+                  <p className="mb-1 text-xs font-medium tracking-wide text-neutral-500 uppercase">{t("listing.expired")}</p>
                 ) : listing.mine && expiringSoon ? (
                   <p className="mb-1 text-xs font-medium tracking-wide text-amber-700 uppercase">
-                    {expiryLabel ?? "Expiring soon"}
+                    {expiryLabel ?? t("listing.expiringSoon")}
                   </p>
                 ) : null}
                 <p className="text-2xl font-semibold tracking-tight">
@@ -371,11 +380,11 @@ export function ListingDetail({ id }: { id: string }) {
               <div className="flex gap-2">
                 <Button variant="outline" className="rounded-full" onClick={() => toggleSaved(listing.id)}>
                   <Heart className={cn("size-4", saved && "fill-rose-500 text-rose-500")} />
-                  {saved ? "Saved" : "Save"}
+                  {saved ? t("listing.saved") : t("listing.saveShort")}
                 </Button>
                 <Button variant="outline" className="rounded-full" onClick={share}>
                   <Share2 />
-                  Share
+                  {t("listing.share")}
                 </Button>
               </div>
             </div>
@@ -429,8 +438,8 @@ export function ListingDetail({ id }: { id: string }) {
         >
           {isSample ? (
             <div className="rounded-xl bg-amber-50 p-4 text-sm text-amber-950">
-              <p className="font-semibold">Sample listing</p>
-              <p className="mt-1 leading-5">This ad is an example. Its seller and contact details are fictional, so messaging and calls are unavailable.</p>
+              <p className="font-semibold">{t("listing.sampleTitle")}</p>
+              <p className="mt-1 leading-5">{t("listing.sampleBody")}</p>
             </div>
           ) : (
           <>
@@ -443,39 +452,39 @@ export function ListingDetail({ id }: { id: string }) {
             </Avatar>
             <div>
               <p className="font-medium">{listing.sellerName}</p>
-              <p className="text-xs text-neutral-500">Member since {listing.sellerSince}</p>
+              <p className="text-xs text-neutral-500">{t("listing.memberSince", { year: listing.sellerSince })}</p>
             </div>
           </div>
           <div className="mt-4 grid gap-2">
             {listing.mine ? (
               <>
                 <Button className="h-10 rounded-full" asChild>
-                  <Link href={`/post?edit=${listing.id}`}>Edit ad</Link>
+                  <Link href={`/post?edit=${listing.id}`}>{t("listing.editAd")}</Link>
                 </Button>
                 <Button variant="outline" className="h-10 rounded-full" disabled={busy} onClick={() => void onSold()}>
-                  {status === "sold" ? "Mark available" : "Mark sold"}
+                  {status === "sold" ? t("listing.markAvailable") : t("listing.markSold")}
                 </Button>
                 {status === "active" || status === "paused" ? (
                   <Button variant="outline" className="h-10 rounded-full" disabled={busy} onClick={() => void onPause()}>
-                    {status === "paused" ? "Resume ad" : "Pause ad"}
+                    {status === "paused" ? t("listing.resumeAd") : t("listing.pauseAd")}
                   </Button>
                 ) : null}
                 {status !== "sold" || expired ? (
                   <Button variant="outline" className="h-10 rounded-full" disabled={busy} onClick={() => void onRenew()}>
-                    Renew ad
+                    {t("listing.renewAd")}
                   </Button>
                 ) : null}
                 <Button variant="outline" className="h-10 rounded-full" disabled={busy} onClick={() => setConfirmRemove(true)}>
-                  Remove ad
+                  {t("listing.removeAd")}
                 </Button>
                 {threadCount > 0 ? (
                   <Button variant="outline" className="h-10 rounded-full" asChild>
                     <Link href={`/messages?listing=${listing.id}`}>
                       {unreadHere > 0
-                        ? `Messages (${unreadHere} unread)`
+                        ? t("listing.messagesUnread", { count: unreadHere })
                         : threadCount === 1
-                          ? "Messages (1 conversation)"
-                          : `Messages (${threadCount} conversations)`}
+                          ? t("listing.messagesCount", { count: 1 })
+                          : t("listing.messagesCountMany", { count: threadCount })}
                     </Link>
                   </Button>
                 ) : null}
@@ -483,33 +492,35 @@ export function ListingDetail({ id }: { id: string }) {
             ) : status !== "active" ? (
               <p className="rounded-xl bg-neutral-50 px-3 py-3 text-sm text-neutral-600">
                 {status === "expired"
-                  ? "This ad has expired. Contact options are closed."
+                  ? t("listing.contactClosedExpired")
                   : status === "paused"
-                    ? "This ad is no longer available."
-                    : "This ad is marked sold. Contact options are closed."}
+                    ? t("listing.contactClosedUnavailable")
+                    : t("listing.contactClosedSold")}
               </p>
             ) : (
               <Button className="h-10 rounded-full" onClick={openMessageComposer}>
-                {auth.configured && !auth.signedIn ? "Sign in to message" : voice.messageLabel}
+                {auth.configured && !auth.signedIn ? t("listing.signInToMessage") : voice.messageLabel}
               </Button>
             )}
             {!listing.mine && myMessageCount > 0 ? (
               <Button variant="outline" className="h-10 rounded-full" asChild>
                 <Link href={`/messages?listing=${listing.id}`}>
-                  {unreadHere > 0 ? `Your messages (${unreadHere} unread)` : "Your messages"}
+                  {unreadHere > 0
+                    ? t("listing.yourMessagesUnread", { count: unreadHere })
+                    : t("listing.yourMessages")}
                 </Link>
               </Button>
             ) : null}
             {contactOpen ? (
               <Button variant="outline" className="h-10 rounded-full" asChild>
-                <a href={whatsappHref(listing.phone, listing.title)} target="_blank" rel="noreferrer">
-                  WhatsApp
+                <a href={whatsappHref(listing.phone, listing.title, language)} target="_blank" rel="noreferrer">
+                  {t("listing.whatsapp")}
                 </a>
               </Button>
             ) : null}
             {contactOpen || listing.mine ? (
               <Button variant="outline" className="h-10 rounded-full" onClick={() => setPhoneVisible(true)}>
-                {phoneVisible ? listing.phone : "Show phone number"}
+                {phoneVisible ? listing.phone : t("listing.showPhone")}
               </Button>
             ) : null}
           </div>
@@ -517,7 +528,7 @@ export function ListingDetail({ id }: { id: string }) {
             safety={voice.safety}
             messagingHint={
               !listing.mine && contactOpen
-                ? "Prefer WhatsApp or a call using the number above. On-site messages go to the seller’s inbox on this board."
+                ? t("listing.contactHint")
                 : undefined
             }
           />
@@ -529,12 +540,12 @@ export function ListingDetail({ id }: { id: string }) {
                 onClick={() => setReportOpen(true)}
               >
                 <Flag className="size-4" />
-                Report this ad
+                {t("report.title")}
               </Button>
-              <p className="mt-1 px-2 text-[11px] text-neutral-400">Listing ID {listing.id}</p>
+              <p className="mt-1 px-2 text-[11px] text-neutral-400">{t("listing.idLabel", { id: listing.id })}</p>
             </div>
           ) : listing.id ? (
-            <p className="mt-3 text-[11px] text-neutral-400">Listing ID {listing.id}</p>
+            <p className="mt-3 text-[11px] text-neutral-400">{t("listing.idLabel", { id: listing.id })}</p>
           ) : null}
           </>
           )}
@@ -542,7 +553,7 @@ export function ListingDetail({ id }: { id: string }) {
       </div>
       {related.length > 0 ? (
         <section className="mt-10">
-          <h2 className="text-sm font-medium text-neutral-950">Similar listings</h2>
+          <h2 className="text-sm font-medium text-neutral-950">{t("listing.similar")}</h2>
           <div className={`mt-3 ${listingGridClassNameLoose}`}>
             {related.map((item) => (
               <ListingCard key={item.id} listing={item} preserve={keptSearch(searchParams, item.subcategory)} />
@@ -560,20 +571,20 @@ export function ListingDetail({ id }: { id: string }) {
           </div>
           {listing.mine ? (
             <Button className="shrink-0 rounded-full" asChild>
-              <Link href={`/post?edit=${listing.id}`}>Edit ad</Link>
+              <Link href={`/post?edit=${listing.id}`}>{t("listing.editAd")}</Link>
             </Button>
           ) : !contactOpen ? (
             <Button className="shrink-0 rounded-full" disabled>
-              {isSample ? "Sample ad" : expired ? "Expired" : "Sold"}
+              {isSample ? t("listing.sampleAd") : expired ? t("listing.expired") : t("listing.sold")}
             </Button>
           ) : (
             <div className="flex shrink-0 items-center gap-1.5">
               <Button variant="outline" size="icon" className="size-10 shrink-0 rounded-full" asChild>
                 <a
-                  href={whatsappHref(listing.phone, listing.title)}
+                  href={whatsappHref(listing.phone, listing.title, language)}
                   target="_blank"
                   rel="noreferrer"
-                  aria-label="WhatsApp"
+                  aria-label={t("listing.whatsapp")}
                 >
                   <WhatsAppIcon className="size-4" />
                 </a>
@@ -583,13 +594,13 @@ export function ListingDetail({ id }: { id: string }) {
                 variant="outline"
                 size="icon"
                 className="size-10 shrink-0 rounded-full"
-                aria-label={phoneVisible ? `Call ${listing.phone}` : "Show phone number and call"}
+                aria-label={phoneVisible ? t("listing.callPhone", { phone: listing.phone }) : t("listing.showPhoneAndCall")}
                 onClick={revealAndCall}
               >
                 <Phone className="size-4" />
               </Button>
               <Button className="h-10 max-w-[9.5rem] shrink-0 truncate rounded-full px-3" onClick={openMessageComposer}>
-                {auth.configured && !auth.signedIn ? "Sign in to message" : voice.messageLabel}
+                {auth.configured && !auth.signedIn ? t("listing.signInToMessage") : voice.messageLabel}
               </Button>
             </div>
           )}
@@ -598,10 +609,10 @@ export function ListingDetail({ id }: { id: string }) {
       <Dialog open={messageOpen && contactOpen} onOpenChange={setMessageOpen}>
         <DialogContent className="sm:max-w-md">
           <DialogHeader>
-            <DialogTitle>Message {listing.sellerName}</DialogTitle>
+            <DialogTitle>{t("listing.messageSeller", { name: listing.sellerName })}</DialogTitle>
           </DialogHeader>
           <Textarea
-            aria-label="Your message"
+            aria-label={t("listing.yourMessage")}
             value={message}
             onChange={(event) => setMessage(event.target.value)}
             placeholder={voice.messagePlaceholder}
@@ -610,15 +621,17 @@ export function ListingDetail({ id }: { id: string }) {
             disabled={messageSending}
           />
           {message && messageError(message) ? (
-            <p className="text-xs text-amber-700">{messageError(message)}</p>
+            <p className="text-xs text-amber-700">
+              {message.trim().length < 8 ? t("listing.messageTooShort") : t("listing.messageTooLong")}
+            </p>
           ) : null}
           <TermsNotice />
           <DialogFooter>
             <Button variant="outline" disabled={messageSending} onClick={() => setMessageOpen(false)}>
-              Cancel
+              {t("common.cancel")}
             </Button>
             <Button disabled={messageSending || !!messageError(message)} onClick={() => void submitMessage()}>
-              {messageSending ? "Sending…" : "Send"}
+              {messageSending ? t("listing.sending") : t("listing.send")}
             </Button>
           </DialogFooter>
         </DialogContent>
@@ -626,15 +639,15 @@ export function ListingDetail({ id }: { id: string }) {
       <Dialog open={confirmRemove} onOpenChange={setConfirmRemove}>
         <DialogContent className="sm:max-w-md">
           <DialogHeader>
-            <DialogTitle>Remove this ad?</DialogTitle>
+            <DialogTitle>{t("myAds.removeTitle")}</DialogTitle>
           </DialogHeader>
-          <p className="text-sm text-neutral-600">“{listing.title}” will leave the board.</p>
+          <p className="text-sm text-neutral-600">{t("listing.removeBody", { title: listing.title })}</p>
           <DialogFooter>
             <Button variant="outline" onClick={() => setConfirmRemove(false)}>
-              Keep it
+              {t("myAds.keepIt")}
             </Button>
             <Button variant="destructive" disabled={busy} onClick={() => void onRemove()}>
-              Remove ad
+              {t("listing.removeAd")}
             </Button>
           </DialogFooter>
         </DialogContent>
@@ -642,41 +655,41 @@ export function ListingDetail({ id }: { id: string }) {
       <Dialog open={reportOpen} onOpenChange={setReportOpen}>
         <DialogContent className="sm:max-w-md">
           <DialogHeader>
-            <DialogTitle>Report this ad</DialogTitle>
+            <DialogTitle>{t("report.title")}</DialogTitle>
           </DialogHeader>
           <div className="grid gap-3">
             <div className="grid gap-1.5">
-              <Label htmlFor="report-reason">Reason</Label>
+              <Label htmlFor="report-reason">{t("report.reasonLabel")}</Label>
               <Select value={reportReason} onValueChange={setReportReason}>
                 <SelectTrigger id="report-reason" className="w-full">
-                  <SelectValue placeholder="Choose a reason" />
+                  <SelectValue placeholder={t("report.chooseReason")} />
                 </SelectTrigger>
                 <SelectContent>
                   {reportReasons.map((item) => (
                     <SelectItem key={item.id} value={item.id}>
-                      {item.label}
+                      {reportReasonLabel(item.id, language)}
                     </SelectItem>
                   ))}
                 </SelectContent>
               </Select>
             </div>
             <div className="grid gap-1.5">
-              <Label htmlFor="report-note">Note (optional)</Label>
+              <Label htmlFor="report-note">{t("report.noteLabel")}</Label>
               <Textarea
                 id="report-note"
                 value={reportNote}
                 onChange={(event) => setReportNote(event.target.value)}
-                placeholder="Anything that helps a reviewer"
+                placeholder={t("report.notePlaceholder")}
                 rows={3}
               />
             </div>
           </div>
           <DialogFooter>
             <Button variant="outline" onClick={() => setReportOpen(false)}>
-              Cancel
+              {t("common.cancel")}
             </Button>
             <Button disabled={reportBusy || !reportReason} onClick={() => void submitReport()}>
-              {reportBusy ? "Sending…" : "Send report"}
+              {reportBusy ? t("report.sending") : t("report.send")}
             </Button>
           </DialogFooter>
         </DialogContent>
@@ -713,6 +726,7 @@ function WhatsAppIcon({ className }: { className?: string }) {
 }
 
 function PlacePanel({ listing }: { listing: Listing }) {
+  const { t } = usePrefs()
   const [mapOpen, setMapOpen] = useState(false)
   const country = getCountry(listing.country)
   const resolved = resolvePlace(listing.country, listing.city)
@@ -737,20 +751,20 @@ function PlacePanel({ listing }: { listing: Listing }) {
             aria-expanded={mapOpen}
             onClick={() => setMapOpen((open) => !open)}
           >
-            {mapOpen ? "Hide map" : "Show map"}
+            {mapOpen ? t("listing.hideMap") : t("listing.showMap")}
           </button>
         ) : null}
       </div>
       {canMap && mapOpen ? (
         <div className="mt-3 overflow-hidden rounded-xl border border-neutral-200">
-          <iframe title={`Map of ${listing.city}`} src={links.embed} className="h-56 w-full" loading="lazy" />
+          <iframe title={t("listing.mapTitle", { city: listing.city })} src={links.embed} className="h-56 w-full" loading="lazy" />
           <a
             href={links.external}
             target="_blank"
             rel="noreferrer"
             className="block border-t px-3 py-2 text-xs text-neutral-500 hover:text-neutral-900"
           >
-            Open {listing.city} in OpenStreetMap
+            {t("listing.openInOsm", { city: listing.city })}
           </a>
         </div>
       ) : null}
@@ -759,6 +773,7 @@ function PlacePanel({ listing }: { listing: Listing }) {
 }
 
 function SafetyNote({ safety, messagingHint }: { safety: string; messagingHint?: string }) {
+  const { t } = usePrefs()
   const [open, setOpen] = useState(false)
   const firstStop = safety.indexOf(". ")
   const lead = firstStop === -1 ? safety : safety.slice(0, firstStop + 1)
@@ -777,7 +792,7 @@ function SafetyNote({ safety, messagingHint }: { safety: string; messagingHint?:
               className="font-medium text-neutral-700 underline-offset-2 hover:underline"
               onClick={() => setOpen(true)}
             >
-              More
+              {t("common.more")}
             </button>
           </>
         ) : null}
@@ -791,7 +806,7 @@ function SafetyNote({ safety, messagingHint }: { safety: string; messagingHint?:
             className="font-medium text-neutral-700 underline-offset-2 hover:underline"
             onClick={() => setOpen(false)}
           >
-            Less
+            {t("common.less")}
           </button>
         </div>
       ) : null}
@@ -809,14 +824,15 @@ function Fact({ label, value }: { label: string; value: string }) {
 }
 
 function MissingListing() {
+  const { t } = usePrefs()
   return (
     <div className="mx-auto max-w-lg px-4 py-24 text-center">
-      <h1 className="text-xl font-semibold tracking-tight">This listing is no longer available</h1>
+      <h1 className="text-xl font-semibold tracking-tight">{t("listing.missingTitle")}</h1>
       <p className="mt-2 text-sm text-neutral-500">
-        It may have been sold, paused, expired, or removed.
+        {t("listing.missingBody")}
       </p>
       <Button asChild className="mt-5 rounded-full">
-        <Link href="/">Back to listings</Link>
+        <Link href="/">{t("listing.back")}</Link>
       </Button>
     </div>
   )

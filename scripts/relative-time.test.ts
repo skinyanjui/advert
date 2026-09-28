@@ -49,8 +49,8 @@ test("formatPostedDate and postedDateTime", () => {
 
 test("formatMessageWhen uses formatPosted for inbox stamps", () => {
   const now = Date.parse("2026-09-28T12:00:00.000Z")
-  assert.equal(formatMessageWhen("bad", now), "")
-  assert.equal(formatMessageWhen("2026-09-28T11:30:00.000Z", now), "Just now")
-  assert.equal(formatMessageWhen("2026-09-28T09:00:00.000Z", now), "3 hours ago")
-  assert.equal(formatMessageWhen("2026-09-26T12:00:00.000Z", now), "2 days ago")
+  assert.equal(formatMessageWhen("bad", "en", now), "")
+  assert.equal(formatMessageWhen("2026-09-28T11:30:00.000Z", "en", now), "Just now")
+  assert.equal(formatMessageWhen("2026-09-28T09:00:00.000Z", "en", now), "3 hours ago")
+  assert.equal(formatMessageWhen("2026-09-26T12:00:00.000Z", "en", now), "2 days ago")
 })

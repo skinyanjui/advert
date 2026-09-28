@@ -1,6 +1,7 @@
 import type { Metadata } from "next"
 import { Suspense } from "react"
 
+import { LoadingText } from "@/components/loading-text"
 import { PostForm } from "@/components/post-form"
 
 export const metadata: Metadata = {
@@ -9,7 +10,7 @@ export const metadata: Metadata = {
 
 export default function PostPage() {
   return (
-    <Suspense fallback={<p className="px-4 py-8 text-sm text-neutral-500">Loading the form…</p>}>
+    <Suspense fallback={<LoadingText messageKey="post.loadingForm" className="px-4 py-8" />}>
       <PostForm />
     </Suspense>
   )

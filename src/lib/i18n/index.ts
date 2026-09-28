@@ -11,9 +11,7 @@ const catalogs: Record<Locale, Record<MessageKey, string>> = {
 
 /**
  * Locales offered in the Language selector.
- * Only list locales whose product UI catalogs are complete (key-parity tested).
- * Wiring of every screen through `t()` may still be incremental; catalogs cover
- * the full product surface so selectors can ship all three locales.
+ * Only list locales whose product UI is wired through `t()` with complete catalogs.
  */
 export const offeredLocales: readonly Locale[] = ["en", "fr", "sw"] as const
 
@@ -36,6 +34,10 @@ export function translate(
 
 export function messageKeys(): MessageKey[] {
   return Object.keys(en) as MessageKey[]
+}
+
+export function isMessageKey(value: string): value is MessageKey {
+  return Object.prototype.hasOwnProperty.call(en, value)
 }
 
 export { en, fr, sw }

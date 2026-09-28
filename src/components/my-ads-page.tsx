@@ -13,6 +13,7 @@ import {
 import { toast } from "sonner"
 
 import { ListingThumb } from "@/components/inbox/listing-thumb"
+import { usePrefs } from "@/components/prefs-provider"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import {
@@ -33,10 +34,11 @@ import {
 import { useHorizontalScrollFades } from "@/hooks/use-scroll-fades"
 import { postAdHref } from "@/lib/active-place"
 import { daysUntilExpiry, isListingExpiringSoon } from "@/lib/expiry"
-import { formatPosted, formatPrice, hoursAgoOf } from "@/lib/format"
+import { formatPosted, formatPrice, hoursAgoOf, type TranslateFn } from "@/lib/format"
+import type { MessageKey } from "@/lib/i18n"
+import type { Locale } from "@/lib/i18n/locales"
 import {
   effectiveListingStatus,
-  listingStatusLabel,
   type ListingStatus,
   type ListingStatusFilter,
 } from "@/lib/listing-status"
@@ -50,7 +52,15 @@ type ResumeStatus = "active" | "paused"
 const filters: ListingStatusFilter[] = ["all", "active", "paused", "sold", "expired"]
 const swipeReveal = 144
 
+const statusKeys = {
+  active: "status.active",
+  paused: "status.paused",
+  sold: "status.sold",
+  expired: "status.expired",
+} as const satisfies Record<ListingStatus, MessageKey>
+
 export function MyAdsPage() {
+  const { t, language } = usePrefs()
   const { ready, listings, messages, removeListing, setListingSold, setListingPaused, renewListing } =
     useMarketplace()
   const mine = useMemo(() => listings.filter((listing) => listing.mine), [listings])
@@ -81,16 +91,19 @@ export function MyAdsPage() {
     return mine.filter((listing) => effectiveListingStatus(listing) === filter)
   }, [filter, mine])
 
-  const withUndo = useCallback((message: string, undo: () => Promise<void>) => {
-    toast.success(message, {
-      action: {
-        label: "Undo",
-        onClick: () => {
-          void undo().catch(() => toast.error("Could not undo that change."))
+  const withUndo = useCallback(
+    (message: string, undo: () => Promise<void>) => {
+      toast.success(message, {
+        action: {
+          label: t("common.undo"),
+          onClick: () => {
+            void undo().catch(() => toast.error(t("myAds.toast.undoError")))
+          },
         },
-      },
-    })
-  }, [])
+      })
+    },
+    [t],
+  )
 
   async function onSold(listing: Listing, sold: boolean) {
     const prior = effectiveListingStatus(listing)
@@ -103,13 +116,13 @@ export function MyAdsPage() {
       return
     }
     if (sold) {
-      withUndo("Marked as sold", async () => {
+      withUndo(t("myAds.toast.sold"), async () => {
         const undo = await setListingSold(listing.id, false, resumeTo)
         if (!undo.ok) throw new Error(undo.reason)
-        toast.success(resumeTo === "paused" ? "Ad paused again" : "Marked as available")
+        toast.success(resumeTo === "paused" ? t("myAds.toast.pausedAgain") : t("myAds.toast.available"))
       })
     } else {
-      toast.success("Marked as available")
+      toast.success(t("myAds.toast.available"))
     }
   }
 
@@ -122,13 +135,13 @@ export function MyAdsPage() {
       return
     }
     if (paused) {
-      withUndo("Ad paused", async () => {
+      withUndo(t("myAds.toast.paused"), async () => {
         const undo = await setListingPaused(listing.id, false)
         if (!undo.ok) throw new Error(undo.reason)
-        toast.success("Ad resumed")
+        toast.success(t("myAds.toast.resumed"))
       })
     } else {
-      toast.success("Ad resumed")
+      toast.success(t("myAds.toast.resumed"))
     }
   }
 
@@ -140,7 +153,7 @@ export function MyAdsPage() {
       toast.error(result.reason)
       return
     }
-    toast.success("Ad renewed — it is back on the board")
+    toast.success(t("myAds.toast.renewed"))
   }
 
   async function onShare(listing: Listing) {
@@ -155,9 +168,9 @@ export function MyAdsPage() {
     }
     try {
       await navigator.clipboard.writeText(url)
-      toast.success("Link copied")
+      toast.success(t("myAds.toast.linkCopied"))
     } catch {
-      toast.error("Could not share this ad")
+      toast.error(t("myAds.toast.shareError"))
     }
   }
 
@@ -171,20 +184,20 @@ export function MyAdsPage() {
       toast.error(result.reason)
       return
     }
-    toast.success("Ad removed")
+    toast.success(t("myAds.toast.removed"))
   }
 
   return (
     <div className="mx-auto w-full max-w-[1720px] px-4 py-3 md:px-6">
       <div className="mb-3 flex items-center justify-between gap-2">
-        <h1 className="text-2xl font-semibold tracking-tight">My ads</h1>
+        <h1 className="text-2xl font-semibold tracking-tight">{t("myAds.title")}</h1>
         <Button asChild size="sm" className="h-8 rounded-lg px-3 text-xs">
-          <Link href={postHref}>Post an ad</Link>
+          <Link href={postHref}>{t("myAds.postAd")}</Link>
         </Button>
       </div>
 
       {!ready ? (
-        <p className="text-sm text-neutral-500">Loading your ads…</p>
+        <p className="text-sm text-neutral-500">{t("myAds.loading")}</p>
       ) : (
         <div className="overflow-hidden rounded-xl border border-neutral-200 bg-white">
           <div className="space-y-3 border-b border-neutral-200 p-4">
@@ -194,10 +207,12 @@ export function MyAdsPage() {
           {visible.length === 0 ? (
             <p className="px-5 py-12 text-center text-sm text-neutral-500">
               {mine.length === 0
-                ? "You have not posted an ad yet."
+                ? t("myAds.emptyNone")
                 : filter === "all"
-                  ? "No ads to show."
-                  : `No ${listingStatusLabel(filter).toLowerCase()} ads.`}
+                  ? t("myAds.emptyFilter")
+                  : t("myAds.emptyStatus", {
+                      status: t(statusKeys[filter]).toLowerCase(),
+                    })}
             </p>
           ) : (
             <ul className="min-w-0 divide-y divide-neutral-100">
@@ -214,6 +229,7 @@ export function MyAdsPage() {
                   onRenew={() => void onRenew(listing)}
                   onShare={() => void onShare(listing)}
                   onDelete={() => setPendingId(listing.id)}
+                  language={language}
                 />
               ))}
             </ul>
@@ -224,17 +240,17 @@ export function MyAdsPage() {
       <Dialog open={!!pending} onOpenChange={(open) => !open && setPendingId(null)}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>Remove this ad?</DialogTitle>
+            <DialogTitle>{t("myAds.removeTitle")}</DialogTitle>
             <DialogDescription>
-              {pending ? `“${pending.title}” will leave the board and its photos will be deleted.` : ""}
+              {pending ? t("myAds.removeBody", { title: pending.title }) : ""}
             </DialogDescription>
           </DialogHeader>
           <DialogFooter>
             <Button variant="outline" onClick={() => setPendingId(null)}>
-              Keep it
+              {t("myAds.keepIt")}
             </Button>
             <Button variant="destructive" disabled={busyId === pendingId} onClick={() => void onRemove()}>
-              Remove ad
+              {t("myAds.removeAd")}
             </Button>
           </DialogFooter>
         </DialogContent>
@@ -252,6 +268,7 @@ function StatusFilterChips({
   counts: Record<ListingStatusFilter, number>
   onChange: (next: ListingStatusFilter) => void
 }) {
+  const { t } = usePrefs()
   const scrollerRef = useRef<HTMLDivElement>(null)
   const { left, right } = useHorizontalScrollFades(scrollerRef)
 
@@ -260,7 +277,7 @@ function StatusFilterChips({
       <div
         ref={scrollerRef}
         className="flex min-w-0 gap-1 overflow-x-auto overscroll-x-contain pb-0.5 [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
-        aria-label="Filter ads"
+        aria-label={t("myAds.filterAds")}
       >
         {filters.map((option) => (
           <button
@@ -273,7 +290,7 @@ function StatusFilterChips({
               filter === option ? "bg-neutral-950 text-white" : "text-neutral-600 hover:bg-neutral-100",
             )}
           >
-            {option === "all" ? "All" : listingStatusLabel(option)}
+            {option === "all" ? t("status.all") : t(statusKeys[option])}
             <span className="ml-1 tabular-nums opacity-70">{counts[option]}</span>
           </button>
         ))}
@@ -307,6 +324,7 @@ function MyAdRow({
   onRenew,
   onShare,
   onDelete,
+  language,
 }: {
   listing: Listing
   unread: number
@@ -318,7 +336,9 @@ function MyAdRow({
   onRenew: () => void
   onShare: () => void
   onDelete: () => void
+  language: Locale
 }) {
+  const { t } = usePrefs()
   const status = effectiveListingStatus(listing)
   const sold = status === "sold"
   const paused = status === "paused"
@@ -336,7 +356,7 @@ function MyAdRow({
     reduceMotion,
   })
 
-  const meta = expiryMeta(listing, status, daysLeft, expiringSoon)
+  const meta = expiryMeta(listing, status, daysLeft, expiringSoon, t)
 
   return (
     <li className="relative overflow-hidden bg-white">
@@ -348,7 +368,7 @@ function MyAdRow({
           className="flex h-full min-h-11 min-w-11 items-center justify-center bg-emerald-600 px-4 text-xs font-medium text-white disabled:opacity-50"
           style={{ width: swipeReveal / 2 }}
         >
-          {sold ? "Available" : "Sold"}
+          {sold ? t("myAds.available") : t("myAds.sold")}
         </button>
         <button
           type="button"
@@ -357,7 +377,7 @@ function MyAdRow({
           className="flex h-full min-h-11 min-w-11 items-center justify-center bg-rose-600 px-4 text-xs font-medium text-white disabled:opacity-50"
           style={{ width: swipeReveal / 2 }}
         >
-          Delete
+          {t("common.delete")}
         </button>
       </div>
       <div className="absolute inset-y-0 left-0 flex md:hidden">
@@ -369,7 +389,7 @@ function MyAdRow({
             className="flex h-full min-h-11 min-w-11 items-center justify-center bg-neutral-900 px-4 text-xs font-medium text-white disabled:opacity-50"
             style={{ width: swipeReveal }}
           >
-            Renew
+            {t("myAds.renew")}
           </button>
         ) : canPause ? (
           <button
@@ -379,7 +399,7 @@ function MyAdRow({
             className="flex h-full min-h-11 min-w-11 items-center justify-center bg-amber-600 px-4 text-xs font-medium text-white disabled:opacity-50"
             style={{ width: swipeReveal }}
           >
-            {paused ? "Resume" : "Pause"}
+            {paused ? t("myAds.resume") : t("myAds.pause")}
           </button>
         ) : null}
       </div>
@@ -403,10 +423,12 @@ function MyAdRow({
           <span className="min-w-0 flex-1">
             <span className="flex min-w-0 items-start justify-between gap-2">
               <span className="truncate text-sm font-medium text-neutral-950">{listing.title}</span>
-              <span className="shrink-0 text-[11px] text-neutral-500">Posted {formatPosted(hoursAgoOf(listing))}</span>
+              <span className="shrink-0 text-[11px] text-neutral-500">
+                {t("myAds.posted", { when: formatPosted(hoursAgoOf(listing), language) })}
+              </span>
             </span>
             <span className="mt-0.5 flex min-w-0 flex-wrap items-center gap-1.5 text-xs text-neutral-600">
-              <span className="font-medium text-neutral-950">{formatPrice(listing)}</span>
+              <span className="font-medium text-neutral-950">{formatPrice(listing, language)}</span>
               <StatusBadge status={status} />
             </span>
             <span className="mt-1 block truncate text-xs text-neutral-500">{meta}</span>
@@ -420,7 +442,7 @@ function MyAdRow({
             asChild
           >
             <Link href={`/messages?listing=${encodeURIComponent(listing.id)}`}>
-              {unread === 1 ? "1 unread" : `${unread} unread`}
+              {t("nav.unreadMessages", { count: unread })}
             </Link>
           </Button>
         ) : null}
@@ -431,7 +453,7 @@ function MyAdRow({
               variant="ghost"
               size="icon"
               className="size-11 shrink-0 self-center text-neutral-600"
-              aria-label={`Actions for ${listing.title}`}
+              aria-label={t("myAds.actionsFor", { title: listing.title })}
               disabled={busy}
             >
               <MoreHorizontal className="size-4" />
@@ -439,36 +461,38 @@ function MyAdRow({
           </DropdownMenuTrigger>
           <DropdownMenuContent align="end" className="min-w-44">
             <DropdownMenuItem asChild>
-              <Link href={`/post?edit=${encodeURIComponent(listing.id)}`}>Edit</Link>
+              <Link href={`/post?edit=${encodeURIComponent(listing.id)}`}>{t("common.edit")}</Link>
             </DropdownMenuItem>
             {unread > 0 ? (
               <DropdownMenuItem asChild>
                 <Link href={`/messages?listing=${encodeURIComponent(listing.id)}`}>
-                  {unread === 1 ? "1 unread message" : `${unread} unread messages`}
+                  {unread === 1
+                    ? t("myAds.unreadMessageOne")
+                    : t("myAds.unreadMessageMany", { count: unread })}
                 </Link>
               </DropdownMenuItem>
             ) : null}
             {!expired ? (
               <DropdownMenuItem disabled={busy} onSelect={() => onSold(!sold)}>
-                {sold ? "Mark as available" : "Mark as sold"}
+                {sold ? t("myAds.markAvailable") : t("myAds.markSold")}
               </DropdownMenuItem>
             ) : null}
             {canPause ? (
               <DropdownMenuItem disabled={busy} onSelect={() => onPause(!paused)}>
-                {paused ? "Resume" : "Pause"}
+                {paused ? t("myAds.resume") : t("myAds.pause")}
               </DropdownMenuItem>
             ) : null}
             {canRenew ? (
               <DropdownMenuItem disabled={busy} onSelect={onRenew}>
-                Renew
+                {t("myAds.renew")}
               </DropdownMenuItem>
             ) : null}
             <DropdownMenuItem disabled={busy} onSelect={onShare}>
-              Share
+              {t("myAds.share")}
             </DropdownMenuItem>
             <DropdownMenuSeparator />
             <DropdownMenuItem variant="destructive" disabled={busy} onSelect={onDelete}>
-              Delete
+              {t("common.delete")}
             </DropdownMenuItem>
           </DropdownMenuContent>
         </DropdownMenu>
@@ -478,6 +502,7 @@ function MyAdRow({
 }
 
 function StatusBadge({ status }: { status: ListingStatus }) {
+  const { t } = usePrefs()
   const styles: Record<ListingStatus, string> = {
     active: "border-transparent bg-emerald-50 text-emerald-800",
     paused: "border-transparent bg-amber-50 text-amber-900",
@@ -486,7 +511,7 @@ function StatusBadge({ status }: { status: ListingStatus }) {
   }
   return (
     <Badge variant="outline" className={cn("h-5 rounded-md px-1.5 text-[10px] font-medium", styles[status])}>
-      {listingStatusLabel(status)}
+      {t(statusKeys[status])}
     </Badge>
   )
 }
@@ -496,15 +521,20 @@ function expiryMeta(
   status: ListingStatus,
   daysLeft: number | undefined,
   expiringSoon: boolean,
+  t: TranslateFn,
 ) {
-  if (status === "expired") return "Expired — renew to put it back on the board"
-  if (status === "sold") return "Hidden from browse · marked sold"
-  if (status === "paused") return "Hidden from browse · paused"
+  if (status === "expired") return t("myAds.statusExpired")
+  if (status === "sold") return t("myAds.statusSold")
+  if (status === "paused") return t("myAds.statusPaused")
   if (expiringSoon) {
-    return daysLeft === 1 ? "Expires tomorrow" : `Expires in ${daysLeft ?? "a few"} days`
+    return daysLeft === 1
+      ? t("myAds.expiresTomorrow")
+      : t("myAds.expiresInDays", { count: daysLeft ?? 0 })
   }
-  if (listing.hidden) return "Hidden by moderators"
-  return daysLeft !== undefined ? `Expires in ${daysLeft} days` : "On the board"
+  if (listing.hidden) return t("myAds.statusHidden")
+  return daysLeft !== undefined
+    ? t("myAds.expiresInDays", { count: daysLeft })
+    : t("myAds.statusOnBoard")
 }
 
 function usePrefersReducedMotion() {

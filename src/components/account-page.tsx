@@ -11,6 +11,7 @@ import { ContactPhoneField } from "@/components/contact-phone-field"
 import { EmptyPanel } from "@/components/empty-panel"
 import { FormField } from "@/components/form-field"
 import { LanguageCurrencyFields } from "@/components/language-currency-fields"
+import { usePrefs } from "@/components/prefs-provider"
 import { KeepAdsPrompt } from "@/components/sign-in-form"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { Button } from "@/components/ui/button"
@@ -54,21 +55,22 @@ import {
 
 export function AccountPage() {
   const auth = useAuth()
+  const { t } = usePrefs()
   const { admin } = useMarketplace()
   const isAdmin = auth.signedIn && admin
 
   return (
     <div className="mx-auto w-full max-w-3xl space-y-4 px-4 py-6 md:px-6">
       <header>
-        <h1 className="text-2xl font-semibold tracking-tight">Profile</h1>
+        <h1 className="text-2xl font-semibold tracking-tight">{t("profile.title")}</h1>
         {auth.ready ? (
           auth.signedIn ? (
             <p className="mt-1 text-sm text-muted-foreground">
-              Signed in as {auth.email}. Your ads, saves, and messages stay with this account.
+              {t("profile.signedInAs", { email: auth.email ?? "" })}
             </p>
           ) : (
             <p className="mt-1 text-sm text-muted-foreground">
-              Guest on this browser. Sign in to post ads and keep them on your account across devices.
+              {t("profile.guestBlurb")}
             </p>
           )
         ) : null}
@@ -80,9 +82,9 @@ export function AccountPage() {
         <>
           <Card size="sm">
             <CardHeader>
-              <CardTitle>Language & currency</CardTitle>
+              <CardTitle>{t("profile.languageCurrencyTitle")}</CardTitle>
               <CardDescription>
-                Applies on this device. Sign in to sync them to your profile.
+                {t("profile.languageCurrencyGuestBody")}
               </CardDescription>
             </CardHeader>
             <CardContent>
@@ -90,10 +92,10 @@ export function AccountPage() {
             </CardContent>
           </Card>
           <EmptyPanel
-            title="Sign in to edit your Profile"
-            body="Email link or optional password. Keep ads, saves, and Messages on this account."
+            title={t("profile.signInTitle")}
+            body={t("profile.signInBody")}
             actionHref="/sign-in"
-            actionLabel="Sign in"
+            actionLabel={t("auth.signIn")}
             className="mt-0"
           >
             <KeepAdsPrompt className="mx-auto mt-4 max-w-sm rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-left text-sm text-amber-950" />
@@ -115,7 +117,7 @@ export function AccountPage() {
         <Card size="sm">
           <CardContent className="pt-(--card-spacing)">
             <Button asChild variant="outline">
-              <Link href="/admin/reports">Reports</Link>
+              <Link href="/admin/reports">{t("profile.reports")}</Link>
             </Button>
           </CardContent>
         </Card>
@@ -145,6 +147,7 @@ function SignedInProfile({
   updateEmail: (email: string) => Promise<{ ok: true } | { ok: false; reason: string }>
 }) {
   const router = useRouter()
+  const { t } = usePrefs()
   const fileRef = useRef<HTMLInputElement>(null)
   const [profile, setProfile] = useState<BoardProfile | null>(null)
   const [loading, setLoading] = useState(true)
@@ -183,7 +186,7 @@ function SignedInProfile({
         const payload = (await response.json()) as { ok?: boolean; profile?: BoardProfile; reason?: string }
         if (!active) return
         if (!response.ok || !payload.profile) {
-          toast.error(payload.reason ?? "Could not load your profile.")
+          toast.error(payload.reason ?? t("profile.toast.loadError"))
           setLoading(false)
           return
         }
@@ -196,14 +199,14 @@ function SignedInProfile({
         setLoading(false)
       } catch {
         if (!active) return
-        toast.error("Could not load your profile.")
+        toast.error(t("profile.toast.loadError"))
         setLoading(false)
       }
     })()
     return () => {
       active = false
     }
-  }, [])
+  }, [t])
 
   const sinceYear = memberSinceYear(profile?.createdAt ?? createdAt)
   const initials = (displayName.trim() || email || "?").slice(0, 2).toUpperCase()
@@ -233,7 +236,7 @@ function SignedInProfile({
     const nameReason = displayNameError(displayName)
     const placeReason = cityError(city)
     const countryReason =
-      city.trim() && !countryCode ? "Choose a country for your city." : undefined
+      city.trim() && !countryCode ? t("profile.countryRequiredForCity") : undefined
     setErrors({ displayName: nameReason, city: placeReason, country: countryReason })
     if (nameReason || placeReason || countryReason) return
 
@@ -254,7 +257,7 @@ function SignedInProfile({
       })
       const payload = (await response.json()) as { ok?: boolean; profile?: BoardProfile; reason?: string }
       if (!response.ok || !payload.profile) {
-        toast.error(payload.reason ?? "Could not save your profile.")
+        toast.error(payload.reason ?? t("profile.toast.saveError"))
         return
       }
       setProfile(payload.profile)
@@ -270,9 +273,9 @@ function SignedInProfile({
           ...(payload.profile.city ? { city: payload.profile.city } : {}),
         })
       }
-      toast.success("Profile saved")
+      toast.success(t("profile.toast.saved"))
     } catch {
-      toast.error("Could not save your profile.")
+      toast.error(t("profile.toast.saveError"))
     } finally {
       setSaving(false)
     }
@@ -292,14 +295,14 @@ function SignedInProfile({
       })
       const payload = (await response.json()) as { ok?: boolean; profile?: BoardProfile; reason?: string }
       if (!response.ok || !payload.profile) {
-        toast.error(payload.reason ?? "Could not save your contact.")
+        toast.error(payload.reason ?? t("profile.toast.contactError"))
         return
       }
       setProfile(payload.profile)
       setPhone(payload.profile.phone ?? "")
-      toast.success("Buyer contact saved")
+      toast.success(t("profile.toast.contactSaved"))
     } catch {
-      toast.error("Could not save your contact.")
+      toast.error(t("profile.toast.contactError"))
     } finally {
       setSavingContact(false)
     }
@@ -307,7 +310,7 @@ function SignedInProfile({
 
   async function confirmDelete() {
     if (deleteConfirm !== "DELETE") {
-      toast.error("Type DELETE to confirm.")
+      toast.error(t("profile.toast.typeDelete"))
       return
     }
     setDeleting(true)
@@ -327,7 +330,7 @@ function SignedInProfile({
         if (payload.authDeleted) {
           toast.error(
             payload.reason ??
-              "Your account was deleted, but some data couldn't be cleaned up. We'll remove it.",
+              t("profile.toast.partialDelete"),
           )
           setDeleteOpen(false)
           await signOut()
@@ -335,16 +338,16 @@ function SignedInProfile({
           router.refresh()
           return
         }
-        toast.error(payload.reason ?? "Could not delete your account.")
+        toast.error(payload.reason ?? t("profile.toast.deleteError"))
         return
       }
       setDeleteOpen(false)
-      toast.success("Account deleted")
+      toast.success(t("profile.toast.deleted"))
       await signOut()
       router.replace("/")
       router.refresh()
     } catch {
-      toast.error("Could not delete your account.")
+      toast.error(t("profile.toast.deleteError"))
     } finally {
       setDeleting(false)
     }
@@ -359,7 +362,7 @@ function SignedInProfile({
       return
     }
     setNewEmail("")
-    toast.success("Confirm the new email from your inbox")
+    toast.success(t("profile.toast.emailConfirm"))
   }
 
   async function savePassword() {
@@ -369,7 +372,7 @@ function SignedInProfile({
       return
     }
     if (needsPasswordReauth && !passwordNonce.trim()) {
-      toast.error("Enter the verification code from your email.")
+      toast.error(t("profile.toast.enterCode"))
       return
     }
     setSavingPassword(true)
@@ -381,7 +384,7 @@ function SignedInProfile({
     if (!result.ok) {
       if (result.needsReauth) {
         setNeedsPasswordReauth(true)
-        toast.message("Check your email for a verification code, then enter it below.")
+        toast.message(t("profile.toast.checkCode"))
       }
       toast.error(result.reason)
       return
@@ -390,7 +393,7 @@ function SignedInProfile({
     setConfirmPassword("")
     setPasswordNonce("")
     setNeedsPasswordReauth(false)
-    toast.success("Password saved")
+    toast.success(t("profile.toast.passwordSaved"))
   }
 
   async function onSignOutAll() {
@@ -409,9 +412,9 @@ function SignedInProfile({
     <>
       <Card size="sm">
         <CardHeader>
-          <CardTitle>Language & currency</CardTitle>
+          <CardTitle>{t("profile.languageCurrencyTitle")}</CardTitle>
           <CardDescription>
-            Applies on this device and is saved to your profile when signed in.
+            {t("profile.languageCurrencyBody")}
           </CardDescription>
         </CardHeader>
         <CardContent>
@@ -421,7 +424,7 @@ function SignedInProfile({
       <Card>
         <CardHeader>
           <CardDescription>
-            Your display name and photo are shown on your ads and in messages.
+            {t("profile.displayHint")}
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
@@ -439,7 +442,7 @@ function SignedInProfile({
                 onChange={(event) => void onPickAvatar(event.target.files?.[0])}
               />
               <Button type="button" variant="outline" onClick={() => fileRef.current?.click()}>
-                Change photo
+                {t("profile.changePhoto")}
               </Button>
               {avatarPreview ? (
                 <Button
@@ -451,14 +454,14 @@ function SignedInProfile({
                     setRemoveAvatar(true)
                   }}
                 >
-                  Remove
+                  {t("profile.removePhoto")}
                 </Button>
               ) : null}
             </div>
           </div>
 
           <div className="grid gap-2">
-            <Label htmlFor="display-name">Display name</Label>
+            <Label htmlFor="display-name">{t("profile.displayName")}</Label>
             <Input
               id="display-name"
               value={displayName}
@@ -479,7 +482,7 @@ function SignedInProfile({
 
           <div className="grid gap-4 sm:grid-cols-2">
             <div className="grid gap-2">
-              <Label htmlFor="profile-country">Country</Label>
+              <Label htmlFor="profile-country">{t("profile.country")}</Label>
               <Select
                 value={countryCode || undefined}
                 onValueChange={(value) => {
@@ -489,7 +492,7 @@ function SignedInProfile({
                 }}
               >
                 <SelectTrigger id="profile-country" className="w-full" aria-invalid={Boolean(errors.country)}>
-                  <SelectValue placeholder="Choose country" />
+                  <SelectValue placeholder={t("profile.chooseCountry")} />
                 </SelectTrigger>
                 <SelectContent>
                   {countries.map((country) => (
@@ -502,7 +505,7 @@ function SignedInProfile({
               {errors.country ? <p className="text-sm text-destructive">{errors.country}</p> : null}
             </div>
             <div className="grid gap-2">
-              <Label>City</Label>
+              <Label>{t("profile.city")}</Label>
               {countryCode ? (
                 <CityField
                   country={countryCode}
@@ -514,7 +517,7 @@ function SignedInProfile({
                   onPlace={() => undefined}
                 />
               ) : (
-                <Input disabled placeholder="Choose a country first" aria-disabled="true" />
+                <Input disabled placeholder={t("profile.chooseCountryFirst")} aria-disabled="true" />
               )}
               {errors.city ? <p className="text-sm text-destructive">{errors.city}</p> : null}
             </div>
@@ -523,16 +526,16 @@ function SignedInProfile({
         <CardFooter className="justify-end gap-2">
           <Button type="button" disabled={!dirty || saving} onClick={() => void saveProfile()}>
             {saving ? <Loader2 className="animate-spin" /> : null}
-            {saving ? "Saving…" : "Save changes"}
+            {saving ? t("profile.saving") : t("profile.saveChanges")}
           </Button>
         </CardFooter>
       </Card>
 
       <Card>
         <CardHeader>
-          <CardTitle>Buyer contact</CardTitle>
+          <CardTitle>{t("profile.buyerContact")}</CardTitle>
           <CardDescription>
-            Call and WhatsApp number used when you post an ad. You can still change it per listing.
+            {t("profile.buyerContactBody")}
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-3">
@@ -541,7 +544,7 @@ function SignedInProfile({
             value={phone}
             countryCode={countryCode || null}
             error={errors.phone}
-            hint="Buyers can call, open WhatsApp with this number, or leave an on-site note."
+            hint={t("profile.buyerContactHint")}
             onChange={(value) => {
               setPhone(value)
               setErrors((current) => ({ ...current, phone: undefined }))
@@ -555,31 +558,30 @@ function SignedInProfile({
             onClick={() => void saveContact()}
           >
             {savingContact ? <Loader2 className="animate-spin" /> : null}
-            {savingContact ? "Saving…" : "Save contact"}
+            {savingContact ? t("profile.saving") : t("profile.saveContact")}
           </Button>
         </CardFooter>
       </Card>
 
       <Card>
         <CardHeader>
-          <CardTitle>Account</CardTitle>
-          <CardDescription>Sign-in email for this account.</CardDescription>
+          <CardTitle>{t("profile.account")}</CardTitle>
+          <CardDescription>{t("profile.accountBody")}</CardDescription>
         </CardHeader>
         <CardContent className="space-y-3">
           <div className="grid gap-2">
-            <Label htmlFor="account-email">Email</Label>
+            <Label htmlFor="account-email">{t("profile.email")}</Label>
             <Input id="account-email" value={email ?? ""} readOnly aria-readonly="true" />
           </div>
           {pendingEmail ? (
             <p className="rounded-lg bg-amber-50 px-3 py-2 text-sm text-amber-950">
-              Pending confirmation for <span className="font-medium">{pendingEmail}</span>. Check that
-              inbox (and your current email if Secure email change is on).
+              {t("profile.pendingEmail", { email: pendingEmail })}
             </p>
           ) : null}
           <FormField
-            label="New email"
+            label={t("profile.newEmail")}
             htmlFor="account-new-email"
-            hint="We’ll send a confirmation link before the change takes effect."
+            hint={t("profile.newEmailHint")}
           >
             <Input
               id="account-new-email"
@@ -591,13 +593,13 @@ function SignedInProfile({
             />
           </FormField>
           {sinceYear ? (
-            <p className="text-sm text-muted-foreground">Member since {sinceYear}</p>
+            <p className="text-sm text-muted-foreground">{t("profile.memberSince", { year: sinceYear })}</p>
           ) : null}
         </CardContent>
         <CardFooter className="flex-wrap justify-between gap-2">
           <div className="flex flex-wrap gap-2">
             <Button type="button" variant="outline" onClick={() => void signOut()}>
-              Sign out
+              {t("auth.signOut")}
             </Button>
             <Button
               type="button"
@@ -606,7 +608,7 @@ function SignedInProfile({
               onClick={() => void onSignOutAll()}
             >
               {signingOutAll ? <Loader2 className="animate-spin" /> : null}
-              Sign out of all devices
+              {t("profile.signOutAll")}
             </Button>
           </div>
           <Button
@@ -615,20 +617,20 @@ function SignedInProfile({
             onClick={() => void saveEmail()}
           >
             {savingEmail ? <Loader2 className="animate-spin" /> : null}
-            {savingEmail ? "Sending…" : "Change email"}
+            {savingEmail ? t("profile.sending") : t("profile.changeEmail")}
           </Button>
         </CardFooter>
       </Card>
 
       <Card>
         <CardHeader>
-          <CardTitle>Password</CardTitle>
+          <CardTitle>{t("profile.password")}</CardTitle>
           <CardDescription>
-            Optional. Sign in with email and password as well as an email link.
+            {t("profile.passwordBody")}
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-3">
-          <FormField label="New password" htmlFor="account-password" hint={passwordHint}>
+          <FormField label={t("profile.newPassword")} htmlFor="account-password" hint={passwordHint}>
             <Input
               id="account-password"
               type="password"
@@ -637,7 +639,7 @@ function SignedInProfile({
               onChange={(event) => setNewPassword(event.target.value)}
             />
           </FormField>
-          <FormField label="Confirm password" htmlFor="account-password-confirm">
+          <FormField label={t("profile.confirmPassword")} htmlFor="account-password-confirm">
             <Input
               id="account-password-confirm"
               type="password"
@@ -648,9 +650,9 @@ function SignedInProfile({
           </FormField>
           {needsPasswordReauth ? (
             <FormField
-              label="Email verification code"
+              label={t("profile.verificationCode")}
               htmlFor="account-password-nonce"
-              hint="Sent to your current email when Secure password change is on."
+              hint={t("profile.verificationCodeHint")}
             >
               <Input
                 id="account-password-nonce"
@@ -669,21 +671,21 @@ function SignedInProfile({
             onClick={() => void savePassword()}
           >
             {savingPassword ? <Loader2 className="animate-spin" /> : null}
-            {savingPassword ? "Saving…" : needsPasswordReauth ? "Confirm and save" : "Save password"}
+            {savingPassword ? t("profile.saving") : needsPasswordReauth ? t("profile.confirmAndSave") : t("profile.savePassword")}
           </Button>
         </CardFooter>
       </Card>
 
       <Card className="ring-destructive/20">
         <CardHeader>
-          <CardTitle>Danger zone</CardTitle>
+          <CardTitle>{t("profile.dangerZone")}</CardTitle>
           <CardDescription>
-            Permanently delete your account, ads, and messages. This cannot be undone.
+            {t("profile.dangerZoneBody")}
           </CardDescription>
         </CardHeader>
         <CardFooter>
           <Button type="button" variant="destructive" onClick={() => setDeleteOpen(true)}>
-            Delete account
+            {t("profile.deleteAccount")}
           </Button>
         </CardFooter>
       </Card>
@@ -697,13 +699,13 @@ function SignedInProfile({
       >
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>Delete account?</DialogTitle>
+            <DialogTitle>{t("profile.deleteConfirmTitle")}</DialogTitle>
             <DialogDescription>
-              Your ads, saved items, and conversations will be removed. Type DELETE to confirm.
+              {t("profile.deleteConfirmBody")}
             </DialogDescription>
           </DialogHeader>
           <div className="grid gap-2">
-            <Label htmlFor="delete-confirm">Confirmation</Label>
+            <Label htmlFor="delete-confirm">{t("profile.deleteConfirmLabel")}</Label>
             <Input
               id="delete-confirm"
               value={deleteConfirm}
@@ -714,7 +716,7 @@ function SignedInProfile({
           </div>
           <DialogFooter>
             <Button type="button" variant="outline" onClick={() => setDeleteOpen(false)} disabled={deleting}>
-              Cancel
+              {t("common.cancel")}
             </Button>
             <Button
               type="button"
@@ -723,7 +725,7 @@ function SignedInProfile({
               onClick={() => void confirmDelete()}
             >
               {deleting ? <Loader2 className="animate-spin" /> : null}
-              {deleting ? "Deleting…" : "Delete account"}
+              {deleting ? t("profile.deleting") : t("profile.deleteAccount")}
             </Button>
           </DialogFooter>
         </DialogContent>
@@ -733,6 +735,7 @@ function SignedInProfile({
 }
 
 function ProfileSkeleton() {
+  const { t } = usePrefs()
   return (
     <div className="space-y-4" aria-busy="true" aria-live="polite">
       <Card>
@@ -751,7 +754,7 @@ function ProfileSkeleton() {
           </div>
         </CardContent>
       </Card>
-      <span className="sr-only">Loading profile</span>
+      <span className="sr-only">{t("profile.loading")}</span>
     </div>
   )
 }

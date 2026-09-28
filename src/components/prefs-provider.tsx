@@ -212,7 +212,7 @@ export function PrefsProvider({ children }: { children: ReactNode }) {
 
   const formatListingPrice = useCallback(
     (listing: Pick<Listing, "price" | "priceSuffix" | "currency">) => {
-      const original = formatPrice(listing)
+      const original = formatPrice(listing, language)
       const listingCurrency = listing.currency ?? "USD"
       if (currency === listingCurrencyPreference || currency === listingCurrency) {
         return { primary: original, approximate: false }
@@ -220,15 +220,15 @@ export function PrefsProvider({ children }: { children: ReactNode }) {
       if (!fx?.rates) return { primary: original, approximate: false }
       const converted = convertAmount(listing.price, listingCurrency, currency, fx.rates, fx.base)
       if (converted === null) return { primary: original, approximate: false }
-      const money = formatMoney(converted, currency)
+      const money = formatMoney(converted, currency, language)
       const approx = listing.priceSuffix ? `${money} ${listing.priceSuffix}` : money
       return {
-        primary: `≈ ${approx}`,
+        primary: t("listing.approx", { price: approx }),
         secondary: original,
         approximate: true,
       }
     },
-    [currency, fx],
+    [currency, fx, language, t],
   )
 
   const value = useMemo(

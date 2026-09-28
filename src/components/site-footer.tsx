@@ -1,5 +1,8 @@
+"use client"
+
 import Link from "next/link"
 
+import { usePrefs } from "@/components/prefs-provider"
 import { navItem } from "@/lib/nav"
 import { site, siteHomeLabel, siteSupportMailto } from "@/lib/site"
 
@@ -7,6 +10,7 @@ const footerLinkClass =
   "shrink-0 rounded-md px-1.5 py-1 text-neutral-600 transition-colors hover:bg-neutral-100 hover:text-neutral-950 focus-visible:outline-2 focus-visible:outline-offset-1 focus-visible:outline-neutral-950"
 
 export function SiteFooter({ onNavigate }: { onNavigate?: () => void }) {
+  const { t } = usePrefs()
   const credits = navItem("credits")
   const contactHref = siteSupportMailto()
   return (
@@ -15,20 +19,20 @@ export function SiteFooter({ onNavigate }: { onNavigate?: () => void }) {
         <p className="min-w-0 truncate tracking-wide" aria-label={siteHomeLabel()}>
           {site.name}
         </p>
-        <nav className="flex flex-wrap items-center gap-0.5" aria-label="Site">
+        <nav className="flex flex-wrap items-center gap-0.5" aria-label={t("footer.site")}>
           <Link href="/terms" onClick={onNavigate} className={footerLinkClass}>
-            Terms
+            {t("footer.terms")}
           </Link>
           <Link href="/privacy" onClick={onNavigate} className={footerLinkClass}>
-            Privacy
+            {t("footer.privacy")}
           </Link>
           {contactHref ? (
             <a href={contactHref} onClick={onNavigate} className={footerLinkClass}>
-              Contact
+              {t("footer.contact")}
             </a>
           ) : null}
           <Link href={credits.href} onClick={onNavigate} className={footerLinkClass}>
-            {credits.label}
+            {t("footer.sources")}
           </Link>
         </nav>
       </div>

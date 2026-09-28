@@ -3,6 +3,8 @@
 import { useRouter, useSearchParams } from "next/navigation"
 import { Suspense, useEffect, useRef, useState } from "react"
 
+import { LoadingText } from "@/components/loading-text"
+import { usePrefs } from "@/components/prefs-provider"
 import { decideAuthCallback } from "@/lib/auth-callback"
 import { applySafeAuthNext, safeAuthNext } from "@/lib/auth-redirect"
 import { createBrowserSupabase } from "@/lib/supabase/client"
@@ -14,8 +16,9 @@ import { createBrowserSupabase } from "@/lib/supabase/client"
 function AuthCallbackInner() {
   const router = useRouter()
   const searchParams = useSearchParams()
+  const { t } = usePrefs()
   const ran = useRef(false)
-  const [message, setMessage] = useState("Signing you in…")
+  const [message, setMessage] = useState(() => t("auth.signingIn"))
 
   useEffect(() => {
     if (ran.current) return
@@ -71,7 +74,7 @@ function AuthCallbackInner() {
           case "exchange-code": {
             const { error } = await supabase.auth.exchangeCodeForSession(decision.code)
             if (error) {
-              setMessage("That link could not be completed.")
+              setMessage(t("auth.linkFailed"))
               fail(goingToReset ? "device" : "link")
               return
             }
@@ -84,7 +87,7 @@ function AuthCallbackInner() {
               refresh_token: decision.refreshToken,
             })
             if (error) {
-              setMessage("That link could not be completed.")
+              setMessage(t("auth.linkFailed"))
               fail(goingToReset ? "device" : "link")
               return
             }
@@ -92,7 +95,7 @@ function AuthCallbackInner() {
             return
           }
           case "fail":
-            setMessage("That link could not be completed.")
+            setMessage(t("auth.linkFailed"))
             fail(decision.kind)
             return
           default: {
@@ -101,11 +104,11 @@ function AuthCallbackInner() {
           }
         }
       } catch {
-        setMessage("That link could not be completed.")
+        setMessage(t("auth.linkFailed"))
         fail(goingToReset ? "device" : "link")
       }
     })()
-  }, [router, searchParams])
+  }, [router, searchParams, t])
 
   return (
     <div className="mx-auto w-full max-w-md px-4 py-16 text-center">
@@ -119,7 +122,7 @@ export default function AuthCallbackPage() {
     <Suspense
       fallback={
         <div className="mx-auto w-full max-w-md px-4 py-16 text-center">
-          <p className="text-sm text-muted-foreground">Signing you in…</p>
+          <LoadingText messageKey="auth.signingIn" className="text-muted-foreground" />
         </div>
       }
     >
