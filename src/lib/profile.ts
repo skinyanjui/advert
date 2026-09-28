@@ -102,3 +102,32 @@ export function memberSinceYear(createdAt: string | null | undefined): number | 
   const year = new Date(createdAt).getFullYear()
   return Number.isFinite(year) ? year : null
 }
+
+/** Public URL path segment under the avatars bucket for this owner, or undefined. */
+export function ownedAvatarPath(image: string, ownerId: string): string | undefined {
+  const marker = "/storage/v1/object/public/avatars/"
+  const index = image.indexOf(marker)
+  if (index < 0) return undefined
+  const path = image.slice(index + marker.length)
+  const pattern = new RegExp(`^${ownerId}/[0-9a-f-]{36}\\.(jpg|png|webp)$`, "i")
+  return pattern.test(path) ? path : undefined
+}
+
+/**
+ * Avatar updates may only be a new data: upload, null (clear), or the caller's
+ * current owned avatar URL. Arbitrary external URLs are rejected.
+ */
+export function acceptAvatarUrlUpdate(
+  next: string | null | undefined,
+  current: string | null,
+  ownerId: string,
+): { ok: true; kind: "data" | "clear" | "keep" | "omit"; value?: string } | { ok: false; reason: string } {
+  if (next === undefined) return { ok: true, kind: "omit" }
+  if (next === null) return { ok: true, kind: "clear" }
+  if (typeof next !== "string") return { ok: false, reason: "Upload a JPEG, PNG, or WebP photo." }
+  if (next.startsWith("data:image/")) return { ok: true, kind: "data", value: next }
+  if (current && next === current && ownedAvatarPath(next, ownerId)) {
+    return { ok: true, kind: "keep", value: current }
+  }
+  return { ok: false, reason: "Upload a photo from this device instead of linking an external image." }
+}

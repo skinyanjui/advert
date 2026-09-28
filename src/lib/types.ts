@@ -66,6 +66,8 @@ export type Listing = {
   condition: string
   sellerName: string
   sellerSince: string
+  /** Public avatar from board_profiles when the seller has one. */
+  sellerAvatar?: string
   phone: string
   /** Owner marked the ad as sold; hidden from the main board. */
   sold?: boolean

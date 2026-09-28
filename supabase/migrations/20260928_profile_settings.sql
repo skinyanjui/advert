@@ -1,7 +1,8 @@
 -- Profile settings: location + avatar on board_profiles, avatars storage bucket.
 -- Apply manually on the connected Supabase project after review.
--- Do NOT run from the app. The Next.js profile API still uses the service-role key;
--- owner RLS below is defense in depth if a user JWT ever reaches these tables.
+-- Do NOT run from the app. board_profiles stays service-role-only (same as
+-- database/migrations/20260926_lock_listings_reads.sql). The Next.js profile
+-- API uses the server-only secret key.
 
 -- ---------------------------------------------------------------------------
 -- board_profiles columns
@@ -47,18 +48,15 @@ begin
   end if;
 end $$;
 
--- Owners may manage only their own profile row (publishable key cannot reach
--- other users). Anon stays revoked. Service role continues to bypass RLS.
-grant select, insert, update, delete on public.board_profiles to authenticated;
-
+-- Keep profiles off browser clients (service role only).
 drop policy if exists "Owners manage profile" on public.board_profiles;
-create policy "Owners manage profile"
-  on public.board_profiles for all to authenticated
-  using (user_id = auth.uid())
-  with check (user_id = auth.uid());
+revoke all on table public.board_profiles from anon, authenticated;
+alter table public.board_profiles enable row level security;
 
 -- ---------------------------------------------------------------------------
--- Avatars bucket (public read; owner-only write under {user_id}/…)
+-- Avatars bucket (public object URLs; owner-only write under {user_id}/…)
+-- No SELECT policy: a public bucket already serves objects by URL, and a
+-- broad SELECT policy would allow listing every avatar path / user id.
 -- ---------------------------------------------------------------------------
 insert into storage.buckets (id, name, public, file_size_limit, allowed_mime_types)
 values (
@@ -74,9 +72,6 @@ on conflict (id) do update set
   allowed_mime_types = excluded.allowed_mime_types;
 
 drop policy if exists "Avatar public read" on storage.objects;
-create policy "Avatar public read"
-  on storage.objects for select to anon, authenticated
-  using (bucket_id = 'avatars');
 
 drop policy if exists "Avatar owner insert" on storage.objects;
 create policy "Avatar owner insert"

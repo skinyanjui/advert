@@ -3,13 +3,21 @@ import "server-only"
 import { boardDb } from "@/lib/board-db"
 import { cleanListing } from "@/lib/board-payload"
 import {
+  acceptAvatarUrlUpdate,
   normalizeProfileUpdate,
+  ownedAvatarPath,
   type BoardProfile,
   type ProfileUpdateInput,
 } from "@/lib/profile"
 import type { Listing } from "@/lib/types"
 
 type Result<T> = { ok: true; value: T } | { ok: false; reason: string }
+
+export type ProfilePublic = {
+  displayName: string | null
+  avatarUrl: string | null
+  createdAt: string | null
+}
 
 function check(error: { message: string } | null) {
   if (error) throw new Error(error.message)
@@ -37,21 +45,25 @@ function unpackProfile(row: ProfileRow): BoardProfile {
   }
 }
 
-function avatarPath(image: string) {
-  const base = `${process.env.SUPABASE_URL ?? process.env.NEXT_PUBLIC_SUPABASE_URL}/storage/v1/object/public/avatars/`
-  const path = image.startsWith(base) ? image.slice(base.length) : ""
-  return /^[0-9a-f-]{36}\/[0-9a-f-]{36}\.(jpg|png|webp)$/.test(path) ? path : undefined
+function avatarStoragePath(image: string) {
+  const marker = "/storage/v1/object/public/avatars/"
+  const index = image.indexOf(marker)
+  if (index < 0) return undefined
+  const path = image.slice(index + marker.length)
+  return /^[0-9a-f-]{36}\/[0-9a-f-]{36}\.(jpg|png|webp)$/i.test(path) ? path : undefined
 }
 
 function listingPhotoPath(image: string) {
-  const base = `${process.env.SUPABASE_URL ?? process.env.NEXT_PUBLIC_SUPABASE_URL}/storage/v1/object/public/listing-photos/`
-  const path = image.startsWith(base) ? image.slice(base.length) : ""
-  return /^[0-9a-f-]{36}\/[0-9a-f-]{36}\.(jpg|png|webp)$/.test(path) ? path : undefined
+  const marker = "/storage/v1/object/public/listing-photos/"
+  const index = image.indexOf(marker)
+  if (index < 0) return undefined
+  const path = image.slice(index + marker.length)
+  return /^[0-9a-f-]{36}\/[0-9a-f-]{36}\.(jpg|png|webp)$/i.test(path) ? path : undefined
 }
 
 async function removeAvatar(image: string | null | undefined) {
   if (!image) return
-  const path = avatarPath(image)
+  const path = avatarStoragePath(image)
   if (!path) return
   const { error } = await boardDb().storage.from("avatars").remove([path])
   if (error) console.error("Could not remove avatar", error)
@@ -77,6 +89,37 @@ async function storeAvatar(image: string, owner: string, previous?: string | nul
   check(error)
   if (previous && previous !== image) await removeAvatar(previous)
   return { ok: true, value: db.storage.from("avatars").getPublicUrl(path).data.publicUrl }
+}
+
+export async function profilesByUserIds(userIds: string[]): Promise<Map<string, ProfilePublic>> {
+  const unique = [...new Set(userIds.filter(Boolean))]
+  const map = new Map<string, ProfilePublic>()
+  if (unique.length === 0) return map
+  const { data, error } = await boardDb()
+    .from("board_profiles")
+    .select("user_id,display_name,avatar_url,created_at")
+    .in("user_id", unique)
+  check(error)
+  for (const row of data ?? []) {
+    map.set(row.user_id as string, {
+      displayName: typeof row.display_name === "string" ? row.display_name : null,
+      avatarUrl: typeof row.avatar_url === "string" ? row.avatar_url : null,
+      createdAt: typeof row.created_at === "string" ? row.created_at : null,
+    })
+  }
+  return map
+}
+
+export function applySellerProfile(listing: Listing, profile: ProfilePublic | undefined): Listing {
+  if (!profile) return listing
+  const displayName = profile.displayName?.trim()
+  const year = profile.createdAt ? new Date(profile.createdAt).getFullYear() : NaN
+  return {
+    ...listing,
+    sellerName: displayName || listing.sellerName,
+    sellerAvatar: profile.avatarUrl || listing.sellerAvatar,
+    sellerSince: Number.isFinite(year) ? String(year) : listing.sellerSince,
+  }
 }
 
 /** Ensure a profile row exists for the signed-in user without wiping display_name. */
@@ -132,17 +175,19 @@ export async function updateProfile(
   if (!normalized.ok) return normalized
 
   const current = await ensureProfile(userId, email)
-  let avatarUrl = current.avatarUrl
+  const avatarDecision = acceptAvatarUrlUpdate(input.avatarUrl, current.avatarUrl, userId)
+  if (!avatarDecision.ok) return avatarDecision
 
-  if (typeof input.avatarUrl === "string" && input.avatarUrl.startsWith("data:")) {
-    const stored = await storeAvatar(input.avatarUrl, userId, current.avatarUrl)
+  let avatarUrl = current.avatarUrl
+  if (avatarDecision.kind === "data" && avatarDecision.value) {
+    const stored = await storeAvatar(avatarDecision.value, userId, current.avatarUrl)
     if (!stored.ok) return stored
     avatarUrl = stored.value
-  } else if (input.avatarUrl === null) {
+  } else if (avatarDecision.kind === "clear") {
     await removeAvatar(current.avatarUrl)
     avatarUrl = null
-  } else if (typeof input.avatarUrl === "string") {
-    avatarUrl = input.avatarUrl
+  } else if (avatarDecision.kind === "keep") {
+    avatarUrl = current.avatarUrl
   }
 
   const patch: Record<string, unknown> = {
@@ -162,7 +207,17 @@ export async function updateProfile(
     .select("user_id,email,display_name,avatar_url,city,country_code,created_at")
     .single()
   check(error)
-  return { ok: true, value: unpackProfile(data as ProfileRow) }
+  const profile = unpackProfile(data as ProfileRow)
+
+  if (input.displayName !== undefined && profile.displayName) {
+    const { error: conversationError } = await db
+      .from("board_conversations")
+      .update({ seller_name: profile.displayName })
+      .eq("listing_owner_id", userId)
+    check(conversationError)
+  }
+
+  return { ok: true, value: profile }
 }
 
 async function removeListingPhotos(listing: Listing) {
@@ -212,7 +267,6 @@ export async function deleteAccount(userId: string): Promise<Result<true>> {
   const { error: legacyMessagesError } = await db.from("board_messages").delete().eq("owner_id", userId)
   check(legacyMessagesError)
 
-  // Conversations where the user is buyer or seller; messages cascade.
   const { data: conversations, error: conversationsError } = await db
     .from("board_conversations")
     .select("id")
@@ -227,8 +281,15 @@ export async function deleteAccount(userId: string): Promise<Result<true>> {
     check(deleteConversationsError)
   }
 
-  const profile = await ensureProfile(userId)
-  await removeAvatar(profile.avatarUrl)
+  const { data: profileRow, error: profileReadError } = await db
+    .from("board_profiles")
+    .select("avatar_url")
+    .eq("user_id", userId)
+    .maybeSingle()
+  check(profileReadError)
+  const avatar =
+    typeof profileRow?.avatar_url === "string" ? profileRow.avatar_url : null
+  if (avatar && ownedAvatarPath(avatar, userId)) await removeAvatar(avatar)
 
   const { error: profileError } = await db.from("board_profiles").delete().eq("user_id", userId)
   check(profileError)

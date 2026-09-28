@@ -8,6 +8,7 @@ import { useEffect, useRef, useState } from "react"
 import { toast } from "sonner"
 
 import { ListingCard } from "@/components/listing-card"
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { Button } from "@/components/ui/button"
 import {
   Dialog,
@@ -392,9 +393,12 @@ export function ListingDetail({ id }: { id: string }) {
           ) : (
           <>
           <div className="flex items-center gap-3">
-            <span className="flex size-11 items-center justify-center rounded-full bg-neutral-950 text-sm font-medium text-white">
-              {initials(listing.sellerName)}
-            </span>
+            <Avatar className="size-11">
+              {listing.sellerAvatar ? <AvatarImage src={listing.sellerAvatar} alt="" /> : null}
+              <AvatarFallback className="bg-neutral-950 text-sm font-medium text-white">
+                {initials(listing.sellerName)}
+              </AvatarFallback>
+            </Avatar>
             <div>
               <p className="font-medium">{listing.sellerName}</p>
               <p className="text-xs text-neutral-500">Member since {listing.sellerSince}</p>

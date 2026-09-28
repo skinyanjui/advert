@@ -1,6 +1,6 @@
 "use client"
 
-import { ChevronRight, Loader2 } from "lucide-react"
+import { Loader2 } from "lucide-react"
 import Link from "next/link"
 import { useRouter } from "next/navigation"
 import { useEffect, useRef, useState } from "react"
@@ -8,7 +8,6 @@ import { toast } from "sonner"
 
 import { CityField } from "@/components/city-field"
 import { KeepAdsPrompt } from "@/components/sign-in-form"
-import { ThemeChoices } from "@/components/theme-choices"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
@@ -30,11 +29,10 @@ import {
   SelectValue,
 } from "@/components/ui/select"
 import { Skeleton } from "@/components/ui/skeleton"
-import { postAdHref } from "@/lib/active-place"
 import { useAuth } from "@/lib/auth"
 import { canonicalCountry, countries } from "@/lib/countries"
+import { writeHomePlace } from "@/lib/home-place"
 import { useMarketplace } from "@/lib/marketplace"
-import { messageThreads, unreadMessageCount } from "@/lib/messages"
 import {
   avatarFileError,
   cityError,
@@ -42,17 +40,11 @@ import {
   memberSinceYear,
   type BoardProfile,
 } from "@/lib/profile"
-import { useRememberedPlace } from "@/lib/use-remembered-place"
 import { createBrowserSupabase } from "@/lib/supabase/client"
 
 export function AccountPage() {
   const auth = useAuth()
-  const { ready, admin, listings, savedIds, messages } = useMarketplace()
-  const unread = unreadMessageCount(messages)
-  const sellerUnread = unreadMessageCount(messages.filter((item) => item.viewerIsSeller))
-  const threads = messageThreads(messages)
-  const mine = listings.filter((listing) => listing.mine).length
-  const postHref = postAdHref(useRememberedPlace())
+  const { admin } = useMarketplace()
   const isAdmin = auth.signedIn && admin
 
   if (!auth.ready) {
@@ -65,14 +57,7 @@ export function AccountPage() {
 
   return (
     <div className="mx-auto w-full max-w-3xl space-y-4 px-4 py-6 md:px-6">
-      <header>
-        <h1 className="text-2xl font-semibold tracking-tight">Profile</h1>
-        <p className="mt-1 text-sm text-muted-foreground">
-          {auth.signedIn
-            ? "Your public name, location, and account settings."
-            : "Sign in to keep ads, saves, and messages on this account."}
-        </p>
-      </header>
+      <h1 className="text-2xl font-semibold tracking-tight">Profile</h1>
 
       {!auth.signedIn ? (
         <Card>
@@ -81,6 +66,9 @@ export function AccountPage() {
             <CardDescription>Email code sign-in. No password.</CardDescription>
           </CardHeader>
           <CardContent className="space-y-3">
+            <p className="text-sm text-muted-foreground">
+              Sign in to keep ads, saves, and messages on this account.
+            </p>
             <KeepAdsPrompt className="rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-sm text-amber-950" />
             <Button asChild>
               <Link href="/sign-in">Sign in</Link>
@@ -88,41 +76,22 @@ export function AccountPage() {
           </CardContent>
         </Card>
       ) : (
-        <SignedInProfile email={auth.email} createdAt={auth.user?.created_at ?? null} onSignedOut={() => void auth.signOut()} />
+        <SignedInProfile
+          email={auth.email}
+          createdAt={auth.user?.created_at ?? null}
+          onSignedOut={() => void auth.signOut()}
+        />
       )}
 
-      <Card>
-        <CardHeader>
-          <CardTitle>Appearance</CardTitle>
-          <CardDescription>Light, dark, or match this device.</CardDescription>
-        </CardHeader>
-        <CardContent>
-          <ThemeChoices />
-        </CardContent>
-      </Card>
-
-      {!ready ? (
-        <p className="text-sm text-muted-foreground">Loading your ads and messages…</p>
-      ) : (
+      {isAdmin ? (
         <Card size="sm">
-          <CardHeader>
-            <CardTitle>Shortcuts</CardTitle>
-          </CardHeader>
-          <CardContent className="grid gap-2">
-            <ProfileLink href="/messages" title="Messages" detail={messageDetail(threads.length, unread)} />
-            <ProfileLink href="/saved" title="Saved ads" detail={countDetail(savedIds.length, "saved ad", "saved ads")} />
-            <ProfileLink
-              href="/my-ads"
-              title="My ads"
-              detail={myAdsDetail(mine, sellerUnread, auth.signedIn)}
-            />
-            <ProfileLink href={postHref} title="Post an ad" detail="Cars, houses, jobs, and everything else on the board." />
-            {isAdmin ? (
-              <ProfileLink href="/admin/reports" title="Reports" detail="Review reported ads as an admin." />
-            ) : null}
+          <CardContent className="pt-(--card-spacing)">
+            <Button asChild variant="outline">
+              <Link href="/admin/reports">Reports</Link>
+            </Button>
           </CardContent>
         </Card>
-      )}
+      ) : null}
     </div>
   )
 }
@@ -147,7 +116,7 @@ function SignedInProfile({
   const [avatarPreview, setAvatarPreview] = useState<string | null>(null)
   const [avatarDataUrl, setAvatarDataUrl] = useState<string | null>(null)
   const [removeAvatar, setRemoveAvatar] = useState(false)
-  const [errors, setErrors] = useState<{ displayName?: string; city?: string }>({})
+  const [errors, setErrors] = useState<{ displayName?: string; city?: string; country?: string }>({})
   const [deleteOpen, setDeleteOpen] = useState(false)
   const [deleteConfirm, setDeleteConfirm] = useState("")
   const [deleting, setDeleting] = useState(false)
@@ -207,8 +176,10 @@ function SignedInProfile({
   async function saveProfile() {
     const nameReason = displayNameError(displayName)
     const placeReason = cityError(city)
-    setErrors({ displayName: nameReason, city: placeReason })
-    if (nameReason || placeReason) return
+    const countryReason =
+      city.trim() && !countryCode ? "Choose a country for your city." : undefined
+    setErrors({ displayName: nameReason, city: placeReason, country: countryReason })
+    if (nameReason || placeReason || countryReason) return
 
     setSaving(true)
     try {
@@ -237,6 +208,12 @@ function SignedInProfile({
       setAvatarPreview(payload.profile.avatarUrl)
       setAvatarDataUrl(null)
       setRemoveAvatar(false)
+      if (payload.profile.countryCode) {
+        writeHomePlace({
+          country: payload.profile.countryCode,
+          ...(payload.profile.city ? { city: payload.profile.city } : {}),
+        })
+      }
       toast.success("Profile saved")
     } catch {
       toast.error("Could not save your profile.")
@@ -247,7 +224,7 @@ function SignedInProfile({
 
   async function confirmDelete() {
     if (deleteConfirm !== "DELETE") {
-      toast.error('Type DELETE to confirm.')
+      toast.error("Type DELETE to confirm.")
       return
     }
     setDeleting(true)
@@ -281,8 +258,9 @@ function SignedInProfile({
     <>
       <Card>
         <CardHeader>
-          <CardTitle>Profile</CardTitle>
-          <CardDescription>Shown when you message buyers and sellers.</CardDescription>
+          <CardDescription>
+            Your display name and photo are shown on your ads and in messages.
+          </CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
           <div className="flex flex-wrap items-center gap-4">
@@ -342,9 +320,13 @@ function SignedInProfile({
               <Label htmlFor="profile-country">Country</Label>
               <Select
                 value={countryCode || undefined}
-                onValueChange={(value) => setCountryCode(value)}
+                onValueChange={(value) => {
+                  setCountryCode(value)
+                  setCity("")
+                  setErrors((current) => ({ ...current, country: undefined, city: undefined }))
+                }}
               >
-                <SelectTrigger id="profile-country" className="w-full">
+                <SelectTrigger id="profile-country" className="w-full" aria-invalid={Boolean(errors.country)}>
                   <SelectValue placeholder="Choose country" />
                 </SelectTrigger>
                 <SelectContent>
@@ -355,18 +337,23 @@ function SignedInProfile({
                   ))}
                 </SelectContent>
               </Select>
+              {errors.country ? <p className="text-sm text-destructive">{errors.country}</p> : null}
             </div>
             <div className="grid gap-2">
               <Label>City</Label>
-              <CityField
-                country={countryCode || "KE"}
-                city={city}
-                onCityChange={(value) => {
-                  setCity(value)
-                  setErrors((current) => ({ ...current, city: undefined }))
-                }}
-                onPlace={() => undefined}
-              />
+              {countryCode ? (
+                <CityField
+                  country={countryCode}
+                  city={city}
+                  onCityChange={(value) => {
+                    setCity(value)
+                    setErrors((current) => ({ ...current, city: undefined }))
+                  }}
+                  onPlace={() => undefined}
+                />
+              ) : (
+                <Input disabled placeholder="Choose a country first" aria-disabled="true" />
+              )}
               {errors.city ? <p className="text-sm text-destructive">{errors.city}</p> : null}
             </div>
           </div>
@@ -461,14 +448,10 @@ function SignedInProfile({
 function ProfileSkeleton() {
   return (
     <div className="space-y-4" aria-busy="true" aria-live="polite">
-      <div className="space-y-2">
-        <Skeleton className="h-8 w-32" />
-        <Skeleton className="h-4 w-64" />
-      </div>
+      <Skeleton className="h-8 w-32" />
       <Card>
         <CardHeader>
-          <Skeleton className="h-5 w-24" />
-          <Skeleton className="h-4 w-48" />
+          <Skeleton className="h-4 w-64" />
         </CardHeader>
         <CardContent className="space-y-4">
           <div className="flex items-center gap-4">
@@ -485,42 +468,6 @@ function ProfileSkeleton() {
       <span className="sr-only">Loading profile</span>
     </div>
   )
-}
-
-function ProfileLink({ href, title, detail }: { href: string; title: string; detail: string }) {
-  return (
-    <Link
-      href={href}
-      className="flex items-center gap-3 rounded-lg border border-border px-3 py-2.5 hover:bg-muted/50"
-    >
-      <span className="min-w-0 flex-1">
-        <span className="block text-sm font-medium">{title}</span>
-        <span className="mt-0.5 block text-xs text-muted-foreground">{detail}</span>
-      </span>
-      <ChevronRight className="size-4 shrink-0 text-muted-foreground" />
-    </Link>
-  )
-}
-
-function messageDetail(threads: number, unread: number): string {
-  if (threads === 0) return "No conversations yet. Write to a seller from a listing."
-  if (unread === 0) return threads === 1 ? "1 conversation" : `${threads} conversations`
-  return unread === 1 ? "1 unread reply" : `${unread} unread replies`
-}
-
-function countDetail(count: number, singular: string, plural: string): string {
-  if (count === 0) return `No ${plural} yet`
-  return count === 1 ? `1 ${singular}` : `${count} ${plural}`
-}
-
-function myAdsDetail(mine: number, sellerUnread: number, signedIn: boolean): string {
-  const base = countDetail(
-    mine,
-    signedIn ? "ad on your account" : "ad on this browser",
-    signedIn ? "ads on your account" : "ads on this browser",
-  )
-  if (sellerUnread === 0) return base
-  return `${base} · ${sellerUnread === 1 ? "1 unread message" : `${sellerUnread} unread messages`}`
 }
 
 function readFileAsDataUrl(file: File): Promise<string> {
