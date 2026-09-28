@@ -9,14 +9,7 @@ import { DEFAULT_AUTH_NEXT, safeAuthNext } from "@/lib/auth-redirect"
 import { reloadBoard } from "@/lib/marketplace"
 import { passwordError } from "@/lib/password"
 import { createBrowserSupabase } from "@/lib/supabase/client"
-import { googleAuthEnabled, phoneAuthEnabled } from "@/lib/supabase/env"
-
-function authConfigured(): boolean {
-  return Boolean(
-    process.env.NEXT_PUBLIC_SUPABASE_URL &&
-      (process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY),
-  )
-}
+import { authConfigured, googleAuthEnabled, phoneAuthEnabled } from "@/lib/supabase/env"
 
 type AuthResult =
   | { ok: true; session?: boolean; needsEmailConfirm?: boolean }
