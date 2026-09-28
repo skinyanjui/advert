@@ -295,7 +295,8 @@ export async function deleteAccount(userId: string): Promise<DeleteAccountResult
 
   const { error: authError } = await db.auth.admin.deleteUser(userId)
   if (authError) {
-    return { ok: false, reason: authError.message || "Could not delete the sign-in account." }
+    console.error("Could not delete auth user during account deletion", { userId, error: authError })
+    return { ok: false, reason: "We couldn't delete your account. Please try again." }
   }
 
   const issues: CleanupIssue[] = []
