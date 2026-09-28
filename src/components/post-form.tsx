@@ -370,6 +370,11 @@ function AdForm({ existing }: { existing: Listing | null }) {
       condition: keptDetails.condition || subcategory.name,
       sold: existing?.sold,
     }
+    if (!existing && auth.configured && !auth.signedIn) {
+      toast.error("Sign in to post an ad")
+      router.push(`/sign-in?next=${encodeURIComponent("/post")}`)
+      return
+    }
     setSubmitting(true)
     const result = existing ? await updateListing(listing) : await addListing(listing)
     setSubmitting(false)
@@ -378,14 +383,6 @@ function AdForm({ existing }: { existing: Listing | null }) {
       return
     }
     toast.success(existing ? "Changes saved" : "Your ad is live")
-    if (!existing && !auth.signedIn && auth.configured) {
-      toast("Sign in to keep this ad if you clear cookies", {
-        action: {
-          label: "Sign in",
-          onClick: () => router.push("/sign-in"),
-        },
-      })
-    }
     router.push(`/listings/${listing.id}`)
   }
 

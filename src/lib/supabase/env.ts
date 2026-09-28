@@ -15,3 +15,8 @@ export function publicSupabaseKey(): string | undefined {
 export function phoneAuthEnabled(): boolean {
   return process.env.NEXT_PUBLIC_AUTH_PHONE === "1"
 }
+
+/** Google OAuth button is off until the provider is configured in Supabase and this flag is set. */
+export function googleAuthEnabled(): boolean {
+  return process.env.NEXT_PUBLIC_AUTH_GOOGLE === "1"
+}

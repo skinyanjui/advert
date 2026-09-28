@@ -10,7 +10,7 @@ export const metadata: Metadata = {
 export default function SignInPage() {
   return (
     <div className="mx-auto w-full max-w-3xl px-4 py-8 md:px-6">
-      <Suspense fallback={<p className="text-sm text-neutral-500">Loading sign-in…</p>}>
+      <Suspense fallback={<p className="text-sm text-muted-foreground">Loading sign-in…</p>}>
         <SignInForm />
       </Suspense>
     </div>
