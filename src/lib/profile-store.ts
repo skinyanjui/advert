@@ -355,14 +355,10 @@ export async function deleteAccount(userId: string): Promise<DeleteAccountResult
       issues,
     }
     console.error("Account auth deleted but board cleanup incomplete", orphan)
-    const steps = issues.map((issue) => issue.step).join(",")
     return {
       ok: false,
       authDeleted: true,
-      reason:
-        `Sign-in removed, but some account data could not be cleaned up. ` +
-        `userId=${userId}; listings=${listingIds.join(",") || "none"}; ` +
-        `conversations=${conversationIds.join(",") || "none"}; steps=${steps}`,
+      reason: "Your account was deleted, but some data couldn't be cleaned up. We'll remove it.",
     }
   }
 

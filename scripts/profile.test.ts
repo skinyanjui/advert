@@ -103,11 +103,16 @@ test("account page has no ProfileShortcuts hub", () => {
   assert.match(page, /from "@\/components\/empty-panel"/)
 })
 
-test("deleteAccount cleanup failure surfaces orphan identifiers", () => {
+test("deleteAccount cleanup failure logs orphans and returns a plain message", () => {
   const store = readFileSync(new URL("../src/lib/profile-store.ts", import.meta.url), "utf8")
   assert.match(store, /authDeleted/)
   assert.match(store, /Account auth deleted but board cleanup incomplete/)
-  assert.match(store, /userId=\$\{userId\}/)
-  assert.match(store, /listings=\$\{listingIds/)
-  assert.match(store, /conversations=\$\{conversationIds/)
+  assert.match(store, /userId/)
+  assert.match(store, /listingIds/)
+  assert.match(store, /conversationIds/)
+  assert.match(
+    store,
+    /Your account was deleted, but some data couldn't be cleaned up\. We'll remove it\./,
+  )
+  assert.doesNotMatch(store, /userId=\$\{userId\}/)
 })
