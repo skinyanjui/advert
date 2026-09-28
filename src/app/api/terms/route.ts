@@ -42,7 +42,7 @@ export async function POST(request: Request) {
       ip: clientIp(request),
       userAgent: clientUserAgent(request),
     })
-    if (!result.ok) return fail(result.reason)
+    if (!result.ok) return fail("Could not record Terms acceptance.")
     const status = await getTermsStatus(owner.id)
     return ok({
       accepted: true,

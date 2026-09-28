@@ -7,11 +7,12 @@ import {
   PROHIBITED_ITEM_SUMMARY,
   TERMS_VERSION,
 } from "@/lib/legal"
-import { site } from "@/lib/site"
+import { SUPPORT_CONTACT_PLACEHOLDER, site, siteSupportMailto } from "@/lib/site"
 
 export const metadata: Metadata = { title: "Terms of use" }
 
 export default function TermsPage() {
+  const contactHref = siteSupportMailto()
   return (
     <div className="mx-auto w-full max-w-2xl px-4 py-10 md:px-6">
       <div
@@ -44,8 +45,9 @@ export default function TermsPage() {
           To the fullest extent allowed by law, {site.name} is not liable for disputes between
           buyers and sellers, failed payments, loss of goods, or reliance on listing content. Where
           liability cannot be excluded, it is limited to the greater of (a) fees you paid us for the
-          service in the three months before the claim, or (b) USD 50. Nothing in this draft removes
-          rights your local consumer law may give you that cannot be waived.
+          service in the three months before the claim, or (b){" "}
+          <strong>[LAWYER TO CONFIRM]</strong> USD 50. Nothing in this draft removes rights your local
+          consumer law may give you that cannot be waived.
         </p>
       </section>
 
@@ -98,7 +100,8 @@ export default function TermsPage() {
         <h2 className="text-base font-medium text-neutral-950">7. Disputes</h2>
         <p className="text-sm leading-6 text-neutral-700">
           If you have a problem with another user or with the service, contact support first. If we
-          cannot resolve it, the next step is mediation before court proceedings, unless your local
+          cannot resolve it, the next step is{" "}
+          <strong>[LAWYER TO CONFIRM]</strong> mediation before court proceedings, unless your local
           consumer law says otherwise. This draft does <strong>not</strong> include an arbitration
           clause or a class-action waiver — a lawyer will decide those points.
         </p>
@@ -135,6 +138,23 @@ export default function TermsPage() {
           and ask you to accept the new versions before posting ads or sending messages. We may also
           notify you by email or an in-product notice. Continued use after you accept means you agree
           to the updated versions.
+        </p>
+      </section>
+
+      <section className="mt-8 space-y-3">
+        <h2 className="text-base font-medium text-neutral-950">12. Contact</h2>
+        <p className="text-sm leading-6 text-neutral-700">
+          {contactHref && site.supportEmail ? (
+            <>
+              Support:{" "}
+              <a href={contactHref} className="underline underline-offset-2">
+                {site.supportEmail}
+              </a>
+              .
+            </>
+          ) : (
+            SUPPORT_CONTACT_PLACEHOLDER
+          )}
         </p>
       </section>
 

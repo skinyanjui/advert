@@ -37,12 +37,14 @@ type Row = {
   status?: string | null
   sold_at?: string | null
   sponsored?: boolean | null
+  sponsored_locked?: boolean | null
 }
 const seedIds = new Set(seedListings.map((item) => item.id))
 const listingIdPattern = /^ad-[a-zA-Z0-9-]{1,64}$/
 const listingSelect =
   "id,owner_id,posted_at,payload,hidden_at,hidden_reason,expires_at,status,sold_at"
 let sponsoredColumnAvailable: boolean | null = null
+let sponsoredLockedColumnAvailable: boolean | null = null
 
 function isMissingColumnError(error: { code?: string; message?: string } | null | undefined): boolean {
   if (!error) return false
@@ -56,20 +58,12 @@ function isMissingColumnError(error: { code?: string; message?: string } | null 
   )
 }
 
-function isMissingRelationError(error: { code?: string; message?: string } | null | undefined): boolean {
-  if (!error) return false
-  const code = error.code ?? ""
-  const message = (error.message ?? "").toLowerCase()
-  return (
-    code === "42P01" ||
-    code === "PGRST205" ||
-    message.includes("does not exist") ||
-    message.includes("could not find the table")
-  )
-}
-
 function markSponsoredColumnMissing() {
   sponsoredColumnAvailable = false
+}
+
+function markSponsoredLockedColumnMissing() {
+  sponsoredLockedColumnAvailable = false
 }
 
 function check(error: { message: string } | null) { if (error) throw new Error(error.message) }
@@ -87,6 +81,8 @@ function unpack(row: Row, owner?: string): Listing | undefined {
   const sold = status === "sold" ? true : undefined
   const sponsored =
     row.sponsored === true || listing.sponsored === true ? true : undefined
+  const sponsoredLocked =
+    row.sponsored_locked === true || listing.sponsoredLocked === true ? true : undefined
   return {
     ...listing,
     id: row.id,
@@ -94,7 +90,8 @@ function unpack(row: Row, owner?: string): Listing | undefined {
     hoursAgo: hoursAgoOf({ hoursAgo: listing.hoursAgo, postedAt: row.posted_at }),
     mine: Boolean(owner) && owner === row.owner_id,
     featured: undefined,
-    sponsored,
+    sponsored: sponsoredLocked ? true : sponsored,
+    sponsoredLocked,
     hidden: row.hidden_at ? true : undefined,
     expiresAt: row.expires_at ?? listing.expiresAt,
     status,
@@ -115,7 +112,8 @@ function payload(listing: Listing) {
     images: images.length > 0 ? images : undefined,
     mine: undefined,
     featured: undefined,
-    sponsored: listing.sponsored === true ? true : undefined,
+    sponsored: listing.sponsored === true || listing.sponsoredLocked === true ? true : undefined,
+    sponsoredLocked: listing.sponsoredLocked === true ? true : undefined,
     hidden: undefined,
     expiresAt: undefined,
     sellerAvatar: undefined,
@@ -301,7 +299,7 @@ export async function createListing(owner: string, input: unknown): Promise<Resu
   const listing = cleanListing(input)
   if (!listing || !listingIdPattern.test(listing.id)) return { ok: false, reason: "That ad could not be read." }
   if (seedIds.has(listing.id)) return { ok: false, reason: "That listing is already on the board." }
-  const accepted = acceptListing({ ...listing, mine: true, sold: undefined })
+  const accepted = acceptListing({ ...listing, mine: true, sold: undefined, sponsoredLocked: undefined })
   if (!accepted.ok) return accepted
   const quota = await postingQuota(owner)
   if (!quota.ok) return quota
@@ -318,6 +316,7 @@ export async function createListing(owner: string, input: unknown): Promise<Resu
     images: photo.value,
     postedAt,
     expiresAt,
+    sponsoredLocked: undefined,
   }
   const { error } = await boardDb().from("board_listings").insert({
     id: listing.id,
@@ -372,7 +371,17 @@ export async function updateListing(owner: string, id: string, input: unknown): 
   if (!row) return { ok: false, reason: "This ad is no longer on the board." }
   if (row.owner_id !== owner) return { ok: false, reason: "This ad is not yours." }
   const old = cleanListing(row.payload)
-  const accepted = acceptListing({ ...listing, mine: true, sold: listing.sold ?? old?.sold })
+  const locked =
+    (row as Row).sponsored_locked === true ||
+    old?.sponsoredLocked === true ||
+    listing.sponsoredLocked === true
+  const accepted = acceptListing({
+    ...listing,
+    mine: true,
+    sold: listing.sold ?? old?.sold,
+    sponsored: locked ? true : listing.sponsored,
+    sponsoredLocked: locked ? true : undefined,
+  })
   if (!accepted.ok) return accepted
   const previousPhotos = old ? listingPhotoList(old) : []
   const photo = await storePhotos(listingPhotoList(accepted.listing), owner, previousPhotos)
@@ -384,23 +393,53 @@ export async function updateListing(owner: string, id: string, input: unknown): 
     images: photo.value,
     postedAt: row.posted_at,
     hoursAgo: hoursAgoOf({ hoursAgo: 0, postedAt: row.posted_at }),
+    sponsored: locked || accepted.listing.sponsored === true ? true : undefined,
+    sponsoredLocked: locked ? true : undefined,
   }
-  const updateBody =
-    sponsoredColumnAvailable === false
-      ? { payload: payload(stored) }
-      : { payload: payload(stored), sponsored: stored.sponsored === true }
+  const updateBody: Record<string, unknown> = { payload: payload(stored) }
+  if (sponsoredColumnAvailable !== false) updateBody.sponsored = stored.sponsored === true
+  if (sponsoredLockedColumnAvailable !== false) updateBody.sponsored_locked = locked === true
   const { data, error } = await db.from("board_listings").update(updateBody)
     .eq("id", id).eq("owner_id", owner).select(listingSelect)
   if (error || !data?.length) {
-    if (error && isMissingColumnError(error) && sponsoredColumnAvailable !== false) {
-      markSponsoredColumnMissing()
+    if (error && isMissingColumnError(error)) {
+      if ((error.message ?? "").toLowerCase().includes("sponsored_locked")) {
+        markSponsoredLockedColumnMissing()
+      } else {
+        markSponsoredColumnMissing()
+      }
+      const retryBody: Record<string, unknown> = { payload: payload(stored) }
+      if (sponsoredColumnAvailable !== false) retryBody.sponsored = stored.sponsored === true
+      if (sponsoredLockedColumnAvailable !== false) retryBody.sponsored_locked = locked === true
       const retry = await db
         .from("board_listings")
-        .update({ payload: payload(stored) })
+        .update(Object.keys(retryBody).length > 1 ? retryBody : { payload: payload(stored) })
         .eq("id", id)
         .eq("owner_id", owner)
         .select(listingSelect)
       if (retry.error || !retry.data?.length) {
+        if (retry.error && isMissingColumnError(retry.error)) {
+          markSponsoredColumnMissing()
+          markSponsoredLockedColumnMissing()
+          const plain = await db
+            .from("board_listings")
+            .update({ payload: payload(stored) })
+            .eq("id", id)
+            .eq("owner_id", owner)
+            .select(listingSelect)
+          if (plain.error || !plain.data?.length) {
+            for (const url of photo.value) {
+              if (!previousPhotos.includes(url)) await removePhoto(url)
+            }
+            check(plain.error)
+            return { ok: false, reason: "This ad is no longer on the board." }
+          }
+          for (const url of previousPhotos) {
+            if (!photo.value.includes(url)) await removePhoto(url)
+          }
+          const updated = unpack(plain.data[0] as Row, owner)
+          return updated ? { ok: true, value: updated } : { ok: false, reason: "This ad is no longer on the board." }
+        }
         for (const url of photo.value) {
           if (!previousPhotos.includes(url)) await removePhoto(url)
         }
@@ -420,6 +459,7 @@ export async function updateListing(owner: string, id: string, input: unknown): 
     return { ok: false, reason: "This ad is no longer on the board." }
   }
   if (sponsoredColumnAvailable === null) sponsoredColumnAvailable = true
+  if (sponsoredLockedColumnAvailable === null && locked) sponsoredLockedColumnAvailable = true
   for (const url of previousPhotos) {
     if (!photo.value.includes(url)) await removePhoto(url)
   }
@@ -1153,11 +1193,11 @@ async function logModerationAction(input: {
       action: input.action,
       note: input.note ?? null,
     })
-    if (error && isMissingRelationError(error)) return
-    check(error)
+    if (error) {
+      console.error("moderation_actions insert failed", error)
+    }
   } catch (error) {
-    if (isMissingRelationError(error as { code?: string; message?: string })) return
-    throw error
+    console.error("moderation_actions insert failed", error)
   }
 }
 
@@ -1186,25 +1226,41 @@ export async function markListingSponsoredForReport(
 
   const current = unpack(row as Row)
   if (!current) return { ok: false, reason: "That listing is no longer on the board." }
-  const stored = { ...current, sponsored: true as const }
-  const updateBody =
-    sponsoredColumnAvailable === false
-      ? { payload: payload(stored) }
-      : { payload: payload(stored), sponsored: true }
+  const stored = { ...current, sponsored: true as const, sponsoredLocked: true as const }
+  const updateBody: Record<string, unknown> = { payload: payload(stored) }
+  if (sponsoredColumnAvailable !== false) updateBody.sponsored = true
+  if (sponsoredLockedColumnAvailable !== false) updateBody.sponsored_locked = true
   const { error: updateListingError } = await db
     .from("board_listings")
     .update(updateBody)
     .eq("id", listingId)
-  if (updateListingError && isMissingColumnError(updateListingError) && sponsoredColumnAvailable !== false) {
-    markSponsoredColumnMissing()
+  if (updateListingError && isMissingColumnError(updateListingError)) {
+    if ((updateListingError.message ?? "").toLowerCase().includes("sponsored_locked")) {
+      markSponsoredLockedColumnMissing()
+    } else {
+      markSponsoredColumnMissing()
+    }
+    const retryBody: Record<string, unknown> = { payload: payload(stored) }
+    if (sponsoredColumnAvailable !== false) retryBody.sponsored = true
     const { error: retryError } = await db
       .from("board_listings")
-      .update({ payload: payload(stored) })
+      .update(retryBody)
       .eq("id", listingId)
-    check(retryError)
+    if (retryError && isMissingColumnError(retryError)) {
+      markSponsoredColumnMissing()
+      markSponsoredLockedColumnMissing()
+      const { error: plainError } = await db
+        .from("board_listings")
+        .update({ payload: payload(stored) })
+        .eq("id", listingId)
+      check(plainError)
+    } else {
+      check(retryError)
+    }
   } else {
     check(updateListingError)
     if (sponsoredColumnAvailable === null) sponsoredColumnAvailable = true
+    if (sponsoredLockedColumnAvailable === null) sponsoredLockedColumnAvailable = true
   }
 
   const { error: updateError } = await db

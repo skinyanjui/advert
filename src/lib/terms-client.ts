@@ -3,10 +3,42 @@
 import { PRIVACY_VERSION, TERMS_VERSION } from "@/lib/legal"
 
 const TERMS_INTENT_KEY = "africa-classifieds-terms-intent"
+const TERMS_INTENT_TTL_MS = 60 * 60 * 1000
 
 type TermsIntent = {
   termsVersion: string
   privacyVersion: string
+  savedAt: number
+}
+
+export const TERMS_REACCEPT_EVENT = "africa-classifieds-terms-reaccept"
+export const TERMS_ACCEPTED_EVENT = "africa-classifieds-terms-accepted"
+
+function readIntent(): TermsIntent | null {
+  if (typeof window === "undefined") return null
+  try {
+    const raw = localStorage.getItem(TERMS_INTENT_KEY)
+    if (!raw) return null
+    const parsed = JSON.parse(raw) as Partial<TermsIntent>
+    if (
+      typeof parsed.termsVersion !== "string" ||
+      typeof parsed.privacyVersion !== "string" ||
+      typeof parsed.savedAt !== "number"
+    ) {
+      return null
+    }
+    if (Date.now() - parsed.savedAt > TERMS_INTENT_TTL_MS) {
+      clearTermsIntent()
+      return null
+    }
+    return {
+      termsVersion: parsed.termsVersion,
+      privacyVersion: parsed.privacyVersion,
+      savedAt: parsed.savedAt,
+    }
+  } catch {
+    return null
+  }
 }
 
 export function rememberTermsIntent(): void {
@@ -14,33 +46,33 @@ export function rememberTermsIntent(): void {
   const intent: TermsIntent = {
     termsVersion: TERMS_VERSION,
     privacyVersion: PRIVACY_VERSION,
+    savedAt: Date.now(),
   }
   try {
-    sessionStorage.setItem(TERMS_INTENT_KEY, JSON.stringify(intent))
+    localStorage.setItem(TERMS_INTENT_KEY, JSON.stringify(intent))
   } catch {
-    // sessionStorage may be unavailable; sign-in still proceeds.
+    // localStorage may be unavailable; sign-in still proceeds.
   }
 }
 
 export function hasTermsIntent(): boolean {
-  if (typeof window === "undefined") return false
-  try {
-    const raw = sessionStorage.getItem(TERMS_INTENT_KEY)
-    if (!raw) return false
-    const parsed = JSON.parse(raw) as Partial<TermsIntent>
-    return parsed.termsVersion === TERMS_VERSION && parsed.privacyVersion === PRIVACY_VERSION
-  } catch {
-    return false
-  }
+  const intent = readIntent()
+  if (!intent) return false
+  return intent.termsVersion === TERMS_VERSION && intent.privacyVersion === PRIVACY_VERSION
 }
 
 export function clearTermsIntent(): void {
   if (typeof window === "undefined") return
   try {
-    sessionStorage.removeItem(TERMS_INTENT_KEY)
+    localStorage.removeItem(TERMS_INTENT_KEY)
   } catch {
     // ignore
   }
+}
+
+export function notifyTermsAccepted(): void {
+  if (typeof window === "undefined") return
+  window.dispatchEvent(new Event(TERMS_ACCEPTED_EVENT))
 }
 
 /** POST /api/terms when the sign-in checkbox intent is present. Best-effort. */
@@ -56,6 +88,7 @@ export async function recordPendingTermsAcceptance(
     })
     if (response.ok) {
       clearTermsIntent()
+      notifyTermsAccepted()
       return true
     }
   } catch {
@@ -63,8 +96,6 @@ export async function recordPendingTermsAcceptance(
   }
   return false
 }
-
-export const TERMS_REACCEPT_EVENT = "africa-classifieds-terms-reaccept"
 
 export function requestTermsReaccept(): void {
   if (typeof window === "undefined") return

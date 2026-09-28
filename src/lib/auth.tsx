@@ -104,8 +104,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   useEffect(() => {
     if (!user) return
     void (async () => {
-      await claimBrowserSession()
+      // Record acceptance before claim so the re-accept dialog's GET does not race.
       await recordTermsAfterSignIn()
+      await claimBrowserSession()
     })()
   }, [user, claimBrowserSession, recordTermsAfterSignIn])
 

@@ -2,12 +2,12 @@ import type { Metadata } from "next"
 import Link from "next/link"
 
 import { LEGAL_EFFECTIVE_DATE, PRIVACY_VERSION, TERMS_VERSION } from "@/lib/legal"
-import { site, siteSupportMailto } from "@/lib/site"
+import { SUPPORT_CONTACT_PLACEHOLDER, site, siteSupportMailto } from "@/lib/site"
 
 export const metadata: Metadata = { title: "Privacy Policy" }
 
 export default function PrivacyPage() {
-  const contact = site.supportEmail ?? "samuel.kinyanjui.sk@gmail.com"
+  const contactHref = siteSupportMailto()
   return (
     <div className="mx-auto w-full max-w-2xl px-4 py-10 md:px-6">
       <div
@@ -38,6 +38,10 @@ export default function PrivacyPage() {
             IP address and user agent when we record Terms and Privacy acceptance, so we can show
             when and how you agreed
           </li>
+          <li>
+            Cookies and local storage on your device for session, drafts, saved items, and similar
+            preferences
+          </li>
         </ul>
       </section>
 
@@ -45,24 +49,29 @@ export default function PrivacyPage() {
         <h2 className="text-base font-medium text-neutral-950">Processors</h2>
         <p className="text-sm leading-6 text-neutral-700">
           We use <strong>Supabase</strong> (database, auth, and storage) and <strong>Vercel</strong>{" "}
-          (hosting and edge delivery) as processors to run the service. They process data on our
-          instructions to provide those functions.
+          (hosting and edge delivery) as processors to run the service. When email sending is
+          enabled, we also use <strong>Resend</strong> to deliver transactional email. They process
+          data on our instructions to provide those functions.
         </p>
       </section>
 
       <section className="mt-8 space-y-3">
         <h2 className="text-base font-medium text-neutral-950">Retention</h2>
         <p className="text-sm leading-6 text-neutral-700">
-          We keep account, listing, message, report, and acceptance records while your account is
-          active and for a reasonable period afterward for safety, dispute, and legal reasons, then
-          delete or anonymise them when they are no longer needed.
+          We keep account, listing, message, and report records while your account is active and for
+          a reasonable period afterward for safety, dispute, and legal reasons, then delete or
+          anonymise them when they are no longer needed. Terms and Privacy acceptance records are
+          deleted with your account.
         </p>
       </section>
 
       <section className="mt-8 space-y-3">
         <h2 className="text-base font-medium text-neutral-950">Deletion</h2>
         <p className="text-sm leading-6 text-neutral-700">
-          You can delete your account from <Link href="/account" className="underline underline-offset-2">Profile</Link>
+          You can delete your account from{" "}
+          <Link href="/account" className="underline underline-offset-2">
+            Profile
+          </Link>
           . That removes or de-identifies personal data we hold for the account, subject to records
           we must keep for legal or safety reasons (for example, recent moderation logs).
         </p>
@@ -71,11 +80,17 @@ export default function PrivacyPage() {
       <section className="mt-8 space-y-3">
         <h2 className="text-base font-medium text-neutral-950">Contact</h2>
         <p className="text-sm leading-6 text-neutral-700">
-          Privacy questions:{" "}
-          <a href={siteSupportMailto()} className="underline underline-offset-2">
-            {contact}
-          </a>
-          .
+          {contactHref && site.supportEmail ? (
+            <>
+              Privacy questions:{" "}
+              <a href={contactHref} className="underline underline-offset-2">
+                {site.supportEmail}
+              </a>
+              .
+            </>
+          ) : (
+            SUPPORT_CONTACT_PLACEHOLDER
+          )}
         </p>
       </section>
 

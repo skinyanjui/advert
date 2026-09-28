@@ -111,6 +111,7 @@ function AdForm({ existing }: { existing: Listing | null }) {
   const [description, setDescription] = useState(existing?.description ?? "")
   const [phone, setPhone] = useState(existing?.phone ?? "")
   const [sponsored, setSponsored] = useState(existing?.sponsored === true)
+  const sponsoredLocked = existing?.sponsoredLocked === true
   const [photos, setPhotos] = useState<string[]>(existing ? listingImages(existing) : [])
   const [errors, setErrors] = useState<FieldErrors>({})
   const [submitting, setSubmitting] = useState(false)
@@ -159,6 +160,7 @@ function AdForm({ existing }: { existing: Listing | null }) {
       setDescription(draft.description)
       setPhone(draft.phone)
       setPhotos(draft.photos)
+      setSponsored(draft.sponsored === true)
       setPlace(locatedPlace(null, draft.country, draft.city))
       if (auth.signedIn) toast.success("Restored your draft")
     }, 0)
@@ -232,6 +234,7 @@ function AdForm({ existing }: { existing: Listing | null }) {
         description,
         phone,
         photos,
+        sponsored,
       })
       if (result.ok && result.omittedPhotos && !omittedPhotosToastShown.current) {
         omittedPhotosToastShown.current = true
@@ -256,6 +259,7 @@ function AdForm({ existing }: { existing: Listing | null }) {
     description,
     phone,
     photos,
+    sponsored,
   ])
 
   const preview = useMemo<Listing>(() => {
@@ -285,7 +289,8 @@ function AdForm({ existing }: { existing: Listing | null }) {
       sellerName: existing?.sellerName ?? "Amina K.",
       sellerSince: existing?.sellerSince ?? sellerSinceFromUser(auth.user),
       phone: phone || callingCode || "+000",
-      sponsored: sponsored || undefined,
+      sponsored: sponsoredLocked || sponsored || undefined,
+      sponsoredLocked: sponsoredLocked || undefined,
       mine: true,
     }
   }, [
@@ -304,6 +309,7 @@ function AdForm({ existing }: { existing: Listing | null }) {
     phone,
     callingCode,
     sponsored,
+    sponsoredLocked,
     existing,
     auth.user,
   ])
@@ -486,7 +492,8 @@ function AdForm({ existing }: { existing: Listing | null }) {
       images: preview.images,
       condition: keptDetails.condition || subcategory.name,
       sold: existing?.sold,
-      sponsored: sponsored || undefined,
+      sponsored: sponsoredLocked || sponsored || undefined,
+      sponsoredLocked: sponsoredLocked || undefined,
     }
     if (auth.configured && !auth.signedIn) {
       const draftResult = writePostDraft({
@@ -503,6 +510,7 @@ function AdForm({ existing }: { existing: Listing | null }) {
         description,
         phone,
         photos,
+        sponsored,
       })
       if (draftResult.ok && draftResult.omittedPhotos && !omittedPhotosToastShown.current) {
         omittedPhotosToastShown.current = true
@@ -898,10 +906,21 @@ function AdForm({ existing }: { existing: Listing | null }) {
                 <input
                   type="checkbox"
                   className="mt-0.5 size-4 shrink-0 rounded border-neutral-300"
-                  checked={sponsored}
-                  onChange={(event) => setSponsored(event.target.checked)}
+                  checked={sponsoredLocked || sponsored}
+                  disabled={sponsoredLocked}
+                  onChange={(event) => {
+                    if (sponsoredLocked) return
+                    setSponsored(event.target.checked)
+                  }}
                 />
-                <span>Sponsored / paid promotion</span>
+                <span>
+                  Sponsored / paid promotion
+                  <span className="mt-0.5 block text-xs text-neutral-500">
+                    {sponsoredLocked
+                      ? "This ad was marked as sponsored by moderation and cannot be unmarked."
+                      : "Tick if you were paid to post this."}
+                  </span>
+                </span>
               </label>
               <p className="text-xs leading-5 text-neutral-500">
                 Buyers can call, open WhatsApp with this number, or leave an on-site note. Prefer a number you check often.

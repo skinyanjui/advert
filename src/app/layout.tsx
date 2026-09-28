@@ -4,6 +4,7 @@ import { Suspense } from "react"
 
 import { CategorySidebar } from "@/components/category-top-nav"
 import { HeaderFallback, SiteHeader } from "@/components/site-header"
+import { MobileLegalLinks } from "@/components/mobile-legal-links"
 import { TermsReacceptDialog } from "@/components/terms-reaccept-dialog"
 import { ThemeSync } from "@/components/theme-choices"
 import { SidebarInset, SidebarProvider } from "@/components/ui/sidebar"
@@ -50,6 +51,7 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
                 <CategorySidebar />
                 <SidebarInset className="min-w-0">
                   <div className="flex-1">{children}</div>
+                  <MobileLegalLinks />
                 </SidebarInset>
               </div>
               <Toaster />

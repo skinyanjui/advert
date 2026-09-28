@@ -18,6 +18,7 @@ export type PostDraft = {
   description: string
   phone: string
   photos: string[]
+  sponsored?: boolean
   savedAt: number
 }
 

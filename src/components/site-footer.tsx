@@ -8,6 +8,7 @@ const footerLinkClass =
 
 export function SiteFooter({ onNavigate }: { onNavigate?: () => void }) {
   const credits = navItem("credits")
+  const contactHref = siteSupportMailto()
   return (
     <footer className="shrink-0 border-t border-sidebar-border bg-sidebar px-3 py-2.5 md:pb-2.5 pb-[calc(env(safe-area-inset-bottom)+0.75rem)]">
       <div className="flex flex-wrap items-center justify-between gap-x-3 gap-y-1.5 text-xs text-neutral-500">
@@ -21,9 +22,11 @@ export function SiteFooter({ onNavigate }: { onNavigate?: () => void }) {
           <Link href="/privacy" onClick={onNavigate} className={footerLinkClass}>
             Privacy
           </Link>
-          <a href={siteSupportMailto()} onClick={onNavigate} className={footerLinkClass}>
-            Contact
-          </a>
+          {contactHref ? (
+            <a href={contactHref} onClick={onNavigate} className={footerLinkClass}>
+              Contact
+            </a>
+          ) : null}
           <Link href={credits.href} onClick={onNavigate} className={footerLinkClass}>
             {credits.label}
           </Link>

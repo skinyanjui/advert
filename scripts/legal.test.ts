@@ -11,7 +11,7 @@ import {
   TERMS_VERSION,
   isTermsAcceptanceContext,
 } from "../src/lib/legal"
-import { site, siteSupportMailto } from "../src/lib/site"
+import { site, siteSupportMailto, SUPPORT_CONTACT_PLACEHOLDER } from "../src/lib/site"
 
 test("legal versions and effective date are set", () => {
   assert.ok(TERMS_VERSION.length > 0)
@@ -38,9 +38,11 @@ test("terms outdated message matches the product copy", () => {
   assert.equal(TERMS_OUTDATED_MESSAGE, "Accept the updated Terms to continue.")
 })
 
-test("support contact is configured for Contact mailto", () => {
-  assert.equal(site.supportEmail, "samuel.kinyanjui.sk@gmail.com")
-  assert.equal(siteSupportMailto(), "mailto:samuel.kinyanjui.sk@gmail.com")
+test("support contact is unset until a public address is configured", () => {
+  assert.equal(site.supportEmail, undefined)
+  assert.equal(siteSupportMailto(), undefined)
+  assert.match(SUPPORT_CONTACT_PLACEHOLDER, /support address to be added/i)
+  assert.match(SUPPORT_CONTACT_PLACEHOLDER, /Report on any listing/i)
 })
 
 test("terms acceptance migration is append-only with RLS and no public grants", () => {
@@ -65,4 +67,22 @@ test("sponsored ads migration adds column, reason, and moderation log", () => {
   assert.match(sql, /undisclosed_promo/)
   assert.match(sql, /create table if not exists public\.moderation_actions/)
   assert.match(sql, /enable row level security/)
+})
+
+test("moderation audit follow-up drops FKs and adds sponsored_locked", () => {
+  const sql = readFileSync(
+    new URL("../database/migrations/20260928_moderation_audit_sponsored_lock.sql", import.meta.url),
+    "utf8",
+  )
+  assert.match(sql, /drop constraint if exists moderation_actions_listing_id_fkey/)
+  assert.match(sql, /drop constraint if exists moderation_actions_report_id_fkey/)
+  assert.match(sql, /add column if not exists sponsored_locked boolean not null default false/)
+})
+
+test("terms intent helpers use a one-hour localStorage TTL", () => {
+  const source = readFileSync(new URL("../src/lib/terms-client.ts", import.meta.url), "utf8")
+  assert.match(source, /localStorage/)
+  assert.doesNotMatch(source, /sessionStorage/)
+  assert.match(source, /60 \* 60 \* 1000/)
+  assert.match(source, /TERMS_ACCEPTED_EVENT/)
 })
