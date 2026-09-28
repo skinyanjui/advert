@@ -15,7 +15,12 @@ import {
 } from "@/components/ui/dialog"
 import { useAuth } from "@/lib/auth"
 import { LEGAL_EFFECTIVE_DATE, PRIVACY_VERSION, TERMS_VERSION } from "@/lib/legal"
-import { TERMS_REACCEPT_EVENT, rememberTermsIntent } from "@/lib/terms-client"
+import {
+  TERMS_ACCEPTED_EVENT,
+  TERMS_REACCEPT_EVENT,
+  hasTermsIntent,
+  rememberTermsIntent,
+} from "@/lib/terms-client"
 
 type TermsPayload = {
   current?: boolean
@@ -33,6 +38,8 @@ export function TermsReacceptDialog() {
       startTransition(() => setOpen(false))
       return
     }
+    // Skip while signup intent is still pending — acceptance POST runs right after sign-in.
+    if (hasTermsIntent()) return
     try {
       const response = await fetch("/api/terms", { method: "GET" })
       if (!response.ok) return
@@ -58,9 +65,16 @@ export function TermsReacceptDialog() {
     function onReaccept() {
       startTransition(() => setOpen(true))
     }
+    function onAccepted() {
+      void refresh()
+    }
     window.addEventListener(TERMS_REACCEPT_EVENT, onReaccept)
-    return () => window.removeEventListener(TERMS_REACCEPT_EVENT, onReaccept)
-  }, [])
+    window.addEventListener(TERMS_ACCEPTED_EVENT, onAccepted)
+    return () => {
+      window.removeEventListener(TERMS_REACCEPT_EVENT, onReaccept)
+      window.removeEventListener(TERMS_ACCEPTED_EVENT, onAccepted)
+    }
+  }, [refresh])
 
   async function accept() {
     setBusy(true)

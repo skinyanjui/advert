@@ -15,11 +15,11 @@ export async function POST(request: Request) {
   // Cookie sessions still own edits, saves, and claim migration for older guest posts.
   const authError = createListingAuthError(owner.kind, authConfigured())
   if (authError) return fail(authError, 401)
-  if (owner.kind === "auth") {
-    const termsBlock = await requireCurrentTerms(owner.id)
-    if (termsBlock) return termsBlock
-  }
   try {
+    if (owner.kind === "auth") {
+      const termsBlock = await requireCurrentTerms(owner.id)
+      if (termsBlock) return termsBlock
+    }
     const body: unknown = await request.json()
     const result = await createListing(owner.id, body)
     if (!result.ok) return fail(result.reason)

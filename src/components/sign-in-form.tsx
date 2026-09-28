@@ -19,7 +19,7 @@ import {
   passwordStrengthLabel,
   passwordsMatchError,
 } from "@/lib/password"
-import { hasTermsIntent, rememberTermsIntent } from "@/lib/terms-client"
+import { clearTermsIntent, hasTermsIntent, rememberTermsIntent } from "@/lib/terms-client"
 
 type Channel = "email" | "phone"
 type Method = "link" | "password"
@@ -45,10 +45,15 @@ export function SignInForm({ nextHref }: { nextHref?: string } = {}) {
   const [sent, setSent] = useState(false)
   const [busy, setBusy] = useState(false)
   const [cooldown, setCooldown] = useState(0)
-  const [agreedToTerms, setAgreedToTerms] = useState(() =>
-    typeof window === "undefined" ? false : hasTermsIntent(),
-  )
+  const [agreedToTerms, setAgreedToTerms] = useState(false)
   const errorParam = searchParams.get("error")
+
+  useEffect(() => {
+    // Read after mount to avoid SSR/client hydration mismatch (localStorage).
+    /* eslint-disable react-hooks/set-state-in-effect -- intentional client-only restore */
+    setAgreedToTerms(hasTermsIntent())
+    /* eslint-enable react-hooks/set-state-in-effect */
+  }, [])
 
   useEffect(() => {
     if (errorParam === "link") {
@@ -93,6 +98,7 @@ export function SignInForm({ nextHref }: { nextHref?: string } = {}) {
   function onAgreeChange(checked: boolean) {
     setAgreedToTerms(checked)
     if (checked) rememberTermsIntent()
+    else clearTermsIntent()
   }
 
   async function sendEmailLink() {
@@ -207,10 +213,11 @@ export function SignInForm({ nextHref }: { nextHref?: string } = {}) {
 
   const strength = password ? passwordStrength(password) : null
   const showLinkFlow = method === "link" || channel === "phone"
-  const needsTermsForAction =
-    (channel === "email" && method === "link" && !sent) ||
-    (channel === "email" && method === "password" && passwordMode === "sign-up") ||
-    auth.googleEnabled
+  const showTermsCheckbox =
+    auth.googleEnabled ||
+    (channel === "email" && method === "link") ||
+    (channel === "email" && method === "password" && passwordMode === "sign-up")
+  const needsTermsForAction = showTermsCheckbox
 
   return (
     <div className="mx-auto w-full max-w-md space-y-4">
@@ -221,24 +228,26 @@ export function SignInForm({ nextHref }: { nextHref?: string } = {}) {
         </p>
       </header>
 
-      <label className="flex items-start gap-2 rounded-xl border border-neutral-200 bg-white px-3 py-2.5 text-sm text-neutral-700">
-        <input
-          type="checkbox"
-          className="mt-0.5 size-4 shrink-0 rounded border-neutral-300"
-          checked={agreedToTerms}
-          onChange={(event) => onAgreeChange(event.target.checked)}
-        />
-        <span>
-          I agree to the{" "}
-          <Link href="/terms" className="underline underline-offset-2">
-            Terms
-          </Link>{" "}
-          and{" "}
-          <Link href="/privacy" className="underline underline-offset-2">
-            Privacy Policy
-          </Link>
-        </span>
-      </label>
+      {showTermsCheckbox ? (
+        <label className="flex items-start gap-2 rounded-xl border border-neutral-200 bg-white px-3 py-2.5 text-sm text-neutral-700">
+          <input
+            type="checkbox"
+            className="mt-0.5 size-4 shrink-0 rounded border-neutral-300"
+            checked={agreedToTerms}
+            onChange={(event) => onAgreeChange(event.target.checked)}
+          />
+          <span>
+            I agree to the{" "}
+            <Link href="/terms" className="underline underline-offset-2">
+              Terms
+            </Link>{" "}
+            and{" "}
+            <Link href="/privacy" className="underline underline-offset-2">
+              Privacy Policy
+            </Link>
+          </span>
+        </label>
+      ) : null}
 
       {auth.googleEnabled ? (
         <Button

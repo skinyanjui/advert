@@ -60,7 +60,7 @@ export async function recordTermsAcceptance(
     })
     if (error) {
       if (isMissingRelationError(error)) return { ok: true, alreadyCurrent: true }
-      return { ok: false, reason: error.message }
+      return { ok: false, reason: "Could not record Terms acceptance." }
     }
     return { ok: true }
   } catch (error) {

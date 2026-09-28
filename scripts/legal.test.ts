@@ -66,3 +66,21 @@ test("sponsored ads migration adds column, reason, and moderation log", () => {
   assert.match(sql, /create table if not exists public\.moderation_actions/)
   assert.match(sql, /enable row level security/)
 })
+
+test("moderation audit follow-up drops FKs and adds sponsored_locked", () => {
+  const sql = readFileSync(
+    new URL("../database/migrations/20260928_moderation_audit_sponsored_lock.sql", import.meta.url),
+    "utf8",
+  )
+  assert.match(sql, /drop constraint if exists moderation_actions_listing_id_fkey/)
+  assert.match(sql, /drop constraint if exists moderation_actions_report_id_fkey/)
+  assert.match(sql, /add column if not exists sponsored_locked boolean not null default false/)
+})
+
+test("terms intent helpers use a one-hour localStorage TTL", () => {
+  const source = readFileSync(new URL("../src/lib/terms-client.ts", import.meta.url), "utf8")
+  assert.match(source, /localStorage/)
+  assert.doesNotMatch(source, /sessionStorage/)
+  assert.match(source, /60 \* 60 \* 1000/)
+  assert.match(source, /TERMS_ACCEPTED_EVENT/)
+})

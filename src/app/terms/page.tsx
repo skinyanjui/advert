@@ -44,8 +44,9 @@ export default function TermsPage() {
           To the fullest extent allowed by law, {site.name} is not liable for disputes between
           buyers and sellers, failed payments, loss of goods, or reliance on listing content. Where
           liability cannot be excluded, it is limited to the greater of (a) fees you paid us for the
-          service in the three months before the claim, or (b) USD 50. Nothing in this draft removes
-          rights your local consumer law may give you that cannot be waived.
+          service in the three months before the claim, or (b){" "}
+          <strong>[LAWYER TO CONFIRM]</strong> USD 50. Nothing in this draft removes rights your local
+          consumer law may give you that cannot be waived.
         </p>
       </section>
 
@@ -98,7 +99,8 @@ export default function TermsPage() {
         <h2 className="text-base font-medium text-neutral-950">7. Disputes</h2>
         <p className="text-sm leading-6 text-neutral-700">
           If you have a problem with another user or with the service, contact support first. If we
-          cannot resolve it, the next step is mediation before court proceedings, unless your local
+          cannot resolve it, the next step is{" "}
+          <strong>[LAWYER TO CONFIRM]</strong> mediation before court proceedings, unless your local
           consumer law says otherwise. This draft does <strong>not</strong> include an arbitration
           clause or a class-action waiver — a lawyer will decide those points.
         </p>

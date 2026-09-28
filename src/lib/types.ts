@@ -66,6 +66,8 @@ export type Listing = {
   featured?: boolean
   /** Seller disclosed a sponsored / paid promotion. */
   sponsored?: boolean
+  /** Admin locked sponsored disclosure; seller cannot untick. */
+  sponsoredLocked?: boolean
   badge?: ListingBadge
   meta?: string
   description: string
