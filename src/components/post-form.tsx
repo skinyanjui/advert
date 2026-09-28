@@ -4,7 +4,7 @@ import { Check, ChevronLeft, ChevronRight, ImagePlus } from "lucide-react"
 import Link from "next/link"
 import type { User } from "@supabase/supabase-js"
 import { useRouter, useSearchParams } from "next/navigation"
-import { useLayoutEffect, useMemo, useRef, useState, type DragEvent, type ReactNode } from "react"
+import { useEffect, useLayoutEffect, useMemo, useRef, useState, type DragEvent, type ReactNode } from "react"
 import { toast } from "sonner"
 
 import { categoryIcons } from "@/lib/categories"
@@ -33,6 +33,7 @@ import { listingFieldErrors, type FieldErrors as RuleErrors } from "@/lib/listin
 import { useAuth } from "@/lib/auth"
 import { useMarketplace } from "@/lib/marketplace"
 import { listingImages, maxListingPhotos, photoFileError, withCoverImage } from "@/lib/photos"
+import { siteTitle } from "@/lib/site"
 import {
   categoryPlan,
   findSubcategory,
@@ -364,6 +365,10 @@ function AdForm({ existing }: { existing: Listing | null }) {
     }
     router.push(`/listings/${listing.id}`)
   }
+
+  useEffect(() => {
+    document.title = siteTitle(existing ? "Edit your ad" : "Post an ad")
+  }, [existing])
 
   const placeLine = [city.trim(), countryName(country)].filter(Boolean).join(", ")
   const choiceLine = [category ? categoryName(category) : null, subcategory?.name].filter(Boolean).join(" · ")

@@ -142,11 +142,21 @@ export function SiteHeader() {
 }
 
 function NotificationsMenu() {
-  const { messages, ready, reloadBoard } = useMarketplace()
+  const { messages, ready, refreshBoard } = useMarketplace()
   const [view, setView] = useState<"all" | "unread">("all")
+  const [refreshing, setRefreshing] = useState(false)
   const unread = unreadMessageCount(messages)
   const notifications = recentMessageNotifications(messages, 8)
   const visible = view === "unread" ? notifications.filter((item) => !item.read) : notifications
+
+  async function onRefresh() {
+    setRefreshing(true)
+    try {
+      await refreshBoard({ force: true })
+    } finally {
+      setRefreshing(false)
+    }
+  }
 
   return (
     <HeaderMenu
@@ -154,7 +164,7 @@ function NotificationsMenu() {
       summaryClassName="relative size-9 px-0"
       panelClassName="w-[min(23rem,calc(100vw-1rem))] !p-0"
       panelRole="region"
-      onOpen={() => { if (ready) void reloadBoard() }}
+      onOpen={() => { if (ready) void refreshBoard() }}
       summary={<><Bell /><NavBadge count={unread} /></>}
     >
       <div className="flex items-center justify-between gap-3 border-b border-neutral-200 px-4 py-3">
@@ -170,11 +180,11 @@ function NotificationsMenu() {
           size="icon"
           aria-label="Refresh notifications"
           title="Refresh notifications"
-          disabled={!ready}
-          onClick={() => void reloadBoard()}
+          disabled={!ready || refreshing}
+          onClick={() => void onRefresh()}
           className="size-9 shrink-0 rounded-full"
         >
-          <RefreshCw className={cn("size-4", !ready && "animate-spin")} aria-hidden="true" />
+          <RefreshCw className={cn("size-4", refreshing && "animate-spin")} aria-hidden="true" />
         </Button>
       </div>
       <div className="flex gap-1 border-b border-neutral-200 px-3 py-2" aria-label="Filter notifications">
@@ -246,7 +256,7 @@ function NotificationsMenu() {
       </div>
       <div className="border-t border-neutral-200 p-2">
         <Button asChild variant="ghost" className="h-9 w-full rounded-full text-xs font-medium text-neutral-700">
-          <Link href="/messages">Open inbox</Link>
+          <Link href="/messages">Open messages</Link>
         </Button>
       </div>
     </HeaderMenu>

@@ -1,6 +1,13 @@
 "use client"
 
-import { createContext, useContext, useMemo, useSyncExternalStore } from "react"
+import {
+  createContext,
+  useContext,
+  useEffect,
+  useMemo,
+  useSyncExternalStore,
+  type ReactNode,
+} from "react"
 import { toast } from "sonner"
 
 import { parseBoardState, type BoardState } from "@/lib/board-payload"
@@ -10,6 +17,8 @@ import type { Listing } from "@/lib/types"
 
 const legacyKey = "africa-classifieds-v1"
 const migratedKey = "africa-classifieds-migrated"
+/** Minimum gap between automatic background board refreshes. */
+const softRefreshThrottleMs = 30_000
 
 type Snapshot = BoardState & { ready: boolean; admin: boolean }
 
@@ -18,6 +27,8 @@ const serverSnapshot: Snapshot = { ...emptyState, ready: false, admin: false }
 
 let memory: Snapshot = { ...emptyState, ready: false, admin: false }
 let inflight: Promise<void> | null = null
+let softInflight: Promise<void> | null = null
+let lastSoftRefreshAt = 0
 
 const listeners = new Set<() => void>()
 
@@ -43,6 +54,15 @@ function requestHeaders(): HeadersInit {
   return { "content-type": "application/json" }
 }
 
+function adminFromPayload(payload: unknown): boolean {
+  return (
+    typeof payload === "object" &&
+    payload !== null &&
+    "admin" in payload &&
+    (payload as { admin?: unknown }).admin === true
+  )
+}
+
 function ensureLoaded(): Promise<void> {
   if (memory.ready) return Promise.resolve()
   if (!inflight) inflight = loadBoard()
@@ -61,12 +81,8 @@ async function loadBoard() {
     const refreshed = await fetch("/api/board", { headers: requestHeaders(), cache: "no-store" })
     if (!refreshed.ok) throw new Error("board")
     const payload: unknown = await refreshed.json()
-    const admin =
-      typeof payload === "object" &&
-      payload !== null &&
-      "admin" in payload &&
-      (payload as { admin?: unknown }).admin === true
-    memory = { ...parseBoardState(payload), ready: true, admin: Boolean(admin) }
+    memory = { ...parseBoardState(payload), ready: true, admin: adminFromPayload(payload) }
+    lastSoftRefreshAt = Date.now()
   } catch {
     memory = { ...emptyState, ready: true, admin: false }
     toast.error("The board database did not respond. Sample ads are still here.")
@@ -74,6 +90,40 @@ async function loadBoard() {
   emit()
 }
 
+/**
+ * Background refresh: one /api/board fetch, keeps `ready` true, skips legacy migration.
+ * Dedupes in-flight work and throttles automatic calls (~30s) unless `force` is set.
+ */
+export async function refreshBoard(options?: { force?: boolean }): Promise<void> {
+  if (!memory.ready) {
+    await ensureLoaded()
+    return
+  }
+  const force = options?.force === true
+  const now = Date.now()
+  if (!force && now - lastSoftRefreshAt < softRefreshThrottleMs) {
+    return softInflight ?? Promise.resolve()
+  }
+  if (softInflight) return softInflight
+
+  lastSoftRefreshAt = now
+  softInflight = (async () => {
+    try {
+      const response = await fetch("/api/board", { headers: requestHeaders(), cache: "no-store" })
+      if (!response.ok) throw new Error("board")
+      const payload: unknown = await response.json()
+      memory = { ...parseBoardState(payload), ready: true, admin: adminFromPayload(payload) }
+      emit()
+    } catch {
+      // Keep existing data on background failure; hard reload still surfaces errors.
+    } finally {
+      softInflight = null
+    }
+  })()
+  return softInflight
+}
+
+/** Full reload: flips not-ready (skeletons). Prefer `refreshBoard` for focus/visibility. */
 export async function reloadBoard(): Promise<void> {
   memory = { ...memory, ready: false }
   emit()
@@ -315,14 +365,39 @@ type MarketplaceContextValue = {
   renewListing: (id: string) => Promise<StoreResult>
   sendMessage: (listingId: string, body: string, conversationId?: string) => Promise<StoreResult>
   markThreadRead: (conversationId: string) => void
+  /** Soft refresh — keeps UI ready. Use for focus / notification panel. */
+  refreshBoard: (options?: { force?: boolean }) => Promise<void>
+  /** Hard reload — sets not-ready. Use after sign-in / claim. */
   reloadBoard: () => Promise<void>
 }
 
 const MarketplaceContext = createContext<MarketplaceContextValue | null>(null)
 
-export function MarketplaceProvider({ children }: { children: React.ReactNode }) {
+export function MarketplaceProvider({ children }: { children: ReactNode }) {
   const snapshot = useSyncExternalStore(subscribe, readSnapshot, getServerSnapshot)
   const listings = useMemo(() => [...snapshot.posted, ...seedListings], [snapshot])
+
+  useEffect(() => {
+    function refreshIfVisible() {
+      if (document.visibilityState !== "visible") return
+      void refreshBoard()
+    }
+
+    function onVisibility() {
+      refreshIfVisible()
+    }
+
+    function onFocus() {
+      refreshIfVisible()
+    }
+
+    document.addEventListener("visibilitychange", onVisibility)
+    window.addEventListener("focus", onFocus)
+    return () => {
+      document.removeEventListener("visibilitychange", onVisibility)
+      window.removeEventListener("focus", onFocus)
+    }
+  }, [])
 
   const value = useMemo<MarketplaceContextValue>(
     () => ({
@@ -340,6 +415,7 @@ export function MarketplaceProvider({ children }: { children: React.ReactNode })
       renewListing,
       sendMessage,
       markThreadRead,
+      refreshBoard,
       reloadBoard,
     }),
     [listings, snapshot],

@@ -1,6 +1,6 @@
 "use client"
 
-import { useEffect, useMemo } from "react"
+import { useMemo } from "react"
 
 import { isListingNeedingAttention } from "@/lib/expiry"
 import { useMarketplace } from "@/lib/marketplace"
@@ -12,29 +12,10 @@ export type NavCounts = Partial<Record<NavItemId, number>>
 /**
  * Single source for nav badge counts.
  * Messages = unread incoming; My ads = expired or expiring within 3 days.
- * Refreshes marketplace data on window focus / visibility so badges stay current.
+ * Board refresh on focus/visibility lives in MarketplaceProvider (soft refresh).
  */
 export function useNavCounts(): NavCounts {
-  const { messages, listings, ready, reloadBoard } = useMarketplace()
-
-  useEffect(() => {
-    if (!ready) return
-
-    function refresh() {
-      void reloadBoard()
-    }
-
-    function onVisibility() {
-      if (document.visibilityState === "visible") refresh()
-    }
-
-    window.addEventListener("focus", refresh)
-    document.addEventListener("visibilitychange", onVisibility)
-    return () => {
-      window.removeEventListener("focus", refresh)
-      document.removeEventListener("visibilitychange", onVisibility)
-    }
-  }, [ready, reloadBoard])
+  const { messages, listings } = useMarketplace()
 
   return useMemo(() => {
     const unread = unreadMessageCount(messages)
