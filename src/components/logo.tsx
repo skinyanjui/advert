@@ -1,12 +1,13 @@
 import Link from "next/link"
 
+import { site, siteHomeLabel } from "@/lib/site"
 import { cn } from "@/lib/utils"
 
 export function Logo({ className, iconOnly = false }: { className?: string; iconOnly?: boolean }) {
   return (
     <Link
       href="/"
-      aria-label={iconOnly ? "africa classifieds home" : undefined}
+      aria-label={iconOnly ? siteHomeLabel() : undefined}
       className={cn("flex h-14 shrink-0 items-center gap-2 self-stretch px-2 text-neutral-950 md:h-auto md:px-3", className)}
     >
       <svg
@@ -21,7 +22,7 @@ export function Logo({ className, iconOnly = false }: { className?: string; icon
       </svg>
       {iconOnly ? null : (
         <span className="min-w-0 truncate text-[17px] leading-none font-semibold tracking-tight whitespace-nowrap">
-          africa classifieds
+          {site.name}
         </span>
       )}
     </Link>

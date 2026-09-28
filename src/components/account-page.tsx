@@ -42,7 +42,7 @@ export function AccountPage() {
       {!auth.signedIn ? <KeepAdsPrompt className="mt-4 rounded-2xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-950" /> : null}
 
       <section className="mt-6 rounded-2xl border border-neutral-200 bg-white p-4">
-        <p className="text-sm font-medium">Account</p>
+        <p className="text-sm font-medium">Profile</p>
         {auth.signedIn ? (
           <div className="mt-3 flex flex-wrap items-center gap-2">
             <p className="min-w-0 flex-1 truncate text-sm text-neutral-600">{auth.email}</p>

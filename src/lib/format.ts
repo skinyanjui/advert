@@ -1,4 +1,5 @@
 import { countryName } from "@/lib/countries"
+import { site } from "@/lib/site"
 import type { Listing } from "@/lib/types"
 
 export function formatMoney(amount: number, currency = "USD"): string {
@@ -53,7 +54,7 @@ export function formatCount(count: number): string {
 
 export function whatsappHref(phone: string, title: string): string {
   const digits = phone.replace(/[^\d]/g, "")
-  const text = encodeURIComponent(`Hello, I saw your listing "${title}" on africa classifieds.`)
+  const text = encodeURIComponent(`Hello, I saw your listing "${title}" on ${site.name}.`)
   return `https://wa.me/${digits}?text=${text}`
 }
 

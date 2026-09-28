@@ -1,55 +1,15 @@
 "use client"
 
 import {
-  Baby,
-  Beef,
-  Briefcase,
-  Car,
-  Cog,
-  Droplets,
-  GraduationCap,
-  Hammer,
-  HeartPulse,
-  Home,
-  LandPlot,
-  LayoutGrid,
-  Leaf,
-  PawPrint,
-  Shirt,
-  Smartphone,
-  Sofa,
-  Store,
-  Users,
-  Wrench,
   type LucideIcon,
 } from "lucide-react"
 import Link from "next/link"
 
+import { categoryIcons } from "@/lib/categories"
 import { categories, categoryName, type CategoryId } from "@/lib/types"
 import { cn } from "@/lib/utils"
 
-export const categoryIcons: Record<CategoryId | "all", LucideIcon> = {
-  all: LayoutGrid,
-  vehicles: Car,
-  parts: Cog,
-  property: Home,
-  plots: LandPlot,
-  electronics: Smartphone,
-  home: Sofa,
-  building: Hammer,
-  water: Droplets,
-  jobs: Briefcase,
-  services: Wrench,
-  business: Store,
-  agriculture: Leaf,
-  livestock: Beef,
-  pets: PawPrint,
-  babies: Baby,
-  fashion: Shirt,
-  health: HeartPulse,
-  education: GraduationCap,
-  community: Users,
-}
+export { categoryIcons } from "@/lib/categories"
 
 export type CategoryTypeChoice = {
   id: string

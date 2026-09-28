@@ -1,16 +1,14 @@
 "use client"
 
-import { Bell, ChevronDown, Inbox, MapPin, MessageCircle, Plus, RefreshCw, Search, UserRound } from "lucide-react"
+import { Bell, ChevronDown, Inbox, MapPin, MessageCircle, RefreshCw, Search } from "lucide-react"
 import Link from "next/link"
 import { usePathname, useRouter, useSearchParams } from "next/navigation"
 import { useEffect, useRef, useState, type ReactNode } from "react"
 
-import { postAdHref } from "@/lib/active-place"
 import { Logo } from "@/components/logo"
 import { CategoryTopNav } from "@/components/category-top-nav"
-import { PostLink } from "@/components/post-link"
+import { PostLink, usePostAdHref } from "@/components/post-link"
 import { ThemeChoices } from "@/components/theme-choices"
-import { useRememberedPlace } from "@/lib/use-remembered-place"
 import { Button, buttonVariants } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { useAuth } from "@/lib/auth"
@@ -19,6 +17,7 @@ import { countries, countryName, fold, moreCountries, primaryCountries } from "@
 import { clearBrowsingEverywhere, markBrowsingEverywhere, useHomePlace, writeHomePlace } from "@/lib/home-place"
 import { useMarketplace } from "@/lib/marketplace"
 import { recentMessageNotifications, unreadMessageCount } from "@/lib/messages"
+import { navItem } from "@/lib/nav"
 import { categoryFromPath, useListingQuery, type ListingQuery } from "@/lib/use-listing-query"
 import { cn } from "@/lib/utils"
 
@@ -33,8 +32,15 @@ export function SiteHeader() {
   const unreadMessages = unreadMessageCount(messages)
   const sellerUnread = unreadMessageCount(messages.filter((item) => item.viewerIsSeller))
   const locationLabel = query.country ? countryName(query.country) : "All Africa"
-  const remembered = useRememberedPlace()
-  const postHref = postAdHref(query.country ? { country: query.country, city: query.city } : remembered)
+  const postNav = navItem("post")
+  const messagesNav = navItem("messages")
+  const savedNav = navItem("saved")
+  const myAdsNav = navItem("my-ads")
+  const profileNav = navItem("profile")
+  const PostIcon = postNav.icon
+  const MessagesIcon = messagesNav.icon
+  const ProfileIcon = profileNav.icon
+  const postHref = usePostAdHref()
   const profileLabel = auth.signedIn ? auth.email ?? "Signed in" : "Guest on this browser"
   const profileDetail = auth.signedIn ? "Ads stay with your account" : "Sign in to keep ads across devices"
   return (
@@ -55,29 +61,29 @@ export function SiteHeader() {
             <nav aria-label="Navigation" className="flex w-full items-center justify-between gap-1 md:justify-end md:gap-2 lg:gap-3">
               <CountryMenu label={locationLabel} query={query} />
               <Button asChild className="h-10 rounded-full bg-neutral-950 px-3 text-white hover:bg-neutral-800 md:px-3 xl:px-4">
-                <Link href={postHref} aria-label="Post ad">
-                  <Plus />
-                  <span className="hidden xl:inline">Post ad</span>
+                <Link href={postHref} aria-label={postNav.shortLabel}>
+                  <PostIcon />
+                  <span className="hidden xl:inline">{postNav.shortLabel}</span>
                 </Link>
               </Button>
               <Button asChild variant="outline" size="icon-lg" className="relative rounded-full">
                 <Link
-                  href="/messages"
-                  aria-label={unreadMessages > 0 ? `Messages, ${unreadMessages} unread` : "Messages"}
-                  aria-current={pathname === "/messages" ? "page" : undefined}
+                  href={messagesNav.href}
+                  aria-label={unreadMessages > 0 ? `${messagesNav.label}, ${unreadMessages} unread` : messagesNav.label}
+                  aria-current={pathname === messagesNav.href ? "page" : undefined}
                 >
-                  <MessageCircle />
+                  <MessagesIcon />
                   {unreadMessages > 0 ? <UnreadDot /> : null}
                 </Link>
               </Button>
               <NotificationsMenu />
               <HeaderMenu
-                label="Profile"
+                label={profileNav.label}
                 summaryClassName="relative size-9 px-0"
                 panelClassName="w-56"
                 summary={
                   <>
-                    <UserRound />
+                    <ProfileIcon />
                     {unreadMessages > 0 ? <UnreadDot /> : null}
                   </>
                 }
@@ -89,15 +95,17 @@ export function SiteHeader() {
                 </div>
                 <div className="mx-1 my-1 h-px bg-neutral-200" />
                 {auth.signedIn ? null : <MenuLink href="/sign-in">Sign in</MenuLink>}
-                <MenuLink href="/account">Profile</MenuLink>
-                <MenuLink href="/messages">
-                  Messages{unreadMessages > 0 ? ` (${unreadMessages})` : ""}
+                <MenuLink href={profileNav.href}>{profileNav.label}</MenuLink>
+                <MenuLink href={messagesNav.href}>
+                  {messagesNav.label}{unreadMessages > 0 ? ` (${unreadMessages})` : ""}
                 </MenuLink>
-                <MenuLink href="/saved">Saved ads ({savedIds.length})</MenuLink>
-                <MenuLink href="/my-ads">
-                  My ads{sellerUnread > 0 ? ` (${sellerUnread} unread)` : ""}
+                <MenuLink href={savedNav.href}>
+                  {savedNav.label} ({savedIds.length})
                 </MenuLink>
-                <MenuLink href={postHref}>Post an ad</MenuLink>
+                <MenuLink href={myAdsNav.href}>
+                  {myAdsNav.label}{sellerUnread > 0 ? ` (${sellerUnread} unread)` : ""}
+                </MenuLink>
+                <MenuLink href={postHref}>{postNav.label}</MenuLink>
                 {auth.signedIn ? (
                   <button
                     type="button"
@@ -626,6 +634,11 @@ function filterCountries(query: string) {
 }
 
 export function HeaderFallback() {
+  const post = navItem("post")
+  const messages = navItem("messages")
+  const profile = navItem("profile")
+  const MessagesIcon = messages.icon
+  const ProfileIcon = profile.icon
   return (
     <header className="sticky top-0 z-40 border-b border-neutral-200/80 bg-white">
       <div className="mx-auto flex h-16 max-w-[1720px] items-center gap-1 px-2 md:h-[72px] md:gap-3 md:px-5 xl:gap-6 xl:px-8">
@@ -634,17 +647,17 @@ export function HeaderFallback() {
         <div className="min-w-0 flex-1 px-2 md:mx-auto md:max-w-[680px] md:px-0">
           <div className="h-11 rounded-full bg-neutral-100" />
         </div>
-        <nav aria-label="Account" className="fixed inset-x-3 bottom-[calc(env(safe-area-inset-bottom)+0.75rem)] z-50 mx-auto flex max-w-lg items-center justify-around rounded-3xl border border-neutral-200 bg-white p-2 shadow-lg md:static md:ml-auto md:max-w-none md:gap-2 md:rounded-none md:border-0 md:bg-transparent md:p-0 md:shadow-none lg:gap-3">
-          <PostLink className={cn(buttonVariants(), "h-10 rounded-full bg-neutral-950 px-3 text-white")} ariaLabel="Post ad">
-            Post ad
+        <nav aria-label={profile.label} className="fixed inset-x-3 bottom-[calc(env(safe-area-inset-bottom)+0.75rem)] z-50 mx-auto flex max-w-lg items-center justify-around rounded-3xl border border-neutral-200 bg-white p-2 shadow-lg md:static md:ml-auto md:max-w-none md:gap-2 md:rounded-none md:border-0 md:bg-transparent md:p-0 md:shadow-none lg:gap-3">
+          <PostLink className={cn(buttonVariants(), "h-10 rounded-full bg-neutral-950 px-3 text-white")} ariaLabel={post.shortLabel}>
+            {post.shortLabel}
           </PostLink>
-          <Link href="/messages" className={cn(buttonVariants({ variant: "outline", size: "icon-lg" }), "rounded-full")}>
-            <MessageCircle />
-            <span className="sr-only">Messages</span>
+          <Link href={messages.href} className={cn(buttonVariants({ variant: "outline", size: "icon-lg" }), "rounded-full")}>
+            <MessagesIcon />
+            <span className="sr-only">{messages.label}</span>
           </Link>
-          <Link href="/account" className={cn(buttonVariants({ variant: "outline", size: "icon-lg" }), "rounded-full")}>
-            <UserRound />
-            <span className="sr-only">Profile</span>
+          <Link href={profile.href} className={cn(buttonVariants({ variant: "outline", size: "icon-lg" }), "rounded-full")}>
+            <ProfileIcon />
+            <span className="sr-only">{profile.label}</span>
           </Link>
         </nav>
       </div>
