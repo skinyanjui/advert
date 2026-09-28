@@ -41,14 +41,14 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
         <ThemeSync />
         <MarketplaceProvider>
           <AuthProvider>
-            <SidebarProvider defaultOpen={false} className="min-h-svh flex-1">
+            <SidebarProvider defaultOpen className="min-h-svh flex-1">
+              <CategorySidebar />
               <SidebarInset>
                 <Suspense fallback={<HeaderFallback />}>
                   <SiteHeader />
                 </Suspense>
                 <div className="flex-1">{children}</div>
               </SidebarInset>
-              <CategorySidebar />
               <Toaster />
             </SidebarProvider>
           </AuthProvider>

@@ -11,6 +11,7 @@ import {
   SidebarContent,
   SidebarFooter,
   SidebarHeader,
+  SidebarRail,
   SidebarTrigger,
   useSidebar,
 } from "@/components/ui/sidebar"
@@ -23,7 +24,7 @@ import { categoryFromPath, type ListingQuery } from "@/lib/use-listing-query"
 
 export function CategorySidebar() {
   return (
-    <Sidebar side="right" collapsible="offcanvas" className="z-40 border-l border-sidebar-border">
+    <Sidebar side="left" collapsible="offcanvas" className="z-40 border-r border-sidebar-border">
       <SidebarHeader className="border-b border-sidebar-border px-4 py-3">
         <p className="text-sm font-semibold text-sidebar-foreground">Categories</p>
       </SidebarHeader>
@@ -35,6 +36,7 @@ export function CategorySidebar() {
       <SidebarFooter className="p-0">
         <CategorySidebarFooter />
       </SidebarFooter>
+      <SidebarRail />
     </Sidebar>
   )
 }
@@ -50,11 +52,12 @@ function CategorySidebarFooter() {
   )
 }
 
+/** Mobile-only: desktop shows the categories sidebar persistently. */
 export function CategoryTopNav() {
   return (
     <SidebarTrigger
       aria-label="Browse categories"
-      className="size-9 shrink-0 rounded-full"
+      className="size-9 shrink-0 rounded-full md:hidden"
       size="icon-lg"
     >
       <Menu className="size-5" />
