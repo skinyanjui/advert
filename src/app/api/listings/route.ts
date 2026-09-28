@@ -7,7 +7,9 @@ export const runtime = "nodejs"
 
 export async function POST(request: Request) {
   const owner = await resolveMutationOwner(request)
-  if (!owner) return fail("A valid browser session is required.", 403)
+  if (!owner || owner.kind !== "auth") {
+    return fail("Sign in to post an ad.", 401)
+  }
   try {
     const body: unknown = await request.json()
     const result = await createListing(owner.id, body)

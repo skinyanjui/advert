@@ -1,6 +1,6 @@
 import { NextResponse, type NextRequest } from "next/server"
 
-import { safeAuthNext } from "@/lib/auth-redirect"
+import { applySafeAuthNext, safeAuthNext } from "@/lib/auth-redirect"
 import { createServerSupabase } from "@/lib/supabase/server"
 
 export const dynamic = "force-dynamic"
@@ -24,7 +24,8 @@ export async function GET(request: NextRequest) {
     const supabase = await createServerSupabase()
     const { error } = await supabase.auth.exchangeCodeForSession(code)
     if (!error) {
-      const success = new URL(nextPath, origin)
+      const success = new URL(origin)
+      applySafeAuthNext(success, nextPath)
       success.searchParams.set("claimed", "1")
       return NextResponse.redirect(success)
     }

@@ -7,7 +7,9 @@ export const runtime = "nodejs"
 
 export async function POST(request: Request) {
   const owner = await resolveMutationOwner(request)
-  if (!owner) return fail("A valid browser session is required.", 403)
+  if (!owner || owner.kind !== "auth") {
+    return fail("Sign in to send a message.", 401)
+  }
   try {
     const body = (await request.json()) as {
       listingId?: unknown
@@ -29,7 +31,9 @@ export async function POST(request: Request) {
 
 export async function PATCH(request: Request) {
   const owner = await resolveMutationOwner(request)
-  if (!owner) return fail("A valid browser session is required.", 403)
+  if (!owner || owner.kind !== "auth") {
+    return fail("Sign in to update messages.", 401)
+  }
   try {
     const body = (await request.json()) as { conversationId?: unknown; listingId?: unknown }
     const conversationId = typeof body.conversationId === "string" ? body.conversationId : ""

@@ -26,6 +26,8 @@ import {
   SelectValue,
 } from "@/components/ui/select"
 import { Textarea } from "@/components/ui/textarea"
+import { useAuth } from "@/lib/auth"
+import { signInHref } from "@/lib/auth-redirect"
 import { relatedListings } from "@/lib/board"
 import { seedListings } from "@/lib/catalog"
 import { resolvePlace } from "@/lib/cities"
@@ -54,6 +56,7 @@ const sampleIds = new Set(seedListings.map((item) => item.id))
 export function ListingDetail({ id }: { id: string }) {
   const searchParams = useSearchParams()
   const router = useRouter()
+  const auth = useAuth()
   const { listings, ready, isSaved, toggleSaved, messages, sendMessage, setListingSold, setListingPaused, renewListing, removeListing } =
     useMarketplace()
   const listing = listings.find((item) => item.id === id)
@@ -127,8 +130,22 @@ export function ListingDetail({ id }: { id: string }) {
     }
   }
 
+  function openMessageComposer() {
+    if (auth.configured && !auth.signedIn) {
+      toast.error("Sign in to send a message")
+      router.push(signInHref(`/listings/${ad.id}`))
+      return
+    }
+    setMessageOpen(true)
+  }
+
   async function submitMessage() {
     if (messageSendingRef.current || !contactOpen) return
+    if (auth.configured && !auth.signedIn) {
+      toast.error("Sign in to send a message")
+      router.push(signInHref(`/listings/${ad.id}`))
+      return
+    }
     const validationError = messageError(message)
     if (validationError) {
       toast.error(validationError)
@@ -464,8 +481,8 @@ export function ListingDetail({ id }: { id: string }) {
                     : "This ad is marked sold. Contact options are closed."}
               </p>
             ) : (
-              <Button className="h-10 rounded-full" onClick={() => setMessageOpen(true)}>
-                {voice.messageLabel}
+              <Button className="h-10 rounded-full" onClick={openMessageComposer}>
+                {auth.configured && !auth.signedIn ? "Sign in to message" : voice.messageLabel}
               </Button>
             )}
             {!listing.mine && myMessageCount > 0 ? (
@@ -561,8 +578,8 @@ export function ListingDetail({ id }: { id: string }) {
               >
                 <Phone className="size-4" />
               </Button>
-              <Button className="h-10 max-w-[9.5rem] shrink-0 truncate rounded-full px-3" onClick={() => setMessageOpen(true)}>
-                {voice.messageLabel}
+              <Button className="h-10 max-w-[9.5rem] shrink-0 truncate rounded-full px-3" onClick={openMessageComposer}>
+                {auth.configured && !auth.signedIn ? "Sign in to message" : voice.messageLabel}
               </Button>
             </div>
           )}

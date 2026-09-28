@@ -42,7 +42,12 @@ export async function proxy(request: NextRequest) {
     const parsed = new URL(href, request.nextUrl.origin)
     redirectUrl.pathname = parsed.pathname
     redirectUrl.search = parsed.search
-    return NextResponse.redirect(redirectUrl)
+    const redirectResponse = NextResponse.redirect(redirectUrl)
+    // Preserve cookies refreshed by getClaims() on the outgoing redirect.
+    for (const cookie of response.cookies.getAll()) {
+      redirectResponse.cookies.set(cookie)
+    }
+    return redirectResponse
   }
 
   return response

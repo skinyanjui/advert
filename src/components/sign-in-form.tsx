@@ -468,12 +468,6 @@ export function SignInForm({ nextHref }: { nextHref?: string } = {}) {
           </form>
         </Card>
       )}
-
-      {!auth.phoneEnabled ? (
-        <p className="text-xs text-muted-foreground">
-          Phone/SMS sign-in stays off until an SMS provider is attached in Supabase.
-        </p>
-      ) : null}
     </div>
   )
 }

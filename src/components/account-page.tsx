@@ -92,7 +92,7 @@ export function AccountPage() {
           createdAt={auth.user?.created_at ?? null}
           signOut={() => auth.signOut()}
           signOutAll={() => auth.signOutAll()}
-          updatePassword={(password) => auth.updatePassword(password)}
+          updatePassword={(password, nonce) => auth.updatePassword(password, nonce)}
           updateEmail={(email) => auth.updateEmail(email)}
         />
       )}
@@ -124,7 +124,10 @@ function SignedInProfile({
   createdAt: string | null
   signOut: () => Promise<void>
   signOutAll: () => Promise<void>
-  updatePassword: (password: string) => Promise<{ ok: true } | { ok: false; reason: string }>
+  updatePassword: (
+    password: string,
+    nonce?: string,
+  ) => Promise<{ ok: true } | { ok: false; reason: string; needsReauth?: boolean }>
   updateEmail: (email: string) => Promise<{ ok: true } | { ok: false; reason: string }>
 }) {
   const router = useRouter()
@@ -153,6 +156,8 @@ function SignedInProfile({
   const [savingEmail, setSavingEmail] = useState(false)
   const [newPassword, setNewPassword] = useState("")
   const [confirmPassword, setConfirmPassword] = useState("")
+  const [passwordNonce, setPasswordNonce] = useState("")
+  const [needsPasswordReauth, setNeedsPasswordReauth] = useState(false)
   const [savingPassword, setSavingPassword] = useState(false)
   const [signingOutAll, setSigningOutAll] = useState(false)
 
@@ -349,15 +354,28 @@ function SignedInProfile({
       toast.error(reason)
       return
     }
+    if (needsPasswordReauth && !passwordNonce.trim()) {
+      toast.error("Enter the verification code from your email.")
+      return
+    }
     setSavingPassword(true)
-    const result = await updatePassword(newPassword)
+    const result = await updatePassword(
+      newPassword,
+      needsPasswordReauth ? passwordNonce.trim() : undefined,
+    )
     setSavingPassword(false)
     if (!result.ok) {
+      if (result.needsReauth) {
+        setNeedsPasswordReauth(true)
+        toast.message("Check your email for a verification code, then enter it below.")
+      }
       toast.error(result.reason)
       return
     }
     setNewPassword("")
     setConfirmPassword("")
+    setPasswordNonce("")
+    setNeedsPasswordReauth(false)
     toast.success("Password saved")
   }
 
@@ -603,6 +621,21 @@ function SignedInProfile({
               onChange={(event) => setConfirmPassword(event.target.value)}
             />
           </FormField>
+          {needsPasswordReauth ? (
+            <FormField
+              label="Email verification code"
+              htmlFor="account-password-nonce"
+              hint="Sent to your current email when Secure password change is on."
+            >
+              <Input
+                id="account-password-nonce"
+                inputMode="numeric"
+                autoComplete="one-time-code"
+                value={passwordNonce}
+                onChange={(event) => setPasswordNonce(event.target.value)}
+              />
+            </FormField>
+          ) : null}
         </CardContent>
         <CardFooter className="justify-end">
           <Button
@@ -611,7 +644,7 @@ function SignedInProfile({
             onClick={() => void savePassword()}
           >
             {savingPassword ? <Loader2 className="animate-spin" /> : null}
-            {savingPassword ? "Saving…" : "Save password"}
+            {savingPassword ? "Saving…" : needsPasswordReauth ? "Confirm and save" : "Save password"}
           </Button>
         </CardFooter>
       </Card>
