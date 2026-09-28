@@ -1,43 +1,71 @@
 "use client"
 
-import { Menu } from "lucide-react"
-import { Suspense, useMemo } from "react"
+import { ChevronDown, Menu, X } from "lucide-react"
+import { Suspense, useEffect, useMemo, useRef } from "react"
 import { usePathname, useSearchParams } from "next/navigation"
 
 import { CategoryNav } from "@/components/category-nav"
 import { SiteFooter } from "@/components/site-footer"
+import { Button } from "@/components/ui/button"
 import {
   Sidebar,
   SidebarContent,
   SidebarFooter,
-  SidebarRail,
   SidebarTrigger,
   useSidebar,
 } from "@/components/ui/sidebar"
+import { useScrollFades } from "@/hooks/use-scroll-fades"
 import { matchesQuery } from "@/lib/board"
 import { canonicalCountry, fold } from "@/lib/countries"
 import { useMarketplace } from "@/lib/marketplace"
 import { categoryPlan } from "@/lib/posting"
 import { categories, isSortId, type CategoryId, type Listing } from "@/lib/types"
 import { categoryFromPath, type ListingQuery } from "@/lib/use-listing-query"
+import { cn } from "@/lib/utils"
+
+function prefersReducedMotion(): boolean {
+  return window.matchMedia("(prefers-reduced-motion: reduce)").matches
+}
 
 export function CategorySidebar() {
+  const { isMobile } = useSidebar()
   return (
     <Sidebar
       side="left"
-      collapsible="offcanvas"
-      className="top-16! bottom-auto! z-40 h-[calc(100svh-4rem)]! border-r border-sidebar-border md:top-[72px]! md:h-[calc(100svh-72px)]!"
+      collapsible={isMobile ? "offcanvas" : "none"}
+      className={
+        isMobile
+          ? undefined
+          : "sticky top-16 z-40 h-[calc(100svh-4rem)] border-r border-sidebar-border md:top-[72px] md:h-[calc(100svh-72px)]"
+      }
     >
-      <SidebarContent className="px-2 pt-3 pb-2">
-        <Suspense fallback={<TopNavFallback />}>
-          <CategoryTopNavLinks />
-        </Suspense>
-      </SidebarContent>
+      <CategorySidebarHeader />
+      <CategorySidebarScroller />
       <SidebarFooter className="p-0">
         <CategorySidebarFooter />
       </SidebarFooter>
-      <SidebarRail />
     </Sidebar>
+  )
+}
+
+function CategorySidebarHeader() {
+  const { isMobile, setOpenMobile } = useSidebar()
+  if (!isMobile) return null
+
+  return (
+    <div className="flex shrink-0 items-center justify-between gap-2 border-b border-sidebar-border px-2 py-1.5">
+      <p className="px-2 font-heading text-base font-medium text-sidebar-foreground">Categories</p>
+      <Button
+        type="button"
+        variant="ghost"
+        size="icon"
+        className="size-11 shrink-0 rounded-lg"
+        aria-label="Close categories"
+        onClick={() => setOpenMobile(false)}
+      >
+        <X className="size-5" />
+      </Button>
+    </div>
   )
 }
 
@@ -49,6 +77,90 @@ function CategorySidebarFooter() {
         if (isMobile) setOpenMobile(false)
       }}
     />
+  )
+}
+
+/** Scrollable category list with top/bottom fade cues and a More categories chip. */
+function CategorySidebarScroller() {
+  const scrollerRef = useRef<HTMLDivElement>(null)
+  const { top, bottom } = useScrollFades(scrollerRef)
+  const { isMobile, openMobile } = useSidebar()
+
+  useEffect(() => {
+    if (isMobile && !openMobile) return
+    const scroller = scrollerRef.current
+    if (!scroller) return
+
+    const scrollActiveIntoView = () => {
+      const current = scroller.querySelector('[aria-current="page"]')
+      if (!(current instanceof HTMLElement)) return
+      current.scrollIntoView({
+        block: "nearest",
+        behavior: prefersReducedMotion() ? "auto" : "smooth",
+      })
+    }
+
+    scrollActiveIntoView()
+    const frame = requestAnimationFrame(() => {
+      requestAnimationFrame(scrollActiveIntoView)
+    })
+    const settle = window.setTimeout(scrollActiveIntoView, 120)
+    return () => {
+      cancelAnimationFrame(frame)
+      window.clearTimeout(settle)
+    }
+  }, [isMobile, openMobile])
+
+  function scrollMoreCategories() {
+    const scroller = scrollerRef.current
+    if (!scroller) return
+    const step = Math.max(160, Math.round(scroller.clientHeight * 0.7))
+    scroller.scrollBy({
+      top: step,
+      behavior: prefersReducedMotion() ? "auto" : "smooth",
+    })
+  }
+
+  return (
+    <SidebarContent className="relative overflow-hidden p-0">
+      <div
+        ref={scrollerRef}
+        className="h-full min-h-0 overflow-y-auto px-2 pt-3 pb-2 [&_[aria-current=page]]:scroll-mb-10 [&_[aria-current=page]]:scroll-mt-2"
+      >
+        <div>
+          <Suspense fallback={<TopNavFallback />}>
+            <CategoryTopNavLinks />
+          </Suspense>
+        </div>
+      </div>
+      <div
+        aria-hidden
+        className={cn(
+          "pointer-events-none absolute inset-x-0 top-0 z-[1] h-6 bg-gradient-to-b from-sidebar to-transparent transition-opacity duration-200 motion-reduce:transition-none",
+          top ? "opacity-100" : "opacity-0",
+        )}
+      />
+      <div
+        aria-hidden
+        className={cn(
+          "pointer-events-none absolute inset-x-0 bottom-0 z-[1] h-6 bg-gradient-to-t from-sidebar to-transparent transition-opacity duration-200 motion-reduce:transition-none",
+          bottom ? "opacity-100" : "opacity-0",
+        )}
+      />
+      <button
+        type="button"
+        onClick={scrollMoreCategories}
+        tabIndex={bottom ? 0 : -1}
+        aria-hidden={!bottom}
+        className={cn(
+          "absolute bottom-2 left-1/2 z-[2] inline-flex -translate-x-1/2 items-center gap-1 rounded-md border border-neutral-200 bg-sidebar/95 px-2.5 py-1 text-xs text-neutral-600 shadow-sm backdrop-blur-sm transition-opacity duration-200 hover:bg-neutral-50 hover:text-neutral-950 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-neutral-950 motion-reduce:transition-none dark:border-neutral-700 dark:text-neutral-300 dark:hover:bg-neutral-800 dark:hover:text-neutral-50",
+          bottom ? "opacity-100" : "pointer-events-none opacity-0",
+        )}
+      >
+        More categories
+        <ChevronDown className="size-3.5 opacity-70" aria-hidden />
+      </button>
+    </SidebarContent>
   )
 }
 
