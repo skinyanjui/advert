@@ -212,7 +212,6 @@ function AdForm({ existing }: { existing: Listing | null }) {
       price.trim().length > 0 ||
       description.trim().length > 0 ||
       phone.trim().length > 0 ||
-      city.trim().length > 0 ||
       photos.length > 0 ||
       Object.values(details).some((value) => value.trim().length > 0)
     if (!hasContent) return
