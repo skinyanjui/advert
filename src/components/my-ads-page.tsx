@@ -258,10 +258,10 @@ function StatusFilterChips({
   const { left, right } = useHorizontalScrollFades(scrollerRef)
 
   return (
-    <div className="relative">
+    <div className="relative min-w-0">
       <div
         ref={scrollerRef}
-        className="flex gap-1 overflow-x-auto overscroll-x-contain pb-0.5 [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
+        className="flex min-w-0 gap-1 overflow-x-auto overscroll-x-contain pb-0.5 [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
         aria-label="Filter ads"
       >
         {filters.map((option) => (
