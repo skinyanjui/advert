@@ -4,7 +4,6 @@ import Link from "next/link"
 import { useMemo } from "react"
 
 import { BoardCitySearch, CityMap } from "@/components/board-place"
-import { categoryIcons } from "@/components/category-nav"
 import { ListingCard } from "@/components/listing-card"
 import { Button } from "@/components/ui/button"
 import {
@@ -23,23 +22,17 @@ import { resolvePlace } from "@/lib/cities"
 import { useMarketplace } from "@/lib/marketplace"
 import { countryName, fold, getCountry } from "@/lib/countries"
 import {
-  categories,
-  categoryName,
   isSortId,
   sorts,
-  type CategoryId,
   type Listing,
 } from "@/lib/types"
-import { categoryPlan, findSubcategory } from "@/lib/posting"
+import { findSubcategory } from "@/lib/posting"
 import { boardSearch, useListingQuery } from "@/lib/use-listing-query"
-import { useSiteHeaderOffset } from "@/lib/use-site-header-offset"
-import { cn } from "@/lib/utils"
 
 export function Browse() {
   const { listings } = useMarketplace()
   const { query, update, clear } = useListingQuery()
   const home = useHomePlace()
-  useSiteHeaderOffset()
 
   const origin = useMemo(() => homeOrigin(home, query.country), [home, query.country])
 
@@ -72,26 +65,6 @@ export function Browse() {
     return inCountry.filter((listing) => fold(listing.city) === needle)
   }, [inCountry, query.city])
 
-  const counts = useMemo(() => {
-    const next = Object.fromEntries(categories.map((category) => [category.id, 0])) as Record<
-      CategoryId,
-      number
-    >
-    for (const listing of inCity) next[listing.category] += 1
-    return next
-  }, [inCity])
-
-  const types = useMemo(() => {
-    if (!query.category) return []
-    const pool = inCity.filter((listing) => listing.category === query.category)
-    const plan = categoryPlan(query.category)
-    if (!plan) return []
-    return plan.subcategories.flatMap((subcategory) => {
-      const count = pool.filter((listing) => listing.subcategory === subcategory.id).length
-      return count > 0 ? [{ id: subcategory.id, name: subcategory.name, count }] : []
-    })
-  }, [inCity, query.category])
-
   const visible = useMemo(() => {
     const inCategory = query.category
       ? inCity.filter((listing) => listing.category === query.category)
@@ -112,8 +85,6 @@ export function Browse() {
       : countryName(query.country)
     : "All Africa"
   const preserve = boardSearch(query)
-  const hrefForCategory = (category?: CategoryId) => listingHref(category, undefined, query)
-  const hrefForType = (type?: string) => listingHref(query.category, type, query)
   const closestFirst =
     query.sort === "relevant" &&
     !query.q &&
@@ -124,65 +95,34 @@ export function Browse() {
   return (
     <div className="mx-auto w-full max-w-[1720px]">
       <section className="min-w-0 px-4 py-4 pb-16 md:px-6 md:py-5">
-        {/* Sticky board chrome: mobile category chips + count/sort under the site header. */}
-        <div
-          className="sticky z-40 -mx-4 mb-4 border-b border-neutral-200/80 bg-background px-4 py-3 shadow-sm md:-mx-6 md:px-6"
-          style={{ top: "var(--site-header-offset)" }}
-        >
-          <nav
-            aria-label="Categories"
-            className="mb-3 flex gap-2 overflow-x-auto pb-1 [-ms-overflow-style:none] [scrollbar-width:none] md:hidden [&::-webkit-scrollbar]:hidden"
-          >
-            <CategoryChip href={hrefForCategory(undefined)} active={!query.category} icon="all" label="All" />
-            {categories.map((category) => (
-              <CategoryChip
-                key={category.id}
-                href={hrefForCategory(category.id)}
-                active={query.category === category.id}
-                icon={category.id}
-                label={categoryName(category.id)}
-                count={counts[category.id]}
-              />
-            ))}
-          </nav>
-          {query.category && types.length > 0 ? (
-            <div className="mb-3 flex gap-1.5 overflow-x-auto pb-1 [-ms-overflow-style:none] [scrollbar-width:none] md:hidden [&::-webkit-scrollbar]:hidden">
-              <TypeChip href={hrefForType(undefined)} active={!query.type}>
-                All types
-              </TypeChip>
-              {types.map((type) => (
-                <TypeChip key={type.id} href={hrefForType(type.id)} active={query.type === type.id}>
-                  {type.name}
-                  <span className="opacity-60">{type.count}</span>
-                </TypeChip>
-              ))}
+        <div className="sticky top-16 z-40 -mx-4 mb-4 flex flex-wrap items-center justify-between gap-3 border-b border-neutral-200/80 bg-background px-4 py-3 shadow-sm md:top-[72px] md:-mx-6 md:px-6">
+          <div className="flex items-center gap-2">
+            <div>
+              <p className="text-sm text-neutral-500">
+                <span className="font-medium text-neutral-900">{visible.length}</span>{" "}
+                {visible.length === 1 ? "listing" : "listings"}
+                {typeName ? ` · ${typeName}` : ""} in {place}
+                {closestFirst ? " · closest first" : ""}
+              </p>
             </div>
-          ) : null}
-          <div className="flex flex-wrap items-center justify-between gap-3">
-            <p className="min-w-0 text-sm text-neutral-500">
-              <span className="font-medium text-neutral-900">{visible.length}</span>{" "}
-              {visible.length === 1 ? "listing" : "listings"}
-              {typeName ? ` · ${typeName}` : ""} in {place}
-              {closestFirst ? " · closest first" : ""}
-            </p>
-            <Select
-              value={query.sort}
-              onValueChange={(value) => {
-                if (isSortId(value)) update({ sort: value })
-              }}
-            >
-              <SelectTrigger className="h-9 shrink-0 rounded-full" aria-label="Sort listings">
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent align="end" className="z-[60]">
-                {sorts.map((sort) => (
-                  <SelectItem key={sort.id} value={sort.id}>
-                    {sort.name}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
           </div>
+          <Select
+            value={query.sort}
+            onValueChange={(value) => {
+              if (isSortId(value)) update({ sort: value })
+            }}
+          >
+            <SelectTrigger className="h-9 rounded-full" aria-label="Sort listings">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent align="end" className="z-[60]">
+              {sorts.map((sort) => (
+                <SelectItem key={sort.id} value={sort.id}>
+                  {sort.name}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
         </div>
         {query.country ? (
           <div className="mb-4 flex flex-col gap-2 sm:flex-row sm:items-center">
@@ -239,65 +179,6 @@ export function Browse() {
         )}
       </section>
     </div>
-  )
-}
-
-function CategoryChip({
-  href,
-  active,
-  icon,
-  label,
-  count,
-}: {
-  href: string
-  active: boolean
-  icon: CategoryId | "all"
-  label: string
-  count?: number
-}) {
-  const Icon = categoryIcons[icon]
-  return (
-    <Link
-      href={href}
-      scroll={false}
-      aria-current={active ? "page" : undefined}
-      className={cn(
-        "inline-flex h-9 shrink-0 items-center gap-1.5 rounded-full px-3 text-xs font-medium whitespace-nowrap",
-        active
-          ? "bg-neutral-950 text-white"
-          : "bg-white text-neutral-700 ring-1 ring-neutral-200 hover:text-neutral-950",
-      )}
-    >
-      <Icon className="size-3.5 shrink-0" />
-      <span>{label}</span>
-      {typeof count === "number" && count > 0 ? <span className="opacity-60">{count}</span> : null}
-    </Link>
-  )
-}
-
-function TypeChip({
-  href,
-  active,
-  children,
-}: {
-  href: string
-  active: boolean
-  children: React.ReactNode
-}) {
-  return (
-    <Link
-      href={href}
-      scroll={false}
-      aria-current={active ? "page" : undefined}
-      className={cn(
-        "inline-flex h-8 shrink-0 items-center gap-1.5 rounded-full px-3 text-xs whitespace-nowrap",
-        active
-          ? "bg-neutral-950 font-medium text-white"
-          : "bg-neutral-100 text-neutral-600 hover:text-neutral-950",
-      )}
-    >
-      {children}
-    </Link>
   )
 }
 
@@ -379,22 +260,6 @@ function EmptyResults({
       </div>
     </div>
   )
-}
-
-function listingHref(
-  category: CategoryId | undefined,
-  type: string | undefined,
-  query: { q: string; country?: string; city?: string; sort: string },
-): string {
-  const params = new URLSearchParams()
-  if (query.q) params.set("q", query.q)
-  if (query.country) params.set("country", query.country)
-  if (query.city) params.set("city", query.city)
-  if (type) params.set("type", type)
-  if (query.sort !== "relevant") params.set("sort", query.sort)
-  const qs = params.toString()
-  const path = category ? `/${category}` : "/"
-  return qs ? `${path}?${qs}` : path
 }
 
 function homeOrigin(

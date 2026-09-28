@@ -38,7 +38,7 @@ export function SiteHeader() {
   const profileLabel = auth.signedIn ? auth.email ?? "Signed in" : "Guest on this browser"
   const profileDetail = auth.signedIn ? "Ads stay with your account" : "Sign in to keep ads across devices"
   return (
-    <header data-site-header className="sticky top-0 z-50">
+    <header className="sticky top-0 z-50">
       <div className="border-b border-neutral-200/80 bg-white">
         <div className="mx-auto flex h-16 max-w-[1720px] items-center gap-1 px-2 md:relative md:h-[72px] md:gap-3 md:px-5 xl:gap-6 xl:px-8">
           <Logo iconOnly className="xl:hidden" />
