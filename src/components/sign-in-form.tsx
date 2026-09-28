@@ -5,6 +5,7 @@ import { useRouter, useSearchParams } from "next/navigation"
 import { useEffect, useState } from "react"
 import { toast } from "sonner"
 
+import { EmptyPanel } from "@/components/empty-panel"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
@@ -39,16 +40,14 @@ export function SignInForm({ nextHref = "/account" }: { nextHref?: string }) {
 
   if (!auth.configured) {
     return (
-      <div className="rounded-2xl border border-dashed border-neutral-300 bg-white px-6 py-10 text-center">
-        <h1 className="text-xl font-semibold tracking-tight">Sign-in is not configured</h1>
-        <p className="mx-auto mt-2 max-w-sm text-sm text-neutral-500">
-          Add the public Supabase URL and publishable key, enable Email auth, and apply the seller-accounts SQL
-          migration. Until then you can still post with this browser session.
-        </p>
-        <Button asChild className="mt-5 rounded-full">
-          <Link href="/post">Post an ad</Link>
-        </Button>
-      </div>
+      <EmptyPanel
+        title="Sign-in is not configured"
+        body="Add the public Supabase URL and publishable key, enable Email auth, and apply the seller-accounts SQL migration. Until then you can still post with this browser session."
+        actionHref="/post"
+        actionLabel="Post an ad"
+        className="mt-0 py-10"
+        headingLevel={1}
+      />
     )
   }
 

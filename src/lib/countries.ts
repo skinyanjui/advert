@@ -27,13 +27,13 @@ export type CountryRecord = {
   languages: LanguageInfo[]
   timezone: string
   primary: boolean
+  /** Sort key among primary markets (lower first). Absent on non-primary rows. */
+  primaryRank?: number
 }
 
 export const countries = countriesData as CountryRecord[]
 
 const byCode = new Map(countries.map((country) => [country.code, country]))
-
-const primaryOrder = ["KE", "TZ", "UG", "RW", "ET", "ZA", "GH", "NG", "ZM"]
 
 const legacySlugs: Record<string, string> = {
   kenya: "KE",
@@ -87,15 +87,13 @@ export function fold(value: string): string {
 }
 
 export function primaryCountries(): CountryRecord[] {
-  return primaryOrder.flatMap((code) => {
-    const country = byCode.get(code)
-    return country ? [country] : []
-  })
+  return countries
+    .filter((country) => country.primary)
+    .sort((a, b) => (a.primaryRank ?? Number.MAX_SAFE_INTEGER) - (b.primaryRank ?? Number.MAX_SAFE_INTEGER))
 }
 
 export function moreCountries(): CountryRecord[] {
-  const primary = new Set(primaryOrder)
-  return countries.filter((country) => !primary.has(country.code))
+  return countries.filter((country) => !country.primary)
 }
 
 export function currencyLabel(code: string): string {
