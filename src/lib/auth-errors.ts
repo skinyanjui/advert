@@ -1,5 +1,8 @@
-/** Friendly copy for common Supabase Auth / network failures. */
-export function mapAuthError(error: unknown): string {
+import { translate, type MessageKey } from "@/lib/i18n"
+import { defaultLocale, isLocale, type Locale } from "@/lib/i18n/locales"
+
+/** Map Supabase Auth / network failures to a stable message key. */
+export function mapAuthErrorKey(error: unknown): MessageKey {
   const message = extractMessage(error)
   const status = extractStatus(error)
   const code = extractCode(error)
@@ -14,7 +17,7 @@ export function mapAuthError(error: unknown): string {
     normalized.includes("rate limit exceeded") ||
     normalized.includes("too many requests")
   ) {
-    return "Too many emails sent. Wait a minute and try again."
+    return "auth.error.rateLimit"
   }
 
   if (
@@ -26,7 +29,7 @@ export function mapAuthError(error: unknown): string {
     (normalized.includes("expired") &&
       (normalized.includes("otp") || normalized.includes("token") || normalized.includes("link")))
   ) {
-    return "That code or link has expired. Request a new one."
+    return "auth.error.otpExpired"
   }
 
   if (
@@ -38,7 +41,7 @@ export function mapAuthError(error: unknown): string {
     normalized.includes("otp is invalid") ||
     normalized.includes("email link is invalid")
   ) {
-    return "That code or link is invalid. Request a new one."
+    return "auth.error.otpInvalid"
   }
 
   if (
@@ -46,7 +49,7 @@ export function mapAuthError(error: unknown): string {
     normalized.includes("email_not_confirmed") ||
     normalized.includes("email not confirmed")
   ) {
-    return "Confirm your email before signing in. Check your inbox for the link."
+    return "auth.error.emailNotConfirmed"
   }
 
   if (
@@ -56,7 +59,7 @@ export function mapAuthError(error: unknown): string {
     normalized.includes("wrong password") ||
     normalized.includes("invalid email or password")
   ) {
-    return "Wrong email or password."
+    return "auth.error.invalidCredentials"
   }
 
   if (
@@ -65,11 +68,11 @@ export function mapAuthError(error: unknown): string {
     normalized.includes("reauthentication required") ||
     normalized.includes("reauthenticate")
   ) {
-    return "Confirm it’s you: check your email for a verification code, then enter it below."
+    return "auth.error.reauth"
   }
 
   if (normalized.includes("user already registered") || normalized.includes("already been registered")) {
-    return "An account with that email already exists. Sign in instead."
+    return "auth.error.alreadyRegistered"
   }
 
   if (
@@ -77,7 +80,7 @@ export function mapAuthError(error: unknown): string {
     normalized.includes("same_password") ||
     normalized.includes("same password")
   ) {
-    return "Choose a password that is different from your current one."
+    return "auth.error.samePassword"
   }
 
   if (
@@ -85,17 +88,23 @@ export function mapAuthError(error: unknown): string {
     normalized.includes("weak_password") ||
     normalized.includes("password should be")
   ) {
-    return "That password is too weak. Use at least 8 characters with a mix of letters and numbers."
+    return "auth.error.weakPassword"
   }
 
   if (normalizedCode === "signup_disabled" || normalized.includes("signup_disabled")) {
-    return "New sign-ups are turned off right now."
+    return "auth.error.signupDisabled"
   }
 
   if (message || code) {
     console.error("[auth]", error)
   }
-  return "Something went wrong. Try again."
+  return "auth.error.generic"
+}
+
+/** Friendly copy for common Supabase Auth / network failures. */
+export function mapAuthError(error: unknown, locale?: Locale): string {
+  const key = mapAuthErrorKey(error)
+  return translate(resolveLocale(locale), key)
 }
 
 export function isReauthenticationRequired(error: unknown): boolean {
@@ -106,6 +115,19 @@ export function isReauthenticationRequired(error: unknown): boolean {
     message.includes("reauthentication_needed") ||
     message.includes("reauthentication required")
   )
+}
+
+function resolveLocale(locale?: Locale): Locale {
+  if (locale && isLocale(locale)) return locale
+  if (typeof window !== "undefined") {
+    try {
+      const stored = localStorage.getItem("africa-classifieds-language")
+      if (isLocale(stored)) return stored
+    } catch {
+      /* ignore */
+    }
+  }
+  return defaultLocale
 }
 
 function extractMessage(error: unknown): string {
