@@ -2,11 +2,12 @@
 
 import { Check, ChevronLeft, ChevronRight, ImagePlus } from "lucide-react"
 import Link from "next/link"
+import type { User } from "@supabase/supabase-js"
 import { useRouter, useSearchParams } from "next/navigation"
 import { useEffect, useLayoutEffect, useMemo, useRef, useState, type DragEvent, type ReactNode } from "react"
 import { toast } from "sonner"
 
-import { categoryIcons } from "@/components/category-nav"
+import { categoryIcons } from "@/lib/categories"
 import { CityField, type ChosenPlace } from "@/components/city-field"
 import { ListingCard } from "@/components/listing-card"
 import { Button } from "@/components/ui/button"
@@ -32,6 +33,7 @@ import { listingFieldErrors, type FieldErrors as RuleErrors } from "@/lib/listin
 import { useAuth } from "@/lib/auth"
 import { useMarketplace } from "@/lib/marketplace"
 import { listingImages, maxListingPhotos, photoFileError, withCoverImage } from "@/lib/photos"
+import { siteTitle } from "@/lib/site"
 import {
   categoryPlan,
   findSubcategory,
@@ -143,7 +145,7 @@ function AdForm({ existing }: { existing: Listing | null }) {
       description,
       condition: details.condition || subcategory?.name || "Listed",
       sellerName: existing?.sellerName ?? "Amina K.",
-      sellerSince: existing?.sellerSince ?? "2024",
+      sellerSince: existing?.sellerSince ?? sellerSinceFromUser(auth.user),
       phone: phone || callingCode || "+000",
       mine: true,
     }
@@ -163,6 +165,7 @@ function AdForm({ existing }: { existing: Listing | null }) {
     phone,
     callingCode,
     existing,
+    auth.user,
   ])
 
   function chooseCategory(id: CategoryId) {
@@ -364,7 +367,7 @@ function AdForm({ existing }: { existing: Listing | null }) {
   }
 
   useEffect(() => {
-    document.title = `${existing ? "Edit your ad" : "Post an ad"} · africa classifieds`
+    document.title = siteTitle(existing ? "Edit your ad" : "Post an ad")
   }, [existing])
 
   const placeLine = [city.trim(), countryName(country)].filter(Boolean).join(", ")
@@ -1071,6 +1074,14 @@ function locatedPlace(chosen: ChosenPlace | null, country: string, city: string)
     lng: resolved.lng,
     timezone: resolved.timezone,
   }
+}
+
+function sellerSinceFromUser(user: User | null | undefined): string {
+  if (user?.created_at) {
+    const year = new Date(user.created_at).getFullYear()
+    if (Number.isFinite(year)) return String(year)
+  }
+  return String(new Date().getFullYear())
 }
 
 function descriptionHint(value: string): string {

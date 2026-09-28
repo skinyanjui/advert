@@ -4,7 +4,7 @@ import { Suspense } from "react"
 import { MessagesPage } from "@/components/messages-page"
 
 export const metadata: Metadata = {
-  title: "Inbox",
+  title: "Messages",
 }
 
 export default function Page() {

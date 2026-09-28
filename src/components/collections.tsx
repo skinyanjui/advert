@@ -3,6 +3,7 @@
 import Link from "next/link"
 import type { ReactNode } from "react"
 
+import { EmptyPanel } from "@/components/empty-panel"
 import { ListingCard } from "@/components/listing-card"
 import { Button } from "@/components/ui/button"
 import { useMarketplace } from "@/lib/marketplace"
@@ -54,13 +55,7 @@ function Collection({
       <p className="mt-1 text-sm text-neutral-500">{description}</p>
       {banner}
       {cards.length === 0 ? (
-        <div className="mt-8 rounded-2xl border border-dashed border-neutral-300 bg-white px-6 py-16 text-center">
-          <h2 className="text-lg font-semibold tracking-tight">{emptyTitle}</h2>
-          <p className="mx-auto mt-2 max-w-sm text-sm text-neutral-500">{emptyBody}</p>
-          <Button asChild className="mt-5 rounded-full">
-            <Link href={actionHref}>{actionLabel}</Link>
-          </Button>
-        </div>
+        <EmptyPanel title={emptyTitle} body={emptyBody} actionHref={actionHref} actionLabel={actionLabel} />
       ) : (
         <div className="mt-6 grid grid-cols-2 gap-3 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5">
           {cards.map((listing) => (

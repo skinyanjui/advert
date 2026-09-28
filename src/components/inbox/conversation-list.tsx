@@ -4,9 +4,10 @@ import { Search } from "lucide-react"
 import Link from "next/link"
 
 import { ListingThumb } from "@/components/inbox/listing-thumb"
+import { NavBadge } from "@/components/nav-badge"
 import { Input } from "@/components/ui/input"
-import { formatPosted } from "@/lib/format"
 import type { MessageThread } from "@/lib/messages"
+import { formatMessageWhen } from "@/lib/relative-time"
 import type { Listing } from "@/lib/types"
 import { cn } from "@/lib/utils"
 
@@ -88,20 +89,22 @@ function ConversationRow({ thread, listing, active, sample }: { thread: MessageT
         <span className="min-w-0 flex-1">
           <span className="flex min-w-0 items-start justify-between gap-2">
             <span className={cn("truncate text-sm text-neutral-950", thread.unread ? "font-semibold" : "font-medium")}>{listing?.title ?? thread.listingTitle}</span>
-            <span className="shrink-0 text-[11px] text-neutral-500">{sample ? "Sample" : formatWhen(thread.latestAt)}</span>
+            <span className="shrink-0 text-[11px] text-neutral-500">{sample ? "Sample" : formatMessageWhen(thread.latestAt)}</span>
           </span>
           <span className="mt-0.5 flex min-w-0 items-center gap-1.5 text-xs text-neutral-600">
             <span className="truncate">{thread.viewerIsSeller ? "Buyer" : "Seller"}: {thread.peerName}</span>
-            {thread.unread ? <span className="ml-auto shrink-0 rounded-full bg-neutral-950 px-1.5 text-[10px] text-white" aria-label={`${thread.unread} unread`}>{thread.unread}</span> : null}
+            {thread.unread ? (
+              <NavBadge
+                count={thread.unread}
+                placement="inline"
+                className="ml-auto"
+                ariaLabel={`${thread.unread} unread`}
+              />
+            ) : null}
           </span>
           <span className="mt-1 block truncate text-xs text-neutral-500">{preview?.fromMe ? "You: " : ""}{preview?.body}</span>
         </span>
       </Link>
     </li>
   )
-}
-
-function formatWhen(sentAt: string) {
-  const time = new Date(sentAt).getTime()
-  return Number.isNaN(time) ? "" : formatPosted((Date.now() - time) / 3_600_000)
 }

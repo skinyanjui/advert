@@ -70,6 +70,8 @@ export type Listing = {
   condition: string
   sellerName: string
   sellerSince: string
+  /** Public avatar from board_profiles when the seller has one. */
+  sellerAvatar?: string
   phone: string
   /** Owner lifecycle: active | paused | sold | expired (column + effective). */
   status?: ListingStatus

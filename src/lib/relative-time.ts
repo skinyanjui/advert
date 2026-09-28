@@ -1,4 +1,4 @@
-import { hoursAgoOf } from "@/lib/format"
+import { formatPosted, hoursAgoOf } from "@/lib/format"
 import type { Listing } from "@/lib/types"
 
 export { hoursAgoOf }
@@ -26,6 +26,12 @@ export function formatRelativePosted(hoursAgo: number): string {
   }
   const months = Math.max(1, Math.round(days / 30))
   return `Posted ${months}mo ago`
+}
+
+/** Relative time for inbox message timestamps (uses formatPosted, not "Posted …"). */
+export function formatMessageWhen(sentAt: string, now = Date.now()): string {
+  const time = new Date(sentAt).getTime()
+  return Number.isNaN(time) ? "" : formatPosted((now - time) / 3_600_000)
 }
 
 /** Absolute calendar date for tooltips / detail pages when an ISO timestamp exists. */

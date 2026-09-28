@@ -1,24 +1,27 @@
 "use client"
 
-import { Bell, ChevronDown, Inbox, MapPin, MessageCircle, Plus, RefreshCw, Search, UserRound } from "lucide-react"
+import { Bell, ChevronDown, Inbox, MapPin, MessageCircle, RefreshCw, Search } from "lucide-react"
 import Link from "next/link"
 import { usePathname, useRouter, useSearchParams } from "next/navigation"
 import { useEffect, useRef, useState, type ReactNode } from "react"
 
-import { postAdHref } from "@/lib/active-place"
 import { Logo } from "@/components/logo"
 import { CategoryTopNav } from "@/components/category-top-nav"
-import { PostLink } from "@/components/post-link"
+import { NavBadge } from "@/components/nav-badge"
+import { NavIconLink } from "@/components/nav-icon-link"
+import { PostLink, usePostAdHref } from "@/components/post-link"
 import { ThemeChoices } from "@/components/theme-choices"
-import { useRememberedPlace } from "@/lib/use-remembered-place"
 import { Button, buttonVariants } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
+import { useNavCounts, navCountAriaLabel } from "@/hooks/use-nav-counts"
 import { useAuth } from "@/lib/auth"
 import { searchCitiesAnywhere } from "@/lib/cities"
 import { countries, countryName, fold, moreCountries, primaryCountries } from "@/lib/countries"
+import { formatPlaceLabel } from "@/lib/format"
 import { clearBrowsingEverywhere, markBrowsingEverywhere, useHomePlace, writeHomePlace } from "@/lib/home-place"
 import { useMarketplace } from "@/lib/marketplace"
 import { recentMessageNotifications, unreadMessageCount } from "@/lib/messages"
+import { navItem } from "@/lib/nav"
 import { categoryFromPath, useListingQuery, type ListingQuery } from "@/lib/use-listing-query"
 import { cn } from "@/lib/utils"
 
@@ -26,17 +29,35 @@ const summaryClass =
   "menu-summary cursor-pointer list-none rounded-full [&::-webkit-details-marker]:hidden [&::marker]:content-none"
 
 export function SiteHeader() {
-  const pathname = usePathname()
   const { query, update } = useListingQuery()
-  const { savedIds, messages } = useMarketplace()
+  const { savedIds } = useMarketplace()
   const auth = useAuth()
-  const unreadMessages = unreadMessageCount(messages)
-  const sellerUnread = unreadMessageCount(messages.filter((item) => item.viewerIsSeller))
+  const navCounts = useNavCounts()
+  const unreadMessages = navCounts.messages ?? 0
+  const myAdsAttention = navCounts["my-ads"] ?? 0
+  const profileAttention = unreadMessages + myAdsAttention
   const locationLabel = query.country ? countryName(query.country) : "All Africa"
-  const remembered = useRememberedPlace()
-  const postHref = postAdHref(query.country ? { country: query.country, city: query.city } : remembered)
+  const postNav = navItem("post")
+  const messagesNav = navItem("messages")
+  const savedNav = navItem("saved")
+  const myAdsNav = navItem("my-ads")
+  const profileNav = navItem("profile")
+  const PostIcon = postNav.icon
+  const ProfileIcon = profileNav.icon
+  const postHref = usePostAdHref()
   const profileLabel = auth.signedIn ? auth.email ?? "Signed in" : "Guest on this browser"
   const profileDetail = auth.signedIn ? "Ads stay with your account" : "Sign in to keep ads across devices"
+  const profileMenuLabel = [
+    profileNav.label,
+    unreadMessages > 0 ? `${unreadMessages} unread` : null,
+    myAdsAttention > 0
+      ? myAdsAttention === 1
+        ? "1 needs attention"
+        : `${myAdsAttention} need attention`
+      : null,
+  ]
+    .filter(Boolean)
+    .join(", ")
   return (
     <header className="sticky top-0 z-50">
       <div className="border-b border-neutral-200/80 bg-white">
@@ -55,30 +76,21 @@ export function SiteHeader() {
             <nav aria-label="Navigation" className="flex w-full items-center justify-between gap-1 md:justify-end md:gap-2 lg:gap-3">
               <CountryMenu label={locationLabel} query={query} />
               <Button asChild className="h-10 rounded-full bg-neutral-950 px-3 text-white hover:bg-neutral-800 md:px-3 xl:px-4">
-                <Link href={postHref} aria-label="Post ad">
-                  <Plus />
-                  <span className="hidden xl:inline">Post ad</span>
+                <Link href={postHref} aria-label={postNav.shortLabel}>
+                  <PostIcon />
+                  <span className="hidden xl:inline">{postNav.shortLabel}</span>
                 </Link>
               </Button>
-              <Button asChild variant="outline" size="icon-lg" className="relative rounded-full">
-                <Link
-                  href="/messages"
-                  aria-label={unreadMessages > 0 ? `Messages, ${unreadMessages} unread` : "Messages"}
-                  aria-current={pathname === "/messages" ? "page" : undefined}
-                >
-                  <MessageCircle />
-                  {unreadMessages > 0 ? <UnreadDot /> : null}
-                </Link>
-              </Button>
+              <NavIconLink id="messages" />
               <NotificationsMenu />
               <HeaderMenu
-                label="Profile"
+                label={profileMenuLabel}
                 summaryClassName="relative size-9 px-0"
                 panelClassName="w-56"
                 summary={
                   <>
-                    <UserRound />
-                    {unreadMessages > 0 ? <UnreadDot /> : null}
+                    <ProfileIcon />
+                    <NavBadge count={profileAttention} />
                   </>
                 }
               >
@@ -89,15 +101,27 @@ export function SiteHeader() {
                 </div>
                 <div className="mx-1 my-1 h-px bg-neutral-200" />
                 {auth.signedIn ? null : <MenuLink href="/sign-in">Sign in</MenuLink>}
-                <MenuLink href="/account">Profile</MenuLink>
-                <MenuLink href="/messages">
-                  Messages{unreadMessages > 0 ? ` (${unreadMessages})` : ""}
+                <MenuLink href={profileNav.href}>{profileNav.label}</MenuLink>
+                <MenuLink
+                  href={messagesNav.href}
+                  className="justify-between gap-2"
+                  aria-label={navCountAriaLabel(messagesNav.label, "messages", navCounts)}
+                >
+                  <span>{messagesNav.label}</span>
+                  <NavBadge count={unreadMessages} placement="inline" />
                 </MenuLink>
-                <MenuLink href="/saved">Saved ads ({savedIds.length})</MenuLink>
-                <MenuLink href="/my-ads">
-                  My ads{sellerUnread > 0 ? ` (${sellerUnread} unread)` : ""}
+                <MenuLink href={savedNav.href}>
+                  {savedNav.label} ({savedIds.length})
                 </MenuLink>
-                <MenuLink href={postHref}>Post an ad</MenuLink>
+                <MenuLink
+                  href={myAdsNav.href}
+                  className="justify-between gap-2"
+                  aria-label={navCountAriaLabel(myAdsNav.label, "my-ads", navCounts)}
+                >
+                  <span>{myAdsNav.label}</span>
+                  <NavBadge count={myAdsAttention} placement="inline" />
+                </MenuLink>
+                <MenuLink href={postHref}>{postNav.label}</MenuLink>
                 {auth.signedIn ? (
                   <button
                     type="button"
@@ -118,11 +142,21 @@ export function SiteHeader() {
 }
 
 function NotificationsMenu() {
-  const { messages, ready, reloadBoard } = useMarketplace()
+  const { messages, ready, refreshBoard } = useMarketplace()
   const [view, setView] = useState<"all" | "unread">("all")
+  const [refreshing, setRefreshing] = useState(false)
   const unread = unreadMessageCount(messages)
   const notifications = recentMessageNotifications(messages, 8)
   const visible = view === "unread" ? notifications.filter((item) => !item.read) : notifications
+
+  async function onRefresh() {
+    setRefreshing(true)
+    try {
+      await refreshBoard({ force: true })
+    } finally {
+      setRefreshing(false)
+    }
+  }
 
   return (
     <HeaderMenu
@@ -130,8 +164,8 @@ function NotificationsMenu() {
       summaryClassName="relative size-9 px-0"
       panelClassName="w-[min(23rem,calc(100vw-1rem))] !p-0"
       panelRole="region"
-      onOpen={() => { if (ready) void reloadBoard() }}
-      summary={<><Bell />{unread > 0 ? <UnreadDot /> : null}</>}
+      onOpen={() => { if (ready) void refreshBoard() }}
+      summary={<><Bell /><NavBadge count={unread} /></>}
     >
       <div className="flex items-center justify-between gap-3 border-b border-neutral-200 px-4 py-3">
         <div className="min-w-0">
@@ -140,16 +174,18 @@ function NotificationsMenu() {
             {unread > 0 ? `${unread} unread ${unread === 1 ? "message" : "messages"}` : "Your recent message activity"}
           </p>
         </div>
-        <button
+        <Button
           type="button"
+          variant="outline"
+          size="icon"
           aria-label="Refresh notifications"
           title="Refresh notifications"
-          disabled={!ready}
-          onClick={() => void reloadBoard()}
-          className="flex size-9 shrink-0 items-center justify-center rounded-full border border-neutral-200 text-neutral-600 hover:bg-neutral-100 disabled:opacity-50"
+          disabled={!ready || refreshing}
+          onClick={() => void onRefresh()}
+          className="size-9 shrink-0 rounded-full"
         >
-          <RefreshCw className={cn("size-4", !ready && "animate-spin")} aria-hidden="true" />
-        </button>
+          <RefreshCw className={cn("size-4", refreshing && "animate-spin")} aria-hidden="true" />
+        </Button>
       </div>
       <div className="flex gap-1 border-b border-neutral-200 px-3 py-2" aria-label="Filter notifications">
         {(["all", "unread"] as const).map((option) => (
@@ -219,9 +255,9 @@ function NotificationsMenu() {
         ) : null}
       </div>
       <div className="border-t border-neutral-200 p-2">
-        <Link href="/messages" className="flex h-9 items-center justify-center rounded-full text-xs font-medium text-neutral-700 hover:bg-neutral-100">
-          Open inbox
-        </Link>
+        <Button asChild variant="ghost" className="h-9 w-full rounded-full text-xs font-medium text-neutral-700">
+          <Link href="/messages">Open messages</Link>
+        </Button>
       </div>
     </HeaderMenu>
   )
@@ -233,8 +269,8 @@ function CountryMenu({ label, query }: { label: string; query: ListingQuery }) {
   const home = useHomePlace()
   const [locationQuery, setLocationQuery] = useState("")
   const search = searchParams.toString()
-  const homeLabel = home ? placeLabel(home.country, home.city) : undefined
-  const currentLabel = query.country ? placeLabel(query.country, query.city) : undefined
+  const homeLabel = home ? formatPlaceLabel(home.country, home.city) : undefined
+  const currentLabel = query.country ? formatPlaceLabel(query.country, query.city) : undefined
   const canSaveDefault = !!currentLabel && currentLabel !== homeLabel
   const router = useRouter()
   const featured = primaryCountries()
@@ -501,16 +537,19 @@ function MenuLink({
   children,
   className,
   onClick,
+  "aria-label": ariaLabel,
 }: {
   href: string
   children: ReactNode
   className?: string
   onClick?: () => void
+  "aria-label"?: string
 }) {
   return (
     <Link
       href={href}
       role="menuitem"
+      aria-label={ariaLabel}
       className={cn(
         "flex h-8 w-full cursor-pointer items-center gap-1.5 rounded-md px-2 text-left text-sm hover:bg-neutral-100",
         className,
@@ -522,9 +561,6 @@ function MenuLink({
   )
 }
 
-function UnreadDot() {
-  return <span className="absolute top-1.5 right-1.5 size-2 rounded-full bg-rose-500" />
-}
 
 function SearchField({ value, onChange }: { value: string; onChange: (value: string) => void }) {
   const [draft, setDraft] = useState(value)
@@ -610,10 +646,6 @@ function locationHref(pathname: string, search: string, country: string | null, 
   return qs ? `${path}?${qs}` : path
 }
 
-function placeLabel(country: string, city?: string) {
-  return city ? `${city}, ${countryName(country)}` : countryName(country)
-}
-
 function filterCountries(query: string) {
   const needle = fold(query)
   if (!needle) return countries
@@ -626,6 +658,9 @@ function filterCountries(query: string) {
 }
 
 export function HeaderFallback() {
+  const post = navItem("post")
+  const profile = navItem("profile")
+  const ProfileIcon = profile.icon
   return (
     <header className="sticky top-0 z-40 border-b border-neutral-200/80 bg-white">
       <div className="mx-auto flex h-16 max-w-[1720px] items-center gap-1 px-2 md:h-[72px] md:gap-3 md:px-5 xl:gap-6 xl:px-8">
@@ -634,17 +669,14 @@ export function HeaderFallback() {
         <div className="min-w-0 flex-1 px-2 md:mx-auto md:max-w-[680px] md:px-0">
           <div className="h-11 rounded-full bg-neutral-100" />
         </div>
-        <nav aria-label="Account" className="fixed inset-x-3 bottom-[calc(env(safe-area-inset-bottom)+0.75rem)] z-50 mx-auto flex max-w-lg items-center justify-around rounded-3xl border border-neutral-200 bg-white p-2 shadow-lg md:static md:ml-auto md:max-w-none md:gap-2 md:rounded-none md:border-0 md:bg-transparent md:p-0 md:shadow-none lg:gap-3">
-          <PostLink className={cn(buttonVariants(), "h-10 rounded-full bg-neutral-950 px-3 text-white")} ariaLabel="Post ad">
-            Post ad
+        <nav aria-label={profile.label} className="fixed inset-x-3 bottom-[calc(env(safe-area-inset-bottom)+0.75rem)] z-50 mx-auto flex max-w-lg items-center justify-around rounded-3xl border border-neutral-200 bg-white p-2 shadow-lg md:static md:ml-auto md:max-w-none md:gap-2 md:rounded-none md:border-0 md:bg-transparent md:p-0 md:shadow-none lg:gap-3">
+          <PostLink className={cn(buttonVariants(), "h-10 rounded-full bg-neutral-950 px-3 text-white")} ariaLabel={post.shortLabel}>
+            {post.shortLabel}
           </PostLink>
-          <Link href="/messages" className={cn(buttonVariants({ variant: "outline", size: "icon-lg" }), "rounded-full")}>
-            <MessageCircle />
-            <span className="sr-only">Messages</span>
-          </Link>
-          <Link href="/account" className={cn(buttonVariants({ variant: "outline", size: "icon-lg" }), "rounded-full")}>
-            <UserRound />
-            <span className="sr-only">Profile</span>
+          <NavIconLink id="messages" />
+          <Link href={profile.href} className={cn(buttonVariants({ variant: "outline", size: "icon-lg" }), "rounded-full")}>
+            <ProfileIcon />
+            <span className="sr-only">{profile.label}</span>
           </Link>
         </nav>
       </div>
