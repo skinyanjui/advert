@@ -62,7 +62,7 @@ function Collection({
           </Button>
         </div>
       ) : (
-        <div className="mt-6 grid grid-cols-2 gap-3 lg:grid-cols-3 xl:grid-cols-5">
+        <div className="mt-6 grid grid-cols-2 gap-3 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5">
           {cards.map((listing) => (
             <ListingCard key={listing.id} listing={listing} />
           ))}
@@ -76,7 +76,7 @@ function PageSkeleton({ title }: { title: string }) {
   return (
     <div className="mx-auto w-full max-w-[1720px] px-4 py-8 md:px-6">
       <h1 className="text-2xl font-semibold tracking-tight">{title}</h1>
-      <div className="mt-6 grid grid-cols-2 gap-3 xl:grid-cols-5">
+      <div className="mt-6 grid grid-cols-2 gap-3 xl:grid-cols-4 2xl:grid-cols-5">
         {Array.from({ length: 4 }, (_, index) => (
           <div key={index} className="aspect-[4/5] rounded-2xl bg-neutral-200/70" />
         ))}
