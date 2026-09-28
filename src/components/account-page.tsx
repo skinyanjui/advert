@@ -281,7 +281,10 @@ function SignedInProfile({
       if (!response.ok) {
         // Auth user may already be gone — clear local session either way when flagged.
         if (payload.authDeleted) {
-          toast.error(payload.reason ?? "Account sign-in was removed, but some data may remain.")
+          toast.error(
+            payload.reason ??
+              "Your account was deleted, but some data couldn't be cleaned up. We'll remove it.",
+          )
           setDeleteOpen(false)
           await signOut()
           router.replace("/")
