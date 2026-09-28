@@ -95,24 +95,20 @@ export function Browse() {
   return (
     <div className="mx-auto w-full max-w-[1720px]">
       <section className="min-w-0 px-4 py-4 pb-16 md:px-6 md:py-5">
-        <div className="sticky top-16 z-40 -mx-4 mb-4 flex flex-wrap items-center justify-between gap-3 border-b border-neutral-200/80 bg-background px-4 py-3 shadow-sm md:top-[72px] md:-mx-6 md:px-6">
-          <div className="flex items-center gap-2">
-            <div>
-              <p className="text-sm text-neutral-500">
-                <span className="font-medium text-neutral-900">{visible.length}</span>{" "}
-                {visible.length === 1 ? "listing" : "listings"}
-                {typeName ? ` · ${typeName}` : ""} in {place}
-                {closestFirst ? " · closest first" : ""}
-              </p>
-            </div>
-          </div>
+        <div className="sticky top-16 z-40 -mx-4 mb-3 flex flex-wrap items-center justify-between gap-2 border-b border-neutral-200/80 bg-background px-4 py-1.5 shadow-sm md:top-[72px] md:-mx-6 md:px-6">
+          <p className="text-sm text-neutral-500">
+            <span className="font-medium text-neutral-900">{visible.length}</span>{" "}
+            {visible.length === 1 ? "listing" : "listings"}
+            {typeName ? ` · ${typeName}` : ""} in {place}
+            {closestFirst ? " · closest first" : ""}
+          </p>
           <Select
             value={query.sort}
             onValueChange={(value) => {
               if (isSortId(value)) update({ sort: value })
             }}
           >
-            <SelectTrigger className="h-9 rounded-full" aria-label="Sort listings">
+            <SelectTrigger className="h-8 rounded-full" aria-label="Sort listings">
               <SelectValue />
             </SelectTrigger>
             <SelectContent align="end" className="z-[60]">
