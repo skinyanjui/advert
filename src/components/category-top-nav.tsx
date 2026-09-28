@@ -91,7 +91,10 @@ function CategoryDrawerScroller({
 
   return (
     <div className="relative min-h-0 flex-1">
-      <div ref={scrollerRef} className="h-full min-h-0 overflow-y-auto px-3 pb-4">
+      <div
+        ref={scrollerRef}
+        className="h-full min-h-0 overflow-y-auto px-3 pb-4 [&_[aria-current=page]]:scroll-mb-10 [&_[aria-current=page]]:scroll-mt-2"
+      >
         <div>
           <Suspense fallback={<TopNavFallback active={active} onNavigate={onNavigate} />}>
             <CategoryTopNavLinks onNavigate={onNavigate} />
