@@ -117,3 +117,10 @@ test("deleteAccount cleanup failure logs orphans and returns a plain message", (
   )
   assert.doesNotMatch(store, /userId=\$\{userId\}/)
 })
+
+test("deleteAccount auth failure returns a plain message and logs the raw error", () => {
+  const store = readFileSync(new URL("../src/lib/profile-store.ts", import.meta.url), "utf8")
+  assert.match(store, /Could not delete auth user during account deletion/)
+  assert.match(store, /We couldn't delete your account\. Please try again\./)
+  assert.doesNotMatch(store, /reason: authError\.message/)
+})
