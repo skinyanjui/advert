@@ -2,8 +2,10 @@ import type { Metadata } from "next"
 import { Geist, Geist_Mono } from "next/font/google"
 import { Suspense } from "react"
 
+import { CategorySidebar } from "@/components/category-top-nav"
 import { HeaderFallback, SiteHeader } from "@/components/site-header"
 import { ThemeSync } from "@/components/theme-choices"
+import { SidebarInset, SidebarProvider } from "@/components/ui/sidebar"
 import { Toaster } from "@/components/ui/sonner"
 import { AuthProvider } from "@/lib/auth"
 import { MarketplaceProvider } from "@/lib/marketplace"
@@ -39,11 +41,18 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
         <ThemeSync />
         <MarketplaceProvider>
           <AuthProvider>
-            <Suspense fallback={<HeaderFallback />}>
-              <SiteHeader />
-            </Suspense>
-            <main className="flex-1">{children}</main>
-            <Toaster />
+            <SidebarProvider defaultOpen className="min-h-svh flex-1 flex-col">
+              <Suspense fallback={<HeaderFallback />}>
+                <SiteHeader />
+              </Suspense>
+              <div className="flex min-h-0 w-full flex-1">
+                <CategorySidebar />
+                <SidebarInset className="min-w-0">
+                  <div className="flex-1">{children}</div>
+                </SidebarInset>
+              </div>
+              <Toaster />
+            </SidebarProvider>
           </AuthProvider>
         </MarketplaceProvider>
       </body>

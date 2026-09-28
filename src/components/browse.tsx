@@ -1,5 +1,6 @@
 "use client"
 
+import { ArrowUpDown } from "lucide-react"
 import Link from "next/link"
 import { useMemo } from "react"
 
@@ -94,30 +95,31 @@ export function Browse() {
     (!home.city || !query.city || fold(query.city) !== fold(home.city))
   return (
     <div className="mx-auto w-full max-w-[1720px]">
-      <section className="min-w-0 px-4 py-4 pb-16 md:px-6 md:py-5">
-        <div className="sticky top-16 z-40 -mx-4 mb-4 flex flex-wrap items-center justify-between gap-3 border-b border-neutral-200/80 bg-background px-4 py-3 shadow-sm md:top-[72px] md:-mx-6 md:px-6">
-          <div className="flex items-center gap-2">
-            <div>
-              <p className="text-sm text-neutral-500">
-                <span className="font-medium text-neutral-900">{visible.length}</span>{" "}
-                {visible.length === 1 ? "listing" : "listings"}
-                {typeName ? ` · ${typeName}` : ""} in {place}
-                {closestFirst ? " · closest first" : ""}
-              </p>
-            </div>
-          </div>
+      <section className="min-w-0 px-4 pt-0 pb-16 md:px-6">
+        <div className="sticky top-16 z-40 -mx-4 mb-2 flex flex-wrap items-center justify-between gap-2 border-b border-neutral-200/80 bg-background px-4 py-1 shadow-sm md:top-[72px] md:-mx-6 md:px-6">
+          <p className="min-w-0 truncate text-sm text-neutral-500">
+            <span className="font-medium text-neutral-900">{visible.length}</span>{" "}
+            {visible.length === 1 ? "listing" : "listings"}
+            {typeName ? ` · ${typeName}` : ""} in {place}
+            {closestFirst ? " · nearby first" : ""}
+          </p>
           <Select
             value={query.sort}
             onValueChange={(value) => {
               if (isSortId(value)) update({ sort: value })
             }}
           >
-            <SelectTrigger className="h-9 rounded-full" aria-label="Sort listings">
+            <SelectTrigger
+              size="sm"
+              className="h-7 gap-1.5 rounded-full border-neutral-200 bg-white px-2.5 font-medium text-neutral-800 shadow-none"
+              aria-label="Sort listings"
+            >
+              <ArrowUpDown className="size-3.5 text-neutral-400" aria-hidden="true" />
               <SelectValue />
             </SelectTrigger>
-            <SelectContent align="end" className="z-[60]">
+            <SelectContent align="end" className="z-[60] min-w-44">
               {sorts.map((sort) => (
-                <SelectItem key={sort.id} value={sort.id}>
+                <SelectItem key={sort.id} value={sort.id} description={sort.hint}>
                   {sort.name}
                 </SelectItem>
               ))}
