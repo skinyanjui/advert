@@ -11,11 +11,11 @@ const catalogs: Record<Locale, Record<MessageKey, string>> = {
 
 /**
  * Locales offered in the Language selector.
- * Only list locales whose product UI is fully wired through `t()`.
- * fr/sw dictionaries exist (key-parity tested) but are not offered yet — shipping
- * English with the i18n structure ready. Never show a language option that does not work.
+ * Only list locales whose product UI catalogs are complete (key-parity tested).
+ * Wiring of every screen through `t()` may still be incremental; catalogs cover
+ * the full product surface so selectors can ship all three locales.
  */
-export const offeredLocales: readonly Locale[] = ["en"] as const
+export const offeredLocales: readonly Locale[] = ["en", "fr", "sw"] as const
 
 export type TranslateValues = Record<string, string | number>
 
