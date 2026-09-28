@@ -19,6 +19,7 @@ export const en = {
   "theme.system": "System",
 
   // Nav
+  "nav.home": "Home",
   "nav.post": "Post an ad",
   "nav.postShort": "Post ad",
   "nav.messages": "Messages",

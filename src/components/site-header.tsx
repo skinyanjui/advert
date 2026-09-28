@@ -39,11 +39,14 @@ export function SiteHeader() {
   const myAdsAttention = navCounts["my-ads"] ?? 0
   const profileAttention = unreadMessages + myAdsAttention
   const locationLabel = query.country ? countryName(query.country) : t("nav.allAfrica")
+  const pathname = usePathname()
+  const homeNav = navItem("home")
   const postNav = navItem("post")
   const messagesNav = navItem("messages")
   const savedNav = navItem("saved")
   const myAdsNav = navItem("my-ads")
   const profileNav = navItem("profile")
+  const HomeIcon = homeNav.icon
   const PostIcon = postNav.icon
   const ProfileIcon = profileNav.icon
   const postHref = usePostAdHref()
@@ -76,6 +79,21 @@ export function SiteHeader() {
           </div>
           <div className="fixed inset-x-3 bottom-[calc(env(safe-area-inset-bottom)+0.75rem)] z-50 mx-auto flex max-w-lg items-center justify-between rounded-3xl border border-neutral-200 bg-white p-2.5 shadow-lg md:static md:inset-auto md:ml-auto md:max-w-none md:shrink-0 md:rounded-none md:border-0 md:bg-transparent md:p-0 md:shadow-none">
             <nav aria-label={t("nav.navigation")} className="flex w-full items-center justify-between gap-1 md:justify-end md:gap-2 lg:gap-3">
+              <Button
+                asChild
+                variant="outline"
+                size="icon-lg"
+                className="rounded-full md:hidden"
+              >
+                <Link
+                  href={homeNav.href}
+                  aria-label={t("nav.home")}
+                  aria-current={pathname === "/" ? "page" : undefined}
+                >
+                  <HomeIcon />
+                  <span className="sr-only">{t("nav.home")}</span>
+                </Link>
+              </Button>
               <CountryMenu label={locationLabel} query={query} />
               <Button asChild className="h-10 rounded-full bg-neutral-950 px-3 text-white hover:bg-neutral-800 md:px-3 xl:px-4">
                 <Link href={postHref} aria-label={t("nav.postShort")}>
@@ -674,8 +692,10 @@ function filterCountries(query: string) {
 }
 
 export function HeaderFallback() {
+  const home = navItem("home")
   const post = navItem("post")
   const profile = navItem("profile")
+  const HomeIcon = home.icon
   const ProfileIcon = profile.icon
   return (
     <header className="sticky top-0 z-40 border-b border-neutral-200/80 bg-white">
@@ -686,6 +706,14 @@ export function HeaderFallback() {
           <div className="h-11 rounded-full bg-neutral-100" />
         </div>
         <nav aria-label={profile.label} className="fixed inset-x-3 bottom-[calc(env(safe-area-inset-bottom)+0.75rem)] z-50 mx-auto flex max-w-lg items-center justify-around rounded-3xl border border-neutral-200 bg-white p-2 shadow-lg md:static md:ml-auto md:max-w-none md:gap-2 md:rounded-none md:border-0 md:bg-transparent md:p-0 md:shadow-none lg:gap-3">
+          <Link
+            href={home.href}
+            aria-label={home.label}
+            className={cn(buttonVariants({ variant: "outline", size: "icon-lg" }), "rounded-full md:hidden")}
+          >
+            <HomeIcon />
+            <span className="sr-only">{home.label}</span>
+          </Link>
           <PostLink className={cn(buttonVariants(), "h-10 rounded-full bg-neutral-950 px-3 text-white")} ariaLabel={post.shortLabel}>
             {post.shortLabel}
           </PostLink>

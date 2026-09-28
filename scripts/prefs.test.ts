@@ -83,6 +83,8 @@ test("header moves notifications into the profile menu and drops top-nav message
   const header = readFileSync(new URL("../src/components/site-header.tsx", import.meta.url), "utf8")
   assert.match(header, /ProfileNotifications/)
   assert.match(header, /LanguageCurrencyFields/)
+  assert.match(header, /navItem\("home"\)/)
+  assert.match(header, /md:hidden/)
   assert.doesNotMatch(header, /NavIconLink/)
   assert.doesNotMatch(header, /NotificationsMenu/)
   assert.doesNotMatch(header, /<Bell/)

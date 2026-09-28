@@ -15,6 +15,7 @@ export const sw: Messages = {
   "theme.dark": "Giza",
   "theme.system": "Mfumo",
 
+  "nav.home": "Nyumbani",
   "nav.post": "Weka tangazo",
   "nav.postShort": "Tangazo",
   "nav.messages": "Ujumbe",

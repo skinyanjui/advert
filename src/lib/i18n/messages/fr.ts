@@ -15,6 +15,7 @@ export const fr: Messages = {
   "theme.dark": "Sombre",
   "theme.system": "Système",
 
+  "nav.home": "Accueil",
   "nav.post": "Publier une annonce",
   "nav.postShort": "Publier",
   "nav.messages": "Messages",

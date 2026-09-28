@@ -1,6 +1,7 @@
 import type { LucideIcon } from "lucide-react"
 import {
   Bookmark,
+  Home,
   Info,
   MessageCircle,
   Plus,
@@ -8,7 +9,7 @@ import {
   UserRound,
 } from "lucide-react"
 
-export type NavItemId = "post" | "messages" | "saved" | "my-ads" | "profile" | "credits"
+export type NavItemId = "home" | "post" | "messages" | "saved" | "my-ads" | "profile" | "credits"
 
 export type NavItem = {
   id: NavItemId
@@ -20,6 +21,13 @@ export type NavItem = {
 
 /** Shared primary nav used by header, profile menu, and compact footer. */
 export const navItems: NavItem[] = [
+  {
+    id: "home",
+    href: "/",
+    label: "Home",
+    shortLabel: "Home",
+    icon: Home,
+  },
   {
     id: "post",
     href: "/post",
