@@ -93,14 +93,21 @@ test("package.json test script has no conflict markers and includes profile test
   assert.match(pkg, /scripts\/profile\.test\.ts/)
 })
 
-test("account page reuses #17 nav shared components", () => {
+test("account page has no ProfileShortcuts hub", () => {
   const page = readFileSync(new URL("../src/components/account-page.tsx", import.meta.url), "utf8")
-  assert.match(page, /from "@\/components\/empty-panel"/)
-  assert.match(page, /from "@\/components\/nav-badge"/)
-  assert.match(page, /from "@\/hooks\/use-nav-counts"/)
-  assert.match(page, /from "@\/lib\/nav"/)
-  assert.match(page, /navItem\("messages"\)/)
-  assert.match(page, /navItem\("post"\)/)
+  assert.doesNotMatch(page, /ProfileShortcuts/)
+  assert.doesNotMatch(page, /navItem\(/)
+  assert.doesNotMatch(page, /NavBadge/)
   assert.doesNotMatch(page, /createBrowserSupabase/)
-  assert.doesNotMatch(page, /<<<<<<|>>>>>>|======/)
+  assert.match(page, /\/admin\/reports/)
+  assert.match(page, /from "@\/components\/empty-panel"/)
+})
+
+test("deleteAccount cleanup failure surfaces orphan identifiers", () => {
+  const store = readFileSync(new URL("../src/lib/profile-store.ts", import.meta.url), "utf8")
+  assert.match(store, /authDeleted/)
+  assert.match(store, /Account auth deleted but board cleanup incomplete/)
+  assert.match(store, /userId=\$\{userId\}/)
+  assert.match(store, /listings=\$\{listingIds/)
+  assert.match(store, /conversations=\$\{conversationIds/)
 })
