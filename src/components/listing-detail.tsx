@@ -35,6 +35,7 @@ import { osmLinks } from "@/lib/map"
 import { useMarketplace } from "@/lib/marketplace"
 import { messageError } from "@/lib/messages"
 import { daysUntilExpiry, isListingExpired, isListingExpiringSoon } from "@/lib/expiry"
+import { effectiveListingStatus } from "@/lib/listing-status"
 import { listingFacts, listingVoice } from "@/lib/posting"
 import { listingImages } from "@/lib/photos"
 import {
@@ -53,7 +54,7 @@ const sampleIds = new Set(seedListings.map((item) => item.id))
 export function ListingDetail({ id }: { id: string }) {
   const searchParams = useSearchParams()
   const router = useRouter()
-  const { listings, ready, isSaved, toggleSaved, messages, sendMessage, setListingSold, renewListing, removeListing } =
+  const { listings, ready, isSaved, toggleSaved, messages, sendMessage, setListingSold, setListingPaused, renewListing, removeListing } =
     useMarketplace()
   const listing = listings.find((item) => item.id === id)
   const [phoneVisible, setPhoneVisible] = useState(false)
@@ -101,7 +102,8 @@ export function ListingDetail({ id }: { id: string }) {
   const backSearch = keptSearch(searchParams, ad.subcategory)
   const backHref = backSearch ? `/${ad.category}?${backSearch}` : `/${ad.category}`
   const expired = isListingExpired(ad.expiresAt)
-  const contactOpen = !isSample && !ad.sold && !ad.mine && !expired
+  const status = effectiveListingStatus(ad)
+  const contactOpen = !isSample && status === "active" && !ad.mine
   const expiringSoon = isListingExpiringSoon(ad.expiresAt)
   const daysLeft = daysUntilExpiry(ad.expiresAt)
   const postedHours = ad.postedAt ? hoursAgoOf(ad) : ad.hoursAgo
@@ -153,7 +155,7 @@ export function ListingDetail({ id }: { id: string }) {
 
   async function onSold() {
     setBusy(true)
-    const next = !ad.sold
+    const next = status !== "sold"
     const result = await setListingSold(ad.id, next)
     setBusy(false)
     if (!result.ok) {
@@ -161,6 +163,18 @@ export function ListingDetail({ id }: { id: string }) {
       return
     }
     toast.success(next ? "Marked as sold" : "Marked as available")
+  }
+
+  async function onPause() {
+    setBusy(true)
+    const next = status !== "paused"
+    const result = await setListingPaused(ad.id, next)
+    setBusy(false)
+    if (!result.ok) {
+      toast.error(result.reason)
+      return
+    }
+    toast.success(next ? "Ad paused" : "Ad resumed")
   }
 
   async function onRenew() {
@@ -308,13 +322,16 @@ export function ListingDetail({ id }: { id: string }) {
                 {isSample ? (
                   <p className="mb-1 text-xs font-semibold tracking-wide text-amber-800 uppercase">Sample ad · contact unavailable</p>
                 ) : null}
-                {listing.sold ? (
+                {listing.sold || status === "sold" ? (
                   <p className="mb-1 text-xs font-medium tracking-wide text-neutral-500 uppercase">Sold</p>
+                ) : null}
+                {status === "paused" && listing.mine ? (
+                  <p className="mb-1 text-xs font-medium tracking-wide text-amber-700 uppercase">Paused</p>
                 ) : null}
                 {listing.hidden && listing.mine ? (
                   <p className="mb-1 text-xs font-medium tracking-wide text-amber-700 uppercase">Hidden from the board</p>
                 ) : null}
-                {listing.mine && expired ? (
+                {listing.mine && (expired || status === "expired") ? (
                   <p className="mb-1 text-xs font-medium tracking-wide text-neutral-500 uppercase">Expired</p>
                 ) : listing.mine && expiringSoon ? (
                   <p className="mb-1 text-xs font-medium tracking-wide text-amber-700 uppercase">
@@ -411,9 +428,14 @@ export function ListingDetail({ id }: { id: string }) {
                   <Link href={`/post?edit=${listing.id}`}>Edit ad</Link>
                 </Button>
                 <Button variant="outline" className="h-10 rounded-full" disabled={busy} onClick={() => void onSold()}>
-                  {listing.sold ? "Mark available" : "Mark sold"}
+                  {status === "sold" ? "Mark available" : "Mark sold"}
                 </Button>
-                {!listing.sold || expired ? (
+                {status === "active" || status === "paused" ? (
+                  <Button variant="outline" className="h-10 rounded-full" disabled={busy} onClick={() => void onPause()}>
+                    {status === "paused" ? "Resume ad" : "Pause ad"}
+                  </Button>
+                ) : null}
+                {status !== "sold" || expired ? (
                   <Button variant="outline" className="h-10 rounded-full" disabled={busy} onClick={() => void onRenew()}>
                     Renew ad
                   </Button>
@@ -433,9 +455,13 @@ export function ListingDetail({ id }: { id: string }) {
                   </Button>
                 ) : null}
               </>
-            ) : listing.sold || expired ? (
+            ) : status !== "active" ? (
               <p className="rounded-xl bg-neutral-50 px-3 py-3 text-sm text-neutral-600">
-                {expired ? "This ad has expired. Contact options are closed." : "This ad is marked sold. Contact options are closed."}
+                {status === "expired"
+                  ? "This ad has expired. Contact options are closed."
+                  : status === "paused"
+                    ? "This ad is no longer available."
+                    : "This ad is marked sold. Contact options are closed."}
               </p>
             ) : (
               <Button className="h-10 rounded-full" onClick={() => setMessageOpen(true)}>
@@ -757,9 +783,9 @@ function Fact({ label, value }: { label: string; value: string }) {
 function MissingListing() {
   return (
     <div className="mx-auto max-w-lg px-4 py-24 text-center">
-      <h1 className="text-xl font-semibold tracking-tight">This listing is gone</h1>
+      <h1 className="text-xl font-semibold tracking-tight">This listing is no longer available</h1>
       <p className="mt-2 text-sm text-neutral-500">
-        It may have been removed, or it only existed in another browser.
+        It may have been sold, paused, expired, or removed.
       </p>
       <Button asChild className="mt-5 rounded-full">
         <Link href="/">Back to listings</Link>

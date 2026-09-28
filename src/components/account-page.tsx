@@ -40,26 +40,19 @@ import {
   memberSinceYear,
   type BoardProfile,
 } from "@/lib/profile"
-import { createBrowserSupabase } from "@/lib/supabase/client"
 
 export function AccountPage() {
   const auth = useAuth()
   const { admin } = useMarketplace()
   const isAdmin = auth.signedIn && admin
 
-  if (!auth.ready) {
-    return (
-      <div className="mx-auto w-full max-w-3xl px-4 py-6 md:px-6">
-        <ProfileSkeleton />
-      </div>
-    )
-  }
-
   return (
     <div className="mx-auto w-full max-w-3xl space-y-4 px-4 py-6 md:px-6">
       <h1 className="text-2xl font-semibold tracking-tight">Profile</h1>
 
-      {!auth.signedIn ? (
+      {!auth.ready ? (
+        <ProfileSkeleton />
+      ) : !auth.signedIn ? (
         <Card>
           <CardHeader>
             <CardTitle>Account</CardTitle>
@@ -79,7 +72,7 @@ export function AccountPage() {
         <SignedInProfile
           email={auth.email}
           createdAt={auth.user?.created_at ?? null}
-          onSignedOut={() => void auth.signOut()}
+          signOut={() => auth.signOut()}
         />
       )}
 
@@ -99,11 +92,11 @@ export function AccountPage() {
 function SignedInProfile({
   email,
   createdAt,
-  onSignedOut,
+  signOut,
 }: {
   email: string | null
   createdAt: string | null
-  onSignedOut: () => void
+  signOut: () => Promise<void>
 }) {
   const router = useRouter()
   const fileRef = useRef<HTMLInputElement>(null)
@@ -239,10 +232,9 @@ function SignedInProfile({
         toast.error(payload.reason ?? "Could not delete your account.")
         return
       }
-      const supabase = createBrowserSupabase()
-      await supabase.auth.signOut()
-      toast.success("Account deleted")
       setDeleteOpen(false)
+      toast.success("Account deleted")
+      await signOut()
       router.replace("/")
       router.refresh()
     } catch {
@@ -381,7 +373,7 @@ function SignedInProfile({
           ) : null}
         </CardContent>
         <CardFooter className="justify-between gap-2">
-          <Button type="button" variant="outline" onClick={onSignedOut}>
+          <Button type="button" variant="outline" onClick={() => void signOut()}>
             Sign out
           </Button>
         </CardFooter>
@@ -448,7 +440,6 @@ function SignedInProfile({
 function ProfileSkeleton() {
   return (
     <div className="space-y-4" aria-busy="true" aria-live="polite">
-      <Skeleton className="h-8 w-32" />
       <Card>
         <CardHeader>
           <Skeleton className="h-4 w-64" />

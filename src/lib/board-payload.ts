@@ -1,6 +1,7 @@
 import { canonicalCountry } from "@/lib/countries"
 import { isBoardMessage, type BoardMessage } from "@/lib/messages"
 import { normalizeListingPhotos } from "@/lib/photos"
+import { isListingStatus } from "@/lib/listing-status"
 import { isCategoryId, type Listing } from "@/lib/types"
 
 export type BoardState = {
@@ -32,6 +33,8 @@ export function cleanListing(value: unknown): Listing | undefined {
   const country = canonicalCountry(value.country)
   if (!country) return undefined
   const images = normalizeListingPhotos(value.images, value.image)
+  const status = isListingStatus(value.status) ? value.status : undefined
+  const sold = status === "sold" || value.sold === true ? true : undefined
   return {
     ...value,
     country,
@@ -44,7 +47,12 @@ export function cleanListing(value: unknown): Listing | undefined {
     timezone: cleanText(value.timezone),
     postedAt: cleanText(value.postedAt),
     meta: cleanText(value.meta),
-    sold: value.sold === true ? true : undefined,
+    status,
+    sold,
+    soldAt: sold ? cleanText(value.soldAt) : undefined,
+    expiresAt: cleanText(value.expiresAt),
+    hidden: value.hidden === true ? true : undefined,
+    mine: value.mine === true ? true : undefined,
   }
 }
 

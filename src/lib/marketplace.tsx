@@ -182,18 +182,52 @@ async function removeListing(id: string): Promise<StoreResult> {
   }
 }
 
-async function setListingSold(id: string, sold: boolean): Promise<StoreResult> {
+function restoreListing(id: string, previous: Listing | undefined) {
+  if (!previous) return
+  memory = {
+    ...memory,
+    posted: memory.posted.map((item) => (item.id === id ? previous : item)),
+    ready: true,
+  }
+  emit()
+}
+
+async function setListingSold(
+  id: string,
+  sold: boolean,
+  resumeTo?: "active" | "paused",
+): Promise<StoreResult> {
   await ensureLoaded()
+  const previousListing = memory.posted.find((item) => item.id === id)
+  const nextStatus = (sold ? "sold" : resumeTo === "paused" ? "paused" : "active") as Listing["status"]
+  const optimistic = memory.posted.map((item) =>
+    item.id === id
+      ? {
+          ...item,
+          sold: sold ? true : undefined,
+          status: nextStatus,
+          soldAt: sold ? new Date().toISOString() : undefined,
+        }
+      : item,
+  )
+  memory = { ...memory, posted: optimistic, ready: true }
+  emit()
   try {
     const response = await fetch(`/api/listings/${encodeURIComponent(id)}`, {
       method: "PATCH",
       headers: requestHeaders(),
-      body: JSON.stringify({ sold }),
+      body: JSON.stringify(resumeTo ? { sold, resumeTo } : { sold }),
     })
-    if (!response.ok) return { ok: false, reason: await readFailure(response, "Could not update that ad.") }
+    if (!response.ok) {
+      restoreListing(id, previousListing)
+      return { ok: false, reason: await readFailure(response, "Could not update that ad.") }
+    }
     const payload = (await response.json()) as { listing?: unknown }
     const saved = parseBoardState({ posted: [payload.listing], savedIds: [], messages: [] }).posted[0]
-    if (!saved) return { ok: false, reason: "That ad could not be read." }
+    if (!saved) {
+      restoreListing(id, previousListing)
+      return { ok: false, reason: "That ad could not be read." }
+    }
     memory = {
       ...memory,
       posted: memory.posted.map((item) => (item.id === saved.id ? saved : item)),
@@ -202,6 +236,50 @@ async function setListingSold(id: string, sold: boolean): Promise<StoreResult> {
     emit()
     return { ok: true }
   } catch {
+    restoreListing(id, previousListing)
+    return { ok: false, reason: "Could not update that ad." }
+  }
+}
+
+async function setListingPaused(id: string, paused: boolean): Promise<StoreResult> {
+  await ensureLoaded()
+  const previousListing = memory.posted.find((item) => item.id === id)
+  const optimistic = memory.posted.map((item) =>
+    item.id === id
+      ? {
+          ...item,
+          status: (paused ? "paused" : "active") as Listing["status"],
+          sold: undefined,
+        }
+      : item,
+  )
+  memory = { ...memory, posted: optimistic, ready: true }
+  emit()
+  try {
+    const response = await fetch(`/api/listings/${encodeURIComponent(id)}`, {
+      method: "PATCH",
+      headers: requestHeaders(),
+      body: JSON.stringify({ paused }),
+    })
+    if (!response.ok) {
+      restoreListing(id, previousListing)
+      return { ok: false, reason: await readFailure(response, "Could not update that ad.") }
+    }
+    const payload = (await response.json()) as { listing?: unknown }
+    const saved = parseBoardState({ posted: [payload.listing], savedIds: [], messages: [] }).posted[0]
+    if (!saved) {
+      restoreListing(id, previousListing)
+      return { ok: false, reason: "That ad could not be read." }
+    }
+    memory = {
+      ...memory,
+      posted: memory.posted.map((item) => (item.id === saved.id ? saved : item)),
+      ready: true,
+    }
+    emit()
+    return { ok: true }
+  } catch {
+    restoreListing(id, previousListing)
     return { ok: false, reason: "Could not update that ad." }
   }
 }
@@ -311,7 +389,8 @@ type MarketplaceContextValue = {
   addListing: (listing: Listing) => Promise<StoreResult>
   updateListing: (listing: Listing) => Promise<StoreResult>
   removeListing: (id: string) => Promise<StoreResult>
-  setListingSold: (id: string, sold: boolean) => Promise<StoreResult>
+  setListingSold: (id: string, sold: boolean, resumeTo?: "active" | "paused") => Promise<StoreResult>
+  setListingPaused: (id: string, paused: boolean) => Promise<StoreResult>
   renewListing: (id: string) => Promise<StoreResult>
   sendMessage: (listingId: string, body: string, conversationId?: string) => Promise<StoreResult>
   markThreadRead: (conversationId: string) => void
@@ -337,6 +416,7 @@ export function MarketplaceProvider({ children }: { children: React.ReactNode })
       updateListing,
       removeListing,
       setListingSold,
+      setListingPaused,
       renewListing,
       sendMessage,
       markThreadRead,

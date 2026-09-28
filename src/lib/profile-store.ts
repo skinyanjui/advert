@@ -238,48 +238,12 @@ async function removeListingPhotos(listing: Listing) {
 
 /**
  * Delete the account and owned board data.
- * Listings/saves/messages have no FK to auth.users, so they are removed explicitly.
- * Conversation messages cascade when their conversation row is deleted.
- * board_profiles and board_session_claims cascade from auth.users.
+ * Auth user is removed first so a failed auth delete leaves the account intact.
+ * board_profiles and board_session_claims cascade from auth.users; listings,
+ * saves, messages, and conversations have no FK and are cleaned up after.
  */
 export async function deleteAccount(userId: string): Promise<Result<true>> {
   const db = boardDb()
-
-  const { data: listings, error: listingsError } = await db
-    .from("board_listings")
-    .select("id,payload")
-    .eq("owner_id", userId)
-  check(listingsError)
-
-  for (const row of listings ?? []) {
-    const listing = cleanListing(row.payload)
-    if (listing) await removeListingPhotos(listing)
-    const { error: saveError } = await db.from("board_saves").delete().eq("listing_id", row.id)
-    check(saveError)
-  }
-
-  const { error: deleteListingsError } = await db.from("board_listings").delete().eq("owner_id", userId)
-  check(deleteListingsError)
-
-  const { error: savesError } = await db.from("board_saves").delete().eq("owner_id", userId)
-  check(savesError)
-
-  const { error: legacyMessagesError } = await db.from("board_messages").delete().eq("owner_id", userId)
-  check(legacyMessagesError)
-
-  const { data: conversations, error: conversationsError } = await db
-    .from("board_conversations")
-    .select("id")
-    .or(`buyer_id.eq.${userId},listing_owner_id.eq.${userId}`)
-  check(conversationsError)
-  const conversationIds = (conversations ?? []).map((row) => row.id as string)
-  if (conversationIds.length > 0) {
-    const { error: deleteConversationsError } = await db
-      .from("board_conversations")
-      .delete()
-      .in("id", conversationIds)
-    check(deleteConversationsError)
-  }
 
   const { data: profileRow, error: profileReadError } = await db
     .from("board_profiles")
@@ -289,16 +253,52 @@ export async function deleteAccount(userId: string): Promise<Result<true>> {
   check(profileReadError)
   const avatar =
     typeof profileRow?.avatar_url === "string" ? profileRow.avatar_url : null
-  if (avatar && ownedAvatarPath(avatar, userId)) await removeAvatar(avatar)
 
-  const { error: profileError } = await db.from("board_profiles").delete().eq("user_id", userId)
-  check(profileError)
+  const { data: listings, error: listingsError } = await db
+    .from("board_listings")
+    .select("id,payload")
+    .eq("owner_id", userId)
+  check(listingsError)
 
-  const { error: claimsError } = await db.from("board_session_claims").delete().eq("user_id", userId)
-  check(claimsError)
+  const { data: conversations, error: conversationsError } = await db
+    .from("board_conversations")
+    .select("id")
+    .or(`buyer_id.eq.${userId},listing_owner_id.eq.${userId}`)
+  check(conversationsError)
+  const conversationIds = (conversations ?? []).map((row) => row.id as string)
 
   const { error: authError } = await db.auth.admin.deleteUser(userId)
-  if (authError) return { ok: false, reason: authError.message }
+  if (authError) {
+    return { ok: false, reason: authError.message || "Could not delete the sign-in account." }
+  }
+
+  for (const row of listings ?? []) {
+    const listing = cleanListing(row.payload)
+    if (listing) await removeListingPhotos(listing)
+    const { error: saveError } = await db.from("board_saves").delete().eq("listing_id", row.id)
+    if (saveError) console.error("Could not remove saves for deleted listing", saveError)
+  }
+
+  const { error: deleteListingsError } = await db.from("board_listings").delete().eq("owner_id", userId)
+  if (deleteListingsError) console.error("Could not remove listings after auth delete", deleteListingsError)
+
+  const { error: savesError } = await db.from("board_saves").delete().eq("owner_id", userId)
+  if (savesError) console.error("Could not remove saves after auth delete", savesError)
+
+  const { error: legacyMessagesError } = await db.from("board_messages").delete().eq("owner_id", userId)
+  if (legacyMessagesError) console.error("Could not remove legacy messages after auth delete", legacyMessagesError)
+
+  if (conversationIds.length > 0) {
+    const { error: deleteConversationsError } = await db
+      .from("board_conversations")
+      .delete()
+      .in("id", conversationIds)
+    if (deleteConversationsError) {
+      console.error("Could not remove conversations after auth delete", deleteConversationsError)
+    }
+  }
+
+  if (avatar && ownedAvatarPath(avatar, userId)) await removeAvatar(avatar)
 
   return { ok: true, value: true }
 }

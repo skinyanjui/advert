@@ -84,9 +84,11 @@ test("avatar URL updates reject arbitrary external links", () => {
   assert.equal(foreign.ok, false)
 })
 
-test("package.json test script has no conflict markers and includes both new tests", () => {
+test("package.json test script has no conflict markers and includes profile tests", () => {
   const pkg = readFileSync(new URL("../package.json", import.meta.url), "utf8")
   assert.doesNotMatch(pkg, /<<<<<<|>>>>>>|======/)
   assert.match(pkg, /scripts\/relative-time\.test\.ts/)
+  assert.match(pkg, /scripts\/scroll-fades\.test\.ts/)
+  assert.match(pkg, /scripts\/listing-status\.test\.ts/)
   assert.match(pkg, /scripts\/profile\.test\.ts/)
 })
