@@ -20,6 +20,7 @@ import {
   type ListingStatus,
 } from "@/lib/listing-status"
 import { sendEmail } from "@/lib/email"
+import { applySellerProfile, profilesByUserIds } from "@/lib/profile-store"
 import { site } from "@/lib/site"
 import type { Listing } from "@/lib/types"
 
@@ -82,6 +83,7 @@ function payload(listing: Listing) {
     featured: undefined,
     hidden: undefined,
     expiresAt: undefined,
+    sellerAvatar: undefined,
     status: undefined,
     soldAt: undefined,
     // sold lives on the status column after the migration; keep payload clean.
@@ -157,6 +159,8 @@ export async function listBoard(owner: string): Promise<BoardState> {
   ])
   check(posted.error)
   check(saved.error)
+  const ownerIds = (posted.data ?? []).map((row) => row.owner_id as string)
+  const profiles = await profilesByUserIds(ownerIds)
   return {
     posted: (posted.data ?? []).flatMap((row) => {
       const item = unpack(row as Row, owner)
@@ -164,7 +168,7 @@ export async function listBoard(owner: string): Promise<BoardState> {
       // Non-owners only see publicly active, non-expired, non-hidden ads.
       // Owners keep paused/sold/expired/hidden ads for My ads management.
       if (!item.mine && !isPubliclyVisibleListing(item)) return []
-      return [item]
+      return [applySellerProfile(item, profiles.get(row.owner_id as string))]
     }),
     savedIds: (saved.data ?? []).map((row) => row.listing_id),
     messages,
@@ -219,14 +223,24 @@ async function listMessagesFor(viewerId: string): Promise<BoardMessage[]> {
     .order("sent_at", { ascending: true })
     .limit(500)
   check(error)
+  const profiles = await profilesByUserIds(
+    [...conversations.values()].map((conversation) => conversation.listing_owner_id),
+  )
   return ((rows ?? []) as ConversationMessageRow[]).flatMap((row) => {
     const conversation = conversations.get(row.conversation_id)
     if (!conversation) return []
-    return [toBoardMessage(row, conversation, viewerId)]
+    const profile = profiles.get(conversation.listing_owner_id)
+    const sellerName = profile?.displayName?.trim() || conversation.seller_name
+    return [toBoardMessage(row, conversation, viewerId, sellerName)]
   })
 }
 
-function toBoardMessage(row: ConversationMessageRow, conversation: ConversationRow, viewerId: string): BoardMessage {
+function toBoardMessage(
+  row: ConversationMessageRow,
+  conversation: ConversationRow,
+  viewerId: string,
+  sellerName: string,
+): BoardMessage {
   const viewerIsSeller = conversation.listing_owner_id === viewerId
   const role = row.sender_id === conversation.listing_owner_id ? "seller" : "buyer"
   const fromMe = row.sender_id === viewerId
@@ -237,8 +251,8 @@ function toBoardMessage(row: ConversationMessageRow, conversation: ConversationR
     conversationId: conversation.id,
     listingId: conversation.listing_id,
     listingTitle: conversation.listing_title,
-    sellerName: conversation.seller_name,
-    peerName: viewerIsSeller ? "Buyer" : conversation.seller_name,
+    sellerName,
+    peerName: viewerIsSeller ? "Buyer" : sellerName,
     body: row.body,
     sentAt: row.sent_at,
     senderId: row.sender_id,
@@ -258,10 +272,13 @@ export async function createListing(owner: string, input: unknown): Promise<Resu
   if (!quota.ok) return quota
   const photo = await storePhotos(listingPhotoList(accepted.listing), owner)
   if (!photo.ok) return photo
+  const profiles = await profilesByUserIds([owner])
+  const profile = profiles.get(owner)
   const postedAt = new Date().toISOString()
   const expiresAt = expiresAtFrom(postedAt)
   const stored = {
     ...accepted.listing,
+    sellerName: profile?.displayName?.trim() || accepted.listing.sellerName,
     image: photo.value[0]!,
     images: photo.value,
     postedAt,
@@ -283,7 +300,10 @@ export async function createListing(owner: string, input: unknown): Promise<Resu
     if (error.code === "23505") return { ok: false, reason: "That listing is already on the board." }
     check(error)
   }
-  return { ok: true, value: { ...stored, mine: true, status: "active" } }
+  return {
+    ok: true,
+    value: applySellerProfile({ ...stored, mine: true, status: "active" }, profile),
+  }
 }
 export async function updateListing(owner: string, id: string, input: unknown): Promise<Result<Listing>> {
   const listing = cleanListing(input)
@@ -321,7 +341,8 @@ export async function updateListing(owner: string, id: string, input: unknown): 
   }
   const updated = unpack(data[0] as Row, owner)
   if (!updated) return { ok: false, reason: "That ad could not be read." }
-  return { ok: true, value: updated }
+  const profiles = await profilesByUserIds([owner])
+  return { ok: true, value: applySellerProfile(updated, profiles.get(owner)) }
 }
 
 async function ownedRow(owner: string, id: string): Promise<Result<Row>> {
@@ -524,13 +545,16 @@ export async function createMessage(viewerId: string, listingId: string, body: s
 
   let conversation = existing as ConversationRow | null
   if (!conversation) {
+    const profiles = await profilesByUserIds([row.owner_id as string])
+    const sellerName =
+      profiles.get(row.owner_id as string)?.displayName?.trim() || listing.sellerName
     const created: ConversationRow = {
       id: crypto.randomUUID(),
       listing_id: listingId,
       listing_owner_id: row.owner_id,
       buyer_id: viewerId,
       listing_title: listing.title,
-      seller_name: listing.sellerName,
+      seller_name: sellerName,
       buyer_last_read_at: new Date().toISOString(),
       seller_last_read_at: null,
     }
@@ -652,11 +676,21 @@ export async function claimSession(
   profile?: { email?: string; displayName?: string },
 ): Promise<Result<ClaimResult>> {
   const db = boardDb()
+  const { data: existingProfile, error: existingProfileError } = await db
+    .from("board_profiles")
+    .select("display_name")
+    .eq("user_id", userId)
+    .maybeSingle()
+  check(existingProfileError)
+  const keepName =
+    typeof existingProfile?.display_name === "string" && existingProfile.display_name.trim()
+      ? existingProfile.display_name.trim()
+      : (profile?.displayName ?? null)
   const { error: profileError } = await db.from("board_profiles").upsert(
     {
       user_id: userId,
       email: profile?.email ?? null,
-      display_name: profile?.displayName ?? null,
+      display_name: keepName,
       updated_at: new Date().toISOString(),
     },
     { onConflict: "user_id" },
