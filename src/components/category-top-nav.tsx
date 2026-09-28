@@ -1,24 +1,67 @@
 "use client"
 
-import { Menu } from "lucide-react"
-import { Suspense, useMemo, useState } from "react"
+import { ChevronDown, Menu } from "lucide-react"
+import { Suspense, useEffect, useMemo, useRef, useState } from "react"
 import { usePathname, useSearchParams } from "next/navigation"
 
 import { CategoryNav } from "@/components/category-nav"
 import { SiteFooter } from "@/components/site-footer"
 import { Button } from "@/components/ui/button"
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from "@/components/ui/sheet"
+import { useScrollFades } from "@/hooks/use-scroll-fades"
 import { matchesQuery } from "@/lib/board"
 import { canonicalCountry, fold } from "@/lib/countries"
 import { useMarketplace } from "@/lib/marketplace"
 import { categoryPlan } from "@/lib/posting"
 import { categories, isSortId, type CategoryId, type Listing } from "@/lib/types"
 import { categoryFromPath, type ListingQuery } from "@/lib/use-listing-query"
+import { cn } from "@/lib/utils"
+
+function prefersReducedMotion(): boolean {
+  return window.matchMedia("(prefers-reduced-motion: reduce)").matches
+}
 
 export function CategoryTopNav() {
   const pathname = usePathname()
   const active = pathname === "/" ? undefined : categoryFromPath(pathname)
   const [open, setOpen] = useState(false)
+  const scrollerRef = useRef<HTMLDivElement>(null)
+  const { top, bottom } = useScrollFades(scrollerRef, { enabled: open })
+
+  useEffect(() => {
+    if (!open) return
+    const scroller = scrollerRef.current
+    if (!scroller) return
+
+    const scrollActiveIntoView = () => {
+      const current = scroller.querySelector('[aria-current="page"]')
+      if (!(current instanceof HTMLElement)) return
+      current.scrollIntoView({
+        block: "nearest",
+        behavior: prefersReducedMotion() ? "auto" : "smooth",
+      })
+    }
+
+    scrollActiveIntoView()
+    const frame = requestAnimationFrame(() => {
+      requestAnimationFrame(scrollActiveIntoView)
+    })
+    const settle = window.setTimeout(scrollActiveIntoView, 120)
+    return () => {
+      cancelAnimationFrame(frame)
+      window.clearTimeout(settle)
+    }
+  }, [open])
+
+  function scrollMoreCategories() {
+    const scroller = scrollerRef.current
+    if (!scroller) return
+    const step = Math.max(160, Math.round(scroller.clientHeight * 0.7))
+    scroller.scrollBy({
+      top: step,
+      behavior: prefersReducedMotion() ? "auto" : "smooth",
+    })
+  }
 
   return (
     <Sheet open={open} onOpenChange={setOpen}>
@@ -31,10 +74,41 @@ export function CategoryTopNav() {
         <SheetHeader>
           <SheetTitle>Categories</SheetTitle>
         </SheetHeader>
-        <div className="min-h-0 flex-1 overflow-y-auto px-3 pb-4">
-          <Suspense fallback={<TopNavFallback active={active} onNavigate={() => setOpen(false)} />}>
-            <CategoryTopNavLinks onNavigate={() => setOpen(false)} />
-          </Suspense>
+        <div className="relative min-h-0 flex-1">
+          <div ref={scrollerRef} className="h-full min-h-0 overflow-y-auto px-3 pb-4">
+            <div>
+              <Suspense fallback={<TopNavFallback active={active} onNavigate={() => setOpen(false)} />}>
+                <CategoryTopNavLinks onNavigate={() => setOpen(false)} />
+              </Suspense>
+            </div>
+          </div>
+          <div
+            aria-hidden
+            className={cn(
+              "pointer-events-none absolute inset-x-0 top-0 z-[1] h-6 bg-gradient-to-b from-popover to-transparent transition-opacity duration-200 motion-reduce:transition-none",
+              top ? "opacity-100" : "opacity-0",
+            )}
+          />
+          <div
+            aria-hidden
+            className={cn(
+              "pointer-events-none absolute inset-x-0 bottom-0 z-[1] h-6 bg-gradient-to-t from-popover to-transparent transition-opacity duration-200 motion-reduce:transition-none",
+              bottom ? "opacity-100" : "opacity-0",
+            )}
+          />
+          <button
+            type="button"
+            onClick={scrollMoreCategories}
+            tabIndex={bottom ? 0 : -1}
+            aria-hidden={!bottom}
+            className={cn(
+              "absolute bottom-2 left-1/2 z-[2] inline-flex -translate-x-1/2 items-center gap-1 rounded-md border border-neutral-200 bg-popover/95 px-2.5 py-1 text-xs text-neutral-600 shadow-sm backdrop-blur-sm transition-opacity duration-200 hover:bg-neutral-50 hover:text-neutral-950 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-neutral-950 motion-reduce:transition-none dark:border-neutral-700 dark:text-neutral-300 dark:hover:bg-neutral-800 dark:hover:text-neutral-50",
+              bottom ? "opacity-100" : "pointer-events-none opacity-0",
+            )}
+          >
+            More categories
+            <ChevronDown className="size-3.5 opacity-70" aria-hidden />
+          </button>
         </div>
         <SiteFooter onNavigate={() => setOpen(false)} />
       </SheetContent>
