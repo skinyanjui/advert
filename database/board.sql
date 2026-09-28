@@ -1,7 +1,8 @@
 -- Private board data. The Next.js API uses the server-only Supabase secret key.
--- After enabling seller accounts, also apply database/migrations/20260926_seller_accounts.sql
--- and later migrations. Do NOT grant SELECT on board_listings to anon/authenticated —
--- see database/migrations/20260926_lock_listings_reads.sql (phones and owner_id stay server-only).
+-- Apply this file first, then the ordered migrations in README.md (“Board database
+-- migrations”), including seller accounts, inbox, reports, expiry, lock-listings-reads,
+-- listing status, and profile settings. Do NOT grant SELECT on board_listings to
+-- anon/authenticated — phones and owner_id stay server-only after the lock migration.
 create table if not exists public.board_listings (
   id text primary key check (id ~ '^ad-[a-zA-Z0-9-]{1,64}$'),
   owner_id uuid not null,

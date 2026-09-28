@@ -46,7 +46,7 @@ export function SiteHeader() {
   const ProfileIcon = profileNav.icon
   const postHref = usePostAdHref()
   const profileLabel = auth.signedIn ? auth.email ?? "Signed in" : "Guest on this browser"
-  const profileDetail = auth.signedIn ? "Ads stay with your account" : "Sign in to keep ads across devices"
+  const profileDetail = auth.signedIn ? "Ads stay with your account" : "Sign in to post and keep ads"
   const profileMenuLabel = [
     profileNav.label,
     unreadMessages > 0 ? `${unreadMessages} unread` : null,

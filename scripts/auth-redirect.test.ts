@@ -93,3 +93,11 @@ test("authConfigured matches public Supabase URL + publishable key", async () =>
   )
   assert.equal(authConfigured(), expected)
 })
+
+test("createListingAuthError requires auth when configured", async () => {
+  const { createListingAuthError } = await import("../src/lib/listing-create-auth")
+  assert.equal(createListingAuthError("session", true), "Sign in to post an ad.")
+  assert.equal(createListingAuthError("auth", true), undefined)
+  assert.equal(createListingAuthError("session", false), undefined)
+  assert.equal(createListingAuthError("auth", false), undefined)
+})

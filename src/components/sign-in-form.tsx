@@ -483,13 +483,13 @@ export function KeepAdsPrompt({ className }: { className?: string }) {
   if (!auth.ready || auth.signedIn || !auth.configured) return null
   return (
     <div className={className ?? "rounded-2xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-950"}>
-      <p className="font-medium">Keep these ads if you clear cookies</p>
+      <p className="font-medium">Sign in to post and keep ads</p>
       <p className="mt-1 text-amber-900/80">
-        This browser owns your posts for now.{" "}
+        New ads need an account.{" "}
         <Link href="/sign-in" className="font-medium underline underline-offset-2">
           Sign in with email
         </Link>{" "}
-        to move them onto your account.
+        to post, and to move any older browser-owned posts onto your account.
       </p>
     </div>
   )
