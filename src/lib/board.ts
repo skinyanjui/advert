@@ -1,6 +1,6 @@
 import { distanceKm, listingPoint, type GeoPoint } from "@/lib/distance"
 import { fold, countryName } from "@/lib/countries"
-import { isListingExpired } from "@/lib/expiry"
+import { isPubliclyVisibleListing } from "@/lib/listing-status"
 import { hoursAgoOf } from "@/lib/format"
 import { listingSearchBits } from "@/lib/posting"
 import type { Listing, SortId } from "@/lib/types"
@@ -144,9 +144,7 @@ export function relatedListings(listings: Listing[], listing: Listing, limit = 4
   return listings
     .filter(
       (item) =>
-        !item.sold &&
-        !item.hidden &&
-        !isListingExpired(item.expiresAt) &&
+        isPubliclyVisibleListing(item) &&
         item.category === listing.category &&
         item.id !== listing.id,
     )
