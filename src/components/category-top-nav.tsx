@@ -1,13 +1,20 @@
 "use client"
 
-import { ChevronDown, Menu } from "lucide-react"
-import { Suspense, useEffect, useMemo, useRef, useState } from "react"
+import { ChevronDown, Menu, X } from "lucide-react"
+import { Suspense, useEffect, useMemo, useRef } from "react"
 import { usePathname, useSearchParams } from "next/navigation"
 
 import { CategoryNav } from "@/components/category-nav"
 import { SiteFooter } from "@/components/site-footer"
 import { Button } from "@/components/ui/button"
-import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from "@/components/ui/sheet"
+import {
+  Sidebar,
+  SidebarContent,
+  SidebarFooter,
+  SidebarRail,
+  SidebarTrigger,
+  useSidebar,
+} from "@/components/ui/sidebar"
 import { useScrollFades } from "@/hooks/use-scroll-fades"
 import { matchesQuery } from "@/lib/board"
 import { canonicalCountry, fold } from "@/lib/countries"
@@ -21,41 +28,63 @@ function prefersReducedMotion(): boolean {
   return window.matchMedia("(prefers-reduced-motion: reduce)").matches
 }
 
-export function CategoryTopNav() {
-  const pathname = usePathname()
-  const active = pathname === "/" ? undefined : categoryFromPath(pathname)
-  const [open, setOpen] = useState(false)
-
+export function CategorySidebar() {
   return (
-    <Sheet open={open} onOpenChange={setOpen}>
-      <SheetTrigger asChild>
-        <Button type="button" variant="ghost" size="icon-lg" className="shrink-0 rounded-full" aria-label="Browse categories">
-          <Menu className="size-5" />
-        </Button>
-      </SheetTrigger>
-      <SheetContent side="right" className="w-[min(22rem,calc(100vw-2rem))] gap-0 overflow-hidden p-0">
-        <SheetHeader>
-          <SheetTitle>Categories</SheetTitle>
-        </SheetHeader>
-        <CategoryDrawerScroller active={active} onNavigate={() => setOpen(false)} />
-        <SiteFooter onNavigate={() => setOpen(false)} />
-      </SheetContent>
-    </Sheet>
+    <Sidebar
+      side="left"
+      collapsible="offcanvas"
+      className="top-16! bottom-auto! z-40 h-[calc(100svh-4rem)]! border-r border-sidebar-border md:top-[72px]! md:h-[calc(100svh-72px)]!"
+    >
+      <CategorySidebarHeader />
+      <CategorySidebarScroller />
+      <SidebarFooter className="p-0">
+        <CategorySidebarFooter />
+      </SidebarFooter>
+      <SidebarRail />
+    </Sidebar>
   )
 }
 
-/** Mounted with SheetContent so the scroller ref exists when fade listeners attach. */
-function CategoryDrawerScroller({
-  active,
-  onNavigate,
-}: {
-  active?: CategoryId
-  onNavigate: () => void
-}) {
+function CategorySidebarHeader() {
+  const { isMobile, setOpenMobile } = useSidebar()
+  if (!isMobile) return null
+
+  return (
+    <div className="flex shrink-0 items-center justify-between gap-2 border-b border-sidebar-border px-2 py-1.5">
+      <p className="px-2 font-heading text-base font-medium text-sidebar-foreground">Categories</p>
+      <Button
+        type="button"
+        variant="ghost"
+        size="icon"
+        className="size-11 shrink-0 rounded-lg"
+        aria-label="Close categories"
+        onClick={() => setOpenMobile(false)}
+      >
+        <X className="size-5" />
+      </Button>
+    </div>
+  )
+}
+
+function CategorySidebarFooter() {
+  const { isMobile, setOpenMobile } = useSidebar()
+  return (
+    <SiteFooter
+      onNavigate={() => {
+        if (isMobile) setOpenMobile(false)
+      }}
+    />
+  )
+}
+
+/** Scrollable category list with top/bottom fade cues and a More categories chip. */
+function CategorySidebarScroller() {
   const scrollerRef = useRef<HTMLDivElement>(null)
   const { top, bottom } = useScrollFades(scrollerRef)
+  const { isMobile, openMobile } = useSidebar()
 
   useEffect(() => {
+    if (isMobile && !openMobile) return
     const scroller = scrollerRef.current
     if (!scroller) return
 
@@ -77,7 +106,7 @@ function CategoryDrawerScroller({
       cancelAnimationFrame(frame)
       window.clearTimeout(settle)
     }
-  }, [])
+  }, [isMobile, openMobile])
 
   function scrollMoreCategories() {
     const scroller = scrollerRef.current
@@ -90,28 +119,28 @@ function CategoryDrawerScroller({
   }
 
   return (
-    <div className="relative min-h-0 flex-1">
+    <SidebarContent className="relative overflow-hidden p-0">
       <div
         ref={scrollerRef}
-        className="h-full min-h-0 overflow-y-auto px-3 pb-4 [&_[aria-current=page]]:scroll-mb-10 [&_[aria-current=page]]:scroll-mt-2"
+        className="h-full min-h-0 overflow-y-auto px-2 pt-3 pb-2 [&_[aria-current=page]]:scroll-mb-10 [&_[aria-current=page]]:scroll-mt-2"
       >
         <div>
-          <Suspense fallback={<TopNavFallback active={active} onNavigate={onNavigate} />}>
-            <CategoryTopNavLinks onNavigate={onNavigate} />
+          <Suspense fallback={<TopNavFallback />}>
+            <CategoryTopNavLinks />
           </Suspense>
         </div>
       </div>
       <div
         aria-hidden
         className={cn(
-          "pointer-events-none absolute inset-x-0 top-0 z-[1] h-6 bg-gradient-to-b from-popover to-transparent transition-opacity duration-200 motion-reduce:transition-none",
+          "pointer-events-none absolute inset-x-0 top-0 z-[1] h-6 bg-gradient-to-b from-sidebar to-transparent transition-opacity duration-200 motion-reduce:transition-none",
           top ? "opacity-100" : "opacity-0",
         )}
       />
       <div
         aria-hidden
         className={cn(
-          "pointer-events-none absolute inset-x-0 bottom-0 z-[1] h-6 bg-gradient-to-t from-popover to-transparent transition-opacity duration-200 motion-reduce:transition-none",
+          "pointer-events-none absolute inset-x-0 bottom-0 z-[1] h-6 bg-gradient-to-t from-sidebar to-transparent transition-opacity duration-200 motion-reduce:transition-none",
           bottom ? "opacity-100" : "opacity-0",
         )}
       />
@@ -121,20 +150,35 @@ function CategoryDrawerScroller({
         tabIndex={bottom ? 0 : -1}
         aria-hidden={!bottom}
         className={cn(
-          "absolute bottom-2 left-1/2 z-[2] inline-flex -translate-x-1/2 items-center gap-1 rounded-md border border-neutral-200 bg-popover/95 px-2.5 py-1 text-xs text-neutral-600 shadow-sm backdrop-blur-sm transition-opacity duration-200 hover:bg-neutral-50 hover:text-neutral-950 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-neutral-950 motion-reduce:transition-none dark:border-neutral-700 dark:text-neutral-300 dark:hover:bg-neutral-800 dark:hover:text-neutral-50",
+          "absolute bottom-2 left-1/2 z-[2] inline-flex -translate-x-1/2 items-center gap-1 rounded-md border border-neutral-200 bg-sidebar/95 px-2.5 py-1 text-xs text-neutral-600 shadow-sm backdrop-blur-sm transition-opacity duration-200 hover:bg-neutral-50 hover:text-neutral-950 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-neutral-950 motion-reduce:transition-none dark:border-neutral-700 dark:text-neutral-300 dark:hover:bg-neutral-800 dark:hover:text-neutral-50",
           bottom ? "opacity-100" : "pointer-events-none opacity-0",
         )}
       >
         More categories
         <ChevronDown className="size-3.5 opacity-70" aria-hidden />
       </button>
-    </div>
+    </SidebarContent>
   )
 }
 
-function CategoryTopNavLinks({ onNavigate }: { onNavigate: () => void }) {
+/** Mobile-only: desktop shows the categories sidebar persistently. */
+export function CategoryTopNav() {
+  return (
+    <SidebarTrigger
+      aria-label="Browse categories"
+      className="size-9 shrink-0 rounded-full md:hidden"
+      size="icon-lg"
+    >
+      <Menu className="size-5" />
+      <span className="sr-only">Browse categories</span>
+    </SidebarTrigger>
+  )
+}
+
+function CategoryTopNavLinks() {
   const pathname = usePathname()
   const searchParams = useSearchParams()
+  const { isMobile, setOpenMobile } = useSidebar()
   const { listings } = useMarketplace()
   const query = useMemo(
     () => readBoardQuery(pathname, searchParams),
@@ -146,6 +190,9 @@ function CategoryTopNavLinks({ onNavigate }: { onNavigate: () => void }) {
   const inCity = useMemo(() => listingsInPlace(listings, query), [listings, query])
   const counts = useMemo(() => countCategories(inCity), [inCity])
   const types = useMemo(() => typeChoices(inCity, active), [inCity, active])
+  const onNavigate = () => {
+    if (isMobile) setOpenMobile(false)
+  }
 
   return (
     <CategoryNav
@@ -161,19 +208,17 @@ function CategoryTopNavLinks({ onNavigate }: { onNavigate: () => void }) {
   )
 }
 
-function TopNavFallback({ active, onNavigate }: { active?: CategoryId; onNavigate: () => void }) {
+function TopNavFallback() {
   const counts = Object.fromEntries(categories.map((category) => [category.id, 0])) as Record<
     CategoryId,
     number
   >
   return (
     <CategoryNav
-      active={active}
       counts={counts}
       total={0}
       hrefForCategory={(category) => (category ? `/${category}` : "/")}
-      hrefForType={() => (active ? `/${active}` : "/")}
-      onNavigate={onNavigate}
+      hrefForType={() => "/"}
     />
   )
 }

@@ -26,10 +26,10 @@ export type CategoryId = (typeof categories)[number]["id"]
 export type CountryId = string
 
 export const sorts = [
-  { id: "relevant", name: "Relevant" },
-  { id: "newest", name: "Newest" },
-  { id: "price-asc", name: "Price: low to high" },
-  { id: "price-desc", name: "Price: high to low" },
+  { id: "relevant", name: "Best match", hint: "Recommended for you" },
+  { id: "newest", name: "Newest", hint: "Just posted" },
+  { id: "price-asc", name: "Lowest price", hint: "Cheap first" },
+  { id: "price-desc", name: "Highest price", hint: "Pricey first" },
 ] as const
 
 export type SortId = (typeof sorts)[number]["id"]
