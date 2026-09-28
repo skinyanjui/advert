@@ -91,6 +91,7 @@ test("package.json test script has no conflict markers and includes profile test
   assert.match(pkg, /scripts\/scroll-fades\.test\.ts/)
   assert.match(pkg, /scripts\/listing-status\.test\.ts/)
   assert.match(pkg, /scripts\/profile\.test\.ts/)
+  assert.match(pkg, /scripts\/contact-phone\.test\.ts/)
 })
 
 test("account page has no ProfileShortcuts hub", () => {

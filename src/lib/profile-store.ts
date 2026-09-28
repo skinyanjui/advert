@@ -33,6 +33,9 @@ function check(error: { message: string } | null) {
   if (error) throw new Error(error.message)
 }
 
+const profileSelect =
+  "user_id,email,display_name,avatar_url,city,country_code,phone,created_at"
+
 type ProfileRow = {
   user_id: string
   email: string | null
@@ -40,6 +43,7 @@ type ProfileRow = {
   avatar_url?: string | null
   city?: string | null
   country_code?: string | null
+  phone?: string | null
   created_at: string | null
 }
 
@@ -51,6 +55,7 @@ function unpackProfile(row: ProfileRow): BoardProfile {
     avatarUrl: typeof row.avatar_url === "string" ? row.avatar_url : null,
     city: typeof row.city === "string" ? row.city : null,
     countryCode: typeof row.country_code === "string" ? row.country_code : null,
+    phone: typeof row.phone === "string" ? row.phone : null,
     createdAt: typeof row.created_at === "string" ? row.created_at : null,
   }
 }
@@ -144,7 +149,7 @@ export async function ensureProfile(
   const db = boardDb()
   const { data: existing, error: readError } = await db
     .from("board_profiles")
-    .select("user_id,email,display_name,avatar_url,city,country_code,created_at")
+    .select(profileSelect)
     .eq("user_id", userId)
     .maybeSingle()
   check(readError)
@@ -154,7 +159,7 @@ export async function ensureProfile(
         .from("board_profiles")
         .update({ email, updated_at: new Date().toISOString() })
         .eq("user_id", userId)
-        .select("user_id,email,display_name,avatar_url,city,country_code,created_at")
+        .select(profileSelect)
         .single()
       check(error)
       return unpackProfile(data as ProfileRow)
@@ -170,7 +175,7 @@ export async function ensureProfile(
       display_name: email?.includes("@") ? email.split("@")[0] ?? null : null,
       updated_at: new Date().toISOString(),
     })
-    .select("user_id,email,display_name,avatar_url,city,country_code,created_at")
+    .select(profileSelect)
     .single()
   check(error)
   return unpackProfile(data as ProfileRow)
@@ -211,6 +216,7 @@ export async function updateProfile(
   if (input.city !== undefined) patch.city = normalized.value.city
   if (input.countryCode !== undefined) patch.country_code = normalized.value.countryCode
   if (input.avatarUrl !== undefined) patch.avatar_url = avatarUrl
+  if (input.phone !== undefined) patch.phone = normalized.value.phone ?? null
   if (email) patch.email = email
 
   const db = boardDb()
@@ -218,7 +224,7 @@ export async function updateProfile(
     .from("board_profiles")
     .update(patch)
     .eq("user_id", userId)
-    .select("user_id,email,display_name,avatar_url,city,country_code,created_at")
+    .select(profileSelect)
     .single()
   check(error)
   const profile = unpackProfile(data as ProfileRow)

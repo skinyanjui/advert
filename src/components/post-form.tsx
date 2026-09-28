@@ -9,15 +9,18 @@ import { toast } from "sonner"
 
 import { categoryIcons } from "@/lib/categories"
 import { CityField, type ChosenPlace } from "@/components/city-field"
+import { ContactPhoneField } from "@/components/contact-phone-field"
+import { FormField } from "@/components/form-field"
 import { ListingCard } from "@/components/listing-card"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group"
-import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
 import { readPostingPlace } from "@/lib/active-place"
+import { useAuth } from "@/lib/auth"
 import { categoryImage } from "@/lib/catalog"
 import { resolvePlace } from "@/lib/cities"
+import { normalizeContactPhone, prefillListingPhone } from "@/lib/contact-phone"
 import {
   canonicalCountry,
   countryName,
@@ -30,9 +33,9 @@ import {
 } from "@/lib/countries"
 import { formatPrice } from "@/lib/format"
 import { listingFieldErrors, type FieldErrors as RuleErrors } from "@/lib/listing-rules"
-import { useAuth } from "@/lib/auth"
 import { useMarketplace } from "@/lib/marketplace"
 import { listingImages, maxListingPhotos, photoFileError, withCoverImage } from "@/lib/photos"
+import type { BoardProfile } from "@/lib/profile"
 import { siteTitle } from "@/lib/site"
 import {
   categoryPlan,
@@ -102,6 +105,7 @@ function AdForm({ existing }: { existing: Listing | null }) {
   const [errors, setErrors] = useState<FieldErrors>({})
   const [submitting, setSubmitting] = useState(false)
   const appliedPlace = useRef(false)
+  const appliedContact = useRef(Boolean(existing))
 
   useLayoutEffect(() => {
     if (appliedPlace.current || existing || urlCountry) return
@@ -112,6 +116,25 @@ function AdForm({ existing }: { existing: Listing | null }) {
     setCurrency(getCountry(place.country)?.currencies[0]?.code ?? "USD")
     setPlace(locatedPlace(null, place.country, place.city))
   }, [existing, urlCountry])
+
+  useEffect(() => {
+    if (existing || appliedContact.current || !auth.ready || !auth.signedIn) return
+    let active = true
+    void (async () => {
+      try {
+        const response = await fetch("/api/profile", { cache: "no-store" })
+        const payload = (await response.json()) as { ok?: boolean; profile?: BoardProfile }
+        if (!active || !response.ok || !payload.profile) return
+        appliedContact.current = true
+        setPhone((current) => prefillListingPhone(current || null, payload.profile?.phone))
+      } catch {
+        // Prefill is optional; seller can still type a number.
+      }
+    })()
+    return () => {
+      active = false
+    }
+  }, [existing, auth.ready, auth.signedIn])
 
   const plan = category ? categoryPlan(category) : null
   const subcategory = category ? findSubcategory(category, subcategoryId ?? undefined) : undefined
@@ -341,7 +364,7 @@ function AdForm({ existing }: { existing: Listing | null }) {
       hoursAgo: existing?.hoursAgo ?? 0,
       postedAt: existing?.postedAt ?? new Date().toISOString(),
       description: description.trim().slice(0, 2000),
-      phone: phone.trim().slice(0, 30),
+      phone: normalizeContactPhone(phone),
       image: preview.image,
       images: preview.images,
       condition: keptDetails.condition || subcategory.name,
@@ -669,18 +692,18 @@ function AdForm({ existing }: { existing: Listing | null }) {
                   />
                 </Field>
               </div>
-              <Field label="Phone" required error={errors.phone} hint={plan.safety}>
-                <Input
-                  value={phone}
-                  aria-invalid={Boolean(errors.phone)}
-                  onChange={(event) => {
-                    setPhone(event.target.value)
-                    setErrors((current) => ({ ...current, phone: undefined }))
-                  }}
-                  placeholder={callingCode ? `${callingCode} 7XX XXX XXX` : "+254 7XX XXX XXX"}
-                  className="h-10 bg-white"
-                />
-              </Field>
+              <ContactPhoneField
+                id="listing-phone"
+                value={phone}
+                countryCode={country}
+                required
+                error={errors.phone}
+                hint={plan.safety}
+                onChange={(value) => {
+                  setPhone(value)
+                  setErrors((current) => ({ ...current, phone: undefined }))
+                }}
+              />
               <p className="text-xs leading-5 text-neutral-500">
                 Buyers can call, open WhatsApp with this number, or leave an on-site note. Prefer a number you check often.
               </p>
@@ -1104,19 +1127,8 @@ function Field({
   children: ReactNode
 }) {
   return (
-    <div className="grid gap-1.5">
-      <Label>
-        {label}
-        {required ? <span className="text-destructive"> *</span> : null}
-      </Label>
+    <FormField label={label} error={error} required={required} hint={hint}>
       {children}
-      {error ? (
-        <span data-field-error className="text-xs text-destructive">
-          {error}
-        </span>
-      ) : hint ? (
-        <span className="text-xs text-neutral-500">{hint}</span>
-      ) : null}
-    </div>
+    </FormField>
   )
 }

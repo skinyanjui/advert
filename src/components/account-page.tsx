@@ -7,6 +7,7 @@ import { useEffect, useRef, useState } from "react"
 import { toast } from "sonner"
 
 import { CityField } from "@/components/city-field"
+import { ContactPhoneField } from "@/components/contact-phone-field"
 import { EmptyPanel } from "@/components/empty-panel"
 import { KeepAdsPrompt } from "@/components/sign-in-form"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
@@ -34,6 +35,7 @@ import { useAuth } from "@/lib/auth"
 import { canonicalCountry, countries } from "@/lib/countries"
 import { writeHomePlace } from "@/lib/home-place"
 import { useMarketplace } from "@/lib/marketplace"
+import { contactPhoneError } from "@/lib/contact-phone"
 import {
   avatarFileError,
   cityError,
@@ -111,13 +113,20 @@ function SignedInProfile({
   const [profile, setProfile] = useState<BoardProfile | null>(null)
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
+  const [savingContact, setSavingContact] = useState(false)
   const [displayName, setDisplayName] = useState("")
   const [city, setCity] = useState("")
   const [countryCode, setCountryCode] = useState<string>("")
+  const [phone, setPhone] = useState("")
   const [avatarPreview, setAvatarPreview] = useState<string | null>(null)
   const [avatarDataUrl, setAvatarDataUrl] = useState<string | null>(null)
   const [removeAvatar, setRemoveAvatar] = useState(false)
-  const [errors, setErrors] = useState<{ displayName?: string; city?: string; country?: string }>({})
+  const [errors, setErrors] = useState<{
+    displayName?: string
+    city?: string
+    country?: string
+    phone?: string
+  }>({})
   const [deleteOpen, setDeleteOpen] = useState(false)
   const [deleteConfirm, setDeleteConfirm] = useState("")
   const [deleting, setDeleting] = useState(false)
@@ -138,6 +147,7 @@ function SignedInProfile({
         setDisplayName(payload.profile.displayName ?? "")
         setCity(payload.profile.city ?? "")
         setCountryCode(payload.profile.countryCode ?? "")
+        setPhone(payload.profile.phone ?? "")
         setAvatarPreview(payload.profile.avatarUrl)
         setLoading(false)
       } catch {
@@ -160,6 +170,7 @@ function SignedInProfile({
       (countryCode || "") !== (profile?.countryCode ?? "") ||
       avatarDataUrl !== null ||
       removeAvatar)
+  const contactDirty = Boolean(profile) && phone.trim() !== (profile?.phone ?? "")
 
   async function onPickAvatar(file: File | undefined) {
     if (!file) return
@@ -220,6 +231,33 @@ function SignedInProfile({
       toast.error("Could not save your profile.")
     } finally {
       setSaving(false)
+    }
+  }
+
+  async function saveContact() {
+    const phoneReason = contactPhoneError(phone, { required: false })
+    setErrors((current) => ({ ...current, phone: phoneReason }))
+    if (phoneReason) return
+
+    setSavingContact(true)
+    try {
+      const response = await fetch("/api/profile", {
+        method: "PATCH",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({ phone: phone.trim() || null }),
+      })
+      const payload = (await response.json()) as { ok?: boolean; profile?: BoardProfile; reason?: string }
+      if (!response.ok || !payload.profile) {
+        toast.error(payload.reason ?? "Could not save your contact.")
+        return
+      }
+      setProfile(payload.profile)
+      setPhone(payload.profile.phone ?? "")
+      toast.success("Buyer contact saved")
+    } catch {
+      toast.error("Could not save your contact.")
+    } finally {
+      setSavingContact(false)
     }
   }
 
@@ -375,6 +413,38 @@ function SignedInProfile({
           <Button type="button" disabled={!dirty || saving} onClick={() => void saveProfile()}>
             {saving ? <Loader2 className="animate-spin" /> : null}
             {saving ? "Saving…" : "Save changes"}
+          </Button>
+        </CardFooter>
+      </Card>
+
+      <Card>
+        <CardHeader>
+          <CardTitle>Buyer contact</CardTitle>
+          <CardDescription>
+            Call and WhatsApp number used when you post an ad. You can still change it per listing.
+          </CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-3">
+          <ContactPhoneField
+            id="buyer-contact-phone"
+            value={phone}
+            countryCode={countryCode || null}
+            error={errors.phone}
+            hint="Buyers can call, open WhatsApp with this number, or leave an on-site note."
+            onChange={(value) => {
+              setPhone(value)
+              setErrors((current) => ({ ...current, phone: undefined }))
+            }}
+          />
+        </CardContent>
+        <CardFooter className="justify-end gap-2">
+          <Button
+            type="button"
+            disabled={!contactDirty || savingContact}
+            onClick={() => void saveContact()}
+          >
+            {savingContact ? <Loader2 className="animate-spin" /> : null}
+            {savingContact ? "Saving…" : "Save contact"}
           </Button>
         </CardFooter>
       </Card>
