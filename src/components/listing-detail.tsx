@@ -1,6 +1,6 @@
 "use client"
 
-import { ArrowLeft, ChevronLeft, ChevronRight, Clock, Flag, Heart, MapPin, Share2 } from "lucide-react"
+import { ArrowLeft, ChevronLeft, ChevronRight, Clock, Flag, Heart, MapPin, Phone, Share2 } from "lucide-react"
 import Image from "next/image"
 import Link from "next/link"
 import { useRouter, useSearchParams } from "next/navigation"
@@ -202,6 +202,16 @@ export function ListingDetail({ id }: { id: string }) {
     }
   }
 
+  function revealAndCall() {
+    setPhoneVisible(true)
+    const tel = telHref(ad.phone)
+    if (!tel) {
+      document.getElementById("listing-contact")?.scrollIntoView({ behavior: "smooth", block: "nearest" })
+      return
+    }
+    window.location.href = tel
+  }
+
   return (
     <div className="mx-auto w-full max-w-[1720px] px-4 pt-6 pb-24 md:px-6 md:py-8 lg:pb-8">
       <div className="mx-auto w-full max-w-[1100px]">
@@ -344,18 +354,11 @@ export function ListingDetail({ id }: { id: string }) {
             <p className="mt-2 max-w-2xl text-sm leading-6 text-neutral-700">{listing.description}</p>
           </section>
           <PlacePanel listing={listing} />
-          {related.length > 0 ? (
-            <section className="mt-10">
-              <h2 className="text-sm font-medium text-neutral-950">Similar listings</h2>
-              <div className="mt-3 grid grid-cols-2 gap-4">
-                {related.map((item) => (
-                  <ListingCard key={item.id} listing={item} preserve={keptSearch(searchParams, item.subcategory)} />
-                ))}
-              </div>
-            </section>
-          ) : null}
         </div>
-        <aside className="h-fit rounded-2xl border border-neutral-200 bg-white p-4 lg:sticky lg:top-[145px]">
+        <aside
+          id="listing-contact"
+          className="h-fit rounded-2xl border border-neutral-200 bg-white p-4 lg:sticky lg:top-[145px]"
+        >
           {isSample ? (
             <div className="rounded-xl bg-amber-50 p-4 text-sm text-amber-950">
               <p className="font-semibold">Sample listing</p>
@@ -451,9 +454,19 @@ export function ListingDetail({ id }: { id: string }) {
           )}
         </aside>
       </div>
+      {related.length > 0 ? (
+        <section className="mt-10">
+          <h2 className="text-sm font-medium text-neutral-950">Similar listings</h2>
+          <div className="mt-3 grid grid-cols-2 gap-4 lg:grid-cols-4">
+            {related.map((item) => (
+              <ListingCard key={item.id} listing={item} preserve={keptSearch(searchParams, item.subcategory)} />
+            ))}
+          </div>
+        </section>
+      ) : null}
       <div className="fixed inset-x-0 bottom-[calc(env(safe-area-inset-bottom)+5.25rem)] z-20 border-t bg-white p-3 md:bottom-0 lg:hidden">
-        <div className="mx-auto flex max-w-[1100px] items-center justify-between gap-3">
-          <div className="min-w-0">
+        <div className="mx-auto flex max-w-[1100px] items-center gap-2 sm:gap-3">
+          <div className="min-w-0 flex-1">
             <p className="truncate text-sm font-semibold">{formatPrice(listing)}</p>
             <p className="truncate text-xs text-neutral-500">{formatPlace(listing)}</p>
           </div>
@@ -466,9 +479,31 @@ export function ListingDetail({ id }: { id: string }) {
               {isSample ? "Sample ad" : expired ? "Expired" : "Sold"}
             </Button>
           ) : (
-            <Button className="shrink-0 rounded-full" onClick={() => setMessageOpen(true)}>
-              {voice.messageLabel}
-            </Button>
+            <div className="flex shrink-0 items-center gap-1.5">
+              <Button variant="outline" size="icon" className="size-10 shrink-0 rounded-full" asChild>
+                <a
+                  href={whatsappHref(listing.phone, listing.title)}
+                  target="_blank"
+                  rel="noreferrer"
+                  aria-label="WhatsApp"
+                >
+                  <WhatsAppIcon className="size-4" />
+                </a>
+              </Button>
+              <Button
+                type="button"
+                variant="outline"
+                size="icon"
+                className="size-10 shrink-0 rounded-full"
+                aria-label={phoneVisible ? `Call ${listing.phone}` : "Show phone number and call"}
+                onClick={revealAndCall}
+              >
+                <Phone className="size-4" />
+              </Button>
+              <Button className="h-10 max-w-[9.5rem] shrink-0 truncate rounded-full px-3" onClick={() => setMessageOpen(true)}>
+                {voice.messageLabel}
+              </Button>
+            </div>
           )}
         </div>
       </div>
@@ -572,6 +607,20 @@ function keptSearch(
   if (type && type !== subcategory) params.delete("type")
   const qs = params.toString()
   return qs
+}
+
+function telHref(phone: string): string | null {
+  const digits = phone.replace(/[^\d+]/g, "")
+  if (!digits.replace(/\D/g, "")) return null
+  return `tel:${digits}`
+}
+
+function WhatsAppIcon({ className }: { className?: string }) {
+  return (
+    <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true" className={className}>
+      <path d="M12.04 2C6.58 2 2.15 6.37 2.15 11.75c0 1.92.52 3.78 1.51 5.42L2 22l4.99-1.6a10.1 10.1 0 0 0 5.05 1.34h.01c5.46 0 9.89-4.37 9.89-9.75S17.5 2 12.04 2zm5.76 13.84c-.24.67-1.4 1.24-1.93 1.32-.49.07-1.12.1-1.81-.11-.42-.13-.95-.27-1.64-.53-2.89-1.09-4.77-3.64-4.92-3.81-.14-.17-1.18-1.57-1.18-3 0-1.42.74-2.12 1-2.41.27-.29.58-.36.78-.36h.56c.18 0 .42-.07.66.5.24.58.82 2 .89 2.15.07.14.12.31.02.5-.1.2-.14.32-.28.5-.14.17-.3.38-.42.51-.14.14-.28.29-.12.56.17.28.74 1.22 1.59 1.98 1.1.97 2.02 1.27 2.3 1.41.29.14.45.12.62-.07.17-.2.71-.83.9-1.11.19-.29.38-.24.64-.14.27.1 1.7.8 1.99.95.29.14.49.22.56.34.07.12.07.7-.17 1.37z" />
+    </svg>
+  )
 }
 
 function PlacePanel({ listing }: { listing: Listing }) {
