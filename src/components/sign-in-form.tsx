@@ -21,7 +21,7 @@ import {
 } from "@/lib/password"
 
 type Channel = "email" | "phone"
-type Method = "code" | "password"
+type Method = "link" | "password"
 type PasswordMode = "sign-in" | "sign-up" | "forgot"
 
 const RESEND_COOLDOWN_SECONDS = 60
@@ -34,7 +34,7 @@ export function SignInForm({ nextHref }: { nextHref?: string } = {}) {
   const next = safeAuthNext(nextHref ?? searchParams.get("next"), DEFAULT_AUTH_NEXT)
 
   const [channel, setChannel] = useState<Channel>("email")
-  const [method, setMethod] = useState<Method>("code")
+  const [method, setMethod] = useState<Method>("link")
   const [passwordMode, setPasswordMode] = useState<PasswordMode>("sign-in")
   const [email, setEmail] = useState("")
   const [phone, setPhone] = useState("")
@@ -48,7 +48,11 @@ export function SignInForm({ nextHref }: { nextHref?: string } = {}) {
 
   useEffect(() => {
     if (errorParam === "link") {
-      toast.error("That sign-in link is invalid or expired. Request a new code.")
+      toast.error("That sign-in link is invalid or expired. Request a new one.")
+    } else if (errorParam === "device") {
+      toast.error(
+        "Open the email link on the same device and browser that requested it, or request a new link here.",
+      )
     }
   }, [errorParam])
 
@@ -82,10 +86,9 @@ export function SignInForm({ nextHref }: { nextHref?: string } = {}) {
     setCooldown(RESEND_COOLDOWN_SECONDS)
   }
 
-  async function sendCode() {
+  async function sendEmailLink() {
     setBusy(true)
-    const result =
-      channel === "email" ? await auth.sendEmailCode(email, next) : await auth.sendPhoneCode(phone)
+    const result = await auth.sendEmailCode(email, next)
     setBusy(false)
     if (!result.ok) {
       toast.error(result.reason)
@@ -93,19 +96,25 @@ export function SignInForm({ nextHref }: { nextHref?: string } = {}) {
     }
     setSent(true)
     startCooldown()
-    toast.success(
-      channel === "email"
-        ? "Check your email for a code or magic link"
-        : "Check your phone for a code",
-    )
+    toast.success("Check your email for a sign-in link")
   }
 
-  async function verify() {
+  async function sendPhoneCode() {
     setBusy(true)
-    const result =
-      channel === "email"
-        ? await auth.verifyEmailCode(email, code)
-        : await auth.verifyPhoneCode(phone, code)
+    const result = await auth.sendPhoneCode(phone)
+    setBusy(false)
+    if (!result.ok) {
+      toast.error(result.reason)
+      return
+    }
+    setSent(true)
+    startCooldown()
+    toast.success("Check your phone for a code")
+  }
+
+  async function verifyPhone() {
+    setBusy(true)
+    const result = await auth.verifyPhoneCode(phone, code)
     setBusy(false)
     if (!result.ok) {
       toast.error(result.reason)
@@ -126,7 +135,7 @@ export function SignInForm({ nextHref }: { nextHref?: string } = {}) {
         return
       }
       startCooldown()
-      toast.success("Check your email for a reset link")
+      toast.success("Check your email for a reset link — open it on this device")
       return
     }
 
@@ -149,7 +158,7 @@ export function SignInForm({ nextHref }: { nextHref?: string } = {}) {
         router.replace(next)
         return
       }
-      toast.success("Check your email to confirm your account")
+      toast.success("Check your email for a confirmation link")
       return
     }
 
@@ -173,6 +182,7 @@ export function SignInForm({ nextHref }: { nextHref?: string } = {}) {
   }
 
   const strength = password ? passwordStrength(password) : null
+  const showLinkFlow = method === "link" || channel === "phone"
 
   return (
     <div className="mx-auto w-full max-w-md space-y-4">
@@ -215,7 +225,7 @@ export function SignInForm({ nextHref }: { nextHref?: string } = {}) {
             className="rounded-full"
             onClick={() => {
               setChannel("phone")
-              setMethod("code")
+              setMethod("link")
               setSent(false)
               setCode("")
             }}
@@ -229,14 +239,14 @@ export function SignInForm({ nextHref }: { nextHref?: string } = {}) {
         <div className="flex gap-2">
           <Button
             type="button"
-            variant={method === "code" ? "default" : "outline"}
+            variant={method === "link" ? "default" : "outline"}
             className="rounded-full"
             onClick={() => {
-              setMethod("code")
+              setMethod("link")
               setPasswordMode("sign-in")
             }}
           >
-            Email code
+            Email link
           </Button>
           <Button
             type="button"
@@ -253,17 +263,25 @@ export function SignInForm({ nextHref }: { nextHref?: string } = {}) {
         </div>
       ) : null}
 
-      {method === "code" || channel === "phone" ? (
+      {showLinkFlow ? (
         <Card>
           <CardHeader>
-            <CardTitle>{sent ? "Enter your code" : "Email code or magic link"}</CardTitle>
+            <CardTitle>
+              {channel === "email"
+                ? sent
+                  ? "Check your email"
+                  : "Email sign-in link"
+                : sent
+                  ? "Enter your code"
+                  : "Phone code"}
+            </CardTitle>
             <CardDescription>
-              {sent
-                ? channel === "email"
-                  ? "Use the code from the email, or open the magic link on this device."
-                  : "Enter the SMS code."
-                : channel === "email"
-                  ? "We’ll email a one-time code and a sign-in link."
+              {channel === "email"
+                ? sent
+                  ? "Open the link on this device to finish signing in. Links from the free email provider don’t include a typed code."
+                  : "We’ll email a one-time sign-in link. Open it on this device."
+                : sent
+                  ? "Enter the SMS code."
                   : "We’ll text a one-time code."}
             </CardDescription>
           </CardHeader>
@@ -271,8 +289,12 @@ export function SignInForm({ nextHref }: { nextHref?: string } = {}) {
             onSubmit={(event) => {
               event.preventDefault()
               if (busy) return
-              if (!sent) void sendCode()
-              else void verify()
+              if (channel === "email") {
+                if (!sent) void sendEmailLink()
+                return
+              }
+              if (!sent) void sendPhoneCode()
+              else void verifyPhone()
             }}
           >
             <CardContent className="space-y-4">
@@ -306,17 +328,8 @@ export function SignInForm({ nextHref }: { nextHref?: string } = {}) {
                 </FormField>
               )}
 
-              {sent ? (
-                <FormField
-                  label="Code"
-                  htmlFor="sign-in-code"
-                  required
-                  hint={
-                    channel === "email"
-                      ? "6-digit code from your email"
-                      : "6-digit code from your SMS"
-                  }
-                >
+              {channel === "phone" && sent ? (
+                <FormField label="Code" htmlFor="sign-in-code" required hint="6-digit code from your SMS">
                   <Input
                     id="sign-in-code"
                     inputMode="numeric"
@@ -331,18 +344,34 @@ export function SignInForm({ nextHref }: { nextHref?: string } = {}) {
               ) : null}
             </CardContent>
             <CardFooter className="flex-col items-stretch gap-2 sm:flex-col">
-              <Button type="submit" disabled={busy} className="h-10 w-full">
-                {busy ? "Please wait…" : sent ? "Verify and sign in" : "Send code"}
-              </Button>
+              {channel === "email" && sent ? (
+                <p className="text-sm text-muted-foreground">
+                  Waiting for you to open the link… You can resend after the cooldown.
+                </p>
+              ) : (
+                <Button type="submit" disabled={busy} className="h-10 w-full">
+                  {busy
+                    ? "Please wait…"
+                    : channel === "email"
+                      ? "Email me a link"
+                      : sent
+                        ? "Verify and sign in"
+                        : "Send code"}
+                </Button>
+              )}
               {sent ? (
                 <div className="flex flex-wrap gap-2">
                   <Button
                     type="button"
                     variant="ghost"
                     disabled={busy || cooldown > 0}
-                    onClick={() => void sendCode()}
+                    onClick={() => void (channel === "email" ? sendEmailLink() : sendPhoneCode())}
                   >
-                    {cooldown > 0 ? `Resend in ${cooldown}s` : "Resend code"}
+                    {cooldown > 0
+                      ? `Resend in ${cooldown}s`
+                      : channel === "email"
+                        ? "Resend link"
+                        : "Resend code"}
                   </Button>
                   <Button
                     type="button"
@@ -372,9 +401,9 @@ export function SignInForm({ nextHref }: { nextHref?: string } = {}) {
             </CardTitle>
             <CardDescription>
               {passwordMode === "forgot"
-                ? "We’ll email a link to choose a new password."
+                ? "We’ll email a reset link. Open it on this same device and browser."
                 : passwordMode === "sign-up"
-                  ? "Confirm your email after creating the account."
+                  ? "Confirm your email with the link we send, then sign in."
                   : "Use the password you set on your Profile."}
             </CardDescription>
           </CardHeader>
@@ -437,7 +466,11 @@ export function SignInForm({ nextHref }: { nextHref?: string } = {}) {
               ) : null}
             </CardContent>
             <CardFooter className="flex-col items-stretch gap-2 sm:flex-col">
-              <Button type="submit" disabled={busy || (passwordMode === "forgot" && cooldown > 0)} className="h-10 w-full">
+              <Button
+                type="submit"
+                disabled={busy || (passwordMode === "forgot" && cooldown > 0)}
+                className="h-10 w-full"
+              >
                 {busy
                   ? "Please wait…"
                   : passwordMode === "forgot"

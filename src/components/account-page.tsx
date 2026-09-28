@@ -78,7 +78,7 @@ export function AccountPage() {
       ) : !auth.signedIn ? (
         <EmptyPanel
           title="Sign in to edit your Profile"
-          body="Email code, magic link, or optional password. Keep ads, saves, and Messages on this account."
+          body="Email link or optional password. Keep ads, saves, and Messages on this account."
           actionHref="/sign-in"
           actionLabel="Sign in"
           className="mt-0"

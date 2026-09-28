@@ -187,10 +187,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       const trimmed = email.trim().toLowerCase()
       if (!trimmed.includes("@")) return { ok: false as const, reason: "Enter a valid email address." }
       const supabase = createBrowserSupabase()
-      // redirectTo must be allow-listed. The reset email template uses token_hash →
-      // /auth/confirm?type=recovery&next=/auth/reset for cross-device recovery.
+      // Default Supabase emails use ConfirmationURL → PKCE at /auth/callback.
+      // Open the link on the same device that requested the reset.
       const { error } = await supabase.auth.resetPasswordForEmail(trimmed, {
-        redirectTo: `${window.location.origin}/auth/reset`,
+        redirectTo: `${window.location.origin}/auth/callback?next=${encodeURIComponent("/auth/reset")}`,
       })
       if (error) return { ok: false as const, reason: mapAuthError(error) }
       return { ok: true as const }
