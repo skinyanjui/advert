@@ -4,7 +4,7 @@ import { PostLink } from "@/components/post-link"
 
 const linkClass = "rounded-md px-2 py-1.5 text-neutral-600 hover:bg-neutral-100 hover:text-neutral-950 focus-visible:outline-2 focus-visible:outline-neutral-950"
 
-export function SiteFooter({ onNavigate }: { onNavigate: () => void }) {
+export function SiteFooter({ onNavigate }: { onNavigate?: () => void }) {
   return (
     <footer className="shrink-0 border-t border-neutral-200 px-3 pt-3 pb-[calc(env(safe-area-inset-bottom)+1rem)]">
       <nav aria-label="More pages" className="grid grid-cols-2 gap-x-1 gap-y-0.5 text-sm">
