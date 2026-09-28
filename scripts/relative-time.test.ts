@@ -3,6 +3,7 @@ import { test } from "node:test"
 
 import { hoursAgoOf } from "../src/lib/format"
 import {
+  formatMessageWhen,
   formatPostedDate,
   formatRelativePosted,
   postedDateTime,
@@ -44,4 +45,12 @@ test("formatPostedDate and postedDateTime", () => {
   assert.match(formatPostedDate("2026-09-01T10:00:00.000Z") ?? "", /2026/)
   assert.equal(postedDateTime({}), undefined)
   assert.equal(postedDateTime({ postedAt: "2026-09-01T10:00:00.000Z" }), "2026-09-01T10:00:00.000Z")
+})
+
+test("formatMessageWhen uses formatPosted for inbox stamps", () => {
+  const now = Date.parse("2026-09-28T12:00:00.000Z")
+  assert.equal(formatMessageWhen("bad", now), "")
+  assert.equal(formatMessageWhen("2026-09-28T11:30:00.000Z", now), "Just now")
+  assert.equal(formatMessageWhen("2026-09-28T09:00:00.000Z", now), "3 hours ago")
+  assert.equal(formatMessageWhen("2026-09-26T12:00:00.000Z", now), "2 days ago")
 })

@@ -3,28 +3,36 @@
 import { ChevronRight, MapPin } from "lucide-react"
 import Link from "next/link"
 
+import { NavBadge } from "@/components/nav-badge"
 import { postAdHref } from "@/lib/active-place"
 import { KeepAdsPrompt } from "@/components/sign-in-form"
 import { ThemeChoices } from "@/components/theme-choices"
 import { useRememberedPlace } from "@/lib/use-remembered-place"
 import { Button } from "@/components/ui/button"
+import { useNavCounts, navCountAriaLabel } from "@/hooks/use-nav-counts"
 import { useAuth } from "@/lib/auth"
-import { countryName } from "@/lib/countries"
+import { formatPlaceLabel } from "@/lib/format"
 import { useHomePlace, writeHomePlace } from "@/lib/home-place"
 import { useMarketplace } from "@/lib/marketplace"
 import { messageThreads, unreadMessageCount } from "@/lib/messages"
+import { navItem } from "@/lib/nav"
 
 export function AccountPage() {
   const auth = useAuth()
   const { ready, admin, listings, savedIds, messages } = useMarketplace()
+  const navCounts = useNavCounts()
   const home = useHomePlace()
   const unread = unreadMessageCount(messages)
   const sellerUnread = unreadMessageCount(messages.filter((item) => item.viewerIsSeller))
   const threads = messageThreads(messages)
   const mine = listings.filter((listing) => listing.mine).length
-  const homeLabel = home ? (home.city ? `${home.city}, ${countryName(home.country)}` : countryName(home.country)) : null
+  const homeLabel = home ? formatPlaceLabel(home.country, home.city) : null
   const postHref = postAdHref(useRememberedPlace())
   const isAdmin = auth.signedIn && admin
+  const messagesNav = navItem("messages")
+  const myAdsNav = navItem("my-ads")
+  const savedNav = navItem("saved")
+  const postNav = navItem("post")
 
   return (
     <div className="mx-auto w-full max-w-3xl px-4 py-8 md:px-6">
@@ -89,14 +97,26 @@ export function AccountPage() {
       {!ready ? <p className="mt-6 text-sm text-neutral-500">Loading your profile…</p> : null}
 
       <ul className="mt-4 grid gap-2">
-        <ProfileLink href="/messages" title="Messages" detail={messageDetail(threads.length, unread)} />
-        <ProfileLink href="/saved" title="Saved ads" detail={countDetail(savedIds.length, "saved ad", "saved ads")} />
         <ProfileLink
-          href="/my-ads"
-          title="My ads"
-          detail={myAdsDetail(mine, sellerUnread, auth.signedIn)}
+          href={messagesNav.href}
+          title={messagesNav.label}
+          detail={messageDetail(threads.length, unread)}
+          badge={navCounts.messages ?? 0}
+          ariaLabel={navCountAriaLabel(messagesNav.label, "messages", navCounts)}
         />
-        <ProfileLink href={postHref} title="Post an ad" detail="Cars, houses, jobs, and everything else on the board." />
+        <ProfileLink
+          href={savedNav.href}
+          title={savedNav.label}
+          detail={countDetail(savedIds.length, "saved ad", "saved ads")}
+        />
+        <ProfileLink
+          href={myAdsNav.href}
+          title={myAdsNav.label}
+          detail={myAdsDetail(mine, sellerUnread, auth.signedIn)}
+          badge={navCounts["my-ads"] ?? 0}
+          ariaLabel={navCountAriaLabel(myAdsNav.label, "my-ads", navCounts)}
+        />
+        <ProfileLink href={postHref} title={postNav.label} detail="Cars, houses, jobs, and everything else on the board." />
         {isAdmin ? (
           <ProfileLink href="/admin/reports" title="Reports" detail="Review reported ads as an admin." />
         ) : null}
@@ -105,15 +125,31 @@ export function AccountPage() {
   )
 }
 
-function ProfileLink({ href, title, detail }: { href: string; title: string; detail: string }) {
+function ProfileLink({
+  href,
+  title,
+  detail,
+  badge = 0,
+  ariaLabel,
+}: {
+  href: string
+  title: string
+  detail: string
+  badge?: number
+  ariaLabel?: string
+}) {
   return (
     <li>
       <Link
         href={href}
+        aria-label={ariaLabel}
         className="flex items-center gap-3 rounded-2xl border border-neutral-200 bg-white px-4 py-3 hover:border-neutral-400"
       >
         <span className="min-w-0 flex-1">
-          <span className="block text-sm font-medium">{title}</span>
+          <span className="flex items-center gap-2">
+            <span className="text-sm font-medium">{title}</span>
+            <NavBadge count={badge} placement="inline" />
+          </span>
           <span className="mt-0.5 block text-xs text-neutral-500">{detail}</span>
         </span>
         <ChevronRight className="size-4 shrink-0 text-neutral-400" />

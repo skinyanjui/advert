@@ -40,6 +40,13 @@ export function formatPlace(listing: Pick<Listing, "city" | "country">): string 
   return `${listing.city}, ${countryName(listing.country)}`
 }
 
+/** Optional city + country label (e.g. home place or board filter). */
+export function formatPlaceLabel(country: string, city?: string): string {
+  const name = countryName(country)
+  const trimmed = city?.trim()
+  return trimmed ? `${trimmed}, ${name}` : name
+}
+
 /** Card-friendly place: full city name + ISO-2 country code, e.g. "Dar es Salaam, TZ". */
 export function formatPlaceCompact(listing: Pick<Listing, "city" | "country">): string {
   const code = canonicalCountry(listing.country) ?? listing.country.toUpperCase()
