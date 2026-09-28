@@ -1,11 +1,9 @@
 "use client"
 
-import Link from "next/link"
 import type { ReactNode } from "react"
 
 import { EmptyPanel } from "@/components/empty-panel"
 import { ListingCard } from "@/components/listing-card"
-import { Button } from "@/components/ui/button"
 import { useMarketplace } from "@/lib/marketplace"
 
 export function SavedPage() {
