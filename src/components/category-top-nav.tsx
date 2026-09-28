@@ -1,13 +1,19 @@
 "use client"
 
 import { Menu } from "lucide-react"
-import { Suspense, useMemo, useState } from "react"
+import { Suspense, useMemo } from "react"
 import { usePathname, useSearchParams } from "next/navigation"
 
 import { CategoryNav } from "@/components/category-nav"
 import { SiteFooter } from "@/components/site-footer"
-import { Button } from "@/components/ui/button"
-import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from "@/components/ui/sheet"
+import {
+  Sidebar,
+  SidebarContent,
+  SidebarFooter,
+  SidebarHeader,
+  SidebarTrigger,
+  useSidebar,
+} from "@/components/ui/sidebar"
 import { matchesQuery } from "@/lib/board"
 import { canonicalCountry, fold } from "@/lib/countries"
 import { useMarketplace } from "@/lib/marketplace"
@@ -15,36 +21,52 @@ import { categoryPlan } from "@/lib/posting"
 import { categories, isSortId, type CategoryId, type Listing } from "@/lib/types"
 import { categoryFromPath, type ListingQuery } from "@/lib/use-listing-query"
 
-export function CategoryTopNav() {
-  const pathname = usePathname()
-  const active = pathname === "/" ? undefined : categoryFromPath(pathname)
-  const [open, setOpen] = useState(false)
-
+export function CategorySidebar() {
   return (
-    <Sheet open={open} onOpenChange={setOpen}>
-      <SheetTrigger asChild>
-        <Button type="button" variant="ghost" size="icon-lg" className="shrink-0 rounded-full" aria-label="Browse categories">
-          <Menu className="size-5" />
-        </Button>
-      </SheetTrigger>
-      <SheetContent side="right" className="w-[min(22rem,calc(100vw-2rem))] gap-0 overflow-hidden p-0">
-        <SheetHeader>
-          <SheetTitle>Categories</SheetTitle>
-        </SheetHeader>
-        <div className="min-h-0 flex-1 overflow-y-auto px-3 pb-4">
-          <Suspense fallback={<TopNavFallback active={active} onNavigate={() => setOpen(false)} />}>
-            <CategoryTopNavLinks onNavigate={() => setOpen(false)} />
-          </Suspense>
-        </div>
-        <SiteFooter onNavigate={() => setOpen(false)} />
-      </SheetContent>
-    </Sheet>
+    <Sidebar side="right" collapsible="offcanvas" className="z-40 border-l border-sidebar-border">
+      <SidebarHeader className="border-b border-sidebar-border px-4 py-3">
+        <p className="text-sm font-semibold text-sidebar-foreground">Categories</p>
+      </SidebarHeader>
+      <SidebarContent className="px-3 py-3">
+        <Suspense fallback={<TopNavFallback />}>
+          <CategoryTopNavLinks />
+        </Suspense>
+      </SidebarContent>
+      <SidebarFooter className="p-0">
+        <CategorySidebarFooter />
+      </SidebarFooter>
+    </Sidebar>
   )
 }
 
-function CategoryTopNavLinks({ onNavigate }: { onNavigate: () => void }) {
+function CategorySidebarFooter() {
+  const { isMobile, setOpenMobile } = useSidebar()
+  return (
+    <SiteFooter
+      onNavigate={() => {
+        if (isMobile) setOpenMobile(false)
+      }}
+    />
+  )
+}
+
+export function CategoryTopNav() {
+  return (
+    <SidebarTrigger
+      aria-label="Browse categories"
+      className="size-9 shrink-0 rounded-full"
+      size="icon-lg"
+    >
+      <Menu className="size-5" />
+      <span className="sr-only">Browse categories</span>
+    </SidebarTrigger>
+  )
+}
+
+function CategoryTopNavLinks() {
   const pathname = usePathname()
   const searchParams = useSearchParams()
+  const { isMobile, setOpenMobile } = useSidebar()
   const { listings } = useMarketplace()
   const query = useMemo(
     () => readBoardQuery(pathname, searchParams),
@@ -56,6 +78,9 @@ function CategoryTopNavLinks({ onNavigate }: { onNavigate: () => void }) {
   const inCity = useMemo(() => listingsInPlace(listings, query), [listings, query])
   const counts = useMemo(() => countCategories(inCity), [inCity])
   const types = useMemo(() => typeChoices(inCity, active), [inCity, active])
+  const onNavigate = () => {
+    if (isMobile) setOpenMobile(false)
+  }
 
   return (
     <CategoryNav
@@ -71,19 +96,17 @@ function CategoryTopNavLinks({ onNavigate }: { onNavigate: () => void }) {
   )
 }
 
-function TopNavFallback({ active, onNavigate }: { active?: CategoryId; onNavigate: () => void }) {
+function TopNavFallback() {
   const counts = Object.fromEntries(categories.map((category) => [category.id, 0])) as Record<
     CategoryId,
     number
   >
   return (
     <CategoryNav
-      active={active}
       counts={counts}
       total={0}
       hrefForCategory={(category) => (category ? `/${category}` : "/")}
-      hrefForType={() => (active ? `/${active}` : "/")}
-      onNavigate={onNavigate}
+      hrefForType={() => "/"}
     />
   )
 }
