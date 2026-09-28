@@ -1,7 +1,7 @@
 import assert from "node:assert/strict"
 import { test } from "node:test"
 
-import { scrollFadeEdges } from "@/hooks/use-scroll-fades"
+import { horizontalScrollFadeEdges, scrollFadeEdges } from "@/hooks/use-scroll-fades"
 
 test("scrollFadeEdges hides both when content fits", () => {
   assert.deepEqual(scrollFadeEdges(0, 500, 500), { top: false, bottom: false })
@@ -33,4 +33,21 @@ test("scrollFadeEdges uses 4px tolerance near edges", () => {
 test("scrollFadeEdges accepts a custom tolerance", () => {
   assert.deepEqual(scrollFadeEdges(8, 988, 520, 10), { top: false, bottom: true })
   assert.deepEqual(scrollFadeEdges(11, 988, 520, 10), { top: true, bottom: true })
+})
+
+test("horizontalScrollFadeEdges hides both when content fits", () => {
+  assert.deepEqual(horizontalScrollFadeEdges(0, 320, 320), { left: false, right: false })
+  assert.deepEqual(horizontalScrollFadeEdges(0, 323, 320), { left: false, right: false })
+})
+
+test("horizontalScrollFadeEdges shows right only at the start of an overflowing row", () => {
+  assert.deepEqual(horizontalScrollFadeEdges(0, 480, 320), { left: false, right: true })
+})
+
+test("horizontalScrollFadeEdges shows both when scrolled to the middle", () => {
+  assert.deepEqual(horizontalScrollFadeEdges(80, 480, 320), { left: true, right: true })
+})
+
+test("horizontalScrollFadeEdges shows left only at the end", () => {
+  assert.deepEqual(horizontalScrollFadeEdges(160, 480, 320), { left: true, right: false })
 })
