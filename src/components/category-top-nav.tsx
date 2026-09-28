@@ -24,7 +24,11 @@ import { categoryFromPath, type ListingQuery } from "@/lib/use-listing-query"
 
 export function CategorySidebar() {
   return (
-    <Sidebar side="left" collapsible="offcanvas" className="z-40 border-r border-sidebar-border">
+    <Sidebar
+      side="left"
+      collapsible="offcanvas"
+      className="top-16! bottom-auto! z-40 h-[calc(100svh-4rem)]! border-r border-sidebar-border md:top-[72px]! md:h-[calc(100svh-72px)]!"
+    >
       <SidebarHeader className="border-b border-sidebar-border px-4 py-3">
         <p className="text-sm font-semibold text-sidebar-foreground">Categories</p>
       </SidebarHeader>
