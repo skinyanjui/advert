@@ -599,7 +599,7 @@ function SignedInProfile({
         <CardHeader>
           <CardTitle>Password</CardTitle>
           <CardDescription>
-            Optional. Sign in with email and password as well as an email code.
+            Optional. Sign in with email and password as well as an email link.
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-3">
