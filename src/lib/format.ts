@@ -1,4 +1,4 @@
-import { countryName } from "@/lib/countries"
+import { canonicalCountry, countryName } from "@/lib/countries"
 import type { Listing } from "@/lib/types"
 
 export function formatMoney(amount: number, currency = "USD"): string {
@@ -37,6 +37,16 @@ export function formatPosted(hoursAgo: number): string {
 
 export function formatPlace(listing: Pick<Listing, "city" | "country">): string {
   return `${listing.city}, ${countryName(listing.country)}`
+}
+
+/** Card-friendly place: full city name + ISO-2 country code, e.g. "Dar es Salaam, TZ". */
+export function formatPlaceCompact(listing: Pick<Listing, "city" | "country">): string {
+  const code = canonicalCountry(listing.country) ?? listing.country.toUpperCase()
+  return `${listing.city}, ${code}`
+}
+
+export function countryCodeOf(listing: Pick<Listing, "country">): string {
+  return canonicalCountry(listing.country) ?? listing.country.toUpperCase()
 }
 
 export function formatDistance(km: number): string | undefined {
