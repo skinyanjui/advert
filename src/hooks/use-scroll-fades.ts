@@ -31,25 +31,21 @@ function readFadeEdges(el: HTMLElement, tolerance: number): ScrollFadeEdges {
 }
 
 type UseScrollFadesOptions = {
-  /** When false, clears edges and skips listeners (e.g. drawer closed). Default true. */
-  enabled?: boolean
   tolerance?: number
 }
 
 /**
  * Tracks whether a scroll container can scroll further up (`top`) or down (`bottom`).
- * Updates on scroll and when the scroller or its inner nav resizes (e.g. expanded types).
+ * Updates on scroll and when the scroller or its inner content resizes (e.g. expanded types).
  */
 export function useScrollFades(
   ref: RefObject<HTMLElement | null>,
   options: UseScrollFadesOptions = {},
 ): ScrollFadeEdges {
-  const { enabled = true, tolerance = DEFAULT_TOLERANCE } = options
+  const { tolerance = DEFAULT_TOLERANCE } = options
   const [edges, setEdges] = useState<ScrollFadeEdges>({ top: false, bottom: false })
 
   useEffect(() => {
-    if (!enabled) return
-
     const el = ref.current
     if (!el) return
 
@@ -70,8 +66,7 @@ export function useScrollFades(
       el.removeEventListener("scroll", update)
       ro.disconnect()
     }
-  }, [ref, enabled, tolerance])
+  }, [ref, tolerance])
 
-  if (!enabled) return { top: false, bottom: false }
   return edges
 }

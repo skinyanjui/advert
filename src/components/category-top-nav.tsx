@@ -25,11 +25,37 @@ export function CategoryTopNav() {
   const pathname = usePathname()
   const active = pathname === "/" ? undefined : categoryFromPath(pathname)
   const [open, setOpen] = useState(false)
+
+  return (
+    <Sheet open={open} onOpenChange={setOpen}>
+      <SheetTrigger asChild>
+        <Button type="button" variant="ghost" size="icon-lg" className="shrink-0 rounded-full" aria-label="Browse categories">
+          <Menu className="size-5" />
+        </Button>
+      </SheetTrigger>
+      <SheetContent side="right" className="w-[min(22rem,calc(100vw-2rem))] gap-0 overflow-hidden p-0">
+        <SheetHeader>
+          <SheetTitle>Categories</SheetTitle>
+        </SheetHeader>
+        <CategoryDrawerScroller active={active} onNavigate={() => setOpen(false)} />
+        <SiteFooter onNavigate={() => setOpen(false)} />
+      </SheetContent>
+    </Sheet>
+  )
+}
+
+/** Mounted with SheetContent so the scroller ref exists when fade listeners attach. */
+function CategoryDrawerScroller({
+  active,
+  onNavigate,
+}: {
+  active?: CategoryId
+  onNavigate: () => void
+}) {
   const scrollerRef = useRef<HTMLDivElement>(null)
-  const { top, bottom } = useScrollFades(scrollerRef, { enabled: open })
+  const { top, bottom } = useScrollFades(scrollerRef)
 
   useEffect(() => {
-    if (!open) return
     const scroller = scrollerRef.current
     if (!scroller) return
 
@@ -51,7 +77,7 @@ export function CategoryTopNav() {
       cancelAnimationFrame(frame)
       window.clearTimeout(settle)
     }
-  }, [open])
+  }, [])
 
   function scrollMoreCategories() {
     const scroller = scrollerRef.current
@@ -64,55 +90,42 @@ export function CategoryTopNav() {
   }
 
   return (
-    <Sheet open={open} onOpenChange={setOpen}>
-      <SheetTrigger asChild>
-        <Button type="button" variant="ghost" size="icon-lg" className="shrink-0 rounded-full" aria-label="Browse categories">
-          <Menu className="size-5" />
-        </Button>
-      </SheetTrigger>
-      <SheetContent side="right" className="w-[min(22rem,calc(100vw-2rem))] gap-0 overflow-hidden p-0">
-        <SheetHeader>
-          <SheetTitle>Categories</SheetTitle>
-        </SheetHeader>
-        <div className="relative min-h-0 flex-1">
-          <div ref={scrollerRef} className="h-full min-h-0 overflow-y-auto px-3 pb-4">
-            <div>
-              <Suspense fallback={<TopNavFallback active={active} onNavigate={() => setOpen(false)} />}>
-                <CategoryTopNavLinks onNavigate={() => setOpen(false)} />
-              </Suspense>
-            </div>
-          </div>
-          <div
-            aria-hidden
-            className={cn(
-              "pointer-events-none absolute inset-x-0 top-0 z-[1] h-6 bg-gradient-to-b from-popover to-transparent transition-opacity duration-200 motion-reduce:transition-none",
-              top ? "opacity-100" : "opacity-0",
-            )}
-          />
-          <div
-            aria-hidden
-            className={cn(
-              "pointer-events-none absolute inset-x-0 bottom-0 z-[1] h-6 bg-gradient-to-t from-popover to-transparent transition-opacity duration-200 motion-reduce:transition-none",
-              bottom ? "opacity-100" : "opacity-0",
-            )}
-          />
-          <button
-            type="button"
-            onClick={scrollMoreCategories}
-            tabIndex={bottom ? 0 : -1}
-            aria-hidden={!bottom}
-            className={cn(
-              "absolute bottom-2 left-1/2 z-[2] inline-flex -translate-x-1/2 items-center gap-1 rounded-md border border-neutral-200 bg-popover/95 px-2.5 py-1 text-xs text-neutral-600 shadow-sm backdrop-blur-sm transition-opacity duration-200 hover:bg-neutral-50 hover:text-neutral-950 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-neutral-950 motion-reduce:transition-none dark:border-neutral-700 dark:text-neutral-300 dark:hover:bg-neutral-800 dark:hover:text-neutral-50",
-              bottom ? "opacity-100" : "pointer-events-none opacity-0",
-            )}
-          >
-            More categories
-            <ChevronDown className="size-3.5 opacity-70" aria-hidden />
-          </button>
+    <div className="relative min-h-0 flex-1">
+      <div ref={scrollerRef} className="h-full min-h-0 overflow-y-auto px-3 pb-4">
+        <div>
+          <Suspense fallback={<TopNavFallback active={active} onNavigate={onNavigate} />}>
+            <CategoryTopNavLinks onNavigate={onNavigate} />
+          </Suspense>
         </div>
-        <SiteFooter onNavigate={() => setOpen(false)} />
-      </SheetContent>
-    </Sheet>
+      </div>
+      <div
+        aria-hidden
+        className={cn(
+          "pointer-events-none absolute inset-x-0 top-0 z-[1] h-6 bg-gradient-to-b from-popover to-transparent transition-opacity duration-200 motion-reduce:transition-none",
+          top ? "opacity-100" : "opacity-0",
+        )}
+      />
+      <div
+        aria-hidden
+        className={cn(
+          "pointer-events-none absolute inset-x-0 bottom-0 z-[1] h-6 bg-gradient-to-t from-popover to-transparent transition-opacity duration-200 motion-reduce:transition-none",
+          bottom ? "opacity-100" : "opacity-0",
+        )}
+      />
+      <button
+        type="button"
+        onClick={scrollMoreCategories}
+        tabIndex={bottom ? 0 : -1}
+        aria-hidden={!bottom}
+        className={cn(
+          "absolute bottom-2 left-1/2 z-[2] inline-flex -translate-x-1/2 items-center gap-1 rounded-md border border-neutral-200 bg-popover/95 px-2.5 py-1 text-xs text-neutral-600 shadow-sm backdrop-blur-sm transition-opacity duration-200 hover:bg-neutral-50 hover:text-neutral-950 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-neutral-950 motion-reduce:transition-none dark:border-neutral-700 dark:text-neutral-300 dark:hover:bg-neutral-800 dark:hover:text-neutral-50",
+          bottom ? "opacity-100" : "pointer-events-none opacity-0",
+        )}
+      >
+        More categories
+        <ChevronDown className="size-3.5 opacity-70" aria-hidden />
+      </button>
+    </div>
   )
 }
 
