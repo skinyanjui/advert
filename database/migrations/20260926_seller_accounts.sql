@@ -80,29 +80,27 @@ create policy "Owners manage profile"
 -- ---------------------------------------------------------------------------
 -- Owner setup (Supabase Dashboard + Vercel) — do this after applying this SQL
 -- ---------------------------------------------------------------------------
--- 1. Authentication → Providers → Email: enable Email.
---    Prefer OTP / magic link (no password). Disable email confirmations that
---    require a separate password signup if you only want OTP.
+-- Prefer the Auth section in README.md for the current production suite (OTP,
+-- magic link, optional password, /auth/callback, /auth/reset, HTML templates).
+-- 1. Authentication → Providers → Email: enable Email. Confirm email on.
+--    Optional password is supported in the app (min length 8).
 -- 2. Authentication → URL configuration:
 --      Site URL: https://adverts-murex.vercel.app  (and preview URLs as needed)
---      Redirect URLs include:
---        https://adverts-murex.vercel.app/auth/confirm
---        http://localhost:3000/auth/confirm
---        https://*-skinyanjui.vercel.app/auth/confirm   (preview pattern)
--- 3. Authentication → Email templates → Magic Link (and Confirm signup if used):
---      Subject: Your africa classifieds sign-in code
---      Body should include BOTH for SSR:
---        Your code is {{ .Token }}
---        Or open {{ .SiteURL }}/auth/confirm?token_hash={{ .TokenHash }}&type=email
--- 4. Phone / SMS OTP (African users): not enabled in the app yet.
---    Supabase Phone provider needs a paid SMS gateway (Twilio, MessageBird,
---    Vonage, etc.). After you attach one under Authentication → Providers → Phone,
---    set NEXT_PUBLIC_AUTH_PHONE=1 and the UI can offer SMS OTP without code changes
---    beyond turning that flag on. WhatsApp OTP also needs a Twilio WhatsApp sender.
+--      Redirect URLs include (wildcards as your plan allows):
+--        https://adverts-murex.vercel.app/**
+--        http://localhost:3000/**
+--        https://*-skinyanjui.vercel.app/**
+-- 3. Authentication → Email templates: custom SMTP is required first before you
+--      can install HTML from supabase/templates/ (confirm-signup, magic-link,
+--      reset-password, change-email). Until SMTP is configured, keep Supabase
+--      default ConfirmationURL emails (magic-link / PKCE callback flow).
+-- 4. Phone / SMS OTP: leave off until an SMS provider is attached, then set
+--      NEXT_PUBLIC_AUTH_PHONE=1. Google: configure provider, then
+--      NEXT_PUBLIC_AUTH_GOOGLE=1.
 -- 5. Vercel env (already used by the board; confirm publishable key is present):
 --      NEXT_PUBLIC_SUPABASE_URL
 --      NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY   (or NEXT_PUBLIC_SUPABASE_ANON_KEY)
 --      SUPABASE_SECRET_KEY                   (server-only, never NEXT_PUBLIC_)
 --      BOARD_SESSION_SECRET                  (optional but recommended)
---    No new secrets are required for email OTP beyond existing Supabase keys.
+--      ADMIN_EMAILS, CRON_SECRET, optional RESEND_* — see .env.example
 -- 6. Redeploy after Auth URL / template changes so redirects match production.

@@ -13,7 +13,6 @@ import {
 import { toast } from "sonner"
 
 import { ListingThumb } from "@/components/inbox/listing-thumb"
-import { KeepAdsPrompt } from "@/components/sign-in-form"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import {
@@ -189,7 +188,6 @@ export function MyAdsPage() {
       ) : (
         <div className="overflow-hidden rounded-xl border border-neutral-200 bg-white">
           <div className="space-y-3 border-b border-neutral-200 p-4">
-            <KeepAdsPrompt className="rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-xs text-amber-950" />
             <StatusFilterChips filter={filter} counts={counts} onChange={setFilter} />
           </div>
 

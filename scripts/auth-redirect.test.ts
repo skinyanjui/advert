@@ -207,3 +207,11 @@ test("post drafts expire after seven days", () => {
   assert.equal(isPostDraftExpired(now - DRAFT_MAX_AGE_MS + 1, now), false)
   assert.equal(isPostDraftExpired(now - DRAFT_MAX_AGE_MS - 1, now), true)
 })
+
+test("createListingAuthError requires auth when configured", async () => {
+  const { createListingAuthError } = await import("../src/lib/listing-create-auth")
+  assert.equal(createListingAuthError("session", true), "Sign in to post an ad.")
+  assert.equal(createListingAuthError("auth", true), undefined)
+  assert.equal(createListingAuthError("session", false), undefined)
+  assert.equal(createListingAuthError("auth", false), undefined)
+})

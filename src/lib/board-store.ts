@@ -474,7 +474,7 @@ async function postingQuota(owner: string): Promise<Result<true>> {
   ])
   check(total.error)
   check(recent.error)
-  if ((total.count ?? 0) >= 40) return { ok: false, reason: "This browser has reached the limit of 40 ads." }
+  if ((total.count ?? 0) >= 40) return { ok: false, reason: "You have reached the limit of 40 ads." }
   if ((recent.count ?? 0) >= 8) return { ok: false, reason: "Too many ads posted recently. Try again in an hour." }
   return { ok: true, value: true }
 }

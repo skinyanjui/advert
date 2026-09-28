@@ -67,7 +67,7 @@ export function AccountPage() {
             </p>
           ) : (
             <p className="mt-1 text-sm text-muted-foreground">
-              Guest on this browser. Sign in to keep ads after clearing cookies or on another device.
+              Guest on this browser. Sign in to post ads and keep them on your account across devices.
             </p>
           )
         ) : null}

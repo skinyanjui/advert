@@ -31,7 +31,7 @@ export function CategorySidebar() {
   const { isMobile, setOpenMobile } = useSidebar()
   const pathname = usePathname()
 
-  // Close the mobile categories sheet after any route change (footer Credits, etc.).
+  // Close the mobile categories sheet after any route change (footer Sources, etc.).
   useEffect(() => {
     setOpenMobile(false)
   }, [pathname, setOpenMobile])

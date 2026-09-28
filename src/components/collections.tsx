@@ -15,7 +15,7 @@ export function SavedPage() {
   return (
     <Collection
       title="Saved ads"
-      description="Hearts you tap stay on this browser."
+      description="Saved hearts stay with your account when you are signed in."
       emptyTitle="No saved ads yet"
       emptyBody="Tap the heart on a listing and it will wait for you here."
       listings={saved}

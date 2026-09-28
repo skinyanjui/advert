@@ -464,10 +464,10 @@ export function ListingDetail({ id }: { id: string }) {
                   <Button variant="outline" className="h-10 rounded-full" asChild>
                     <Link href={`/messages?listing=${listing.id}`}>
                       {unreadHere > 0
-                        ? `Inbox (${unreadHere} unread)`
+                        ? `Messages (${unreadHere} unread)`
                         : threadCount === 1
-                          ? "Inbox (1 conversation)"
-                          : `Inbox (${threadCount} conversations)`}
+                          ? "Messages (1 conversation)"
+                          : `Messages (${threadCount} conversations)`}
                     </Link>
                   </Button>
                 ) : null}
