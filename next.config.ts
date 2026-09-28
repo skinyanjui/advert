@@ -6,11 +6,20 @@ const storageHost = storageUrl ? new URL(storageUrl).hostname : undefined;
 const nextConfig: NextConfig = {
   allowedDevOrigins: ["127.0.0.1", "localhost"],
   images: {
-    remotePatterns: storageHost ? [{
-      protocol: "https",
-      hostname: storageHost,
-      pathname: "/storage/v1/object/public/listing-photos/**",
-    }] : [],
+    remotePatterns: storageHost
+      ? [
+          {
+            protocol: "https",
+            hostname: storageHost,
+            pathname: "/storage/v1/object/public/listing-photos/**",
+          },
+          {
+            protocol: "https",
+            hostname: storageHost,
+            pathname: "/storage/v1/object/public/avatars/**",
+          },
+        ]
+      : [],
   },
 };
 
