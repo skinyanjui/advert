@@ -28,7 +28,14 @@ function prefersReducedMotion(): boolean {
 }
 
 export function CategorySidebar() {
-  const { isMobile } = useSidebar()
+  const { isMobile, setOpenMobile } = useSidebar()
+  const pathname = usePathname()
+
+  // Close the mobile categories sheet after any route change (footer Credits, etc.).
+  useEffect(() => {
+    setOpenMobile(false)
+  }, [pathname, setOpenMobile])
+
   return (
     <Sidebar
       side="left"
@@ -70,14 +77,8 @@ function CategorySidebarHeader() {
 }
 
 function CategorySidebarFooter() {
-  const { isMobile, setOpenMobile } = useSidebar()
-  return (
-    <SiteFooter
-      onNavigate={() => {
-        if (isMobile) setOpenMobile(false)
-      }}
-    />
-  )
+  const { setOpenMobile } = useSidebar()
+  return <SiteFooter onNavigate={() => setOpenMobile(false)} />
 }
 
 /** Scrollable category list with top/bottom fade cues and a More categories chip. */
