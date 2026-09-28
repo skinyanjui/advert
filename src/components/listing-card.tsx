@@ -4,10 +4,16 @@ import { ArrowRight, Heart, MapPin } from "lucide-react"
 import Image from "next/image"
 import Link from "next/link"
 
-import { formatDistance, formatPlace, formatPrice } from "@/lib/format"
+import { countryCodeOf, formatDistance, formatPlace, formatPrice } from "@/lib/format"
 import { isListingExpired } from "@/lib/expiry"
 import { useMarketplace } from "@/lib/marketplace"
-import { categoryName, type Listing } from "@/lib/types"
+import {
+  formatPostedDate,
+  formatRelativePosted,
+  hoursAgoOf,
+  postedDateTime,
+} from "@/lib/relative-time"
+import type { Listing } from "@/lib/types"
 import { cn } from "@/lib/utils"
 
 export function ListingCard({
@@ -25,7 +31,8 @@ export function ListingCard({
 }) {
   const { isSaved, toggleSaved } = useMarketplace()
   const saved = isSaved(listing.id)
-  const place = formatPlace(listing)
+  const placeFull = formatPlace(listing)
+  const countryCode = countryCodeOf(listing)
   const away = distanceKm === undefined ? undefined : formatDistance(distanceKm)
   const body = (
     <>
@@ -71,12 +78,19 @@ export function ListingCard({
           {formatPrice(listing)}
         </p>
         <h3 className="truncate text-[13px] leading-4 text-neutral-800">{listing.title}</h3>
-        <p className="flex min-w-0 items-center gap-1 truncate text-[11px] leading-3.5 text-neutral-600" title={place}>
+        <p
+          className="flex min-w-0 items-center gap-1 text-[11px] leading-3.5 text-neutral-600"
+          title={placeFull}
+          aria-label={placeFull}
+        >
           <MapPin className="size-3 shrink-0" aria-hidden="true" />
-          <span className="truncate">{place}</span>
+          <span className="flex min-w-0 items-baseline">
+            <span className="min-w-0 truncate">{listing.city}</span>
+            <span className="shrink-0">, {countryCode}</span>
+          </span>
         </p>
         <div className="grid grid-cols-[minmax(0,1fr)_auto] items-center gap-1.5 text-[11px] leading-none text-neutral-500">
-          <span className="truncate">{categoryName(listing.category)}</span>
+          <PostedLabel listing={listing} />
           {linked ? (
             <span className="inline-flex items-center gap-1 font-medium text-neutral-950">
               View <ArrowRight className="size-3" aria-hidden="true" />
@@ -111,5 +125,25 @@ export function ListingCard({
         </button>
       ) : null}
     </article>
+  )
+}
+
+function PostedLabel({ listing }: { listing: Listing }) {
+  // Prefer the stored hoursAgo for seed ads (no postedAt) so SSR/client match.
+  // When postedAt exists, recompute from now and suppress hydration warning on <time>.
+  const hasPostedAt = Boolean(listing.postedAt)
+  const hours = hasPostedAt ? hoursAgoOf(listing) : listing.hoursAgo
+  const label = formatRelativePosted(hours)
+  const dateTime = postedDateTime(listing)
+  const fullDate = formatPostedDate(listing.postedAt)
+  return (
+    <time
+      className="truncate"
+      dateTime={dateTime}
+      title={fullDate}
+      suppressHydrationWarning={hasPostedAt}
+    >
+      {label}
+    </time>
   )
 }
