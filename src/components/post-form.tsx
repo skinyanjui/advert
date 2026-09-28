@@ -21,6 +21,7 @@ import { useAuth } from "@/lib/auth"
 import { categoryImage } from "@/lib/catalog"
 import { resolvePlace } from "@/lib/cities"
 import { normalizeContactPhone, prefillListingPhone } from "@/lib/contact-phone"
+import { resolvePostingCountry } from "@/lib/posting-country"
 import {
   canonicalCountry,
   countryName,
@@ -70,7 +71,9 @@ function AdForm({ existing }: { existing: Listing | null }) {
   const router = useRouter()
   const searchParams = useSearchParams()
   const urlCountry = existing ? undefined : canonicalCountry(searchParams.get("country"))
-  const startingCountry = existing ? (canonicalCountry(existing.country) ?? "KE") : (urlCountry ?? "KE")
+  const startingCountry = existing
+    ? (canonicalCountry(existing.country) ?? "")
+    : (urlCountry ?? "")
   const startingCity = existing
     ? existing.city
     : urlCountry
@@ -96,7 +99,9 @@ function AdForm({ existing }: { existing: Listing | null }) {
   )
   const [details, setDetails] = useState<Record<string, string>>({ ...(existing?.details ?? {}) })
   const [country, setCountry] = useState(startingCountry)
-  const [currency, setCurrency] = useState(existing?.currency ?? getCountry(startingCountry)?.currencies[0]?.code ?? "USD")
+  const [currency, setCurrency] = useState(
+    existing?.currency ?? getCountry(startingCountry)?.currencies[0]?.code ?? "USD",
+  )
   const [city, setCity] = useState(startingCity)
   const [place, setPlace] = useState<ChosenPlace | null>(placeFromListing(existing))
   const [description, setDescription] = useState(existing?.description ?? "")
@@ -105,36 +110,57 @@ function AdForm({ existing }: { existing: Listing | null }) {
   const [errors, setErrors] = useState<FieldErrors>({})
   const [submitting, setSubmitting] = useState(false)
   const appliedPlace = useRef(false)
-  const appliedContact = useRef(Boolean(existing))
+  const appliedProfile = useRef(Boolean(existing))
 
   useLayoutEffect(() => {
+    // Client-only: apply saved board/home place after hydration (no invented KE default).
     if (appliedPlace.current || existing || urlCountry) return
     appliedPlace.current = true
-    const place = readPostingPlace()
-    setCountry(place.country)
-    setCity(place.city)
-    setCurrency(getCountry(place.country)?.currencies[0]?.code ?? "USD")
-    setPlace(locatedPlace(null, place.country, place.city))
+    const saved = readPostingPlace()
+    const nextCountry = resolvePostingCountry({
+      urlCountry,
+      savedPlaceCountry: saved.country,
+    })
+    if (!nextCountry) return
+    /* eslint-disable react-hooks/set-state-in-effect -- hydrate saved place once on the client */
+    setCountry(nextCountry)
+    setCity(saved.city)
+    setCurrency(getCountry(nextCountry)?.currencies[0]?.code ?? "USD")
+    setPlace(locatedPlace(null, nextCountry, saved.city))
+    /* eslint-enable react-hooks/set-state-in-effect */
   }, [existing, urlCountry])
 
   useEffect(() => {
-    if (existing || appliedContact.current || !auth.ready || !auth.signedIn) return
+    if (existing || appliedProfile.current || !auth.ready) return
+    if (!auth.signedIn) {
+      appliedProfile.current = true
+      return
+    }
     let active = true
     void (async () => {
       try {
         const response = await fetch("/api/profile", { cache: "no-store" })
         const payload = (await response.json()) as { ok?: boolean; profile?: BoardProfile }
         if (!active || !response.ok || !payload.profile) return
-        appliedContact.current = true
-        setPhone((current) => prefillListingPhone(current || null, payload.profile?.phone))
+        appliedProfile.current = true
+        const profile = payload.profile
+        setPhone((current) => prefillListingPhone(current || null, profile.phone))
+        setCountry((current) =>
+          current
+            ? current
+            : resolvePostingCountry({
+                urlCountry,
+                profileCountry: profile.countryCode,
+              }),
+        )
       } catch {
-        // Prefill is optional; seller can still type a number.
+        // Prefill is optional; seller can still choose country and phone.
       }
     })()
     return () => {
       active = false
     }
-  }, [existing, auth.ready, auth.signedIn])
+  }, [existing, auth.ready, auth.signedIn, urlCountry])
 
   const plan = category ? categoryPlan(category) : null
   const subcategory = category ? findSubcategory(category, subcategoryId ?? undefined) : undefined
@@ -665,7 +691,7 @@ function AdForm({ existing }: { existing: Listing | null }) {
                 {choiceLine ? <p className="mt-0.5 truncate text-xs text-neutral-500">{choiceLine}</p> : null}
               </div>
               <div className="grid grid-cols-2 gap-3">
-                <Field label="Country">
+                <Field label="Country" required>
                   <CountryField
                     country={country}
                     onChange={(code) => {
@@ -673,20 +699,24 @@ function AdForm({ existing }: { existing: Listing | null }) {
                       setCity("")
                       setPlace(null)
                       setCurrency(getCountry(code)?.currencies[0]?.code ?? "USD")
-                      setErrors((current) => ({ ...current, city: undefined, currency: undefined }))
+                      setErrors((current) => ({ ...current, city: undefined, currency: undefined, form: undefined }))
                     }}
                   />
                 </Field>
                 <Field label="City" required error={errors.city}>
-                  <CityField
-                    country={country}
-                    city={city}
-                    onCityChange={(value) => {
-                      setCity(value)
-                      setErrors((current) => ({ ...current, city: undefined }))
-                    }}
-                    onPlace={setPlace}
-                  />
+                  {country ? (
+                    <CityField
+                      country={country}
+                      city={city}
+                      onCityChange={(value) => {
+                        setCity(value)
+                        setErrors((current) => ({ ...current, city: undefined }))
+                      }}
+                      onPlace={setPlace}
+                    />
+                  ) : (
+                    <Input disabled placeholder="Choose a country first" aria-disabled="true" className="h-10 bg-white" />
+                  )}
                 </Field>
               </div>
               <ContactPhoneField
@@ -905,6 +935,7 @@ function CountryField({ country, onChange }: { country: string; onChange: (code:
   const featured = filterCountries(primaryCountries(), needle)
   const rest = filterCountries(moreCountries(), needle)
   const matches = [...featured, ...rest]
+  const display = country ? countryName(country) : ""
 
   function pick(code: string) {
     onChange(code)
@@ -917,12 +948,12 @@ function CountryField({ country, onChange }: { country: string; onChange: (code:
     <div className="relative">
       <Input
         ref={inputRef}
-        value={open ? query : countryName(country)}
+        value={open ? query : display}
         role="combobox"
         aria-expanded={open}
         aria-controls="post-country-list"
         aria-autocomplete="list"
-        placeholder="Search countries"
+        placeholder="Choose country"
         className="h-10 bg-white"
         onClick={() => setOpen(true)}
         onFocus={() => {

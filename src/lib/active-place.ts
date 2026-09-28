@@ -65,7 +65,8 @@ export function readPostingPlace(): { country: string; city: string } {
   }
   const home = typeof window === "undefined" ? null : readHomePlace()
   if (home) return { country: home.country, city: home.city ?? "" }
-  return { country: "KE", city: "" }
+  // No invented default — post form may then use profile country or require a pick.
+  return { country: "", city: "" }
 }
 
 export function postAdHref(
