@@ -1,15 +1,16 @@
 "use client"
 
-import { Bell, ChevronDown, Inbox, MapPin, MessageCircle, RefreshCw, Search } from "lucide-react"
+import { ChevronDown, Inbox, MapPin, MessageCircle, RefreshCw, Search } from "lucide-react"
 import Link from "next/link"
 import { usePathname, useRouter, useSearchParams } from "next/navigation"
 import { useEffect, useRef, useState, type ReactNode } from "react"
 
 import { Logo } from "@/components/logo"
 import { CategoryTopNav } from "@/components/category-top-nav"
+import { LanguageCurrencyFields } from "@/components/language-currency-fields"
 import { NavBadge } from "@/components/nav-badge"
-import { NavIconLink } from "@/components/nav-icon-link"
 import { PostLink, usePostAdHref } from "@/components/post-link"
+import { usePrefs } from "@/components/prefs-provider"
 import { ThemeChoices } from "@/components/theme-choices"
 import { Button, buttonVariants } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -30,30 +31,34 @@ const summaryClass =
 
 export function SiteHeader() {
   const { query, update } = useListingQuery()
-  const { savedIds } = useMarketplace()
+  const { savedIds, ready, refreshBoard } = useMarketplace()
   const auth = useAuth()
+  const { t } = usePrefs()
   const navCounts = useNavCounts()
   const unreadMessages = navCounts.messages ?? 0
   const myAdsAttention = navCounts["my-ads"] ?? 0
   const profileAttention = unreadMessages + myAdsAttention
-  const locationLabel = query.country ? countryName(query.country) : "All Africa"
+  const locationLabel = query.country ? countryName(query.country) : t("nav.allAfrica")
+  const pathname = usePathname()
+  const homeNav = navItem("home")
   const postNav = navItem("post")
   const messagesNav = navItem("messages")
   const savedNav = navItem("saved")
   const myAdsNav = navItem("my-ads")
   const profileNav = navItem("profile")
+  const HomeIcon = homeNav.icon
   const PostIcon = postNav.icon
   const ProfileIcon = profileNav.icon
   const postHref = usePostAdHref()
-  const profileLabel = auth.signedIn ? auth.email ?? "Signed in" : "Guest on this browser"
-  const profileDetail = auth.signedIn ? "Ads stay with your account" : "Sign in to post and keep ads"
+  const profileLabel = auth.signedIn ? auth.email ?? "Signed in" : t("nav.guestBrowser")
+  const profileDetail = auth.signedIn ? t("nav.signedInDetail") : t("nav.guestDetail")
   const profileMenuLabel = [
-    profileNav.label,
-    unreadMessages > 0 ? `${unreadMessages} unread` : null,
+    t("nav.profile"),
+    unreadMessages > 0 ? t("nav.unreadMessages", { count: unreadMessages }) : null,
     myAdsAttention > 0
       ? myAdsAttention === 1
-        ? "1 needs attention"
-        : `${myAdsAttention} need attention`
+        ? t("nav.needsAttentionOne")
+        : t("nav.needsAttentionMany", { count: myAdsAttention })
       : null,
   ]
     .filter(Boolean)
@@ -73,65 +78,96 @@ export function SiteHeader() {
             </div>
           </div>
           <div className="fixed inset-x-3 bottom-[calc(env(safe-area-inset-bottom)+0.75rem)] z-50 mx-auto flex max-w-lg items-center justify-between rounded-3xl border border-neutral-200 bg-white p-2.5 shadow-lg md:static md:inset-auto md:ml-auto md:max-w-none md:shrink-0 md:rounded-none md:border-0 md:bg-transparent md:p-0 md:shadow-none">
-            <nav aria-label="Navigation" className="flex w-full items-center justify-between gap-1 md:justify-end md:gap-2 lg:gap-3">
-              <CountryMenu label={locationLabel} query={query} />
-              <Button asChild className="h-10 rounded-full bg-neutral-950 px-3 text-white hover:bg-neutral-800 md:px-3 xl:px-4">
-                <Link href={postHref} aria-label={postNav.shortLabel}>
-                  <PostIcon />
-                  <span className="hidden xl:inline">{postNav.shortLabel}</span>
+            <nav aria-label={t("nav.navigation")} className="flex w-full items-center justify-between gap-1 md:justify-end md:gap-2 lg:gap-3">
+              <Button
+                asChild
+                variant="outline"
+                size="icon-lg"
+                className="rounded-full md:hidden"
+              >
+                <Link
+                  href={homeNav.href}
+                  aria-label={t("nav.home")}
+                  aria-current={pathname === "/" ? "page" : undefined}
+                >
+                  <HomeIcon />
+                  <span className="sr-only">{t("nav.home")}</span>
                 </Link>
               </Button>
-              <NavIconLink id="messages" />
-              <NotificationsMenu />
+              <CountryMenu label={locationLabel} query={query} />
+              <Button asChild className="h-10 rounded-full bg-neutral-950 px-3 text-white hover:bg-neutral-800 md:px-3 xl:px-4">
+                <Link href={postHref} aria-label={t("nav.postShort")}>
+                  <PostIcon />
+                  <span className="hidden xl:inline">{t("nav.postShort")}</span>
+                </Link>
+              </Button>
               <HeaderMenu
                 label={profileMenuLabel}
                 summaryClassName="relative size-9 px-0"
-                panelClassName="w-56"
+                panelClassName="w-[min(23rem,calc(100vw-1rem))] !p-0 max-h-[min(36rem,calc(100dvh-5rem))]"
+                panelRole="menu"
+                onOpen={() => {
+                  if (ready) void refreshBoard()
+                }}
                 summary={
                   <>
                     <ProfileIcon />
-                    <NavBadge count={profileAttention} />
+                    {profileAttention > 0 ? (
+                      <NavBadge
+                        count={profileAttention}
+                        ariaLabel={
+                          unreadMessages > 0
+                            ? t("nav.unreadMessages", { count: unreadMessages })
+                            : t("nav.needsAttentionMany", { count: myAdsAttention })
+                        }
+                      />
+                    ) : null}
                   </>
                 }
               >
-                <div className="px-2 py-1.5">
+                <div className="px-3 py-2">
                   <p className="truncate text-sm font-medium">{profileLabel}</p>
                   <p className="text-xs text-neutral-500">{profileDetail}</p>
                   <ThemeChoices className="mt-2" />
                 </div>
-                <div className="mx-1 my-1 h-px bg-neutral-200" />
-                {auth.signedIn ? null : <MenuLink href="/sign-in">Sign in</MenuLink>}
-                <MenuLink href={profileNav.href}>{profileNav.label}</MenuLink>
-                <MenuLink
-                  href={messagesNav.href}
-                  className="justify-between gap-2"
-                  aria-label={navCountAriaLabel(messagesNav.label, "messages", navCounts)}
-                >
-                  <span>{messagesNav.label}</span>
-                  <NavBadge count={unreadMessages} placement="inline" />
-                </MenuLink>
-                <MenuLink href={savedNav.href}>
-                  {savedNav.label} ({savedIds.length})
-                </MenuLink>
-                <MenuLink
-                  href={myAdsNav.href}
-                  className="justify-between gap-2"
-                  aria-label={navCountAriaLabel(myAdsNav.label, "my-ads", navCounts)}
-                >
-                  <span>{myAdsNav.label}</span>
-                  <NavBadge count={myAdsAttention} placement="inline" />
-                </MenuLink>
-                <MenuLink href={postHref}>{postNav.label}</MenuLink>
-                {auth.signedIn ? (
-                  <button
-                    type="button"
-                    role="menuitem"
-                    className="flex h-8 w-full cursor-pointer items-center rounded-md px-2 text-left text-sm hover:bg-neutral-100"
-                    onClick={() => void auth.signOut()}
+                <LanguageCurrencyFields layout="menu" />
+                <div className="mx-2 my-1 h-px bg-neutral-200" />
+                <div className="p-1">
+                  {auth.signedIn ? null : <MenuLink href="/sign-in">{t("nav.signIn")}</MenuLink>}
+                  <MenuLink href={profileNav.href}>{t("nav.profile")}</MenuLink>
+                  <MenuLink
+                    href={messagesNav.href}
+                    className="justify-between gap-2"
+                    aria-label={navCountAriaLabel(t("nav.messages"), "messages", navCounts)}
                   >
-                    Sign out
-                  </button>
-                ) : null}
+                    <span>{t("nav.messages")}</span>
+                    <NavBadge count={unreadMessages} placement="inline" />
+                  </MenuLink>
+                  <MenuLink href={savedNav.href}>
+                    {t("nav.saved")} ({savedIds.length})
+                  </MenuLink>
+                  <MenuLink
+                    href={myAdsNav.href}
+                    className="justify-between gap-2"
+                    aria-label={navCountAriaLabel(t("nav.myAds"), "my-ads", navCounts)}
+                  >
+                    <span>{t("nav.myAds")}</span>
+                    <NavBadge count={myAdsAttention} placement="inline" />
+                  </MenuLink>
+                  <MenuLink href={postHref}>{t("nav.post")}</MenuLink>
+                  {auth.signedIn ? (
+                    <button
+                      type="button"
+                      role="menuitem"
+                      className="flex h-8 w-full cursor-pointer items-center rounded-md px-2 text-left text-sm hover:bg-neutral-100"
+                      onClick={() => void auth.signOut()}
+                    >
+                      {t("nav.signOut")}
+                    </button>
+                  ) : null}
+                </div>
+                <div className="mx-2 my-1 h-px bg-neutral-200" />
+                <ProfileNotifications />
               </HeaderMenu>
             </nav>
           </div>
@@ -141,8 +177,9 @@ export function SiteHeader() {
   )
 }
 
-function NotificationsMenu() {
+function ProfileNotifications() {
   const { messages, ready, refreshBoard } = useMarketplace()
+  const { t } = usePrefs()
   const [view, setView] = useState<"all" | "unread">("all")
   const [refreshing, setRefreshing] = useState(false)
   const unread = unreadMessageCount(messages)
@@ -159,35 +196,33 @@ function NotificationsMenu() {
   }
 
   return (
-    <HeaderMenu
-      label={unread > 0 ? `Notifications, ${unread} unread` : "Notifications"}
-      summaryClassName="relative size-9 px-0"
-      panelClassName="w-[min(23rem,calc(100vw-1rem))] !p-0"
-      panelRole="region"
-      onOpen={() => { if (ready) void refreshBoard() }}
-      summary={<><Bell /><NavBadge count={unread} /></>}
-    >
-      <div className="flex items-center justify-between gap-3 border-b border-neutral-200 px-4 py-3">
+    <div role="region" aria-label={unread > 0 ? t("nav.notificationsUnread", { count: unread }) : t("nav.notifications")}>
+      <div className="flex items-center justify-between gap-3 px-4 py-2">
         <div className="min-w-0">
-          <h2 className="text-base font-semibold text-neutral-950">Notifications</h2>
+          <h2 className="text-sm font-semibold text-neutral-950">{t("nav.notifications")}</h2>
           <p className="text-xs text-neutral-500" aria-live="polite">
-            {unread > 0 ? `${unread} unread ${unread === 1 ? "message" : "messages"}` : "Your recent message activity"}
+            {unread > 0
+              ? t("nav.notificationsUnreadCount", {
+                  count: unread,
+                  messages: unread === 1 ? t("nav.messageOne") : t("nav.messageMany"),
+                })
+              : t("nav.notificationsRecent")}
           </p>
         </div>
         <Button
           type="button"
           variant="outline"
           size="icon"
-          aria-label="Refresh notifications"
-          title="Refresh notifications"
+          aria-label={t("nav.refreshNotifications")}
+          title={t("nav.refreshNotifications")}
           disabled={!ready || refreshing}
           onClick={() => void onRefresh()}
-          className="size-9 shrink-0 rounded-full"
+          className="size-8 shrink-0 rounded-full"
         >
-          <RefreshCw className={cn("size-4", refreshing && "animate-spin")} aria-hidden="true" />
+          <RefreshCw className={cn("size-3.5", refreshing && "animate-spin")} aria-hidden="true" />
         </Button>
       </div>
-      <div className="flex gap-1 border-b border-neutral-200 px-3 py-2" aria-label="Filter notifications">
+      <div className="flex gap-1 px-3 pb-2" aria-label={t("nav.filterNotifications")}>
         {(["all", "unread"] as const).map((option) => (
           <button
             key={option}
@@ -195,28 +230,30 @@ function NotificationsMenu() {
             aria-pressed={view === option}
             onClick={() => setView(option)}
             className={cn(
-              "rounded-full px-3 py-1.5 text-xs font-medium transition-colors",
+              "rounded-full px-3 py-1 text-xs font-medium transition-colors",
               view === option ? "bg-neutral-950 text-white" : "text-neutral-600 hover:bg-neutral-100",
             )}
           >
-            {option === "all" ? "All" : `Unread${unread ? ` ${unread}` : ""}`}
+            {option === "all" ? t("nav.filterAll") : `${t("nav.filterUnread")}${unread ? ` ${unread}` : ""}`}
           </button>
         ))}
       </div>
-      <div className="max-h-[min(21rem,calc(100dvh-16rem))] min-h-40 overflow-y-auto p-2">
+      <div className="max-h-[min(14rem,calc(100dvh-22rem))] min-h-28 overflow-y-auto px-2 pb-2">
         {!ready && notifications.length === 0 ? (
-          <p role="status" className="px-3 py-10 text-center text-sm text-neutral-500">Loading notifications…</p>
+          <p role="status" className="px-3 py-8 text-center text-sm text-neutral-500">
+            {t("nav.notificationsLoading")}
+          </p>
         ) : null}
         {ready && visible.length === 0 ? (
-          <div className="flex min-h-40 flex-col items-center justify-center px-5 py-7 text-center">
-            <span className="flex size-10 items-center justify-center rounded-full bg-neutral-100 text-neutral-600">
-              <Inbox className="size-5" aria-hidden="true" />
+          <div className="flex min-h-28 flex-col items-center justify-center px-5 py-5 text-center">
+            <span className="flex size-9 items-center justify-center rounded-full bg-neutral-100 text-neutral-600">
+              <Inbox className="size-4" aria-hidden="true" />
             </span>
-            <p className="mt-3 text-sm font-medium text-neutral-950">
-              {view === "unread" ? "You're all caught up" : "Nothing here yet"}
+            <p className="mt-2 text-sm font-medium text-neutral-950">
+              {view === "unread" ? t("nav.notificationsEmptyUnread") : t("nav.notificationsEmptyAll")}
             </p>
             <p className="mt-1 max-w-56 text-xs leading-5 text-neutral-500">
-              {view === "unread" ? "New replies and inquiries will appear here." : "Messages from buyers and sellers will appear here."}
+              {view === "unread" ? t("nav.notificationsEmptyUnreadHint") : t("nav.notificationsEmptyAllHint")}
             </p>
           </div>
         ) : null}
@@ -227,26 +264,23 @@ function NotificationsMenu() {
                 <Link
                   href={`/messages?c=${encodeURIComponent(item.conversationId)}`}
                   className={cn(
-                    "flex items-start gap-3 rounded-xl px-3 py-3 outline-none hover:bg-neutral-100 focus-visible:ring-2 focus-visible:ring-neutral-950",
+                    "flex items-start gap-3 rounded-xl px-3 py-2.5 outline-none hover:bg-neutral-100 focus-visible:ring-2 focus-visible:ring-neutral-950",
                     !item.read && "bg-neutral-50",
                   )}
                 >
-                  <span className="mt-0.5 flex size-9 shrink-0 items-center justify-center rounded-full bg-white ring-1 ring-neutral-200">
-                    <MessageCircle className="size-4 text-neutral-700" aria-hidden="true" />
+                  <span className="mt-0.5 flex size-8 shrink-0 items-center justify-center rounded-full bg-white ring-1 ring-neutral-200">
+                    <MessageCircle className="size-3.5 text-neutral-700" aria-hidden="true" />
                   </span>
                   <span className="min-w-0 flex-1">
-                    <span className="sr-only">{item.read ? "Read: " : "Unread: "}</span>
+                    <span className="sr-only">{item.read ? t("nav.readPrefix") : t("nav.unreadPrefix")}</span>
                     <span className="flex items-start justify-between gap-2">
                       <span className={cn("min-w-0 truncate text-sm", item.read ? "text-neutral-700" : "font-semibold text-neutral-950")}>
-                        {item.viewerIsSeller ? "New inquiry" : "Seller reply"}
+                        {item.viewerIsSeller ? t("nav.newInquiry") : t("nav.sellerReply")}
                       </span>
                       {!item.read ? <span className="mt-1 size-2 shrink-0 rounded-full bg-neutral-950" aria-hidden="true" /> : null}
                     </span>
                     <span className="block truncate text-xs font-medium text-neutral-600">{item.listingTitle}</span>
-                    <span className="mt-1 line-clamp-2 text-xs leading-5 text-neutral-500">{item.body}</span>
-                    <time dateTime={item.sentAt} className="mt-1 block text-[11px] text-neutral-400">
-                      {new Date(item.sentAt).toLocaleDateString("en-US", { month: "short", day: "numeric", timeZone: "UTC" })}
-                    </time>
+                    <span className="mt-0.5 line-clamp-2 text-xs leading-5 text-neutral-500">{item.body}</span>
                   </span>
                 </Link>
               </li>
@@ -256,10 +290,10 @@ function NotificationsMenu() {
       </div>
       <div className="border-t border-neutral-200 p-2">
         <Button asChild variant="ghost" className="h-9 w-full rounded-full text-xs font-medium text-neutral-700">
-          <Link href="/messages">Open messages</Link>
+          <Link href="/messages">{t("nav.openMessages")}</Link>
         </Button>
       </div>
-    </HeaderMenu>
+    </div>
   )
 }
 
@@ -658,8 +692,10 @@ function filterCountries(query: string) {
 }
 
 export function HeaderFallback() {
+  const home = navItem("home")
   const post = navItem("post")
   const profile = navItem("profile")
+  const HomeIcon = home.icon
   const ProfileIcon = profile.icon
   return (
     <header className="sticky top-0 z-40 border-b border-neutral-200/80 bg-white">
@@ -670,11 +706,18 @@ export function HeaderFallback() {
           <div className="h-11 rounded-full bg-neutral-100" />
         </div>
         <nav aria-label={profile.label} className="fixed inset-x-3 bottom-[calc(env(safe-area-inset-bottom)+0.75rem)] z-50 mx-auto flex max-w-lg items-center justify-around rounded-3xl border border-neutral-200 bg-white p-2 shadow-lg md:static md:ml-auto md:max-w-none md:gap-2 md:rounded-none md:border-0 md:bg-transparent md:p-0 md:shadow-none lg:gap-3">
+          <Link
+            href={home.href}
+            aria-label={home.label}
+            className={cn(buttonVariants({ variant: "outline", size: "icon-lg" }), "rounded-full md:hidden")}
+          >
+            <HomeIcon />
+            <span className="sr-only">{home.label}</span>
+          </Link>
           <PostLink className={cn(buttonVariants(), "h-10 rounded-full bg-neutral-950 px-3 text-white")} ariaLabel={post.shortLabel}>
             {post.shortLabel}
           </PostLink>
-          <NavIconLink id="messages" />
-          <Link href={profile.href} className={cn(buttonVariants({ variant: "outline", size: "icon-lg" }), "rounded-full")}>
+          <Link href={profile.href} className={cn(buttonVariants({ variant: "outline", size: "icon-lg" }), "relative rounded-full")}>
             <ProfileIcon />
             <span className="sr-only">{profile.label}</span>
           </Link>

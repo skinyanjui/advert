@@ -1,6 +1,9 @@
 import { contactPhoneError, normalizeContactPhone } from "@/lib/contact-phone"
 import { canonicalCountry } from "@/lib/countries"
+import { boardCurrencyCodes } from "@/lib/fx"
+import { isLocale } from "@/lib/i18n/locales"
 import { photoFileError } from "@/lib/photos"
+import { listingCurrencyPreference } from "@/lib/prefs"
 
 export type BoardProfile = {
   userId: string
@@ -11,6 +14,10 @@ export type BoardProfile = {
   countryCode: string | null
   /** Saved call/WhatsApp number for prefilling new ads. Never on public seller overlay. */
   phone: string | null
+  /** UI language preference (en/fr/sw). Nullable until set. */
+  language: string | null
+  /** Display currency preference, or `listing` for posted currency. Nullable until set. */
+  currency: string | null
   createdAt: string | null
 }
 
@@ -20,6 +27,8 @@ export type ProfileUpdateInput = {
   countryCode?: string | null
   avatarUrl?: string | null
   phone?: string | null
+  language?: string | null
+  currency?: string | null
 }
 
 const displayNameMax = 80
@@ -49,6 +58,20 @@ export function avatarFileError(file: File): string | undefined {
   return photoFileError(file)
 }
 
+export function languageError(value: string | null | undefined): string | undefined {
+  if (value === null || value === undefined || value === "") return undefined
+  if (!isLocale(value)) return "Choose a supported language."
+  return undefined
+}
+
+export function currencyPreferenceError(value: string | null | undefined): string | undefined {
+  if (value === null || value === undefined || value === "") return undefined
+  if (value === listingCurrencyPreference) return undefined
+  if (!/^[A-Z]{3}$/.test(value)) return "Choose a valid currency."
+  if (!boardCurrencyCodes().includes(value)) return "Choose a currency used on the board."
+  return undefined
+}
+
 export function normalizeProfileUpdate(input: ProfileUpdateInput): {
   ok: true
   value: {
@@ -57,6 +80,8 @@ export function normalizeProfileUpdate(input: ProfileUpdateInput): {
     countryCode: string | null
     avatarUrl?: string | null
     phone?: string | null
+    language?: string | null
+    currency?: string | null
   }
 } | { ok: false; reason: string } {
   const displayName =
@@ -102,6 +127,34 @@ export function normalizeProfileUpdate(input: ProfileUpdateInput): {
     }
   }
 
+  let language: string | null | undefined
+  if (input.language !== undefined) {
+    if (input.language === null || !input.language.trim()) {
+      language = null
+    } else {
+      const trimmed = input.language.trim().toLowerCase()
+      const reason = languageError(trimmed)
+      if (reason) return { ok: false, reason }
+      language = trimmed
+    }
+  }
+
+  let currency: string | null | undefined
+  if (input.currency !== undefined) {
+    if (input.currency === null || !input.currency.trim()) {
+      currency = null
+    } else {
+      const raw = input.currency.trim()
+      const normalized =
+        raw.toLowerCase() === listingCurrencyPreference
+          ? listingCurrencyPreference
+          : raw.toUpperCase()
+      const reason = currencyPreferenceError(normalized)
+      if (reason) return { ok: false, reason }
+      currency = normalized
+    }
+  }
+
   return {
     ok: true,
     value: {
@@ -110,6 +163,8 @@ export function normalizeProfileUpdate(input: ProfileUpdateInput): {
       countryCode: countryCode === undefined ? null : countryCode,
       ...(input.avatarUrl !== undefined ? { avatarUrl: input.avatarUrl } : {}),
       ...(phone !== undefined ? { phone } : {}),
+      ...(language !== undefined ? { language } : {}),
+      ...(currency !== undefined ? { currency } : {}),
     },
   }
 }

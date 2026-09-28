@@ -7,6 +7,7 @@ import { useMemo } from "react"
 import { BoardCitySearch, CityMap } from "@/components/board-place"
 import { ListingCard } from "@/components/listing-card"
 import { Button } from "@/components/ui/button"
+import { listingGridClassName } from "@/lib/listing-grid"
 import {
   Select,
   SelectContent,
@@ -166,7 +167,7 @@ export function Browse() {
             }}
           />
         ) : (
-          <div className="grid grid-cols-2 gap-3 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5">
+          <div className={listingGridClassName}>
             {visible.map((listing) => (
               <ListingCard
                 key={listing.id}

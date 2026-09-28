@@ -46,6 +46,18 @@ export async function PATCH(request: Request) {
       ...(Object.prototype.hasOwnProperty.call(body, "phone")
         ? { phone: typeof body.phone === "string" || body.phone === null ? body.phone : undefined }
         : {}),
+      ...(Object.prototype.hasOwnProperty.call(body, "language")
+        ? {
+            language:
+              typeof body.language === "string" || body.language === null ? body.language : undefined,
+          }
+        : {}),
+      ...(Object.prototype.hasOwnProperty.call(body, "currency")
+        ? {
+            currency:
+              typeof body.currency === "string" || body.currency === null ? body.currency : undefined,
+          }
+        : {}),
     }
     const result = await updateProfile(owner.id, input, owner.email)
     if (!result.ok) return fail(result.reason)

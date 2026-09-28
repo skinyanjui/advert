@@ -4,7 +4,8 @@ import { ArrowRight, Heart, MapPin } from "lucide-react"
 import Image from "next/image"
 import Link from "next/link"
 
-import { countryCodeOf, formatDistance, formatPlace, formatPrice } from "@/lib/format"
+import { ListingPrice } from "@/components/listing-price"
+import { countryCodeOf, formatDistance, formatPlace } from "@/lib/format"
 import { isListingExpired } from "@/lib/expiry"
 import { useMarketplace } from "@/lib/marketplace"
 import {
@@ -41,7 +42,7 @@ export function ListingCard({
           src={listing.image}
           alt=""
           fill
-          sizes="(max-width: 640px) 50vw, (max-width: 1280px) 33vw, 20vw"
+          sizes="(max-width: 640px) 50vw, (max-width: 1024px) 33vw, (max-width: 1280px) 25vw, 20vw"
           unoptimized={listing.image.startsWith("data:")}
           className="object-cover transition duration-300 group-hover:scale-[1.03]"
         />
@@ -77,11 +78,11 @@ export function ListingCard({
           </span>
         ) : null}
       </div>
-      <div className="grid grid-rows-[1.25rem_1rem_0.875rem_1.125rem] gap-y-0.5 px-2.5 pt-2 pb-2">
-        <p className="truncate text-sm leading-5 font-semibold tracking-tight text-neutral-950">
-          {formatPrice(listing)}
+      <div className="grid min-h-[4.75rem] grid-rows-[minmax(1.25rem,auto)_1rem_0.875rem_1.125rem] gap-y-0.5 px-2 pt-2 pb-2 xl:px-2">
+        <p className="min-w-0 text-sm leading-5 font-semibold tracking-tight text-neutral-950">
+          <ListingPrice listing={listing} />
         </p>
-        <h3 className="truncate text-[13px] leading-4 text-neutral-800">{listing.title}</h3>
+        <h3 className="truncate text-[13px] leading-4 text-neutral-800 xl:text-[12px]">{listing.title}</h3>
         <p
           className="flex min-w-0 items-center gap-1 text-[11px] leading-3.5 text-neutral-600"
           title={placeFull}

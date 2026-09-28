@@ -10,6 +10,7 @@ import { CityField } from "@/components/city-field"
 import { ContactPhoneField } from "@/components/contact-phone-field"
 import { EmptyPanel } from "@/components/empty-panel"
 import { FormField } from "@/components/form-field"
+import { LanguageCurrencyFields } from "@/components/language-currency-fields"
 import { KeepAdsPrompt } from "@/components/sign-in-form"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { Button } from "@/components/ui/button"
@@ -76,15 +77,28 @@ export function AccountPage() {
       {!auth.ready ? (
         <ProfileSkeleton />
       ) : !auth.signedIn ? (
-        <EmptyPanel
-          title="Sign in to edit your Profile"
-          body="Email link or optional password. Keep ads, saves, and Messages on this account."
-          actionHref="/sign-in"
-          actionLabel="Sign in"
-          className="mt-0"
-        >
-          <KeepAdsPrompt className="mx-auto mt-4 max-w-sm rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-left text-sm text-amber-950" />
-        </EmptyPanel>
+        <>
+          <Card size="sm">
+            <CardHeader>
+              <CardTitle>Language & currency</CardTitle>
+              <CardDescription>
+                Applies on this device. Sign in to sync them to your profile.
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <LanguageCurrencyFields />
+            </CardContent>
+          </Card>
+          <EmptyPanel
+            title="Sign in to edit your Profile"
+            body="Email link or optional password. Keep ads, saves, and Messages on this account."
+            actionHref="/sign-in"
+            actionLabel="Sign in"
+            className="mt-0"
+          >
+            <KeepAdsPrompt className="mx-auto mt-4 max-w-sm rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-left text-sm text-amber-950" />
+          </EmptyPanel>
+        </>
       ) : (
         <SignedInProfile
           email={auth.email}
@@ -393,6 +407,17 @@ function SignedInProfile({
 
   return (
     <>
+      <Card size="sm">
+        <CardHeader>
+          <CardTitle>Language & currency</CardTitle>
+          <CardDescription>
+            Applies on this device and is saved to your profile when signed in.
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          <LanguageCurrencyFields />
+        </CardContent>
+      </Card>
       <Card>
         <CardHeader>
           <CardDescription>
