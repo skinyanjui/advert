@@ -81,3 +81,15 @@ test("phone auth flag is off unless explicitly enabled", () => {
 test("google auth flag is off unless explicitly enabled", () => {
   assert.notEqual(process.env.NEXT_PUBLIC_AUTH_GOOGLE, "1")
 })
+
+test("authConfigured matches public Supabase URL + publishable key", async () => {
+  const { authConfigured } = await import("../src/lib/supabase/env")
+  const expected = Boolean(
+    (process.env.NEXT_PUBLIC_SUPABASE_URL ?? process.env.SUPABASE_URL) &&
+      (process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY ??
+        process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY ??
+        process.env.SUPABASE_PUBLISHABLE_KEY ??
+        process.env.SUPABASE_ANON_KEY),
+  )
+  assert.equal(authConfigured(), expected)
+})
