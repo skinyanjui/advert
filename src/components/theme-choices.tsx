@@ -3,8 +3,25 @@
 import { Monitor, Moon, Sun } from "lucide-react"
 import { useLayoutEffect, useSyncExternalStore, type ReactNode } from "react"
 
+import { usePrefs } from "@/components/prefs-provider"
 import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group"
-import { isThemeChoice, themeChoices, themeLabel, themeStorageKey, type ThemeChoice } from "@/lib/theme"
+import type { MessageKey } from "@/lib/i18n"
+import { isThemeChoice, themeChoices, themeStorageKey, type ThemeChoice } from "@/lib/theme"
+
+function themeMessageKey(choice: ThemeChoice): MessageKey {
+  switch (choice) {
+    case "light":
+      return "theme.light"
+    case "dark":
+      return "theme.dark"
+    case "system":
+      return "theme.system"
+    default: {
+      const unreachable: never = choice
+      return unreachable
+    }
+  }
+}
 
 const changeEvent = "africa-classifieds-theme"
 
@@ -80,30 +97,34 @@ export function ThemeSync() {
 
 export function ThemeChoices({ className }: { className?: string }) {
   const choice = useThemeChoice()
+  const { t } = usePrefs()
   return (
     <ToggleGroup
       type="single"
       value={choice}
       variant="outline"
       spacing={0}
-      aria-label="Appearance"
+      aria-label={t("prefs.appearance")}
       className={className}
       onValueChange={(value) => {
         if (isThemeChoice(value)) writeTheme(value)
       }}
     >
-      {themeChoices.map((option) => (
-        <ToggleGroupItem
-          key={option}
-          value={option}
-          aria-label={themeLabel(option)}
-          title={themeLabel(option)}
-          className="px-2.5 data-[state=on]:bg-primary data-[state=on]:text-primary-foreground"
-        >
-          <ThemeIcon choice={option} />
-          <span className="sr-only">{themeLabel(option)}</span>
-        </ToggleGroupItem>
-      ))}
+      {themeChoices.map((option) => {
+        const label = t(themeMessageKey(option))
+        return (
+          <ToggleGroupItem
+            key={option}
+            value={option}
+            aria-label={label}
+            title={label}
+            className="px-2.5 data-[state=on]:bg-primary data-[state=on]:text-primary-foreground"
+          >
+            <ThemeIcon choice={option} />
+            <span className="sr-only">{label}</span>
+          </ToggleGroupItem>
+        )
+      })}
     </ToggleGroup>
   )
 }

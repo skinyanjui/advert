@@ -5,8 +5,10 @@ import Link from "next/link"
 import { toast } from "sonner"
 
 import { EmptyPanel } from "@/components/empty-panel"
+import { usePrefs } from "@/components/prefs-provider"
 import { Button } from "@/components/ui/button"
-import { reportReasonLabel, reportReasons, type ReportReasonId } from "@/lib/reports"
+import { isMessageKey, type MessageKey } from "@/lib/i18n"
+import { reportReasons, type ReportReasonId } from "@/lib/reports"
 
 type AdminReport = {
   id: string
@@ -20,6 +22,11 @@ type AdminReport = {
 
 type AdminAction = "dismiss" | "hide" | "remove" | "mark_sponsored"
 
+function reasonLabel(id: ReportReasonId, t: (key: MessageKey) => string, fallback: string): string {
+  const key = `report.reason.${id}`
+  return isMessageKey(key) ? t(key) : fallback
+}
+
 export function AdminReportsClient({
   initialReports,
   loadError,
@@ -27,6 +34,7 @@ export function AdminReportsClient({
   initialReports: AdminReport[]
   loadError: boolean
 }) {
+  const { t } = usePrefs()
   const [reports, setReports] = useState(initialReports)
   const [busyId, setBusyId] = useState<string | null>(null)
   const [reasonFilter, setReasonFilter] = useState<"" | ReportReasonId>("")
@@ -46,21 +54,21 @@ export function AdminReportsClient({
       })
       const payload = (await response.json()) as { reason?: string; reports?: AdminReport[] }
       if (!response.ok) {
-        toast.error(payload.reason ?? "Could not update that report.")
+        toast.error(payload.reason ?? t("admin.toast.updateError"))
         return
       }
       setReports(Array.isArray(payload.reports) ? payload.reports : [])
       const label =
         action === "dismiss"
-          ? "Report dismissed"
+          ? t("admin.toast.dismissed")
           : action === "hide"
-            ? "Ad hidden"
+            ? t("admin.toast.hidden")
             : action === "remove"
-              ? "Ad removed"
-              : "Marked sponsored"
+              ? t("admin.toast.removed")
+              : t("admin.toast.sponsored")
       toast.success(label)
     } catch {
-      toast.error("Could not update that report.")
+      toast.error(t("admin.toast.updateError"))
     } finally {
       setBusyId(null)
     }
@@ -68,13 +76,11 @@ export function AdminReportsClient({
 
   return (
     <div className="mx-auto max-w-3xl px-4 py-8 md:px-6">
-      <h1 className="text-2xl font-semibold tracking-tight">Reports</h1>
-      <p className="mt-1 text-sm text-neutral-500">
-        Pending listing reports. Dismiss clears a report; hide or remove acts on the ad.
-      </p>
+      <h1 className="text-2xl font-semibold tracking-tight">{t("admin.reportsTitle")}</h1>
+      <p className="mt-1 text-sm text-neutral-500">{t("admin.reportsBody")}</p>
       <div className="mt-4">
         <label className="text-xs font-medium text-neutral-600" htmlFor="report-reason-filter">
-          Filter by reason
+          {t("admin.filterReason")}
         </label>
         <select
           id="report-reason-filter"
@@ -82,25 +88,21 @@ export function AdminReportsClient({
           value={reasonFilter}
           onChange={(event) => setReasonFilter(event.target.value as "" | ReportReasonId)}
         >
-          <option value="">All reasons</option>
+          <option value="">{t("admin.allReasons")}</option>
           {reportReasons.map((reason) => (
             <option key={reason.id} value={reason.id}>
-              {reason.label}
+              {reasonLabel(reason.id, t, reason.label)}
             </option>
           ))}
         </select>
       </div>
       {loadError ? (
-        <p className="mt-4 text-sm text-rose-600">Could not load reports. Refresh and try again.</p>
+        <p className="mt-4 text-sm text-rose-600">{t("admin.loadError")}</p>
       ) : null}
       {visible.length === 0 && !loadError ? (
         <EmptyPanel
-          title={reasonFilter ? "No reports for this reason" : "No pending reports"}
-          body={
-            reasonFilter
-              ? "Try another reason filter, or clear the filter."
-              : "New reports from listing pages appear here."
-          }
+          title={reasonFilter ? t("admin.emptyFilterTitle") : t("admin.emptyTitle")}
+          body={reasonFilter ? t("admin.emptyFilterBody") : t("admin.emptyBody")}
         />
       ) : (
         <ul className="mt-6 grid gap-3">
@@ -114,11 +116,13 @@ export function AdminReportsClient({
                   >
                     {report.listingTitle}
                   </Link>
-                  <p className="mt-1 text-sm text-neutral-600">{reportReasonLabel(report.reason)}</p>
+                  <p className="mt-1 text-sm text-neutral-600">
+                    {reasonLabel(report.reason, t, report.reason)}
+                  </p>
                   {report.note ? <p className="mt-1 text-sm text-neutral-500">{report.note}</p> : null}
                   <p className="mt-2 text-xs text-neutral-400">
                     {new Date(report.createdAt).toLocaleString()}
-                    {report.listingHidden ? " · currently hidden" : ""}
+                    {report.listingHidden ? t("admin.currentlyHidden") : ""}
                   </p>
                 </div>
                 <div className="flex flex-wrap gap-2">
@@ -128,7 +132,7 @@ export function AdminReportsClient({
                     disabled={busyId === report.id}
                     onClick={() => void act(report.id, "dismiss")}
                   >
-                    Dismiss
+                    {t("admin.dismiss")}
                   </Button>
                   {report.reason === "undisclosed_promo" ? (
                     <Button
@@ -137,7 +141,7 @@ export function AdminReportsClient({
                       disabled={busyId === report.id}
                       onClick={() => void act(report.id, "mark_sponsored")}
                     >
-                      Mark sponsored
+                      {t("admin.markSponsored")}
                     </Button>
                   ) : null}
                   <Button
@@ -146,7 +150,7 @@ export function AdminReportsClient({
                     disabled={busyId === report.id}
                     onClick={() => void act(report.id, "hide")}
                   >
-                    Hide ad
+                    {t("admin.hideAd")}
                   </Button>
                   <Button
                     variant="destructive"
@@ -154,7 +158,7 @@ export function AdminReportsClient({
                     disabled={busyId === report.id}
                     onClick={() => void act(report.id, "remove")}
                   >
-                    Remove ad
+                    {t("admin.removeAd")}
                   </Button>
                 </div>
               </div>

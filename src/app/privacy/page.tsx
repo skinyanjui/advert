@@ -1,6 +1,7 @@
 import type { Metadata } from "next"
 import Link from "next/link"
 
+import { LegalEnglishOnlyNotice } from "@/components/legal-english-only-notice"
 import { LEGAL_EFFECTIVE_DATE, PRIVACY_VERSION, TERMS_VERSION } from "@/lib/legal"
 import { SUPPORT_CONTACT_PLACEHOLDER, site, siteSupportMailto } from "@/lib/site"
 
@@ -16,6 +17,7 @@ export default function PrivacyPage() {
       >
         Draft — pending legal review
       </div>
+      <LegalEnglishOnlyNotice />
       <h1 className="mt-6 text-2xl font-semibold tracking-tight">Privacy Policy</h1>
       <p className="mt-2 text-sm text-neutral-500">
         Version {PRIVACY_VERSION} · Effective {LEGAL_EFFECTIVE_DATE} · Terms version {TERMS_VERSION}

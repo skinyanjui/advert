@@ -12,6 +12,7 @@ import { ContactPhoneField } from "@/components/contact-phone-field"
 import { EmptyPanel } from "@/components/empty-panel"
 import { FormField } from "@/components/form-field"
 import { ListingCard } from "@/components/listing-card"
+import { usePrefs } from "@/components/prefs-provider"
 import { TermsNotice } from "@/components/terms-notice"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -36,6 +37,7 @@ import {
   type CountryRecord,
 } from "@/lib/countries"
 import { formatPrice } from "@/lib/format"
+import { isMessageKey, type MessageKey } from "@/lib/i18n"
 import { listingFieldErrors, type FieldErrors as RuleErrors } from "@/lib/listing-rules"
 import { useMarketplace } from "@/lib/marketplace"
 import { listingImages, maxListingPhotos, photoFileError, withCoverImage } from "@/lib/photos"
@@ -56,16 +58,37 @@ import {
 import { categoryName, isCategoryId, type CategoryId, type Listing } from "@/lib/types"
 import { cn } from "@/lib/utils"
 
-const steps = ["Category", "Type", "Details", "Contact"] as const
+const stepKeys = ["post.step.category", "post.step.type", "post.step.details", "post.step.contact"] as const satisfies readonly MessageKey[]
+
+function categoryMessage(id: string, fallback: string, t: (key: MessageKey) => string): string {
+  const key = `category.${id}`
+  return isMessageKey(key) ? t(key) : fallback
+}
+
+function subcategoryMessage(id: string, fallback: string, t: (key: MessageKey) => string): string {
+  const key = `post.sub.${id}`
+  return isMessageKey(key) ? t(key) : fallback
+}
+
+function fieldMessage(id: string, fallback: string, t: (key: MessageKey) => string): string {
+  const key = `post.field.${id}`
+  return isMessageKey(key) ? t(key) : fallback
+}
+
+function pricePeriodMessage(id: string, fallback: string, t: (key: MessageKey) => string): string {
+  const key = `post.pricePeriod.${id}`
+  return isMessageKey(key) ? t(key) : fallback
+}
 
 type FieldErrors = RuleErrors
 
 export function PostForm() {
   const searchParams = useSearchParams()
+  const { t } = usePrefs()
   const { listings, ready } = useMarketplace()
   const editId = searchParams.get("edit")?.trim() ?? ""
   if (!editId) return <AdForm existing={null} />
-  if (!ready) return <p className="px-4 py-8 text-sm text-neutral-500">Loading your ad…</p>
+  if (!ready) return <p className="px-4 py-8 text-sm text-neutral-500">{t("post.loadingAd")}</p>
   const existing = listings.find((item) => item.id === editId && item.mine)
   if (!existing) return <MissingAd />
   return <AdForm key={existing.id} existing={existing} />
@@ -73,6 +96,7 @@ export function PostForm() {
 
 function AdForm({ existing }: { existing: Listing | null }) {
   const router = useRouter()
+  const { t } = usePrefs()
   const searchParams = useSearchParams()
   const urlCountry = existing ? undefined : canonicalCountry(searchParams.get("country"))
   const startingCountry = existing
@@ -162,10 +186,10 @@ function AdForm({ existing }: { existing: Listing | null }) {
       setPhotos(draft.photos)
       setSponsored(draft.sponsored === true)
       setPlace(locatedPlace(null, draft.country, draft.city))
-      if (auth.signedIn) toast.success("Restored your draft")
+      if (auth.signedIn) toast.success(t("post.toast.draftRestored"))
     }, 0)
     return () => window.clearTimeout(timer)
-  }, [existing, auth.signedIn])
+  }, [existing, auth.signedIn, t])
 
   useEffect(() => {
     if (existing || appliedProfile.current || !auth.ready) return
@@ -238,7 +262,7 @@ function AdForm({ existing }: { existing: Listing | null }) {
       })
       if (result.ok && result.omittedPhotos && !omittedPhotosToastShown.current) {
         omittedPhotosToastShown.current = true
-        toast.message("Draft saved without photos — storage on this device is full.")
+        toast.message(t("post.toast.draftNoPhotos"))
       }
     }, 400)
     return () => window.clearTimeout(timer)
@@ -260,6 +284,7 @@ function AdForm({ existing }: { existing: Listing | null }) {
     phone,
     photos,
     sponsored,
+    t,
   ])
 
   const preview = useMemo<Listing>(() => {
@@ -267,7 +292,7 @@ function AdForm({ existing }: { existing: Listing | null }) {
     const cover = withCoverImage(photos.length > 0 ? photos : [categoryImage[nextCategory]])
     return {
       id: "preview",
-      title: title.trim() || "Your listing title",
+      title: title.trim() || t("post.previewTitle"),
       price: Number(price) > 0 ? Number(price) : 0,
       currency,
       priceSuffix: suffix,
@@ -275,7 +300,7 @@ function AdForm({ existing }: { existing: Listing | null }) {
       subcategory: subcategory?.id,
       details,
       country,
-      city: city.trim() || "City",
+      city: city.trim() || t("post.city"),
       latitude: place?.lat,
       longitude: place?.lng,
       timezone: place?.timezone,
@@ -285,7 +310,7 @@ function AdForm({ existing }: { existing: Listing | null }) {
       images: cover.images,
       badge: nextCategory === "jobs" ? "jobs" : undefined,
       description,
-      condition: details.condition || subcategory?.name || "Listed",
+      condition: details.condition || (subcategory ? subcategoryMessage(subcategory.id, subcategory.name, t) : t("post.listed")),
       sellerName: existing?.sellerName ?? "Amina K.",
       sellerSince: existing?.sellerSince ?? sellerSinceFromUser(auth.user),
       phone: phone || callingCode || "+000",
@@ -312,6 +337,7 @@ function AdForm({ existing }: { existing: Listing | null }) {
     sponsoredLocked,
     existing,
     auth.user,
+    t,
   ])
 
   function chooseCategory(id: CategoryId) {
@@ -377,16 +403,18 @@ function AdForm({ existing }: { existing: Listing | null }) {
   }
 
   function detailErrors(): FieldErrors {
-    if (!subcategory || !plan) return { form: "Choose a type first." }
+    if (!subcategory || !plan) return { form: t("post.error.chooseTypeFirst") }
     const next = currentErrors()
+    // Country is collected on step 3 with city/phone — do not block Details.
     delete next.city
     delete next.phone
+    delete next.country
     return next
   }
 
   function contactErrors(): FieldErrors {
     const next = currentErrors()
-    return { city: next.city, phone: next.phone }
+    return { city: next.city, phone: next.phone, country: next.country }
   }
 
   function reachable(index: number): boolean {
@@ -423,7 +451,7 @@ function AdForm({ existing }: { existing: Listing | null }) {
   function goNext() {
     if (step === 0) {
       if (!category) {
-        showErrors({ form: "Choose a category." })
+        showErrors({ form: t("post.error.chooseCategory") })
         return
       }
       moveTo(1)
@@ -431,7 +459,7 @@ function AdForm({ existing }: { existing: Listing | null }) {
     }
     if (step === 1) {
       if (!subcategory) {
-        showErrors({ form: "Choose a type." })
+        showErrors({ form: t("post.error.chooseType") })
         return
       }
       moveTo(2)
@@ -457,6 +485,7 @@ function AdForm({ existing }: { existing: Listing | null }) {
     if (Object.values(next).some(Boolean)) {
       const detailsInvalid = Object.values(detailErrors()).some(Boolean)
       if (detailsInvalid) setStep(2)
+      else setStep(3)
       showErrors(next)
       return
     }
@@ -514,9 +543,9 @@ function AdForm({ existing }: { existing: Listing | null }) {
       })
       if (draftResult.ok && draftResult.omittedPhotos && !omittedPhotosToastShown.current) {
         omittedPhotosToastShown.current = true
-        toast.message("Draft saved without photos — storage on this device is full.")
+        toast.message(t("post.toast.draftNoPhotos"))
       }
-      toast.error(existing ? "Sign in to edit this ad" : "Sign in to post an ad")
+      toast.error(existing ? t("post.toast.signInToEdit") : t("post.toast.signInToPost"))
       router.push(signInHref(existing ? `/post?edit=${existing.id}` : "/post"))
       return
     }
@@ -528,16 +557,16 @@ function AdForm({ existing }: { existing: Listing | null }) {
       return
     }
     if (!existing) clearPostDraft()
-    toast.success(existing ? "Changes saved" : "Your ad is live")
+    toast.success(existing ? t("post.toast.saved") : t("post.toast.live"))
     router.push(`/listings/${listing.id}`)
   }
 
   useEffect(() => {
-    document.title = siteTitle(existing ? "Edit your ad" : "Post an ad")
-  }, [existing])
+    document.title = siteTitle(existing ? t("post.editTitle") : t("post.title"))
+  }, [existing, t])
 
   const placeLine = [city.trim(), countryName(country)].filter(Boolean).join(", ")
-  const choiceLine = [category ? categoryName(category) : null, subcategory?.name].filter(Boolean).join(" · ")
+  const choiceLine = [category ? categoryMessage(category, categoryName(category), t) : null, subcategory ? subcategoryMessage(subcategory.id, subcategory.name, t) : null].filter(Boolean).join(" · ")
   const summaryLine = [choiceLine, placeLine].filter(Boolean).join(" · ")
   const needsSignIn = auth.ready && auth.configured && !auth.signedIn
   const showForm = !needsSignIn || draftUnlocked || Boolean(existing)
@@ -546,10 +575,10 @@ function AdForm({ existing }: { existing: Listing | null }) {
     return (
       <div className="mx-auto w-full max-w-3xl px-4 py-8 md:px-6">
         <EmptyPanel
-          title="Sign in to post an ad"
-          body="Drafts you start on this device are saved and restored after you sign in."
+          title={t("post.signInTitle")}
+          body={t("post.signInBody")}
           actionHref={signInHref("/post")}
-          actionLabel="Sign in"
+          actionLabel={t("auth.signIn")}
           className="mt-0"
           headingLevel={1}
         >
@@ -559,7 +588,7 @@ function AdForm({ existing }: { existing: Listing | null }) {
             className="mt-4 rounded-full"
             onClick={() => setDraftUnlocked(true)}
           >
-            Start a draft on this device
+            {t("post.startDraft")}
           </Button>
         </EmptyPanel>
       </div>
@@ -569,28 +598,28 @@ function AdForm({ existing }: { existing: Listing | null }) {
   return (
     <div className="mx-auto grid w-full max-w-[1100px] items-start gap-8 px-4 pt-6 pb-24 md:px-6 md:py-8 lg:grid-cols-[minmax(0,1fr)_300px]">
       <div>
-        <h1 className="text-2xl font-semibold tracking-tight">{existing ? "Edit your ad" : "Post an ad"}</h1>
+        <h1 className="text-2xl font-semibold tracking-tight">{existing ? t("post.editTitle") : t("post.title")}</h1>
         {summaryLine ? <p className="mt-1 text-sm text-neutral-500">{summaryLine}</p> : null}
         {needsSignIn ? (
           <p className="mt-3 rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-sm text-amber-950">
             {existing
-              ? "Sign in to manage this ad. Ads from this browser move onto your account when you sign in. "
-              : "Sign in before publishing. Your draft is saved on this device. "}
+              ? t("post.signInToManage") + " "
+              : t("post.signInToPublish") + " "}
             <Link
               href={signInHref(existing ? `/post?edit=${existing.id}` : "/post")}
               className="font-medium underline underline-offset-2"
             >
-              Sign in
+              {t("auth.signIn")}
             </Link>
           </p>
         ) : null}
 
-        <ol className="mt-6 grid grid-cols-4 gap-2" aria-label="Posting steps">
-          {steps.map((label, index) => {
+        <ol className="mt-6 grid grid-cols-4 gap-2" aria-label={t("post.stepsLabel")}>
+          {stepKeys.map((stepKey, index) => {
             const current = index === step
             const open = index === step || reachable(index)
             return (
-              <li key={label}>
+              <li key={stepKey}>
                 <button
                   type="button"
                   disabled={!open}
@@ -610,7 +639,7 @@ function AdForm({ existing }: { existing: Listing | null }) {
                       current ? "font-medium text-neutral-950" : open ? "text-neutral-600" : "text-neutral-400",
                     )}
                   >
-                    {label}
+                    {t(stepKey)}
                   </span>
                 </button>
               </li>
@@ -631,10 +660,10 @@ function AdForm({ existing }: { existing: Listing | null }) {
           {step === 0 ? (
             <div className="grid gap-3">
               <div>
-                <h2 className="text-base font-medium">What are you listing?</h2>
-                <p className="text-sm text-neutral-500">Choose a category. The type comes next.</p>
+                <h2 className="text-base font-medium">{t("post.whatListing")}</h2>
+                <p className="text-sm text-neutral-500">{t("post.chooseCategoryHint")}</p>
               </div>
-              <div aria-label="Category" className="grid grid-cols-2 gap-2 sm:grid-cols-3">
+              <div aria-label={t("post.step.category")} className="grid grid-cols-2 gap-2 sm:grid-cols-3">
                 {postingPlans().map((item) => {
                   const Icon = categoryIcons[item.id]
                   const selected = category === item.id
@@ -660,7 +689,7 @@ function AdForm({ existing }: { existing: Listing | null }) {
                       >
                         <Icon className="size-4" />
                       </span>
-                      <span className="min-w-0 flex-1 leading-tight">{categoryName(item.id)}</span>
+                      <span className="min-w-0 flex-1 leading-tight">{categoryMessage(item.id, categoryName(item.id), t)}</span>
                       {selected ? <Check className="size-4 shrink-0" /> : null}
                     </button>
                   )
@@ -672,7 +701,7 @@ function AdForm({ existing }: { existing: Listing | null }) {
           {step === 1 && plan && category ? (
             <div className="grid gap-3">
               <div>
-                <h2 className="text-base font-medium">{categoryName(category)}</h2>
+                <h2 className="text-base font-medium">{categoryMessage(category, categoryName(category), t)}</h2>
                 <p className="text-sm text-neutral-500">{plan.prompt}</p>
               </div>
               <div aria-label={plan.prompt} className="grid gap-2">
@@ -693,7 +722,7 @@ function AdForm({ existing }: { existing: Listing | null }) {
                     )}
                   >
                     <span className="min-w-0">
-                      <span className="block text-sm font-medium">{item.name}</span>
+                      <span className="block text-sm font-medium">{subcategoryMessage(item.id, item.name, t)}</span>
                       <span className="mt-0.5 block text-xs text-neutral-500">{item.summary}</span>
                     </span>
                     <span
@@ -743,14 +772,14 @@ function AdForm({ existing }: { existing: Listing | null }) {
                 }
               />
               <p className="-mt-3 text-xs text-neutral-500">
-                {plan.photoHint} Up to {maxListingPhotos} photos. The first photo is the cover. Photos are optional.
+                {plan.photoHint} {t("post.photosHint", { count: maxListingPhotos })}
               </p>
               {errors.image ? (
                 <span data-field-error className="-mt-3 text-xs text-destructive">
                   {errors.image}
                 </span>
               ) : null}
-              <Field label="Title" required error={errors.title}>
+              <Field label={t("post.listingTitle")} required error={errors.title}>
                 <Input
                   value={title}
                   aria-invalid={Boolean(errors.title)}
@@ -776,7 +805,7 @@ function AdForm({ existing }: { existing: Listing | null }) {
                     className="h-10 bg-white"
                   />
                 </Field>
-                <Field label="Currency" error={errors.currency}>
+                <Field label={t("post.currency")} error={errors.currency}>
                   <ChoiceRow
                     value={currency}
                     options={currencies.map((code) => ({
@@ -792,10 +821,10 @@ function AdForm({ existing }: { existing: Listing | null }) {
                 </Field>
               </div>
               {subcategory.periods.length > 1 ? (
-                <Field label="Charged" error={errors.priceSuffix}>
+                <Field label={t("post.charged")} error={errors.priceSuffix}>
                   <ChoiceRow
                     value={activePeriod}
-                    options={subcategory.periods.map((id) => ({ id, label: pricePeriod(id).label }))}
+                    options={subcategory.periods.map((id) => ({ id, label: pricePeriodMessage(id, pricePeriod(id).label, t) }))}
                     onChange={(id) => {
                       if (isPricePeriodId(id) && subcategory.periods.includes(id)) setPeriod(id)
                     }}
@@ -821,7 +850,7 @@ function AdForm({ existing }: { existing: Listing | null }) {
                 label={plan.descriptionLabel}
                 required
                 error={errors.description}
-                hint={descriptionHint(description)}
+                hint={descriptionHint(description, t)}
               >
                 <Textarea
                   value={description}
@@ -841,28 +870,28 @@ function AdForm({ existing }: { existing: Listing | null }) {
           {step === 3 && plan ? (
             <section className="grid gap-5 rounded-2xl border bg-white p-4 sm:p-5">
               <div>
-                <h2 className="text-base font-medium">Where can people reach you?</h2>
+                <h2 className="text-base font-medium">{t("post.whereReach")}</h2>
                 <p className="mt-1 text-sm text-neutral-500">{plan.phoneHint}</p>
               </div>
               <div className="rounded-xl bg-neutral-50 px-3 py-3">
-                <p className="truncate text-sm font-medium">{title.trim() || "Add a title"}</p>
-                <p className="mt-0.5 text-sm text-neutral-700">{Number(price) > 0 ? formatPrice(preview) : "Add a price"}</p>
+                <p className="truncate text-sm font-medium">{title.trim() || t("post.addTitle")}</p>
+                <p className="mt-0.5 text-sm text-neutral-700">{Number(price) > 0 ? formatPrice(preview) : t("post.addPrice")}</p>
                 {choiceLine ? <p className="mt-0.5 truncate text-xs text-neutral-500">{choiceLine}</p> : null}
               </div>
               {!country ? (
                 <p className="rounded-xl border border-amber-200 bg-amber-50 px-3 py-2 text-sm text-amber-950">
-                  Choose a country for this ad, or{" "}
+                  {t("post.chooseCountryHint")}{" "}
                   <Link
                     href="/account"
                     className="font-medium underline underline-offset-2 hover:text-amber-900"
                   >
-                    set your country on Profile
+                    {t("post.setCountryOnProfile")}
                   </Link>
                   .
                 </p>
               ) : null}
               <div className="grid grid-cols-2 gap-3">
-                <Field label="Country" required>
+                <Field label={t("post.country")} required error={errors.country}>
                   <CountryField
                     country={country}
                     onChange={(code) => {
@@ -870,11 +899,17 @@ function AdForm({ existing }: { existing: Listing | null }) {
                       setCity("")
                       setPlace(null)
                       setCurrency(getCountry(code)?.currencies[0]?.code ?? "USD")
-                      setErrors((current) => ({ ...current, city: undefined, currency: undefined, form: undefined }))
+                      setErrors((current) => ({
+                        ...current,
+                        city: undefined,
+                        country: undefined,
+                        currency: undefined,
+                        form: undefined,
+                      }))
                     }}
                   />
                 </Field>
-                <Field label="City" required error={errors.city}>
+                <Field label={t("post.city")} required error={errors.city}>
                   {country ? (
                     <CityField
                       country={country}
@@ -886,7 +921,7 @@ function AdForm({ existing }: { existing: Listing | null }) {
                       onPlace={setPlace}
                     />
                   ) : (
-                    <Input disabled placeholder="Choose a country first" aria-disabled="true" className="h-10 bg-white" />
+                    <Input disabled placeholder={t("post.chooseCountryFirst")} aria-disabled="true" className="h-10 bg-white" />
                   )}
                 </Field>
               </div>
@@ -914,16 +949,16 @@ function AdForm({ existing }: { existing: Listing | null }) {
                   }}
                 />
                 <span>
-                  Sponsored / paid promotion
+                  {t("post.sponsoredLabel")}
                   <span className="mt-0.5 block text-xs text-neutral-500">
                     {sponsoredLocked
-                      ? "This ad was marked as sponsored by moderation and cannot be unmarked."
-                      : "Tick if you were paid to post this."}
+                      ? t("post.sponsoredLocked")
+                      : t("post.sponsoredHint")}
                   </span>
                 </span>
               </label>
               <p className="text-xs leading-5 text-neutral-500">
-                Buyers can call, open WhatsApp with this number, or leave an on-site note. Prefer a number you check often.
+                {t("post.buyerContactHint")}
               </p>
             </section>
           ) : null}
@@ -939,11 +974,11 @@ function AdForm({ existing }: { existing: Listing | null }) {
             <div className="flex items-center gap-3">
             {step === 0 ? (
               <Button type="button" variant="ghost" onClick={() => router.push(existing ? `/listings/${existing.id}` : "/")}>
-                Cancel
+                {t("common.cancel")}
               </Button>
             ) : (
               <Button type="button" variant="ghost" onClick={() => openStep(step - 1)}>
-                Back
+                {t("post.back")}
               </Button>
             )}
             {step < 3 ? (
@@ -951,7 +986,7 @@ function AdForm({ existing }: { existing: Listing | null }) {
                 type="submit"
                 className="h-10 rounded-full bg-neutral-950 px-5 text-white hover:bg-neutral-800"
               >
-                Continue
+                {t("post.next")}
               </Button>
             ) : (
               <Button
@@ -959,7 +994,7 @@ function AdForm({ existing }: { existing: Listing | null }) {
                 disabled={submitting}
                 className="h-10 rounded-full bg-neutral-950 px-5 text-white hover:bg-neutral-800"
               >
-                {submitting ? (existing ? "Saving…" : "Publishing…") : existing ? "Save changes" : "Publish ad"}
+                {submitting ? (existing ? t("post.saving") : t("post.publishing")) : existing ? t("post.saveChanges") : t("post.publish")}
               </Button>
             )}
             </div>
@@ -968,7 +1003,7 @@ function AdForm({ existing }: { existing: Listing | null }) {
       </div>
       {category ? (
         <aside className="lg:sticky lg:top-[85px] lg:self-start">
-          <p className="mb-2 text-xs font-medium tracking-wide text-neutral-500 uppercase">Preview</p>
+          <p className="mb-2 text-xs font-medium tracking-wide text-neutral-500 uppercase">{t("post.preview")}</p>
           <ListingCard listing={preview} linked={false} saveable={false} />
         </aside>
       ) : null}
@@ -991,6 +1026,7 @@ function PhotoGallery({
   onMove: (from: number, to: number) => void
   onCover: (index: number) => void
 }) {
+  const { t } = usePrefs()
   const inputRef = useRef<HTMLInputElement>(null)
   const [drag, setDrag] = useState(false)
 
@@ -1010,13 +1046,13 @@ function PhotoGallery({
               <img src={photo} alt="" className="aspect-[4/3] w-full object-cover" />
               {index === 0 ? (
                 <span className="absolute top-2 left-2 rounded-full bg-neutral-950 px-2 py-0.5 text-[10px] font-medium text-white">
-                  Cover
+                  {t("post.cover")}
                 </span>
               ) : null}
               <div className="absolute inset-x-0 bottom-0 flex flex-wrap gap-1 bg-gradient-to-t from-black/60 to-transparent p-2">
                 {index > 0 ? (
                   <Button type="button" size="sm" variant="secondary" className="h-7 rounded-full bg-white px-2 text-xs" onClick={() => onCover(index)}>
-                    Cover
+                    {t("post.cover")}
                   </Button>
                 ) : null}
                 <Button
@@ -1040,7 +1076,7 @@ function PhotoGallery({
                   <ChevronRight className="size-3.5" />
                 </Button>
                 <Button type="button" size="sm" variant="secondary" className="h-7 rounded-full bg-white px-2 text-xs" onClick={() => onRemove(index)}>
-                  Remove
+                  {t("post.remove")}
                 </Button>
               </div>
             </li>
@@ -1078,7 +1114,7 @@ function PhotoGallery({
             className="flex h-36 w-full flex-col items-center justify-center gap-2 text-sm text-neutral-600"
           >
             <ImagePlus className="size-5" />
-            {photos.length === 0 ? "Add a photo" : "Add another photo"}
+            {photos.length === 0 ? t("post.addPhoto") : t("post.addAnotherPhoto")}
           </button>
         </div>
       ) : null}
@@ -1122,6 +1158,7 @@ function ChoiceRow({
 }
 
 function CountryField({ country, onChange }: { country: string; onChange: (code: string) => void }) {
+  const { t } = usePrefs()
   const inputRef = useRef<HTMLInputElement>(null)
   const [query, setQuery] = useState("")
   const [open, setOpen] = useState(false)
@@ -1147,7 +1184,7 @@ function CountryField({ country, onChange }: { country: string; onChange: (code:
         aria-expanded={open}
         aria-controls="post-country-list"
         aria-autocomplete="list"
-        placeholder="Choose country"
+        placeholder={t("post.chooseCountry")}
         className="h-10 bg-white"
         onClick={() => setOpen(true)}
         onFocus={() => {
@@ -1182,7 +1219,7 @@ function CountryField({ country, onChange }: { country: string; onChange: (code:
           className="absolute z-30 mt-1 max-h-56 w-full overflow-auto rounded-xl border bg-white p-1 shadow-md"
         >
           {matches.length === 0 ? (
-            <li className="px-2 py-2 text-sm text-neutral-500">No country matches</li>
+            <li className="px-2 py-2 text-sm text-neutral-500">{t("post.noCountryMatches")}</li>
           ) : (
             <>
               {featured.map((item) => (
@@ -1243,10 +1280,12 @@ function DetailControl({
   error?: string
   onChange: (value: string) => void
 }) {
+  const { t } = usePrefs()
+  const label = fieldMessage(field.id, field.label, t)
   switch (field.kind) {
     case "select":
       return (
-        <Field label={field.label} required={field.required} error={error}>
+        <Field label={label} required={field.required} error={error}>
           <ChoiceRow
             value={value}
             options={(field.options ?? []).map((option) => ({ id: option, label: option }))}
@@ -1256,7 +1295,7 @@ function DetailControl({
       )
     case "text":
       return (
-        <Field label={field.label} required={field.required} error={error} hint={field.hint}>
+        <Field label={label} required={field.required} error={error} hint={field.hint}>
           <Input
             value={value}
             aria-invalid={Boolean(error)}
@@ -1293,16 +1332,17 @@ function placeFromListing(listing: Listing | null): ChosenPlace | null {
 }
 
 function MissingAd() {
+  const { t } = usePrefs()
   return (
     <div className="mx-auto max-w-lg px-4 py-24 text-center">
-      <h1 className="text-xl font-semibold tracking-tight">This ad is not yours</h1>
-      <p className="mt-2 text-sm text-neutral-500">It may have been removed, or it was posted from another browser.</p>
+      <h1 className="text-xl font-semibold tracking-tight">{t("post.missingTitle")}</h1>
+      <p className="mt-2 text-sm text-neutral-500">{t("post.missingBody")}</p>
       <div className="mt-5 flex flex-wrap items-center justify-center gap-2">
         <Button asChild className="rounded-full">
-          <Link href="/my-ads">My ads</Link>
+          <Link href="/my-ads">{t("nav.myAds")}</Link>
         </Button>
         <Button asChild variant="outline" className="rounded-full">
-          <Link href="/post">Post an ad</Link>
+          <Link href="/post">{t("nav.post")}</Link>
         </Button>
       </div>
     </div>
@@ -1329,10 +1369,10 @@ function sellerSinceFromUser(user: User | null | undefined): string {
   return String(new Date().getFullYear())
 }
 
-function descriptionHint(value: string): string {
+function descriptionHint(value: string, t: (key: MessageKey, values?: Record<string, string | number>) => string): string {
   const count = value.trim().length
-  if (count >= 20) return `${count} characters`
-  return `${count} / 20 characters`
+  if (count >= 20) return t("post.charsCount", { count })
+  return t("post.charsProgress", { count })
 }
 
 function Field({

@@ -6,6 +6,7 @@ import { usePathname, useSearchParams } from "next/navigation"
 
 import { CategoryNav } from "@/components/category-nav"
 import { SiteFooter } from "@/components/site-footer"
+import { usePrefs } from "@/components/prefs-provider"
 import { Button } from "@/components/ui/button"
 import {
   Sidebar,
@@ -57,17 +58,18 @@ export function CategorySidebar() {
 
 function CategorySidebarHeader() {
   const { isMobile, setOpenMobile } = useSidebar()
+  const { t } = usePrefs()
   if (!isMobile) return null
 
   return (
     <div className="flex shrink-0 items-center justify-between gap-2 border-b border-sidebar-border px-2 py-1.5">
-      <p className="px-2 font-heading text-base font-medium text-sidebar-foreground">Categories</p>
+      <p className="px-2 font-heading text-base font-medium text-sidebar-foreground">{t("nav.categories")}</p>
       <Button
         type="button"
         variant="ghost"
         size="icon"
         className="size-11 shrink-0 rounded-lg"
-        aria-label="Close categories"
+        aria-label={t("nav.closeCategories")}
         onClick={() => setOpenMobile(false)}
       >
         <X className="size-5" />
@@ -90,6 +92,7 @@ function CategorySidebarScroller() {
   const { ready, listings } = useMarketplace()
   const { top, bottom } = useScrollFades(scrollerRef)
   const { isMobile, openMobile } = useSidebar()
+  const { t } = usePrefs()
   const listingCount = listings.length
 
   useEffect(() => {
@@ -183,7 +186,7 @@ function CategorySidebarScroller() {
           bottom ? "opacity-100" : "pointer-events-none opacity-0",
         )}
       >
-        More categories
+        {t("nav.moreCategories")}
         <ChevronDown className="size-3.5 shrink-0 opacity-70" aria-hidden />
       </button>
     </SidebarContent>
@@ -192,14 +195,15 @@ function CategorySidebarScroller() {
 
 /** Mobile-only: desktop shows the categories sidebar persistently. */
 export function CategoryTopNav() {
+  const { t } = usePrefs()
   return (
     <SidebarTrigger
-      aria-label="Browse categories"
+      aria-label={t("nav.browseCategories")}
       className="size-9 shrink-0 rounded-full md:hidden"
       size="icon-lg"
     >
       <Menu className="size-5" />
-      <span className="sr-only">Browse categories</span>
+      <span className="sr-only">{t("nav.browseCategories")}</span>
     </SidebarTrigger>
   )
 }

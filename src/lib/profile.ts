@@ -171,7 +171,7 @@ export function normalizeProfileUpdate(input: ProfileUpdateInput): {
 
 export function memberSinceYear(createdAt: string | null | undefined): number | null {
   if (!createdAt) return null
-  const year = new Date(createdAt).getFullYear()
+  const year = new Date(createdAt).getUTCFullYear()
   return Number.isFinite(year) ? year : null
 }
 

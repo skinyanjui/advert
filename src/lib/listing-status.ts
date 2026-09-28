@@ -1,4 +1,6 @@
 import { isListingExpired, isListingNeedingAttention } from "@/lib/expiry"
+import { translate } from "@/lib/i18n"
+import type { Locale } from "@/lib/i18n/locales"
 
 export const listingStatuses = ["active", "paused", "sold", "expired"] as const
 
@@ -60,16 +62,16 @@ export function isPubliclyVisibleListing(
   return effectiveListingStatus(listing, now) === "active"
 }
 
-export function listingStatusLabel(status: ListingStatus): string {
+export function listingStatusLabel(status: ListingStatus, locale: Locale = "en"): string {
   switch (status) {
     case "active":
-      return "Active"
+      return translate(locale, "status.active")
     case "paused":
-      return "Paused"
+      return translate(locale, "status.paused")
     case "sold":
-      return "Sold"
+      return translate(locale, "status.sold")
     case "expired":
-      return "Expired"
+      return translate(locale, "status.expired")
     default: {
       const _exhaustive: never = status
       return _exhaustive

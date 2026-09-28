@@ -1,3 +1,6 @@
+import { translate, type MessageKey } from "@/lib/i18n"
+import type { Locale } from "@/lib/i18n/locales"
+
 export const reportReasons = [
   { id: "spam", label: "Spam or advertising" },
   { id: "scam", label: "Scam or fraud" },
@@ -12,12 +15,22 @@ export type ReportReasonId = (typeof reportReasons)[number]["id"]
 
 const reasonIds = new Set<string>(reportReasons.map((item) => item.id))
 
+const reasonKeys = {
+  spam: "report.reason.spam",
+  scam: "report.reason.scam",
+  prohibited: "report.reason.prohibited",
+  wrong_category: "report.reason.wrong_category",
+  offensive: "report.reason.offensive",
+  undisclosed_promo: "report.reason.undisclosed_promo",
+  other: "report.reason.other",
+} as const satisfies Record<ReportReasonId, MessageKey>
+
 export function isReportReasonId(value: string | null | undefined): value is ReportReasonId {
   return !!value && reasonIds.has(value)
 }
 
-export function reportReasonLabel(id: ReportReasonId): string {
-  return reportReasons.find((item) => item.id === id)?.label ?? id
+export function reportReasonLabel(id: ReportReasonId, locale: Locale = "en"): string {
+  return translate(locale, reasonKeys[id])
 }
 
 export function reportNoteError(note: string): string | undefined {

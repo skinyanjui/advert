@@ -6,6 +6,7 @@ import { useEffect, useState } from "react"
 import { toast } from "sonner"
 
 import { EmptyPanel } from "@/components/empty-panel"
+import { usePrefs } from "@/components/prefs-provider"
 import { FormField } from "@/components/form-field"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
@@ -29,6 +30,7 @@ const RESEND_COOLDOWN_SECONDS = 60
 
 export function SignInForm({ nextHref }: { nextHref?: string } = {}) {
   const auth = useAuth()
+  const { t } = usePrefs()
   const router = useRouter()
   const searchParams = useSearchParams()
   const { reloadBoard } = useMarketplace()
@@ -57,13 +59,11 @@ export function SignInForm({ nextHref }: { nextHref?: string } = {}) {
 
   useEffect(() => {
     if (errorParam === "link") {
-      toast.error("That sign-in link is invalid or expired. Request a new one.")
+      toast.error(t("auth.toast.linkInvalid"))
     } else if (errorParam === "device") {
-      toast.error(
-        "Open the email link on the same device and browser that requested it, or request a new link here.",
-      )
+      toast.error(t("auth.toast.linkWrongDevice"))
     }
-  }, [errorParam])
+  }, [errorParam, t])
 
   useEffect(() => {
     if (auth.signedIn) {
@@ -81,10 +81,10 @@ export function SignInForm({ nextHref }: { nextHref?: string } = {}) {
   if (!auth.configured) {
     return (
       <EmptyPanel
-        title="Sign-in is not configured"
-        body="Add the public Supabase URL and publishable key, enable Email auth, and apply the seller-accounts SQL migration. Until then you can still post with this browser session."
+        title={t("auth.notConfiguredTitle")}
+        body={t("auth.notConfiguredBody")}
         actionHref="/post"
-        actionLabel="Post an ad"
+        actionLabel={t("nav.post")}
         className="mt-0 py-10"
         headingLevel={1}
       />
@@ -103,7 +103,7 @@ export function SignInForm({ nextHref }: { nextHref?: string } = {}) {
 
   async function sendEmailLink() {
     if (!agreedToTerms) {
-      toast.error("Agree to the Terms and Privacy Policy to continue.")
+      toast.error(t("auth.mustAgree"))
       return
     }
     rememberTermsIntent()
@@ -116,7 +116,7 @@ export function SignInForm({ nextHref }: { nextHref?: string } = {}) {
     }
     setSent(true)
     startCooldown()
-    toast.success("Check your email for a sign-in link")
+    toast.success(t("auth.toast.linkSent"))
   }
 
   async function sendPhoneCode() {
@@ -129,7 +129,7 @@ export function SignInForm({ nextHref }: { nextHref?: string } = {}) {
     }
     setSent(true)
     startCooldown()
-    toast.success("Check your phone for a code")
+    toast.success(t("auth.toast.codeSent"))
   }
 
   async function verifyPhone() {
@@ -141,7 +141,7 @@ export function SignInForm({ nextHref }: { nextHref?: string } = {}) {
       return
     }
     await reloadBoard()
-    toast.success("Signed in")
+    toast.success(t("auth.toast.signedIn"))
     router.replace(next)
   }
 
@@ -155,13 +155,13 @@ export function SignInForm({ nextHref }: { nextHref?: string } = {}) {
         return
       }
       startCooldown()
-      toast.success("Check your email for a reset link — open it on this device")
+      toast.success(t("auth.toast.resetSent"))
       return
     }
 
     if (passwordMode === "sign-up") {
       if (!agreedToTerms) {
-        toast.error("Agree to the Terms and Privacy Policy to continue.")
+        toast.error(t("auth.mustAgree"))
         return
       }
       rememberTermsIntent()
@@ -179,11 +179,11 @@ export function SignInForm({ nextHref }: { nextHref?: string } = {}) {
       }
       if (result.session) {
         await reloadBoard()
-        toast.success("Account created")
+        toast.success(t("auth.toast.accountCreated"))
         router.replace(next)
         return
       }
-      toast.success("Check your email for a confirmation link")
+      toast.success(t("auth.toast.confirmEmail"))
       return
     }
 
@@ -195,13 +195,13 @@ export function SignInForm({ nextHref }: { nextHref?: string } = {}) {
       return
     }
     await reloadBoard()
-    toast.success("Signed in")
+    toast.success(t("auth.toast.signedIn"))
     router.replace(next)
   }
 
   async function continueWithGoogle() {
     if (!agreedToTerms) {
-      toast.error("Agree to the Terms and Privacy Policy to continue.")
+      toast.error(t("auth.mustAgree"))
       return
     }
     rememberTermsIntent()
@@ -222,9 +222,9 @@ export function SignInForm({ nextHref }: { nextHref?: string } = {}) {
   return (
     <div className="mx-auto w-full max-w-md space-y-4">
       <header>
-        <h1 className="text-2xl font-semibold tracking-tight">Sign in</h1>
+        <h1 className="text-2xl font-semibold tracking-tight">{t("auth.signIn")}</h1>
         <p className="mt-1 text-sm text-muted-foreground">
-          Keep your ads, saves, and Messages across devices. New emails create an account.
+          {t("auth.pageBody")}
         </p>
       </header>
 
@@ -237,13 +237,13 @@ export function SignInForm({ nextHref }: { nextHref?: string } = {}) {
             onChange={(event) => onAgreeChange(event.target.checked)}
           />
           <span>
-            I agree to the{" "}
+            {t("auth.agreeTermsPrefix")}{" "}
             <Link href="/terms" className="underline underline-offset-2">
-              Terms
+              {t("auth.terms")}
             </Link>{" "}
-            and{" "}
+            {t("auth.agreeTermsAnd")}{" "}
             <Link href="/privacy" className="underline underline-offset-2">
-              Privacy Policy
+              {t("auth.privacyPolicy")}
             </Link>
           </span>
         </label>
@@ -257,7 +257,7 @@ export function SignInForm({ nextHref }: { nextHref?: string } = {}) {
           disabled={busy || !agreedToTerms}
           onClick={() => void continueWithGoogle()}
         >
-          Continue with Google
+          {t("auth.continueGoogle")}
         </Button>
       ) : null}
 
@@ -273,7 +273,7 @@ export function SignInForm({ nextHref }: { nextHref?: string } = {}) {
               setCode("")
             }}
           >
-            Email
+            {t("auth.channelEmail")}
           </Button>
           <Button
             type="button"
@@ -286,7 +286,7 @@ export function SignInForm({ nextHref }: { nextHref?: string } = {}) {
               setCode("")
             }}
           >
-            Phone
+            {t("auth.channelPhone")}
           </Button>
         </div>
       ) : null}
@@ -302,7 +302,7 @@ export function SignInForm({ nextHref }: { nextHref?: string } = {}) {
               setPasswordMode("sign-in")
             }}
           >
-            Email link
+            {t("auth.methodLink")}
           </Button>
           <Button
             type="button"
@@ -314,7 +314,7 @@ export function SignInForm({ nextHref }: { nextHref?: string } = {}) {
               setCode("")
             }}
           >
-            Password
+            {t("auth.methodPassword")}
           </Button>
         </div>
       ) : null}
@@ -325,20 +325,20 @@ export function SignInForm({ nextHref }: { nextHref?: string } = {}) {
             <CardTitle>
               {channel === "email"
                 ? sent
-                  ? "Check your email"
-                  : "Email sign-in link"
+                  ? t("auth.emailLinkSent")
+                  : t("auth.emailLink")
                 : sent
-                  ? "Enter your code"
-                  : "Phone code"}
+                  ? t("auth.phoneCodeSent")
+                  : t("auth.phoneCode")}
             </CardTitle>
             <CardDescription>
               {channel === "email"
                 ? sent
-                  ? "Open the link on this device to finish signing in."
-                  : "We’ll email a one-time sign-in link. Open it on this device."
+                  ? t("auth.emailLinkSentHint")
+                  : t("auth.emailLinkHint")
                 : sent
-                  ? "Enter the SMS code."
-                  : "We’ll text a one-time code."}
+                  ? t("auth.phoneCodeSentHint")
+                  : t("auth.phoneCodeHint")}
             </CardDescription>
           </CardHeader>
           <form
@@ -355,28 +355,28 @@ export function SignInForm({ nextHref }: { nextHref?: string } = {}) {
           >
             <CardContent className="space-y-4">
               {channel === "email" ? (
-                <FormField label="Email" htmlFor="sign-in-email" required>
+                <FormField label={t("auth.email")} htmlFor="sign-in-email" required>
                   <Input
                     id="sign-in-email"
                     type="email"
                     autoComplete="email"
                     value={email}
                     onChange={(event) => setEmail(event.target.value)}
-                    placeholder="you@example.com"
+                    placeholder={t("auth.emailPlaceholder")}
                     className="h-10"
                     required
                     disabled={sent}
                   />
                 </FormField>
               ) : (
-                <FormField label="Phone" htmlFor="sign-in-phone" required>
+                <FormField label={t("auth.phone")} htmlFor="sign-in-phone" required>
                   <Input
                     id="sign-in-phone"
                     type="tel"
                     autoComplete="tel"
                     value={phone}
                     onChange={(event) => setPhone(event.target.value)}
-                    placeholder="+254 7XX XXX XXX"
+                    placeholder={t("auth.phonePlaceholder")}
                     className="h-10"
                     required
                     disabled={sent}
@@ -385,14 +385,14 @@ export function SignInForm({ nextHref }: { nextHref?: string } = {}) {
               )}
 
               {channel === "phone" && sent ? (
-                <FormField label="Code" htmlFor="sign-in-code" required hint="6-digit code from your SMS">
+                <FormField label={t("auth.code")} htmlFor="sign-in-code" required hint={t("auth.codeSmsHint")}>
                   <Input
                     id="sign-in-code"
                     inputMode="numeric"
                     autoComplete="one-time-code"
                     value={code}
                     onChange={(event) => setCode(event.target.value)}
-                    placeholder="6-digit code"
+                    placeholder={t("auth.codePlaceholder")}
                     className="h-10"
                     required
                   />
@@ -402,7 +402,7 @@ export function SignInForm({ nextHref }: { nextHref?: string } = {}) {
             <CardFooter className="flex-col items-stretch gap-2 sm:flex-col">
               {channel === "email" && sent ? (
                 <p className="text-sm text-muted-foreground">
-                  Waiting for you to open the link… You can resend after the cooldown.
+                  {t("auth.waitingForLink")}
                 </p>
               ) : (
                 <Button
@@ -411,12 +411,12 @@ export function SignInForm({ nextHref }: { nextHref?: string } = {}) {
                   className="h-10 w-full"
                 >
                   {busy
-                    ? "Please wait…"
+                    ? t("auth.pleaseWait")
                     : channel === "email"
-                      ? "Email me a link"
+                      ? t("auth.sendLink")
                       : sent
-                        ? "Verify and sign in"
-                        : "Send code"}
+                        ? t("auth.verifySignIn")
+                        : t("auth.sendCode")}
                 </Button>
               )}
               {sent ? (
@@ -428,10 +428,10 @@ export function SignInForm({ nextHref }: { nextHref?: string } = {}) {
                     onClick={() => void (channel === "email" ? sendEmailLink() : sendPhoneCode())}
                   >
                     {cooldown > 0
-                      ? `Resend in ${cooldown}s`
+                      ? t("auth.resendIn", { count: cooldown })
                       : channel === "email"
-                        ? "Resend link"
-                        : "Resend code"}
+                        ? t("auth.resendLink")
+                        : t("auth.resendCode")}
                   </Button>
                   <Button
                     type="button"
@@ -442,7 +442,7 @@ export function SignInForm({ nextHref }: { nextHref?: string } = {}) {
                       setCode("")
                     }}
                   >
-                    Use a different {channel === "email" ? "email" : "number"}
+                    {channel === "email" ? t("auth.useDifferentEmail") : t("auth.useDifferentPhone")}
                   </Button>
                 </div>
               ) : null}
@@ -454,17 +454,17 @@ export function SignInForm({ nextHref }: { nextHref?: string } = {}) {
           <CardHeader>
             <CardTitle>
               {passwordMode === "forgot"
-                ? "Reset password"
+                ? t("auth.resetPassword")
                 : passwordMode === "sign-up"
-                  ? "Create account"
-                  : "Sign in with password"}
+                  ? t("auth.createAccount")
+                  : t("auth.passwordSignIn")}
             </CardTitle>
             <CardDescription>
               {passwordMode === "forgot"
-                ? "We’ll email a reset link. Open it on this same device and browser."
+                ? t("auth.resetPasswordHint")
                 : passwordMode === "sign-up"
-                  ? "Confirm your email with the link we send, then sign in."
-                  : "Use the password you set on your Profile."}
+                  ? t("auth.createAccountHint")
+                  : t("auth.passwordSignInHint")}
             </CardDescription>
           </CardHeader>
           <form
@@ -475,14 +475,14 @@ export function SignInForm({ nextHref }: { nextHref?: string } = {}) {
             }}
           >
             <CardContent className="space-y-4">
-              <FormField label="Email" htmlFor="password-email" required>
+              <FormField label={t("auth.email")} htmlFor="password-email" required>
                 <Input
                   id="password-email"
                   type="email"
                   autoComplete="email"
                   value={email}
                   onChange={(event) => setEmail(event.target.value)}
-                  placeholder="you@example.com"
+                  placeholder={t("auth.emailPlaceholder")}
                   className="h-10"
                   required
                 />
@@ -490,7 +490,7 @@ export function SignInForm({ nextHref }: { nextHref?: string } = {}) {
 
               {passwordMode !== "forgot" ? (
                 <FormField
-                  label="Password"
+                  label={t("auth.password")}
                   htmlFor="password-field"
                   required
                   hint={
@@ -512,7 +512,7 @@ export function SignInForm({ nextHref }: { nextHref?: string } = {}) {
               ) : null}
 
               {passwordMode === "sign-up" ? (
-                <FormField label="Confirm password" htmlFor="password-confirm" required>
+                <FormField label={t("auth.confirmPassword")} htmlFor="password-confirm" required>
                   <Input
                     id="password-confirm"
                     type="password"
@@ -536,28 +536,28 @@ export function SignInForm({ nextHref }: { nextHref?: string } = {}) {
                 className="h-10 w-full"
               >
                 {busy
-                  ? "Please wait…"
+                  ? t("auth.pleaseWait")
                   : passwordMode === "forgot"
                     ? cooldown > 0
-                      ? `Resend in ${cooldown}s`
-                      : "Send reset link"
+                      ? t("auth.resendIn", { count: cooldown })
+                      : t("auth.sendResetLink")
                     : passwordMode === "sign-up"
-                      ? "Create account"
-                      : "Sign in"}
+                      ? t("auth.createAccount")
+                      : t("auth.signIn")}
               </Button>
               <div className="flex flex-wrap gap-2">
                 {passwordMode === "sign-in" ? (
                   <>
                     <Button type="button" variant="ghost" onClick={() => setPasswordMode("forgot")}>
-                      Forgot password
+                      {t("auth.forgotPassword")}
                     </Button>
                     <Button type="button" variant="ghost" onClick={() => setPasswordMode("sign-up")}>
-                      Create account
+                      {t("auth.createAccount")}
                     </Button>
                   </>
                 ) : (
                   <Button type="button" variant="ghost" onClick={() => setPasswordMode("sign-in")}>
-                    Back to password sign-in
+                    {t("auth.backToPassword")}
                   </Button>
                 )}
               </div>
@@ -567,7 +567,7 @@ export function SignInForm({ nextHref }: { nextHref?: string } = {}) {
       )}
       {needsTermsForAction && !agreedToTerms ? (
         <p className="text-xs text-neutral-500">
-          Tick the box above to email a link, create an account, or continue with Google.
+          {t("auth.tickTermsHint")}
         </p>
       ) : null}
     </div>
@@ -576,16 +576,17 @@ export function SignInForm({ nextHref }: { nextHref?: string } = {}) {
 
 export function KeepAdsPrompt({ className }: { className?: string }) {
   const auth = useAuth()
+  const { t } = usePrefs()
   if (!auth.ready || auth.signedIn || !auth.configured) return null
   return (
     <div className={className ?? "rounded-2xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-950"}>
-      <p className="font-medium">Sign in to post and keep ads</p>
+      <p className="font-medium">{t("auth.keepAdsTitle")}</p>
       <p className="mt-1 text-amber-900/80">
-        New ads need an account.{" "}
+        {t("auth.keepAdsBodyPrefix")}{" "}
         <Link href="/sign-in" className="font-medium underline underline-offset-2">
-          Sign in with email
+          {t("auth.signInWithEmail")}
         </Link>{" "}
-        to post, and to move any older browser-owned posts onto your account.
+        {t("auth.keepAdsBodySuffix")}
       </p>
     </div>
   )

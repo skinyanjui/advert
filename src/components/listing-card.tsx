@@ -5,6 +5,7 @@ import Image from "next/image"
 import Link from "next/link"
 
 import { ListingPrice } from "@/components/listing-price"
+import { usePrefs } from "@/components/prefs-provider"
 import { countryCodeOf, formatDistance, formatPlace } from "@/lib/format"
 import { isListingExpired } from "@/lib/expiry"
 import { useMarketplace } from "@/lib/marketplace"
@@ -14,6 +15,7 @@ import {
   hoursAgoOf,
   postedDateTime,
 } from "@/lib/relative-time"
+import { useClientNow } from "@/lib/use-client-time"
 import type { Listing } from "@/lib/types"
 import { cn } from "@/lib/utils"
 
@@ -31,10 +33,11 @@ export function ListingCard({
   preserve?: string
 }) {
   const { isSaved, toggleSaved } = useMarketplace()
+  const { t, language } = usePrefs()
   const saved = isSaved(listing.id)
   const placeFull = formatPlace(listing)
   const countryCode = countryCodeOf(listing)
-  const away = distanceKm === undefined ? undefined : formatDistance(distanceKm)
+  const away = distanceKm === undefined ? undefined : formatDistance(distanceKm, language)
   const body = (
     <>
       <div className="relative aspect-[5/4] overflow-hidden bg-neutral-100">
@@ -48,28 +51,28 @@ export function ListingCard({
         />
         {listing.badge === "featured" ? (
           <span className="absolute top-2 left-2 rounded-full bg-neutral-950 px-2 py-0.5 text-[10px] font-medium text-white">
-            Featured
+            {t("listing.featured")}
           </span>
         ) : null}
         {listing.sold ? (
           <span className="absolute top-2 left-2 rounded-full bg-neutral-800 px-2 py-0.5 text-[10px] font-medium text-white">
-            Sold
+            {t("listing.sold")}
           </span>
         ) : listing.hidden ? (
           <span className="absolute top-2 left-2 rounded-full bg-amber-700 px-2 py-0.5 text-[10px] font-medium text-white">
-            Hidden
+            {t("listing.hidden")}
           </span>
         ) : isListingExpired(listing.expiresAt) ? (
           <span className="absolute top-2 left-2 rounded-full bg-neutral-600 px-2 py-0.5 text-[10px] font-medium text-white">
-            Expired
+            {t("listing.expired")}
           </span>
         ) : listing.sponsored ? (
           <span className="absolute top-2 left-2 rounded-full bg-sky-700 px-2 py-0.5 text-[10px] font-medium text-white">
-            Sponsored
+            {t("listing.sponsored")}
           </span>
         ) : listing.badge === "jobs" ? (
           <span className="absolute top-2 left-2 rounded-full bg-emerald-500 px-2 py-0.5 text-[10px] font-medium text-white">
-            Jobs
+            {t("listing.jobs")}
           </span>
         ) : null}
         {away ? (
@@ -98,7 +101,7 @@ export function ListingCard({
           <PostedLabel listing={listing} />
           {linked ? (
             <span className="inline-flex items-center gap-1 font-medium text-neutral-950">
-              View <ArrowRight className="size-3" aria-hidden="true" />
+              {t("listing.view")} <ArrowRight className="size-3" aria-hidden="true" />
             </span>
           ) : null}
         </div>
@@ -122,7 +125,11 @@ export function ListingCard({
         <button
           type="button"
           aria-pressed={saved}
-          aria-label={saved ? `Remove ${listing.title} from saved` : `Save ${listing.title}`}
+          aria-label={
+            saved
+              ? t("listing.unsave", { title: listing.title })
+              : t("listing.save", { title: listing.title })
+          }
           onClick={() => toggleSaved(listing.id)}
           className="absolute top-2 right-2 flex size-7 items-center justify-center rounded-full bg-white/95 text-neutral-700 shadow-sm transition hover:scale-105"
         >
@@ -134,20 +141,17 @@ export function ListingCard({
 }
 
 function PostedLabel({ listing }: { listing: Listing }) {
-  // Prefer the stored hoursAgo for seed ads (no postedAt) so SSR/client match.
-  // When postedAt exists, recompute from now and suppress hydration warning on <time>.
-  const hasPostedAt = Boolean(listing.postedAt)
-  const hours = hasPostedAt ? hoursAgoOf(listing) : listing.hoursAgo
-  const label = formatRelativePosted(hours)
+  const { language } = usePrefs()
+  const clock = useClientNow()
   const dateTime = postedDateTime(listing)
-  const fullDate = formatPostedDate(listing.postedAt)
+  const fullDate = formatPostedDate(listing.postedAt, language)
+  // SSR + first paint: stored hoursAgo (stable). Live relative time after mount.
+  const label =
+    clock !== null
+      ? formatRelativePosted(listing.postedAt ? hoursAgoOf(listing, clock) : listing.hoursAgo, language)
+      : formatRelativePosted(listing.hoursAgo, language)
   return (
-    <time
-      className="truncate"
-      dateTime={dateTime}
-      title={fullDate}
-      suppressHydrationWarning={hasPostedAt}
-    >
+    <time className="truncate" dateTime={dateTime} title={fullDate} suppressHydrationWarning>
       {label}
     </time>
   )

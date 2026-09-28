@@ -8,6 +8,7 @@ import { toast } from "sonner"
 
 import { EmptyPanel } from "@/components/empty-panel"
 import { FormField } from "@/components/form-field"
+import { usePrefs } from "@/components/prefs-provider"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
@@ -22,6 +23,7 @@ import {
 
 export function ResetPasswordForm() {
   const auth = useAuth()
+  const { t } = usePrefs()
   const router = useRouter()
   const searchParams = useSearchParams()
   const [password, setPassword] = useState("")
@@ -32,21 +34,19 @@ export function ResetPasswordForm() {
 
   useEffect(() => {
     if (deviceError) {
-      toast.error(
-        "Open the reset link on the same device and browser that requested it, or request a new link.",
-      )
+      toast.error(t("auth.toast.resetWrongDevice"))
     } else if (auth.ready && !auth.signedIn && !claimed) {
-      toast.error("Open the reset link from your email on this device.")
+      toast.error(t("auth.toast.resetOpenLink"))
     }
-  }, [auth.ready, auth.signedIn, claimed, deviceError])
+  }, [auth.ready, auth.signedIn, claimed, deviceError, t])
 
   if (!auth.configured) {
     return (
       <EmptyPanel
-        title="Sign-in is not configured"
-        body="Password reset needs Supabase Auth credentials."
+        title={t("auth.notConfiguredTitle")}
+        body={t("auth.resetNotConfiguredBody")}
         actionHref="/"
-        actionLabel="Back home"
+        actionLabel={t("auth.backHome")}
         className="mt-0 py-10"
         headingLevel={1}
       />
@@ -56,23 +56,19 @@ export function ResetPasswordForm() {
   if (auth.ready && !auth.signedIn) {
     return (
       <EmptyPanel
-        title={deviceError ? "Open the link on this device" : "Reset link required"}
-        body={
-          deviceError
-            ? "Open the reset link on the same device and browser that requested it, or request a new link from this device."
-            : "Open the password reset link from your email on this same device and browser, then choose a new password."
-        }
+        title={deviceError ? t("auth.resetDeviceTitle") : t("auth.resetLinkRequiredTitle")}
+        body={deviceError ? t("auth.resetDeviceBody") : t("auth.resetLinkRequiredBody")}
         actionHref={signInHref("/auth/reset")}
-        actionLabel="Request a new reset link"
+        actionLabel={t("auth.requestNewReset")}
         className="mt-0 py-10"
         headingLevel={1}
       >
         <p className="mx-auto mt-4 max-w-sm text-sm text-muted-foreground">
-          Or{" "}
+          {t("auth.orSignInPrefix")}{" "}
           <Link href="/sign-in" className="font-medium underline underline-offset-2">
-            sign in
+            {t("auth.signIn")}
           </Link>{" "}
-          with an email link.
+          {t("auth.orSignInSuffix")}
         </p>
       </EmptyPanel>
     )
@@ -93,23 +89,21 @@ export function ResetPasswordForm() {
       toast.error(result.reason)
       return
     }
-    toast.success("Password updated")
+    toast.success(t("auth.toast.passwordUpdated"))
     router.replace("/account")
   }
 
   return (
     <div className="mx-auto w-full max-w-md space-y-4">
       <header>
-        <h1 className="text-2xl font-semibold tracking-tight">Choose a new password</h1>
-        <p className="mt-1 text-sm text-muted-foreground">
-          You can also keep signing in with an email link.
-        </p>
+        <h1 className="text-2xl font-semibold tracking-tight">{t("auth.chooseNewPassword")}</h1>
+        <p className="mt-1 text-sm text-muted-foreground">{t("auth.chooseNewPasswordHint")}</p>
       </header>
 
       <Card>
         <CardHeader>
-          <CardTitle>New password</CardTitle>
-          <CardDescription>At least 8 characters. A mix of letters and numbers is stronger.</CardDescription>
+          <CardTitle>{t("auth.newPasswordTitle")}</CardTitle>
+          <CardDescription>{t("auth.newPasswordHint")}</CardDescription>
         </CardHeader>
         <form
           onSubmit={(event) => {
@@ -120,7 +114,7 @@ export function ResetPasswordForm() {
         >
           <CardContent className="space-y-4">
             <FormField
-              label="Password"
+              label={t("auth.password")}
               htmlFor="reset-password"
               required
               hint={strength ? passwordStrengthLabel(strength) : undefined}
@@ -135,7 +129,7 @@ export function ResetPasswordForm() {
                 required
               />
             </FormField>
-            <FormField label="Confirm password" htmlFor="reset-password-confirm" required>
+            <FormField label={t("auth.confirmPassword")} htmlFor="reset-password-confirm" required>
               <Input
                 id="reset-password-confirm"
                 type="password"
@@ -150,7 +144,7 @@ export function ResetPasswordForm() {
           <CardFooter>
             <Button type="submit" disabled={busy} className="h-10 w-full">
               {busy ? <Loader2 className="animate-spin" /> : null}
-              {busy ? "Saving…" : "Update password"}
+              {busy ? t("profile.saving") : t("auth.updatePassword")}
             </Button>
           </CardFooter>
         </form>

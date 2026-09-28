@@ -47,8 +47,8 @@ test("resolvePostingCountry has no KE default when nothing is set", () => {
 test("post form and readPostingPlace no longer hardcode KE fallback", () => {
   const form = readFileSync(new URL("../src/components/post-form.tsx", import.meta.url), "utf8")
   assert.match(form, /resolvePostingCountry/)
-  assert.match(form, /Choose a country first/)
-  assert.match(form, /set your country on Profile/)
+  assert.match(form, /post\.chooseCountryFirst/)
+  assert.match(form, /post\.setCountryOnProfile/)
   assert.match(form, /href="\/account"/)
   assert.doesNotMatch(form, /urlCountry \?\? "KE"/)
   assert.doesNotMatch(form, /existing\.country\) \?\? "KE"/)

@@ -6,11 +6,13 @@ import { toast } from "sonner"
 
 import { ConversationList, type InboxFilter } from "@/components/inbox/conversation-list"
 import { ConversationPanel } from "@/components/inbox/conversation-panel"
+import { usePrefs } from "@/components/prefs-provider"
 import { messageThreads } from "@/lib/messages"
 import { useMarketplace } from "@/lib/marketplace"
 import { sampleThreads } from "@/lib/sample-conversations"
 
 export function MessagesPage() {
+  const { t } = usePrefs()
   const { ready, messages, listings, markThreadRead, sendMessage } = useMarketplace()
   const params = useSearchParams()
   const router = useRouter()
@@ -53,7 +55,7 @@ export function MessagesPage() {
   if (!ready) {
     return (
       <div className="mx-auto w-full max-w-[1720px] px-4 py-6 md:px-6">
-        <p className="text-sm text-neutral-500">Loading your messages…</p>
+        <p className="text-sm text-neutral-500">{t("inbox.loading")}</p>
       </div>
     )
   }
@@ -67,10 +69,10 @@ export function MessagesPage() {
         toast.error(result.reason)
         return false
       }
-      toast.success("Reply sent")
+      toast.success(t("inbox.toast.sent"))
       return true
     } catch {
-      toast.error("Could not send the message.")
+      toast.error(t("inbox.toast.sendError"))
       return false
     } finally {
       setSending(false)
@@ -79,9 +81,9 @@ export function MessagesPage() {
 
   return (
     <div className="mx-auto w-full max-w-[1720px] px-4 py-3 md:px-6">
-      <h1 className="sr-only">Messages</h1>
+      <h1 className="sr-only">{t("inbox.title")}</h1>
       {missing ? (
-        <p className="mb-3 rounded-lg border border-neutral-200 bg-white px-3 py-2 text-sm text-neutral-600">This conversation is not on this account. Choose one below.</p>
+        <p className="mb-3 rounded-lg border border-neutral-200 bg-white px-3 py-2 text-sm text-neutral-600">{t("inbox.missingConversation")}</p>
       ) : null}
       <div className="grid h-[calc(100dvh-11rem)] min-h-[26rem] min-w-0 overflow-hidden rounded-xl border border-neutral-200 bg-white md:h-[calc(100dvh-6rem)] lg:grid-cols-[360px_minmax(0,1fr)]">
         <ConversationList

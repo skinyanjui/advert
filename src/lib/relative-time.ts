@@ -31,7 +31,7 @@ export function formatRelativePosted(hoursAgo: number, locale: Locale = "en"): s
 }
 
 /** Relative time for inbox message timestamps (uses formatPosted, not "Posted …"). */
-export function formatMessageWhen(sentAt: string, now = Date.now(), locale: Locale = "en"): string {
+export function formatMessageWhen(sentAt: string, locale: Locale = "en", now = Date.now()): string {
   const time = new Date(sentAt).getTime()
   if (Number.isNaN(time)) return ""
   const hoursAgo = (now - time) / 3_600_000
@@ -57,6 +57,7 @@ export function formatPostedDate(postedAt: string | undefined, locale: Locale = 
     day: "numeric",
     month: "short",
     year: "numeric",
+    timeZone: "UTC",
   })
 }
 

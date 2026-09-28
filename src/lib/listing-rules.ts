@@ -41,7 +41,7 @@ export function listingFieldErrors(input: ListingFields): FieldErrors {
   if (!Number.isFinite(amount) || amount <= 0) errors.price = "Enter an amount greater than zero."
   else if (amount > maxPrice) errors.price = "Enter a smaller amount."
 
-  if (!getCountry(input.country)) errors.form = errors.form ?? "Choose a country."
+  if (!getCountry(input.country)) errors.country = "Choose a country."
 
   if (input.category && !allowedCurrencies(input.country).includes(input.currency)) {
     errors.currency = "Choose a currency for this country."

@@ -1,6 +1,7 @@
 import type { Metadata } from "next"
 import { redirect } from "next/navigation"
 
+import { AdminDenied } from "@/components/admin-denied"
 import { AdminReportsClient } from "@/components/admin-reports-page"
 import { isAdminEmail } from "@/lib/admin"
 import { signInHref } from "@/lib/auth-redirect"
@@ -24,12 +25,7 @@ export default async function Page() {
   }
 
   if (!isAdminEmail(email)) {
-    return (
-      <div className="mx-auto max-w-3xl px-4 py-8 md:px-6">
-        <h1 className="text-2xl font-semibold tracking-tight">Reports</h1>
-        <p className="mt-2 text-sm text-neutral-500">This account is not on the admin allowlist.</p>
-      </div>
-    )
+    return <AdminDenied />
   }
 
   let reports: Awaited<ReturnType<typeof listPendingReports>> = []
