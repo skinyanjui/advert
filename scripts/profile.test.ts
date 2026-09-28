@@ -92,3 +92,15 @@ test("package.json test script has no conflict markers and includes profile test
   assert.match(pkg, /scripts\/listing-status\.test\.ts/)
   assert.match(pkg, /scripts\/profile\.test\.ts/)
 })
+
+test("account page reuses #17 nav shared components", () => {
+  const page = readFileSync(new URL("../src/components/account-page.tsx", import.meta.url), "utf8")
+  assert.match(page, /from "@\/components\/empty-panel"/)
+  assert.match(page, /from "@\/components\/nav-badge"/)
+  assert.match(page, /from "@\/hooks\/use-nav-counts"/)
+  assert.match(page, /from "@\/lib\/nav"/)
+  assert.match(page, /navItem\("messages"\)/)
+  assert.match(page, /navItem\("post"\)/)
+  assert.doesNotMatch(page, /createBrowserSupabase/)
+  assert.doesNotMatch(page, /<<<<<<|>>>>>>|======/)
+})

@@ -1,12 +1,14 @@
 "use client"
 
-import { Loader2 } from "lucide-react"
+import { ChevronRight, Loader2 } from "lucide-react"
 import Link from "next/link"
 import { useRouter } from "next/navigation"
 import { useEffect, useRef, useState } from "react"
 import { toast } from "sonner"
 
 import { CityField } from "@/components/city-field"
+import { EmptyPanel } from "@/components/empty-panel"
+import { NavBadge } from "@/components/nav-badge"
 import { KeepAdsPrompt } from "@/components/sign-in-form"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { Button } from "@/components/ui/button"
@@ -29,10 +31,14 @@ import {
   SelectValue,
 } from "@/components/ui/select"
 import { Skeleton } from "@/components/ui/skeleton"
+import { navCountAriaLabel, useNavCounts } from "@/hooks/use-nav-counts"
+import { postAdHref } from "@/lib/active-place"
 import { useAuth } from "@/lib/auth"
 import { canonicalCountry, countries } from "@/lib/countries"
 import { writeHomePlace } from "@/lib/home-place"
 import { useMarketplace } from "@/lib/marketplace"
+import { messageThreads, unreadMessageCount } from "@/lib/messages"
+import { navItem } from "@/lib/nav"
 import {
   avatarFileError,
   cityError,
@@ -40,6 +46,7 @@ import {
   memberSinceYear,
   type BoardProfile,
 } from "@/lib/profile"
+import { useRememberedPlace } from "@/lib/use-remembered-place"
 
 export function AccountPage() {
   const auth = useAuth()
@@ -48,45 +55,152 @@ export function AccountPage() {
 
   return (
     <div className="mx-auto w-full max-w-3xl space-y-4 px-4 py-6 md:px-6">
-      <h1 className="text-2xl font-semibold tracking-tight">Profile</h1>
+      <header>
+        <h1 className="text-2xl font-semibold tracking-tight">Profile</h1>
+        {auth.ready ? (
+          auth.signedIn ? (
+            <p className="mt-1 text-sm text-muted-foreground">
+              Signed in as {auth.email}. Your ads, saves, and messages stay with this account.
+            </p>
+          ) : (
+            <p className="mt-1 text-sm text-muted-foreground">
+              Guest on this browser. Sign in to keep ads after clearing cookies or on another device.
+            </p>
+          )
+        ) : null}
+      </header>
 
       {!auth.ready ? (
         <ProfileSkeleton />
       ) : !auth.signedIn ? (
-        <Card>
-          <CardHeader>
-            <CardTitle>Account</CardTitle>
-            <CardDescription>Email code sign-in. No password.</CardDescription>
-          </CardHeader>
-          <CardContent className="space-y-3">
-            <p className="text-sm text-muted-foreground">
-              Sign in to keep ads, saves, and messages on this account.
-            </p>
-            <KeepAdsPrompt className="rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-sm text-amber-950" />
-            <Button asChild>
-              <Link href="/sign-in">Sign in</Link>
-            </Button>
-          </CardContent>
-        </Card>
+        <>
+          <EmptyPanel
+            title="Sign in to edit your Profile"
+            body="Email code sign-in. No password. Keep ads, saves, and messages on this account."
+            actionHref="/sign-in"
+            actionLabel="Sign in"
+            className="mt-0"
+          >
+            <KeepAdsPrompt className="mx-auto mt-4 max-w-sm rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-left text-sm text-amber-950" />
+          </EmptyPanel>
+          <ProfileShortcuts isAdmin={false} />
+        </>
       ) : (
-        <SignedInProfile
-          email={auth.email}
-          createdAt={auth.user?.created_at ?? null}
-          signOut={() => auth.signOut()}
-        />
+        <>
+          <SignedInProfile
+            email={auth.email}
+            createdAt={auth.user?.created_at ?? null}
+            signOut={() => auth.signOut()}
+          />
+          <ProfileShortcuts isAdmin={isAdmin} />
+        </>
       )}
-
-      {isAdmin ? (
-        <Card size="sm">
-          <CardContent className="pt-(--card-spacing)">
-            <Button asChild variant="outline">
-              <Link href="/admin/reports">Reports</Link>
-            </Button>
-          </CardContent>
-        </Card>
-      ) : null}
     </div>
   )
+}
+
+function ProfileShortcuts({ isAdmin }: { isAdmin: boolean }) {
+  const auth = useAuth()
+  const { ready, listings, savedIds, messages } = useMarketplace()
+  const navCounts = useNavCounts()
+  const unread = unreadMessageCount(messages)
+  const sellerUnread = unreadMessageCount(messages.filter((item) => item.viewerIsSeller))
+  const threads = messageThreads(messages)
+  const mine = listings.filter((listing) => listing.mine).length
+  const postHref = postAdHref(useRememberedPlace())
+  const messagesNav = navItem("messages")
+  const myAdsNav = navItem("my-ads")
+  const savedNav = navItem("saved")
+  const postNav = navItem("post")
+
+  return (
+    <section aria-label="Shortcuts" className="space-y-2">
+      {!ready ? <p className="text-sm text-muted-foreground">Loading your shortcuts…</p> : null}
+      <ul className="grid gap-2">
+        <ProfileLink
+          href={messagesNav.href}
+          title={messagesNav.label}
+          detail={messageDetail(threads.length, unread)}
+          badge={navCounts.messages ?? 0}
+          ariaLabel={navCountAriaLabel(messagesNav.label, "messages", navCounts)}
+        />
+        <ProfileLink
+          href={savedNav.href}
+          title={savedNav.label}
+          detail={countDetail(savedIds.length, "saved ad", "saved ads")}
+        />
+        <ProfileLink
+          href={myAdsNav.href}
+          title={myAdsNav.label}
+          detail={myAdsDetail(mine, sellerUnread, auth.signedIn)}
+          badge={navCounts["my-ads"] ?? 0}
+          ariaLabel={navCountAriaLabel(myAdsNav.label, "my-ads", navCounts)}
+        />
+        <ProfileLink
+          href={postHref}
+          title={postNav.label}
+          detail="Cars, houses, jobs, and everything else on the board."
+        />
+        {isAdmin ? (
+          <ProfileLink href="/admin/reports" title="Reports" detail="Review reported ads as an admin." />
+        ) : null}
+      </ul>
+    </section>
+  )
+}
+
+function ProfileLink({
+  href,
+  title,
+  detail,
+  badge = 0,
+  ariaLabel,
+}: {
+  href: string
+  title: string
+  detail: string
+  badge?: number
+  ariaLabel?: string
+}) {
+  return (
+    <li>
+      <Link
+        href={href}
+        aria-label={ariaLabel}
+        className="flex items-center gap-3 rounded-xl border border-border bg-card px-4 py-3 text-card-foreground ring-1 ring-foreground/10 hover:bg-muted/40"
+      >
+        <span className="min-w-0 flex-1">
+          <span className="flex items-center gap-2">
+            <span className="text-sm font-medium">{title}</span>
+            <NavBadge count={badge} placement="inline" />
+          </span>
+          <span className="mt-0.5 block text-xs text-muted-foreground">{detail}</span>
+        </span>
+        <ChevronRight className="size-4 shrink-0 text-muted-foreground" />
+      </Link>
+    </li>
+  )
+}
+
+function messageDetail(threads: number, unread: number): string {
+  if (threads === 0) return "No conversations yet. Write to a seller from a listing."
+  if (unread === 0) return threads === 1 ? "1 conversation" : `${threads} conversations`
+  return unread === 1 ? "1 unread reply" : `${unread} unread replies`
+}
+
+function countDetail(count: number, singular: string, plural: string): string {
+  if (count === 0) return `No ${plural} yet`
+  return count === 1 ? `1 ${singular}` : `${count} ${plural}`
+}
+
+function myAdsDetail(mine: number, sellerUnread: number, signedIn: boolean): string {
+  const base = countDetail(
+    mine,
+    signedIn ? "ad on your account" : "ad on this browser",
+    signedIn ? "ads on your account" : "ads on this browser",
+  )
+  if (sellerUnread === 0) return base
+  return `${base} · ${sellerUnread === 1 ? "1 unread message" : `${sellerUnread} unread messages`}`
 }
 
 function SignedInProfile({
