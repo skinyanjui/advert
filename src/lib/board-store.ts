@@ -548,11 +548,21 @@ export async function claimSession(
   profile?: { email?: string; displayName?: string },
 ): Promise<Result<ClaimResult>> {
   const db = boardDb()
+  const { data: existingProfile, error: existingProfileError } = await db
+    .from("board_profiles")
+    .select("display_name")
+    .eq("user_id", userId)
+    .maybeSingle()
+  check(existingProfileError)
+  const keepName =
+    typeof existingProfile?.display_name === "string" && existingProfile.display_name.trim()
+      ? existingProfile.display_name.trim()
+      : (profile?.displayName ?? null)
   const { error: profileError } = await db.from("board_profiles").upsert(
     {
       user_id: userId,
       email: profile?.email ?? null,
-      display_name: profile?.displayName ?? null,
+      display_name: keepName,
       updated_at: new Date().toISOString(),
     },
     { onConflict: "user_id" },
