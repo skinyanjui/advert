@@ -1,7 +1,7 @@
 export const site = {
   name: "africa classifieds",
   tagline: "Buy and sell across Africa. Cars, houses, jobs, electronics, and everything in between.",
-  supportEmail: undefined as string | undefined,
+  supportEmail: "samuel.kinyanjui.sk@gmail.com" as string | undefined,
   foundedYear: 2024,
 } as const
 
@@ -19,4 +19,9 @@ export function siteHomeLabel(): string {
 
 export function siteEmailFrom(fallback = "onboarding@resend.dev"): string {
   return `${site.name} <${fallback}>`
+}
+
+export function siteSupportMailto(): string {
+  const email = site.supportEmail ?? "samuel.kinyanjui.sk@gmail.com"
+  return `mailto:${email}`
 }

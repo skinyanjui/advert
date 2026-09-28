@@ -13,6 +13,7 @@ import { toast } from "sonner"
 import { parseBoardState, type BoardState } from "@/lib/board-payload"
 import { seedListings } from "@/lib/catalog"
 import type { BoardMessage } from "@/lib/messages"
+import { requestTermsReaccept } from "@/lib/terms-client"
 import type { Listing } from "@/lib/types"
 
 const legacyKey = "africa-classifieds-v1"
@@ -158,6 +159,12 @@ async function readFailure(response: Response, fallback: string): Promise<string
   return fallback
 }
 
+function maybeRequestTermsReaccept(response: Response, reason: string) {
+  if (response.status === 428 || /accept the updated terms/i.test(reason)) {
+    requestTermsReaccept()
+  }
+}
+
 type StoreResult = { ok: true } | { ok: false; reason: string }
 
 async function addListing(listing: Listing): Promise<StoreResult> {
@@ -168,7 +175,11 @@ async function addListing(listing: Listing): Promise<StoreResult> {
       headers: requestHeaders(),
       body: JSON.stringify(listing),
     })
-    if (!response.ok) return { ok: false, reason: await readFailure(response, "The board database did not save that ad.") }
+    if (!response.ok) {
+      const reason = await readFailure(response, "The board database did not save that ad.")
+      maybeRequestTermsReaccept(response, reason)
+      return { ok: false, reason }
+    }
     const payload = (await response.json()) as { listing?: unknown }
     const saved = parseBoardState({ posted: [payload.listing], savedIds: [], messages: [] }).posted[0]
     if (!saved) return { ok: false, reason: "That ad could not be read." }
@@ -392,7 +403,11 @@ async function sendMessage(listingId: string, body: string, conversationId?: str
       headers: requestHeaders(),
       body: JSON.stringify(conversationId ? { conversationId, body } : { listingId, body }),
     })
-    if (!response.ok) return { ok: false, reason: await readFailure(response, "The board database did not store the message.") }
+    if (!response.ok) {
+      const reason = await readFailure(response, "The board database did not store the message.")
+      maybeRequestTermsReaccept(response, reason)
+      return { ok: false, reason }
+    }
     const payload = (await response.json()) as { messages?: unknown }
     const messages = parseBoardState({ posted: [], savedIds: [], messages: payload.messages }).messages
     memory = { ...memory, messages, ready: true }

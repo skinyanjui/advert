@@ -64,6 +64,8 @@ export type Listing = {
   /** Extra photos; first entry matches `image` (cover). Legacy ads may omit this. */
   images?: string[]
   featured?: boolean
+  /** Seller disclosed a sponsored / paid promotion. */
+  sponsored?: boolean
   badge?: ListingBadge
   meta?: string
   description: string

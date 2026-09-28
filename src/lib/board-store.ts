@@ -36,11 +36,42 @@ type Row = {
   expiry_reminder_sent_at?: string | null
   status?: string | null
   sold_at?: string | null
+  sponsored?: boolean | null
 }
 const seedIds = new Set(seedListings.map((item) => item.id))
 const listingIdPattern = /^ad-[a-zA-Z0-9-]{1,64}$/
 const listingSelect =
   "id,owner_id,posted_at,payload,hidden_at,hidden_reason,expires_at,status,sold_at"
+let sponsoredColumnAvailable: boolean | null = null
+
+function isMissingColumnError(error: { code?: string; message?: string } | null | undefined): boolean {
+  if (!error) return false
+  const code = error.code ?? ""
+  const message = (error.message ?? "").toLowerCase()
+  return (
+    code === "42703" ||
+    code === "PGRST204" ||
+    (message.includes("sponsored") && message.includes("does not exist")) ||
+    (message.includes("could not find") && message.includes("sponsored"))
+  )
+}
+
+function isMissingRelationError(error: { code?: string; message?: string } | null | undefined): boolean {
+  if (!error) return false
+  const code = error.code ?? ""
+  const message = (error.message ?? "").toLowerCase()
+  return (
+    code === "42P01" ||
+    code === "PGRST205" ||
+    message.includes("does not exist") ||
+    message.includes("could not find the table")
+  )
+}
+
+function markSponsoredColumnMissing() {
+  sponsoredColumnAvailable = false
+}
+
 function check(error: { message: string } | null) { if (error) throw new Error(error.message) }
 function rowStatus(row: Row, payloadSold?: boolean): ListingStatus {
   return effectiveListingStatus({
@@ -54,6 +85,8 @@ function unpack(row: Row, owner?: string): Listing | undefined {
   if (!listing) return undefined
   const status = rowStatus(row, listing.sold === true)
   const sold = status === "sold" ? true : undefined
+  const sponsored =
+    row.sponsored === true || listing.sponsored === true ? true : undefined
   return {
     ...listing,
     id: row.id,
@@ -61,6 +94,7 @@ function unpack(row: Row, owner?: string): Listing | undefined {
     hoursAgo: hoursAgoOf({ hoursAgo: listing.hoursAgo, postedAt: row.posted_at }),
     mine: Boolean(owner) && owner === row.owner_id,
     featured: undefined,
+    sponsored,
     hidden: row.hidden_at ? true : undefined,
     expiresAt: row.expires_at ?? listing.expiresAt,
     status,
@@ -81,6 +115,7 @@ function payload(listing: Listing) {
     images: images.length > 0 ? images : undefined,
     mine: undefined,
     featured: undefined,
+    sponsored: listing.sponsored === true ? true : undefined,
     hidden: undefined,
     expiresAt: undefined,
     sellerAvatar: undefined,
@@ -292,13 +327,36 @@ export async function createListing(owner: string, input: unknown): Promise<Resu
     status: "active",
     sold_at: null,
     payload: payload(stored),
+    ...(sponsoredColumnAvailable === false ? {} : { sponsored: stored.sponsored === true }),
   })
   if (error) {
-    for (const url of photo.value) {
-      if (!listingPhotoList(accepted.listing).includes(url)) await removePhoto(url)
+    if (isMissingColumnError(error) && sponsoredColumnAvailable !== false) {
+      markSponsoredColumnMissing()
+      const retry = await boardDb().from("board_listings").insert({
+        id: listing.id,
+        owner_id: owner,
+        posted_at: postedAt,
+        expires_at: expiresAt,
+        status: "active",
+        sold_at: null,
+        payload: payload(stored),
+      })
+      if (retry.error) {
+        for (const url of photo.value) {
+          if (!listingPhotoList(accepted.listing).includes(url)) await removePhoto(url)
+        }
+        if (retry.error.code === "23505") return { ok: false, reason: "That listing is already on the board." }
+        check(retry.error)
+      }
+    } else {
+      for (const url of photo.value) {
+        if (!listingPhotoList(accepted.listing).includes(url)) await removePhoto(url)
+      }
+      if (error.code === "23505") return { ok: false, reason: "That listing is already on the board." }
+      check(error)
     }
-    if (error.code === "23505") return { ok: false, reason: "That listing is already on the board." }
-    check(error)
+  } else if (sponsoredColumnAvailable === null) {
+    sponsoredColumnAvailable = true
   }
   return {
     ok: true,
@@ -327,15 +385,41 @@ export async function updateListing(owner: string, id: string, input: unknown): 
     postedAt: row.posted_at,
     hoursAgo: hoursAgoOf({ hoursAgo: 0, postedAt: row.posted_at }),
   }
-  const { data, error } = await db.from("board_listings").update({ payload: payload(stored) })
+  const updateBody =
+    sponsoredColumnAvailable === false
+      ? { payload: payload(stored) }
+      : { payload: payload(stored), sponsored: stored.sponsored === true }
+  const { data, error } = await db.from("board_listings").update(updateBody)
     .eq("id", id).eq("owner_id", owner).select(listingSelect)
   if (error || !data?.length) {
+    if (error && isMissingColumnError(error) && sponsoredColumnAvailable !== false) {
+      markSponsoredColumnMissing()
+      const retry = await db
+        .from("board_listings")
+        .update({ payload: payload(stored) })
+        .eq("id", id)
+        .eq("owner_id", owner)
+        .select(listingSelect)
+      if (retry.error || !retry.data?.length) {
+        for (const url of photo.value) {
+          if (!previousPhotos.includes(url)) await removePhoto(url)
+        }
+        check(retry.error)
+        return { ok: false, reason: "This ad is no longer on the board." }
+      }
+      for (const url of previousPhotos) {
+        if (!photo.value.includes(url)) await removePhoto(url)
+      }
+      const updated = unpack(retry.data[0] as Row, owner)
+      return updated ? { ok: true, value: updated } : { ok: false, reason: "This ad is no longer on the board." }
+    }
     for (const url of photo.value) {
       if (!previousPhotos.includes(url)) await removePhoto(url)
     }
     check(error)
     return { ok: false, reason: "This ad is no longer on the board." }
   }
+  if (sponsoredColumnAvailable === null) sponsoredColumnAvailable = true
   for (const url of previousPhotos) {
     if (!photo.value.includes(url)) await removePhoto(url)
   }
@@ -953,6 +1037,13 @@ export async function dismissReport(adminId: string, reportId: string): Promise<
     check(unhideError)
   }
 
+  await logModerationAction({
+    reportId,
+    listingId,
+    adminId,
+    action: "dismiss",
+  })
+
   return { ok: true, value: true }
 }
 
@@ -984,6 +1075,13 @@ export async function hideListingForReport(adminId: string, reportId: string): P
     .eq("listing_id", listingId)
     .eq("status", "pending")
   check(updateError)
+
+  await logModerationAction({
+    reportId,
+    listingId,
+    adminId,
+    action: "hide",
+  })
 
   return { ok: true, value: true }
 }
@@ -1028,6 +1126,105 @@ export async function removeListingForReport(adminId: string, reportId: string):
       for (const url of listingPhotoList(old)) await removePhoto(url)
     }
   }
+
+  await logModerationAction({
+    reportId,
+    listingId,
+    adminId,
+    action: "remove",
+  })
+
+  return { ok: true, value: true }
+}
+
+async function logModerationAction(input: {
+  reportId: string | null
+  listingId: string | null
+  adminId: string
+  action: string
+  note?: string | null
+}): Promise<void> {
+  try {
+    const { error } = await boardDb().from("moderation_actions").insert({
+      id: crypto.randomUUID(),
+      report_id: input.reportId,
+      listing_id: input.listingId,
+      admin_id: input.adminId,
+      action: input.action,
+      note: input.note ?? null,
+    })
+    if (error && isMissingRelationError(error)) return
+    check(error)
+  } catch (error) {
+    if (isMissingRelationError(error as { code?: string; message?: string })) return
+    throw error
+  }
+}
+
+export async function markListingSponsoredForReport(
+  adminId: string,
+  reportId: string,
+): Promise<Result<true>> {
+  const db = boardDb()
+  const { data: report, error } = await db
+    .from("board_reports")
+    .select("id,listing_id,status")
+    .eq("id", reportId)
+    .maybeSingle()
+  check(error)
+  if (!report) return { ok: false, reason: "That report was not found." }
+  if (report.status !== "pending") return { ok: false, reason: "That report was already reviewed." }
+
+  const listingId = report.listing_id as string
+  const { data: row, error: readError } = await db
+    .from("board_listings")
+    .select(listingSelect)
+    .eq("id", listingId)
+    .maybeSingle()
+  check(readError)
+  if (!row) return { ok: false, reason: "That listing is no longer on the board." }
+
+  const current = unpack(row as Row)
+  if (!current) return { ok: false, reason: "That listing is no longer on the board." }
+  const stored = { ...current, sponsored: true as const }
+  const updateBody =
+    sponsoredColumnAvailable === false
+      ? { payload: payload(stored) }
+      : { payload: payload(stored), sponsored: true }
+  const { error: updateListingError } = await db
+    .from("board_listings")
+    .update(updateBody)
+    .eq("id", listingId)
+  if (updateListingError && isMissingColumnError(updateListingError) && sponsoredColumnAvailable !== false) {
+    markSponsoredColumnMissing()
+    const { error: retryError } = await db
+      .from("board_listings")
+      .update({ payload: payload(stored) })
+      .eq("id", listingId)
+    check(retryError)
+  } else {
+    check(updateListingError)
+    if (sponsoredColumnAvailable === null) sponsoredColumnAvailable = true
+  }
+
+  const { error: updateError } = await db
+    .from("board_reports")
+    .update({
+      status: "actioned",
+      reviewed_at: new Date().toISOString(),
+      reviewed_by: adminId,
+    })
+    .eq("id", reportId)
+    .eq("status", "pending")
+  check(updateError)
+
+  await logModerationAction({
+    reportId,
+    listingId,
+    adminId,
+    action: "mark_sponsored",
+    note: "Marked listing as sponsored / paid promotion",
+  })
 
   return { ok: true, value: true }
 }

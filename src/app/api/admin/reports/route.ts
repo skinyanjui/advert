@@ -5,6 +5,7 @@ import {
   dismissReport,
   hideListingForReport,
   listPendingReports,
+  markListingSponsoredForReport,
   removeListingForReport,
 } from "@/lib/board-store"
 
@@ -46,7 +47,8 @@ export async function PATCH(request: Request) {
     if (action === "dismiss") result = await dismissReport(admin.id, reportId)
     else if (action === "hide") result = await hideListingForReport(admin.id, reportId)
     else if (action === "remove") result = await removeListingForReport(admin.id, reportId)
-    else return fail("Choose dismiss, hide, or remove.")
+    else if (action === "mark_sponsored") result = await markListingSponsoredForReport(admin.id, reportId)
+    else return fail("Choose dismiss, hide, remove, or mark sponsored.")
     if (!result.ok) return fail(result.reason)
     const reports = await listPendingReports()
     return ok({ reports })

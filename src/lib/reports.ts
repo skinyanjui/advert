@@ -4,6 +4,7 @@ export const reportReasons = [
   { id: "prohibited", label: "Prohibited item or service" },
   { id: "wrong_category", label: "Wrong category" },
   { id: "offensive", label: "Offensive or abusive" },
+  { id: "undisclosed_promo", label: "Undisclosed paid promotion" },
   { id: "other", label: "Something else" },
 ] as const
 

@@ -11,6 +11,11 @@ import {
 test("report reasons cover the expected ids", () => {
   assert.ok(reportReasons.length >= 4)
   assert.equal(isReportReasonId("scam"), true)
+  assert.equal(isReportReasonId("undisclosed_promo"), true)
+  assert.equal(
+    reportReasons.some((item) => item.id === "undisclosed_promo" && item.label === "Undisclosed paid promotion"),
+    true,
+  )
   assert.equal(isReportReasonId("not-a-reason"), false)
 })
 

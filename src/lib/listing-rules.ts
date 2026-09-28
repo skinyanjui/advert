@@ -133,6 +133,7 @@ function normalizeListing(listing: Listing): Listing {
     condition: details?.condition || subcategory?.name || listing.condition,
     badge: listing.category === "jobs" ? "jobs" : undefined,
     featured: undefined,
+    sponsored: listing.sponsored === true ? true : undefined,
     sold: listing.sold === true ? true : undefined,
     mine: true,
   }

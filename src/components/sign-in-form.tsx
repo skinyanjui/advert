@@ -19,6 +19,7 @@ import {
   passwordStrengthLabel,
   passwordsMatchError,
 } from "@/lib/password"
+import { hasTermsIntent, rememberTermsIntent } from "@/lib/terms-client"
 
 type Channel = "email" | "phone"
 type Method = "link" | "password"
@@ -44,6 +45,9 @@ export function SignInForm({ nextHref }: { nextHref?: string } = {}) {
   const [sent, setSent] = useState(false)
   const [busy, setBusy] = useState(false)
   const [cooldown, setCooldown] = useState(0)
+  const [agreedToTerms, setAgreedToTerms] = useState(() =>
+    typeof window === "undefined" ? false : hasTermsIntent(),
+  )
   const errorParam = searchParams.get("error")
 
   useEffect(() => {
@@ -86,7 +90,17 @@ export function SignInForm({ nextHref }: { nextHref?: string } = {}) {
     setCooldown(RESEND_COOLDOWN_SECONDS)
   }
 
+  function onAgreeChange(checked: boolean) {
+    setAgreedToTerms(checked)
+    if (checked) rememberTermsIntent()
+  }
+
   async function sendEmailLink() {
+    if (!agreedToTerms) {
+      toast.error("Agree to the Terms and Privacy Policy to continue.")
+      return
+    }
+    rememberTermsIntent()
     setBusy(true)
     const result = await auth.sendEmailCode(email, next)
     setBusy(false)
@@ -140,6 +154,11 @@ export function SignInForm({ nextHref }: { nextHref?: string } = {}) {
     }
 
     if (passwordMode === "sign-up") {
+      if (!agreedToTerms) {
+        toast.error("Agree to the Terms and Privacy Policy to continue.")
+        return
+      }
+      rememberTermsIntent()
       const reason = passwordError(password) ?? passwordsMatchError(password, confirmPassword)
       if (reason) {
         toast.error(reason)
@@ -175,6 +194,11 @@ export function SignInForm({ nextHref }: { nextHref?: string } = {}) {
   }
 
   async function continueWithGoogle() {
+    if (!agreedToTerms) {
+      toast.error("Agree to the Terms and Privacy Policy to continue.")
+      return
+    }
+    rememberTermsIntent()
     setBusy(true)
     const result = await auth.signInWithGoogle(next)
     setBusy(false)
@@ -183,6 +207,10 @@ export function SignInForm({ nextHref }: { nextHref?: string } = {}) {
 
   const strength = password ? passwordStrength(password) : null
   const showLinkFlow = method === "link" || channel === "phone"
+  const needsTermsForAction =
+    (channel === "email" && method === "link" && !sent) ||
+    (channel === "email" && method === "password" && passwordMode === "sign-up") ||
+    auth.googleEnabled
 
   return (
     <div className="mx-auto w-full max-w-md space-y-4">
@@ -193,12 +221,31 @@ export function SignInForm({ nextHref }: { nextHref?: string } = {}) {
         </p>
       </header>
 
+      <label className="flex items-start gap-2 rounded-xl border border-neutral-200 bg-white px-3 py-2.5 text-sm text-neutral-700">
+        <input
+          type="checkbox"
+          className="mt-0.5 size-4 shrink-0 rounded border-neutral-300"
+          checked={agreedToTerms}
+          onChange={(event) => onAgreeChange(event.target.checked)}
+        />
+        <span>
+          I agree to the{" "}
+          <Link href="/terms" className="underline underline-offset-2">
+            Terms
+          </Link>{" "}
+          and{" "}
+          <Link href="/privacy" className="underline underline-offset-2">
+            Privacy Policy
+          </Link>
+        </span>
+      </label>
+
       {auth.googleEnabled ? (
         <Button
           type="button"
           variant="outline"
           className="h-10 w-full"
-          disabled={busy}
+          disabled={busy || !agreedToTerms}
           onClick={() => void continueWithGoogle()}
         >
           Continue with Google
@@ -349,7 +396,11 @@ export function SignInForm({ nextHref }: { nextHref?: string } = {}) {
                   Waiting for you to open the link… You can resend after the cooldown.
                 </p>
               ) : (
-                <Button type="submit" disabled={busy} className="h-10 w-full">
+                <Button
+                  type="submit"
+                  disabled={busy || (channel === "email" && !sent && !agreedToTerms)}
+                  className="h-10 w-full"
+                >
                   {busy
                     ? "Please wait…"
                     : channel === "email"
@@ -364,7 +415,7 @@ export function SignInForm({ nextHref }: { nextHref?: string } = {}) {
                   <Button
                     type="button"
                     variant="ghost"
-                    disabled={busy || cooldown > 0}
+                    disabled={busy || cooldown > 0 || (channel === "email" && !agreedToTerms)}
                     onClick={() => void (channel === "email" ? sendEmailLink() : sendPhoneCode())}
                   >
                     {cooldown > 0
@@ -468,7 +519,11 @@ export function SignInForm({ nextHref }: { nextHref?: string } = {}) {
             <CardFooter className="flex-col items-stretch gap-2 sm:flex-col">
               <Button
                 type="submit"
-                disabled={busy || (passwordMode === "forgot" && cooldown > 0)}
+                disabled={
+                  busy ||
+                  (passwordMode === "forgot" && cooldown > 0) ||
+                  (passwordMode === "sign-up" && !agreedToTerms)
+                }
                 className="h-10 w-full"
               >
                 {busy
@@ -501,6 +556,11 @@ export function SignInForm({ nextHref }: { nextHref?: string } = {}) {
           </form>
         </Card>
       )}
+      {needsTermsForAction && !agreedToTerms ? (
+        <p className="text-xs text-neutral-500">
+          Tick the box above to email a link, create an account, or continue with Google.
+        </p>
+      ) : null}
     </div>
   )
 }

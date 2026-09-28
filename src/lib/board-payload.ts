@@ -53,6 +53,7 @@ export function cleanListing(value: unknown): Listing | undefined {
     expiresAt: cleanText(value.expiresAt),
     hidden: value.hidden === true ? true : undefined,
     mine: value.mine === true ? true : undefined,
+    sponsored: value.sponsored === true ? true : undefined,
   }
 }
 
