@@ -6,6 +6,7 @@ import {
   expiresAtFrom,
   isListingExpired,
   isListingExpiringSoon,
+  isListingNeedingAttention,
   listingLifetimeDays,
 } from "../src/lib/expiry"
 
@@ -24,4 +25,11 @@ test("isListingExpired and expiring soon windows", () => {
   assert.equal(isListingExpiringSoon("2026-11-01T00:00:00.000Z", now), false)
   assert.equal(isListingExpiringSoon("2026-09-20T00:00:00.000Z", now), false)
   assert.equal(daysUntilExpiry("2026-09-28T12:00:00.000Z", now), 2)
+})
+
+test("isListingNeedingAttention covers expired and 3-day window", () => {
+  const now = Date.parse("2026-09-26T12:00:00.000Z")
+  assert.equal(isListingNeedingAttention("2026-09-20T00:00:00.000Z", now), true)
+  assert.equal(isListingNeedingAttention("2026-09-28T12:00:00.000Z", now), true)
+  assert.equal(isListingNeedingAttention("2026-10-05T00:00:00.000Z", now), false)
 })

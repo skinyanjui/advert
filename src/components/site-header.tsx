@@ -7,10 +7,12 @@ import { useEffect, useRef, useState, type ReactNode } from "react"
 
 import { Logo } from "@/components/logo"
 import { CategoryTopNav } from "@/components/category-top-nav"
+import { NavBadge } from "@/components/nav-badge"
 import { PostLink, usePostAdHref } from "@/components/post-link"
 import { ThemeChoices } from "@/components/theme-choices"
 import { Button, buttonVariants } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
+import { useNavCounts, navCountAriaLabel } from "@/hooks/use-nav-counts"
 import { useAuth } from "@/lib/auth"
 import { searchCitiesAnywhere } from "@/lib/cities"
 import { countries, countryName, fold, moreCountries, primaryCountries } from "@/lib/countries"
@@ -29,8 +31,10 @@ export function SiteHeader() {
   const { query, update } = useListingQuery()
   const { savedIds, messages } = useMarketplace()
   const auth = useAuth()
-  const unreadMessages = unreadMessageCount(messages)
+  const navCounts = useNavCounts()
+  const unreadMessages = navCounts.messages ?? 0
   const sellerUnread = unreadMessageCount(messages.filter((item) => item.viewerIsSeller))
+  const myAdsAttention = navCounts["my-ads"] ?? 0
   const locationLabel = query.country ? countryName(query.country) : "All Africa"
   const postNav = navItem("post")
   const messagesNav = navItem("messages")
@@ -69,11 +73,11 @@ export function SiteHeader() {
               <Button asChild variant="outline" size="icon-lg" className="relative rounded-full">
                 <Link
                   href={messagesNav.href}
-                  aria-label={unreadMessages > 0 ? `${messagesNav.label}, ${unreadMessages} unread` : messagesNav.label}
+                  aria-label={navCountAriaLabel(messagesNav.label, "messages", navCounts)}
                   aria-current={pathname === messagesNav.href ? "page" : undefined}
                 >
                   <MessagesIcon />
-                  {unreadMessages > 0 ? <UnreadDot /> : null}
+                  <NavBadge count={unreadMessages} />
                 </Link>
               </Button>
               <NotificationsMenu />
@@ -84,7 +88,7 @@ export function SiteHeader() {
                 summary={
                   <>
                     <ProfileIcon />
-                    {unreadMessages > 0 ? <UnreadDot /> : null}
+                    <NavBadge count={unreadMessages + myAdsAttention} />
                   </>
                 }
               >
@@ -103,7 +107,8 @@ export function SiteHeader() {
                   {savedNav.label} ({savedIds.length})
                 </MenuLink>
                 <MenuLink href={myAdsNav.href}>
-                  {myAdsNav.label}{sellerUnread > 0 ? ` (${sellerUnread} unread)` : ""}
+                  {myAdsNav.label}
+                  {myAdsAttention > 0 ? ` (${myAdsAttention} need attention)` : sellerUnread > 0 ? ` (${sellerUnread} unread)` : ""}
                 </MenuLink>
                 <MenuLink href={postHref}>{postNav.label}</MenuLink>
                 {auth.signedIn ? (
@@ -139,7 +144,7 @@ function NotificationsMenu() {
       panelClassName="w-[min(23rem,calc(100vw-1rem))] !p-0"
       panelRole="region"
       onOpen={() => { if (ready) void reloadBoard() }}
-      summary={<><Bell />{unread > 0 ? <UnreadDot /> : null}</>}
+      summary={<><Bell /><NavBadge count={unread} /></>}
     >
       <div className="flex items-center justify-between gap-3 border-b border-neutral-200 px-4 py-3">
         <div className="min-w-0">
@@ -530,9 +535,6 @@ function MenuLink({
   )
 }
 
-function UnreadDot() {
-  return <span className="absolute top-1.5 right-1.5 size-2 rounded-full bg-rose-500" />
-}
 
 function SearchField({ value, onChange }: { value: string; onChange: (value: string) => void }) {
   const [draft, setDraft] = useState(value)
