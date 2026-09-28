@@ -6,7 +6,7 @@ import { site, siteHomeLabel } from "@/lib/site"
 export function SiteFooter({ onNavigate }: { onNavigate?: () => void }) {
   const credits = navItem("credits")
   return (
-    <footer className="shrink-0 border-t border-sidebar-border bg-sidebar px-3 py-2.5 pb-[calc(env(safe-area-inset-bottom)+0.75rem)]">
+    <footer className="shrink-0 border-t border-sidebar-border bg-sidebar px-3 py-2.5 md:pb-2.5 pb-[calc(env(safe-area-inset-bottom)+0.75rem)]">
       <div className="flex items-center justify-between gap-3 text-xs text-neutral-500">
         <p className="min-w-0 truncate tracking-wide" aria-label={siteHomeLabel()}>
           {site.name}
