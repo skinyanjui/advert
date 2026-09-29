@@ -1,6 +1,6 @@
 import "server-only"
 
-import { platformMessageAllowed, type WhatsAppMessageClass } from "@/lib/whatsapp-platform-policy"
+import { whatsappSendAllowed, type WhatsAppMessageClass } from "@/lib/whatsapp-platform-policy"
 import { getWhatsAppPlatformStatus } from "@/lib/whatsapp-platform-store"
 
 export async function assertWhatsAppPlatformSendAllowed(
@@ -8,9 +8,8 @@ export async function assertWhatsAppPlatformSendAllowed(
   messageClass: WhatsAppMessageClass,
 ): Promise<void> {
   const status = await getWhatsAppPlatformStatus(wabaId)
-  if (!platformMessageAllowed(status, messageClass)) {
-    throw new Error(
-      `WhatsApp Business Platform sending is blocked for ${wabaId} (${status?.state ?? "unknown"}).`,
-    )
+  const decision = whatsappSendAllowed(status, messageClass)
+  if (!decision.allowed) {
+    throw new Error(decision.reason)
   }
 }
