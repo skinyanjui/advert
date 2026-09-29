@@ -18,7 +18,7 @@ test("contact phone validation matches listing digit rules", () => {
   assert.equal(normalizeContactPhone("0712 345 678", "KE"), "+254712345678")
   assert.equal(normalizeContactPhone("00254712345678", "KE"), "+254712345678")
   assert.equal(contactPhoneError("1".repeat(16)), "Use a shorter phone number.")
-  assert.equal(normalizeContactPhone("  +254 712 345 678  "), "+254 712 345 678")
+  assert.equal(normalizeContactPhone("  +254 712 345 678  "), "+254712345678")
 })
 
 test("contact phone placeholder never invents a KE default", () => {
