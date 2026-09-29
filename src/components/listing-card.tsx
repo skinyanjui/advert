@@ -5,7 +5,7 @@ import Image from "next/image"
 import Link from "next/link"
 
 import { ListingPrice } from "@/components/listing-price"
-import { countryCodeOf, formatDistance, formatPlace } from "@/lib/format"
+import { countryCodeOf, formatDistance, formatPlace, whatsappHref } from "@/lib/format"
 import { isListingExpired } from "@/lib/expiry"
 import { useMarketplace } from "@/lib/marketplace"
 import {
@@ -35,6 +35,8 @@ export function ListingCard({
   const placeFull = formatPlace(listing)
   const countryCode = countryCodeOf(listing)
   const away = distanceKm === undefined ? undefined : formatDistance(distanceKm)
+  const whatsappAvailable = linked && !listing.mine && !listing.sold && !listing.hidden && !isListingExpired(listing.expiresAt) && Boolean(listing.phone.trim())
+  const listingHref = preserve ? `/listings/${listing.id}?${preserve}` : `/listings/${listing.id}`
   const body = (
     <>
       <div className="relative aspect-[5/4] overflow-hidden bg-neutral-100">
@@ -94,13 +96,8 @@ export function ListingCard({
             <span className="shrink-0">, {countryCode}</span>
           </span>
         </p>
-        <div className="grid grid-cols-[minmax(0,1fr)_auto] items-center gap-1.5 text-[11px] leading-none text-neutral-500">
+        <div className="flex items-center text-[11px] leading-none text-neutral-500">
           <PostedLabel listing={listing} />
-          {linked ? (
-            <span className="inline-flex items-center gap-1 font-medium text-neutral-950">
-              View <ArrowRight className="size-3" aria-hidden="true" />
-            </span>
-          ) : null}
         </div>
       </div>
     </>
@@ -110,7 +107,7 @@ export function ListingCard({
     <article className="group relative flex h-full flex-col overflow-hidden rounded-xl border border-neutral-200/80 bg-white transition-shadow hover:shadow-md">
       {linked ? (
         <Link
-          href={preserve ? `/listings/${listing.id}?${preserve}` : `/listings/${listing.id}`}
+          href={listingHref}
           className="flex h-full flex-col outline-none focus-visible:ring-2 focus-visible:ring-neutral-950 focus-visible:ring-offset-2"
         >
           {body}
@@ -118,6 +115,28 @@ export function ListingCard({
       ) : (
         <div className="flex h-full flex-col">{body}</div>
       )}
+      {linked ? (
+        <div className={cn("grid gap-1.5 px-2 pb-2", whatsappAvailable ? "grid-cols-2" : "grid-cols-1")}>
+          <Link
+            href={listingHref}
+            className="inline-flex h-8 items-center justify-center gap-1 rounded-lg border border-neutral-200 bg-white px-2 text-[11px] font-medium text-neutral-900 transition hover:bg-neutral-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-neutral-950"
+          >
+            View listing <ArrowRight className="size-3" aria-hidden="true" />
+          </Link>
+          {whatsappAvailable ? (
+            <a
+              href={whatsappHref(listing.phone, listing.title)}
+              target="_blank"
+              rel="noreferrer"
+              aria-label={`Chat with seller about ${listing.title} on WhatsApp`}
+              className="inline-flex h-8 items-center justify-center gap-1.5 rounded-lg bg-[#25D366] px-2 text-[11px] font-semibold text-white transition hover:brightness-95 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-neutral-950"
+            >
+              <WhatsAppIcon className="size-3.5" />
+              WhatsApp
+            </a>
+          ) : null}
+        </div>
+      ) : null}
       {saveable ? (
         <button
           type="button"
@@ -150,5 +169,13 @@ function PostedLabel({ listing }: { listing: Listing }) {
     >
       {label}
     </time>
+  )
+}
+
+function WhatsAppIcon({ className }: { className?: string }) {
+  return (
+    <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true" className={className}>
+      <path d="M12.04 2C6.58 2 2.15 6.37 2.15 11.75c0 1.92.52 3.78 1.51 5.42L2 22l4.99-1.6a10.1 10.1 0 0 0 5.05 1.34h.01c5.46 0 9.89-4.37 9.89-9.75S17.5 2 12.04 2zm5.76 13.84c-.24.67-1.4 1.24-1.93 1.32-.49.07-1.12.1-1.81-.11-.42-.13-.95-.27-1.64-.53-2.89-1.09-4.77-3.64-4.92-3.81-.14-.17-1.18-1.57-1.18-3 0-1.42.74-2.12 1-2.41.27-.29.58-.36.78-.36h.56c.18 0 .42-.07.66.5.24.58.82 2 .89 2.15.07.14.12.31.02.5-.1.2-.14.32-.28.5-.14.17-.3.38-.42.51-.14.14-.28.29-.12.56.17.28.74 1.22 1.59 1.98 1.1.97 2.02 1.27 2.3 1.41.29.14.45.12.62-.07.17-.2.71-.83.9-1.11.19-.29.38-.24.64-.14.27.1 1.7.8 1.99.95.29.14.49.22.56.34.07.12.07.7-.17 1.37z" />
+    </svg>
   )
 }
