@@ -76,7 +76,7 @@ export default async function Page() {
                 <dl className="mt-3 grid gap-1 text-xs text-neutral-500">
                   <div className="flex justify-between gap-3">
                     <dt>Updated</dt>
-                    <dd>{new Date(status.lastEventAt).toLocaleString()}</dd>
+                    <dd>{status.lastEventAt ? new Date(status.lastEventAt).toLocaleString() : "Unknown"}</dd>
                   </div>
                   {status.restrictionUntil ? (
                     <div className="flex justify-between gap-3">
