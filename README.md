@@ -135,6 +135,16 @@ with `Authorization: Bearer <CRON_SECRET>`. Optional `RESEND_API_KEY` and
 `RESEND_FROM_EMAIL` send reminder email to signed-in sellers; without Resend the
 route still advances reminder markers as a no-op send.
 
+## Marketplace contact and compliance notes
+
+- Listing phone numbers are normalized server-side using the listing country before they are stored.
+- Sellers can independently enable WhatsApp and phone calls; marketplace messaging remains separate.
+- Click-to-chat uses WhatsApp's `wa.me` flow and includes the listing ID in the prefilled message.
+- Phone data stays behind the server-side board API; do not restore public `SELECT` access to `board_listings`.
+- The Terms and Privacy drafts describe the off-platform WhatsApp handoff and must receive legal review before production reliance.
+- Before operating at a scale or model covered by seller-verification laws such as the U.S. INFORM Consumers Act, implement the required seller collection, verification, disclosure, suspension, data-security, and consumer reporting procedures. The current app does not claim that operational compliance.
+- Configure a real public support address and, where legally required, a telephone reporting mechanism before relying on the marketplace for regulated seller-disclosure/reporting obligations.
+
 ## Production
 
 Production `adverts` is linked to `skinyanjui/advert` on `main` and its dedicated Supabase project is attached only to the Production environment. Each update to `main` creates a Production deployment. The webhook secret is a Vercel Secret scoped to Production; after changing environment variables, redeploy for the new value to take effect. Reference tables are readable through RLS, while snapshot imports use the server-only key. Board listing rows are not readable with the publishable key after the lock-listings migration.
