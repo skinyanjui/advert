@@ -2,6 +2,7 @@
 
 import { MoreHorizontal } from "lucide-react"
 import Link from "next/link"
+import { useRouter } from "next/navigation"
 import {
   useCallback,
   useEffect,
@@ -12,7 +13,9 @@ import {
 } from "react"
 import { toast } from "sonner"
 
+import { EmptyPanel } from "@/components/empty-panel"
 import { ListingThumb } from "@/components/inbox/listing-thumb"
+import { usePrefs } from "@/components/prefs-provider"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import {
@@ -31,6 +34,8 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
 import { useHorizontalScrollFades } from "@/hooks/use-scroll-fades"
+import { useAuth } from "@/lib/auth"
+import { signInHref } from "@/lib/auth-redirect"
 import { postAdHref } from "@/lib/active-place"
 import { daysUntilExpiry, isListingExpiringSoon } from "@/lib/expiry"
 import { formatPosted, formatPrice, hoursAgoOf } from "@/lib/format"
@@ -51,6 +56,9 @@ const filters: ListingStatusFilter[] = ["all", "active", "paused", "sold", "expi
 const swipeReveal = 144
 
 export function MyAdsPage() {
+  const auth = useAuth()
+  const router = useRouter()
+  const { t } = usePrefs()
   const { ready, listings, messages, removeListing, setListingSold, setListingPaused, renewListing } =
     useMarketplace()
   const mine = useMemo(() => listings.filter((listing) => listing.mine), [listings])
@@ -61,6 +69,10 @@ export function MyAdsPage() {
   const [busyId, setBusyId] = useState<string | null>(null)
   const [openSwipeId, setOpenSwipeId] = useState<string | null>(null)
   const pending = mine.find((listing) => listing.id === pendingId)
+
+  useEffect(() => {
+    if (auth.ready && !auth.signedIn) router.replace(signInHref("/my-ads"))
+  }, [auth.ready, auth.signedIn, router])
 
   const counts = useMemo(() => {
     const next: Record<ListingStatusFilter, number> = {
@@ -84,13 +96,13 @@ export function MyAdsPage() {
   const withUndo = useCallback((message: string, undo: () => Promise<void>) => {
     toast.success(message, {
       action: {
-        label: "Undo",
+        label: t("common.undo"),
         onClick: () => {
-          void undo().catch(() => toast.error("Could not undo that change."))
+          void undo().catch(() => toast.error(t("myAds.toast.undoError")))
         },
       },
     })
-  }, [])
+  }, [t])
 
   async function onSold(listing: Listing, sold: boolean) {
     const prior = effectiveListingStatus(listing)
@@ -103,13 +115,13 @@ export function MyAdsPage() {
       return
     }
     if (sold) {
-      withUndo("Marked as sold", async () => {
+      withUndo(t("myAds.toast.sold"), async () => {
         const undo = await setListingSold(listing.id, false, resumeTo)
         if (!undo.ok) throw new Error(undo.reason)
-        toast.success(resumeTo === "paused" ? "Ad paused again" : "Marked as available")
+        toast.success(resumeTo === "paused" ? t("myAds.toast.paused") : t("myAds.toast.available"))
       })
     } else {
-      toast.success("Marked as available")
+      toast.success(t("myAds.toast.available"))
     }
   }
 
@@ -122,13 +134,13 @@ export function MyAdsPage() {
       return
     }
     if (paused) {
-      withUndo("Ad paused", async () => {
+      withUndo(t("myAds.toast.paused"), async () => {
         const undo = await setListingPaused(listing.id, false)
         if (!undo.ok) throw new Error(undo.reason)
-        toast.success("Ad resumed")
+        toast.success(t("myAds.toast.resumed"))
       })
     } else {
-      toast.success("Ad resumed")
+      toast.success(t("myAds.toast.resumed"))
     }
   }
 
@@ -140,7 +152,7 @@ export function MyAdsPage() {
       toast.error(result.reason)
       return
     }
-    toast.success("Ad renewed — it is back on the board")
+    toast.success(t("myAds.toast.renewed"))
   }
 
   async function onShare(listing: Listing) {
@@ -155,9 +167,9 @@ export function MyAdsPage() {
     }
     try {
       await navigator.clipboard.writeText(url)
-      toast.success("Link copied")
+      toast.success(t("myAds.toast.linkCopied"))
     } catch {
-      toast.error("Could not share this ad")
+      toast.error(t("myAds.toast.shareError"))
     }
   }
 
@@ -171,22 +183,42 @@ export function MyAdsPage() {
       toast.error(result.reason)
       return
     }
-    toast.success("Ad removed")
+    toast.success(t("myAds.toast.removed"))
+  }
+
+  if (!auth.ready || !ready) {
+    return (
+      <div className="mx-auto w-full max-w-[1720px] px-4 py-6 md:px-6">
+        <p className="text-sm text-neutral-500">{t("myAds.loading")}</p>
+      </div>
+    )
+  }
+
+  if (!auth.signedIn) {
+    return (
+      <div className="mx-auto w-full max-w-[1720px] px-4 py-8 md:px-6">
+        <EmptyPanel
+          title={t("myAds.signInTitle")}
+          body={t("myAds.signInBody")}
+          actionHref={signInHref("/my-ads")}
+          actionLabel={t("nav.signIn")}
+          headingLevel={1}
+          className="mt-0"
+        />
+      </div>
+    )
   }
 
   return (
     <div className="mx-auto w-full max-w-[1720px] px-4 py-3 md:px-6">
       <div className="mb-3 flex items-center justify-between gap-2">
-        <h1 className="text-2xl font-semibold tracking-tight">My ads</h1>
+        <h1 className="text-2xl font-semibold tracking-tight">{t("myAds.title")}</h1>
         <Button asChild size="sm" className="h-8 rounded-lg px-3 text-xs">
-          <Link href={postHref}>Post an ad</Link>
+          <Link href={postHref}>{t("myAds.postAd")}</Link>
         </Button>
       </div>
 
-      {!ready ? (
-        <p className="text-sm text-neutral-500">Loading your ads…</p>
-      ) : (
-        <div className="overflow-hidden rounded-xl border border-neutral-200 bg-white">
+      <div className="overflow-hidden rounded-xl border border-neutral-200 bg-white">
           <div className="space-y-3 border-b border-neutral-200 p-4">
             <StatusFilterChips filter={filter} counts={counts} onChange={setFilter} />
           </div>
@@ -194,10 +226,10 @@ export function MyAdsPage() {
           {visible.length === 0 ? (
             <p className="px-5 py-12 text-center text-sm text-neutral-500">
               {mine.length === 0
-                ? "You have not posted an ad yet."
+                ? t("myAds.emptyNone")
                 : filter === "all"
-                  ? "No ads to show."
-                  : `No ${listingStatusLabel(filter).toLowerCase()} ads.`}
+                  ? t("myAds.emptyFilter")
+                  : t("myAds.emptyStatus", { status: listingStatusLabel(filter).toLowerCase() })}
             </p>
           ) : (
             <ul className="min-w-0 divide-y divide-neutral-100">
@@ -219,22 +251,21 @@ export function MyAdsPage() {
             </ul>
           )}
         </div>
-      )}
 
       <Dialog open={!!pending} onOpenChange={(open) => !open && setPendingId(null)}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>Remove this ad?</DialogTitle>
+            <DialogTitle>{t("myAds.removeTitle")}</DialogTitle>
             <DialogDescription>
-              {pending ? `“${pending.title}” will leave the board and its photos will be deleted.` : ""}
+              {pending ? t("myAds.removeBody", { title: pending.title }) : ""}
             </DialogDescription>
           </DialogHeader>
           <DialogFooter>
             <Button variant="outline" onClick={() => setPendingId(null)}>
-              Keep it
+              {t("myAds.keepIt")}
             </Button>
             <Button variant="destructive" disabled={busyId === pendingId} onClick={() => void onRemove()}>
-              Remove ad
+              {t("myAds.removeAd")}
             </Button>
           </DialogFooter>
         </DialogContent>
