@@ -24,6 +24,7 @@ import { resolvePlace } from "@/lib/cities"
 import { useMarketplace } from "@/lib/marketplace"
 import { countryName, fold, getCountry } from "@/lib/countries"
 import {
+  categoryName,
   isSortId,
   sorts,
   type Listing,
@@ -92,16 +93,30 @@ export function Browse() {
     !!home &&
     (!query.country || query.country === home.country) &&
     (!home.city || !query.city || fold(query.city) !== fold(home.city))
+  const narrowed = Boolean(query.q || query.category || query.type || query.country || query.city)
+  const resultSummary = narrowed
+    ? query.q
+      ? `${visible.length} ${visible.length === 1 ? "result" : "results"} for “${query.q}”`
+      : query.city
+        ? `${visible.length} ${visible.length === 1 ? "listing" : "listings"} in ${place}`
+        : typeName
+          ? `${typeName} · ${visible.length} ${visible.length === 1 ? "listing" : "listings"}`
+          : query.category
+            ? `${categoryName(query.category)} · ${visible.length} ${visible.length === 1 ? "listing" : "listings"}${query.country ? ` in ${place}` : ""}`
+            : query.country
+              ? `${visible.length} ${visible.length === 1 ? "listing" : "listings"} in ${place}`
+              : undefined
+    : undefined
   return (
     <div className="mx-auto w-full max-w-[1720px]">
       <section className="min-w-0 px-4 pt-0 pb-16 md:px-6">
-        <div className="sticky top-16 z-40 -mx-4 mb-2 flex flex-wrap items-center justify-between gap-2 border-b border-neutral-200/80 bg-background px-4 py-1 shadow-sm md:top-[72px] md:-mx-6 md:px-6">
-          <p className="min-w-0 truncate text-sm text-neutral-500">
-            <span className="font-medium text-neutral-900">{visible.length}</span>{" "}
-            {visible.length === 1 ? "listing" : "listings"}
-            {typeName ? ` · ${typeName}` : ""} in {place}
-            {closestFirst ? " · nearby first" : ""}
-          </p>
+        {resultSummary ? (
+          <div className="mb-2 hidden items-baseline gap-2 md:flex">
+            <p className="truncate text-sm text-neutral-500">{resultSummary}</p>
+            {closestFirst ? <span className="text-xs text-neutral-400">Nearby first</span> : null}
+          </div>
+        ) : null}
+        <div className="sticky top-16 z-40 -mx-4 mb-2 flex items-center justify-end border-b border-neutral-200/80 bg-background px-4 py-1 shadow-sm md:top-[72px] md:-mx-6 md:px-6">
           <Select
             value={query.sort}
             onValueChange={(value) => {
