@@ -371,7 +371,7 @@ export function ListingDetail({ id }: { id: string }) {
                   </p>
                 ) : null}
                 <p className="text-2xl font-semibold tracking-tight">
-                  <ListingPrice listing={listing} secondaryClassName="text-sm text-neutral-500" />
+                  <ListingPrice listing={listing} />
                 </p>
                 <h1 className="mt-1 text-xl font-semibold tracking-tight text-neutral-950">
                   {listing.title}
@@ -590,7 +590,7 @@ export function ListingDetail({ id }: { id: string }) {
         <div className="mx-auto flex max-w-[1100px] items-center gap-2 sm:gap-3">
           <div className="min-w-0 flex-1">
             <p className="truncate text-sm font-semibold">
-              <ListingPrice listing={listing} secondaryClassName="text-[10px]" />
+              <ListingPrice listing={listing} />
             </p>
             <p className="truncate text-xs text-neutral-500">{formatPlace(listing)}</p>
           </div>
