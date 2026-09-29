@@ -8,6 +8,7 @@ import {
   setListingSold,
   updateListing,
 } from "@/lib/board-store"
+import { requireCurrentTerms } from "@/lib/terms-gate"
 
 export const dynamic = "force-dynamic"
 export const runtime = "nodejs"
@@ -20,6 +21,8 @@ export async function PATCH(request: Request, context: Context) {
   if (!canOwner(owner, "post") || !owner || owner.kind !== "auth") {
     return fail("Sign in to manage this ad.", 401)
   }
+  const termsBlock = await requireCurrentTerms(owner.id)
+  if (termsBlock) return termsBlock
   const { id } = await context.params
   try {
     const body: unknown = await request.json()
@@ -36,6 +39,8 @@ export async function DELETE(request: Request, context: Context) {
   if (!canOwner(owner, "post") || !owner || owner.kind !== "auth") {
     return fail("Sign in to manage this ad.", 401)
   }
+  const termsBlock = await requireCurrentTerms(owner.id)
+  if (termsBlock) return termsBlock
   const { id } = await context.params
   try {
     const result = await deleteListing(owner.id, id)
