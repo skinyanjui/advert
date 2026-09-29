@@ -80,6 +80,12 @@ export function formatCount(count: number, locale: Locale = "en"): string {
   return translate(locale, "format.countThousands", { value })
 }
 
+export function smsHref(phone: string, title: string, locale: Locale = "en"): string {
+  const digits = phone.replace(/[^\d+]/g, "")
+  const text = encodeURIComponent(translate(locale, "format.whatsappHello", { title, site: site.name }))
+  return `sms:${digits}?body=${text}`
+}
+
 export function whatsappHref(phone: string, title: string, listingId?: string, locale: Locale = "en"): string {
   const digits = phone.replace(/[^\d]/g, "")
   const hello = translate(locale, "format.whatsappHello", { title, site: site.name })
