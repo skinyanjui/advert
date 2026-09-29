@@ -111,7 +111,6 @@ export function MessagesPage() {
         <ConversationPanel
           thread={visible}
           listing={visible ? listingsById.get(visible.listingId) : undefined}
-          sample={false}
           sending={sending}
           onBack={() => router.push("/messages")}
           onSend={sendReply}
