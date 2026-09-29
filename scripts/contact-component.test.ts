@@ -14,4 +14,7 @@ test("development listings use the operational message flow without fictional ex
   assert.match(store, /if \(seedIds\.has\(listingId\)\)/)
   assert.match(store, /return appendMessage\(viewerId, conversation, body\.trim\(\)\)/)
   assert.doesNotMatch(store, /Sample listings cannot receive messages/)
+  assert.match(detail, /id="listing-message-composer"/)
+  assert.match(detail, /This conversation stays attached to this listing\./)
+  assert.doesNotMatch(detail, /<Dialog open=\{messageOpen && contactOpen\}/)
 })
