@@ -109,14 +109,12 @@ export function TermsReacceptDialog() {
   if (!auth.signedIn) return null
 
   return (
-    <Dialog open={open} onOpenChange={(next) => setOpen(next)}>
+    <Dialog open={open} onOpenChange={() => {}}>
       <DialogContent className="sm:max-w-md" showCloseButton={false}>
         <DialogHeader>
-          <DialogTitle>Updated Terms and Privacy</DialogTitle>
+          <DialogTitle>Complete account access</DialogTitle>
           <DialogDescription>
-            Please accept version {TERMS_VERSION} / {PRIVACY_VERSION} (effective {LEGAL_EFFECTIVE_DATE})
-            to post ads or send messages. You can still browse the board and delete your account from
-            Profile.
+            Before protected account features become available, accept version {TERMS_VERSION} / {PRIVACY_VERSION} (effective {LEGAL_EFFECTIVE_DATE}). Public browsing remains available without an account.
           </DialogDescription>
         </DialogHeader>
         <p className="text-sm text-neutral-600">
