@@ -11,6 +11,7 @@ import { ContactPhoneField } from "@/components/contact-phone-field"
 import { EmptyPanel } from "@/components/empty-panel"
 import { FormField } from "@/components/form-field"
 import { LanguageCurrencyFields } from "@/components/language-currency-fields"
+import { usePrefs } from "@/components/prefs-provider"
 import { KeepAdsPrompt } from "@/components/sign-in-form"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { Button } from "@/components/ui/button"
@@ -54,21 +55,22 @@ import {
 
 export function AccountPage() {
   const auth = useAuth()
+  const { t } = usePrefs()
   const { admin } = useMarketplace()
   const isAdmin = auth.signedIn && admin
 
   return (
     <div className="mx-auto w-full max-w-3xl space-y-4 px-4 py-6 md:px-6">
       <header>
-        <h1 className="text-2xl font-semibold tracking-tight">Profile</h1>
+        <h1 className="text-2xl font-semibold tracking-tight">{t("profile.title")}</h1>
         {auth.ready ? (
           auth.signedIn ? (
             <p className="mt-1 text-sm text-muted-foreground">
-              Signed in as {auth.email}. Your ads, saves, and messages stay with this account.
+              {t("profile.signedInAs", { email: auth.email ?? "" })}
             </p>
           ) : (
             <p className="mt-1 text-sm text-muted-foreground">
-              Guest on this browser. Sign in to post ads and keep them on your account across devices.
+              {t("profile.guestBlurb")}
             </p>
           )
         ) : null}
@@ -80,9 +82,9 @@ export function AccountPage() {
         <>
           <Card size="sm">
             <CardHeader>
-              <CardTitle>Language & currency</CardTitle>
+              <CardTitle>{t("profile.languageCurrencyTitle")}</CardTitle>
               <CardDescription>
-                Applies on this device. Sign in to sync them to your profile.
+                {t("prefs.sectionBody")}
               </CardDescription>
             </CardHeader>
             <CardContent>
@@ -90,10 +92,10 @@ export function AccountPage() {
             </CardContent>
           </Card>
           <EmptyPanel
-            title="Sign in to edit your Profile"
-            body="Email link or optional password. Keep ads, saves, and Messages on this account."
+            title={t("profile.signInTitle")}
+            body={t("profile.signInBody")}
             actionHref="/sign-in"
-            actionLabel="Sign in"
+            actionLabel={t("nav.signIn")}
             className="mt-0"
           >
             <KeepAdsPrompt className="mx-auto mt-4 max-w-sm rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-left text-sm text-amber-950" />
@@ -115,7 +117,7 @@ export function AccountPage() {
         <Card size="sm">
           <CardContent className="pt-(--card-spacing)">
             <Button asChild variant="outline">
-              <Link href="/admin/reports">Reports</Link>
+              <Link href="/admin/reports">{t("profile.reports")}</Link>
             </Button>
           </CardContent>
         </Card>
@@ -144,6 +146,7 @@ function SignedInProfile({
   ) => Promise<{ ok: true } | { ok: false; reason: string; needsReauth?: boolean }>
   updateEmail: (email: string) => Promise<{ ok: true } | { ok: false; reason: string }>
 }) {
+  const { t } = usePrefs()
   const router = useRouter()
   const fileRef = useRef<HTMLInputElement>(null)
   const [profile, setProfile] = useState<BoardProfile | null>(null)
@@ -292,14 +295,14 @@ function SignedInProfile({
       })
       const payload = (await response.json()) as { ok?: boolean; profile?: BoardProfile; reason?: string }
       if (!response.ok || !payload.profile) {
-        toast.error(payload.reason ?? "Could not save your contact.")
+        toast.error(payload.reason ?? t("profile.toast.contactError"))
         return
       }
       setProfile(payload.profile)
       setPhone(payload.profile.phone ?? "")
-      toast.success("Buyer contact saved")
+      toast.success(t("profile.toast.contactSaved"))
     } catch {
-      toast.error("Could not save your contact.")
+      toast.error(t("profile.toast.contactError"))
     } finally {
       setSavingContact(false)
     }
@@ -420,9 +423,7 @@ function SignedInProfile({
       </Card>
       <Card>
         <CardHeader>
-          <CardDescription>
-            Your display name and photo are shown on your ads and in messages.
-          </CardDescription>
+          <CardDescription>{t("profile.displayHint")}</CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
           <div className="flex flex-wrap items-center gap-4">
@@ -530,10 +531,8 @@ function SignedInProfile({
 
       <Card>
         <CardHeader>
-          <CardTitle>Buyer contact</CardTitle>
-          <CardDescription>
-            Call and WhatsApp number used when you post an ad. You can still change it per listing.
-          </CardDescription>
+          <CardTitle>{t("profile.buyerContact")}</CardTitle>
+          <CardDescription>{t("profile.buyerContactBody")}</CardDescription>
         </CardHeader>
         <CardContent className="space-y-3">
           <ContactPhoneField
@@ -541,7 +540,7 @@ function SignedInProfile({
             value={phone}
             countryCode={countryCode || null}
             error={errors.phone}
-            hint="Buyers can call, open WhatsApp with this number, or leave an on-site note."
+            hint={t("profile.buyerContactHint")}
             onChange={(value) => {
               setPhone(value)
               setErrors((current) => ({ ...current, phone: undefined }))
