@@ -147,6 +147,12 @@ export function ListingDetail({ id }: { id: string }) {
     }
     trackListingContactEvent(ad.id, "message_start")
     setMessageOpen(true)
+    window.requestAnimationFrame(() => {
+      document.getElementById("listing-message-composer")?.scrollIntoView({
+        behavior: "smooth",
+        block: "nearest",
+      })
+    })
   }
 
   async function submitMessage() {
@@ -545,6 +551,49 @@ export function ListingDetail({ id }: { id: string }) {
               </Button>
             ) : null}
           </div>
+          {!listing.mine && contactOpen && messageOpen ? (
+            <div
+              id="listing-message-composer"
+              className="mt-4 grid gap-3 border-t border-neutral-100 pt-4"
+            >
+              <div>
+                <p className="text-sm font-medium text-neutral-950">Message {listing.sellerName}</p>
+                <p className="mt-0.5 text-xs text-neutral-500">
+                  This conversation stays attached to this listing.
+                </p>
+              </div>
+              <Textarea
+                aria-label="Your message"
+                value={message}
+                onChange={(event) => setMessage(event.target.value)}
+                placeholder={voice.messagePlaceholder}
+                rows={4}
+                maxLength={1000}
+                disabled={messageSending}
+              />
+              {message && messageError(message) ? (
+                <p className="text-xs text-amber-700">{messageError(message)}</p>
+              ) : null}
+              <div className="flex justify-end gap-2">
+                <Button
+                  variant="outline"
+                  disabled={messageSending}
+                  onClick={() => {
+                    setMessageOpen(false)
+                    setMessage("")
+                  }}
+                >
+                  Cancel
+                </Button>
+                <Button
+                  disabled={messageSending || !!messageError(message)}
+                  onClick={() => void submitMessage()}
+                >
+                  {messageSending ? "Sending…" : "Send"}
+                </Button>
+              </div>
+            </div>
+          ) : null}
           <SafetyNote
             safety={voice.safety}
             messagingHint={
@@ -636,33 +685,6 @@ export function ListingDetail({ id }: { id: string }) {
           )}
         </div>
       </div>
-      <Dialog open={messageOpen && contactOpen} onOpenChange={setMessageOpen}>
-        <DialogContent className="sm:max-w-md">
-          <DialogHeader>
-            <DialogTitle>Message {listing.sellerName}</DialogTitle>
-          </DialogHeader>
-          <Textarea
-            aria-label="Your message"
-            value={message}
-            onChange={(event) => setMessage(event.target.value)}
-            placeholder={voice.messagePlaceholder}
-            rows={4}
-            maxLength={1000}
-            disabled={messageSending}
-          />
-          {message && messageError(message) ? (
-            <p className="text-xs text-amber-700">{messageError(message)}</p>
-          ) : null}
-          <DialogFooter>
-            <Button variant="outline" disabled={messageSending} onClick={() => setMessageOpen(false)}>
-              Cancel
-            </Button>
-            <Button disabled={messageSending || !!messageError(message)} onClick={() => void submitMessage()}>
-              {messageSending ? "Sending…" : "Send"}
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
       <Dialog open={confirmRemove} onOpenChange={setConfirmRemove}>
         <DialogContent className="sm:max-w-md">
           <DialogHeader>
