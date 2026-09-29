@@ -125,6 +125,6 @@ test("Messenger uses real account threads without sample inbox fallback or reply
   assert.match(page, /signInHref\("\/messages"\)/)
   assert.doesNotMatch(page, /sampleThreads/)
   assert.doesNotMatch(page, /showingSamples/)
-  assert.match(list, />Messenger</)
+  assert.match(list, /t\("inbox\.title"\)/)
   assert.doesNotMatch(reply, /TermsNotice/)
 })
