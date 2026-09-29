@@ -34,6 +34,7 @@ import { relatedListings } from "@/lib/board"
 import { seedListings } from "@/lib/catalog"
 import { resolvePlace } from "@/lib/cities"
 import { getCountry } from "@/lib/countries"
+import { trackListingContactEvent } from "@/lib/contact-events"
 import { formatPlace, initials, whatsappHref } from "@/lib/format"
 import { listingGridClassNameLoose } from "@/lib/listing-grid"
 import { osmLinks } from "@/lib/map"
@@ -84,7 +85,9 @@ export function ListingDetail({ id }: { id: string }) {
   const activePhoto = gallery[Math.min(photoIndex, Math.max(gallery.length - 1, 0))] ?? listing?.image
 
   useEffect(() => {
-    if (listing) document.title = `${listing.title} · africa classifieds`
+    if (!listing) return
+    document.title = `${listing.title} · africa classifieds`
+    if (!listing.mine) trackListingContactEvent(listing.id, "listing_view")
   }, [listing])
 
   if (!listing) {
@@ -141,6 +144,7 @@ export function ListingDetail({ id }: { id: string }) {
       router.push(signInHref(`/listings/${ad.id}`))
       return
     }
+    trackListingContactEvent(ad.id, "message_start")
     setMessageOpen(true)
   }
 
@@ -252,6 +256,7 @@ export function ListingDetail({ id }: { id: string }) {
   }
 
   function revealAndCall() {
+    trackListingContactEvent(ad.id, "phone_click")
     setPhoneVisible(true)
     const tel = telHref(ad.phone)
     if (!tel) {
@@ -503,6 +508,7 @@ export function ListingDetail({ id }: { id: string }) {
                           href={whatsappHref(listing.phone, listing.title, listing.id)}
                           target="_blank"
                           rel="noreferrer"
+                          onClick={() => trackListingContactEvent(listing.id, "whatsapp_click")}
                         >
                           <WhatsAppIcon className="size-4" />
                           WhatsApp
@@ -597,6 +603,7 @@ export function ListingDetail({ id }: { id: string }) {
                     target="_blank"
                     rel="noreferrer"
                     aria-label="Chat on WhatsApp"
+                    onClick={() => trackListingContactEvent(listing.id, "whatsapp_click")}
                   >
                     <WhatsAppIcon className="size-4 text-[#25D366]" />
                   </a>
