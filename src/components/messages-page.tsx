@@ -5,19 +5,20 @@ import { useEffect, useMemo, useState, useSyncExternalStore } from "react"
 import { toast } from "sonner"
 
 import { ConversationList, type InboxFilter } from "@/components/inbox/conversation-list"
+import { useAuth } from "@/lib/auth"
+import { signInHref } from "@/lib/auth-redirect"
 import { ConversationPanel } from "@/components/inbox/conversation-panel"
 import { messageThreads } from "@/lib/messages"
 import { useMarketplace } from "@/lib/marketplace"
-import { sampleThreads } from "@/lib/sample-conversations"
 
 export function MessagesPage() {
   const { ready, messages, listings, markThreadRead, sendMessage } = useMarketplace()
+  const auth = useAuth()
   const params = useSearchParams()
   const router = useRouter()
   const threads = useMemo(() => messageThreads(messages), [messages])
   const listingsById = useMemo(() => new Map(listings.map((listing) => [listing.id, listing])), [listings])
-  const showingSamples = threads.length === 0
-  const displayThreads = showingSamples ? sampleThreads : threads
+  const displayThreads = threads
   const [search, setSearch] = useState("")
   const [filter, setFilter] = useState<InboxFilter>("all")
   const [sending, setSending] = useState(false)
@@ -34,21 +35,33 @@ export function MessagesPage() {
 
   const requestedConversation = params.get("c")
   const requestedListing = params.get("listing")
-  const requestedSample = showingSamples ? params.get("demo") : null
   const selected =
     threads.find((thread) => thread.conversationId === requestedConversation) ??
     threads.find((thread) => thread.listingId === requestedListing) ??
-    (requestedSample ? sampleThreads.find((thread) => thread.conversationId === requestedSample) : null) ??
     null
-  const missing = Boolean(requestedConversation || requestedListing || requestedSample) && !selected
+  const missing = Boolean(requestedConversation || requestedListing) && !selected
   const visible = selected ?? (!missing && wide ? (filtered[0] ?? null) : null)
   const unreadTotal = threads.reduce((count, thread) => count + thread.unread, 0)
   const visibleId = visible?.conversationId
-  const visibleUnread = showingSamples ? 0 : (visible?.unread ?? 0)
+  const visibleUnread = visible?.unread ?? 0
 
   useEffect(() => {
     if (visibleId && visibleUnread > 0) markThreadRead(visibleId)
   }, [markThreadRead, visibleId, visibleUnread])
+
+  useEffect(() => {
+    if (auth.ready && auth.configured && !auth.signedIn) {
+      router.replace(signInHref("/messages"))
+    }
+  }, [auth.configured, auth.ready, auth.signedIn, router])
+
+  if (auth.ready && auth.configured && !auth.signedIn) {
+    return (
+      <div className="mx-auto w-full max-w-[1720px] px-4 py-6 md:px-6">
+        <p className="text-sm text-neutral-500">Sign in to open Messenger.</p>
+      </div>
+    )
+  }
 
   if (!ready) {
     return (
@@ -59,7 +72,7 @@ export function MessagesPage() {
   }
 
   async function sendReply(draft: string): Promise<boolean> {
-    if (!visible || showingSamples) return false
+    if (!visible) return false
     setSending(true)
     try {
       const result = await sendMessage(visible.listingId, draft, visible.conversationId)
@@ -88,7 +101,7 @@ export function MessagesPage() {
           threads={filtered}
           listings={listingsById}
           activeId={visible?.conversationId}
-          sample={showingSamples}
+          sample={false}
           search={search}
           onSearch={setSearch}
           filter={filter}
@@ -99,7 +112,7 @@ export function MessagesPage() {
         <ConversationPanel
           thread={visible}
           listing={visible ? listingsById.get(visible.listingId) : undefined}
-          sample={showingSamples}
+          sample={false}
           sending={sending}
           onBack={() => router.push("/messages")}
           onSend={sendReply}
