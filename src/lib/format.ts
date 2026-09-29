@@ -80,11 +80,11 @@ export function formatCount(count: number, locale: Locale = "en"): string {
   return translate(locale, "format.countThousands", { value })
 }
 
-export function whatsappHref(phone: string, title: string, locale: Locale = "en"): string {
+export function whatsappHref(phone: string, title: string, listingId?: string, locale: Locale = "en"): string {
   const digits = phone.replace(/[^\d]/g, "")
-  const text = encodeURIComponent(
-    translate(locale, "format.whatsappHello", { title, site: site.name }),
-  )
+  const hello = translate(locale, "format.whatsappHello", { title, site: site.name })
+  const message = listingId ? `${hello}\nListing ${listingId}` : hello
+  const text = encodeURIComponent(message)
   return `https://wa.me/${digits}?text=${text}`
 }
 
