@@ -4,6 +4,7 @@ import { isAdminEmail } from "@/lib/admin"
 import { canOwner } from "@/lib/access-control"
 import { newSession, resolveMutationOwner, resolveOwner } from "@/lib/board-session"
 import { importBoard, listBoard } from "@/lib/board-store"
+import { getTermsStatus } from "@/lib/terms-gate"
 
 export const dynamic = "force-dynamic"
 export const runtime = "nodejs"
@@ -13,7 +14,8 @@ export async function GET(request: Request) {
     const owner = await resolveOwner(request)
     if (owner) {
       const state = await listBoard(owner.id)
-      const privateAccess = canOwner(owner, "profile")
+      const terms = owner.kind === "auth" ? await getTermsStatus(owner.id) : null
+      const privateAccess = canOwner(owner, "profile") && (terms?.current ?? false)
       const posted = privateAccess
         ? state.posted
         : state.posted.map((listing) => ({
