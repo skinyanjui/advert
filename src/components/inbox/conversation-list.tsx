@@ -40,8 +40,8 @@ export function ConversationList({
     <aside className={cn("min-w-0 flex-col border-neutral-200 lg:flex lg:border-r", hidden ? "hidden" : "flex")} aria-label="Conversations">
       <div className="border-b border-neutral-200 p-4">
         <div className="flex items-center justify-between gap-2">
-          <h2 className="text-sm font-semibold text-neutral-950">Messages</h2>
-          <span className="text-xs text-neutral-500">{sample ? "Sample inbox" : `${threads.length} conversations`}</span>
+          <h2 className="text-sm font-semibold text-neutral-950">Messenger</h2>
+          <span className="text-xs text-neutral-500">{`${threads.length} conversations`}</span>
         </div>
         <div className="relative mt-3">
           <Search className="pointer-events-none absolute top-1/2 left-3 size-4 -translate-y-1/2 text-neutral-400" aria-hidden="true" />
