@@ -132,6 +132,11 @@ export function SignInForm({ nextHref }: { nextHref?: string } = {}) {
   }
 
   async function sendPhoneCode() {
+    if (!agreedToTerms) {
+      toast.error("Agree to the Terms and Privacy Policy to continue.")
+      return
+    }
+    rememberTermsIntent()
     setBusy(true)
     const result = await auth.sendPhoneCode(phone)
     setBusy(false)
@@ -227,6 +232,7 @@ export function SignInForm({ nextHref }: { nextHref?: string } = {}) {
   const showLinkFlow = method === "link" || channel === "phone"
   const showTermsCheckbox =
     auth.googleEnabled ||
+    channel === "phone" ||
     (channel === "email" && method === "link") ||
     (channel === "email" && method === "password" && passwordMode === "sign-up")
   const needsTermsForAction = showTermsCheckbox
@@ -240,7 +246,7 @@ export function SignInForm({ nextHref }: { nextHref?: string } = {}) {
       <header>
         <h1 className="text-2xl font-semibold tracking-tight">Sign in</h1>
         <p className="mt-1 text-sm text-muted-foreground">
-          Keep your ads, saves, and Messages across devices. New emails create an account.
+          Create or access your account. Browsing is public; saving, messaging, direct seller contact, posting, reporting, profile data, and account tools require sign-in.
         </p>
       </header>
 
@@ -281,7 +287,7 @@ export function SignInForm({ nextHref }: { nextHref?: string } = {}) {
             onChange={(event) => onAgreeChange(event.target.checked)}
           />
           <span>
-            I agree to the{" "}
+            By creating an account or continuing with a sign-in method that can create one, I agree to the{" "}
             <Link href="/terms" className="underline underline-offset-2">
               Terms
             </Link>{" "}
@@ -451,7 +457,7 @@ export function SignInForm({ nextHref }: { nextHref?: string } = {}) {
               ) : (
                 <Button
                   type="submit"
-                  disabled={busy || (channel === "email" && !sent && !agreedToTerms)}
+                  disabled={busy || (!sent && !agreedToTerms)}
                   className="h-10 w-full"
                 >
                   {busy
@@ -468,7 +474,7 @@ export function SignInForm({ nextHref }: { nextHref?: string } = {}) {
                   <Button
                     type="button"
                     variant="ghost"
-                    disabled={busy || cooldown > 0 || (channel === "email" && !agreedToTerms)}
+                    disabled={busy || cooldown > 0 || !agreedToTerms}
                     onClick={() => void (channel === "email" ? sendEmailLink() : sendPhoneCode())}
                   >
                     {cooldown > 0
