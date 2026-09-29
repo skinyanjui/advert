@@ -1,6 +1,6 @@
 "use client"
 
-import { ArrowRight, Heart, MapPin } from "lucide-react"
+import { Heart, MapPin } from "lucide-react"
 import Image from "next/image"
 import Link from "next/link"
 
@@ -96,7 +96,7 @@ export function ListingCard({
             <span className="shrink-0">, {countryCode}</span>
           </span>
         </p>
-        <div className="flex items-center text-[11px] leading-none text-neutral-500">
+        <div className="flex items-center pr-9 text-[11px] leading-none text-neutral-500">
           <PostedLabel listing={listing} />
         </div>
       </div>
@@ -105,37 +105,27 @@ export function ListingCard({
 
   return (
     <article className="group relative flex h-full flex-col overflow-hidden rounded-xl border border-neutral-200/80 bg-white transition-shadow hover:shadow-md">
+      <div className="flex h-full flex-col">{body}</div>
       {linked ? (
         <Link
           href={listingHref}
-          className="flex h-full flex-col outline-none focus-visible:ring-2 focus-visible:ring-neutral-950 focus-visible:ring-offset-2"
+          aria-label={`View ${listing.title}`}
+          className="absolute inset-0 z-10 rounded-xl outline-none focus-visible:ring-2 focus-visible:ring-neutral-950 focus-visible:ring-offset-2"
         >
-          {body}
+          <span className="sr-only">View listing</span>
         </Link>
-      ) : (
-        <div className="flex h-full flex-col">{body}</div>
-      )}
-      {linked ? (
-        <div className="flex items-center gap-1.5 px-2 pb-2">
-          <Link
-            href={listingHref}
-            className="inline-flex h-8 min-w-0 flex-1 items-center justify-center gap-1 rounded-lg border border-neutral-200 bg-white px-2 text-[11px] font-medium text-neutral-900 transition hover:bg-neutral-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-neutral-950"
-          >
-            View listing <ArrowRight className="size-3" aria-hidden="true" />
-          </Link>
-          {whatsappAvailable ? (
-            <a
-              href={whatsappHref(listing.phone, listing.title)}
-              target="_blank"
-              rel="noreferrer"
-              aria-label={`Chat with seller about ${listing.title} on WhatsApp`}
-              title="Chat on WhatsApp"
-              className="inline-flex size-8 shrink-0 items-center justify-center rounded-lg border border-neutral-200 bg-white text-[#25D366] transition hover:border-[#25D366]/40 hover:bg-[#25D366]/5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-neutral-950"
-            >
-              <WhatsAppIcon className="size-4" />
-            </a>
-          ) : null}
-        </div>
+      ) : null}
+      {whatsappAvailable ? (
+        <a
+          href={whatsappHref(listing.phone, listing.title, listing.id)}
+          target="_blank"
+          rel="noreferrer"
+          aria-label={`Chat with seller about ${listing.title} on WhatsApp`}
+          title="Chat on WhatsApp"
+          className="absolute right-2 bottom-2 z-20 inline-flex size-7 items-center justify-center rounded-full border border-neutral-200 bg-white text-[#25D366] shadow-sm transition hover:border-[#25D366]/40 hover:bg-[#25D366]/5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-neutral-950"
+        >
+          <WhatsAppIcon className="size-3.5" />
+        </a>
       ) : null}
       {saveable ? (
         <button
@@ -143,7 +133,7 @@ export function ListingCard({
           aria-pressed={saved}
           aria-label={saved ? `Remove ${listing.title} from saved` : `Save ${listing.title}`}
           onClick={() => toggleSaved(listing.id)}
-          className="absolute top-2 right-2 flex size-7 items-center justify-center rounded-full bg-white/95 text-neutral-700 shadow-sm transition hover:scale-105"
+          className="absolute top-2 right-2 z-20 flex size-7 items-center justify-center rounded-full bg-white/95 text-neutral-700 shadow-sm transition hover:scale-105"
         >
           <Heart className={cn("size-4", saved && "fill-rose-500 text-rose-500")} />
         </button>
