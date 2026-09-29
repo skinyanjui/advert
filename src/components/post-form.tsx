@@ -962,6 +962,8 @@ function AdForm({ existing }: { existing: Listing | null }) {
                 </label>
                 <p className="text-xs leading-5 text-neutral-500">
                   Buyers can always use marketplace messages. Your phone number is used only for the direct contact options you enable.
+                  If you use WhatsApp for a business, make sure your seller/profile name clearly identifies that business. Buyers must consent
+                  before we open WhatsApp, and that consent is limited to replies about the listing—not unrelated marketing.
                 </p>
               </div>
             </section>
