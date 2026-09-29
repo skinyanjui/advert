@@ -110,6 +110,8 @@ export function ListingDetail({ id }: { id: string }) {
   const expired = isListingExpired(ad.expiresAt)
   const status = effectiveListingStatus(ad)
   const contactOpen = !isSample && status === "active" && !ad.mine
+  const whatsappOpen = contactOpen && ad.contactWhatsApp !== false && Boolean(ad.phone.trim())
+  const phoneOpen = contactOpen && ad.contactPhone !== false && Boolean(ad.phone.trim())
   const expiringSoon = isListingExpiringSoon(ad.expiresAt)
   const daysLeft = daysUntilExpiry(ad.expiresAt)
   const postedHours = ad.postedAt ? hoursAgoOf(ad) : ad.hoursAgo
@@ -493,22 +495,28 @@ export function ListingDetail({ id }: { id: string }) {
                 <Button className="h-10 rounded-full" onClick={openMessageComposer}>
                   {auth.configured && !auth.signedIn ? "Sign in to message" : "Message seller"}
                 </Button>
-                <div className="grid grid-cols-2 gap-2">
-                  <Button variant="outline" className="h-10 rounded-full" asChild>
-                    <a
-                      href={whatsappHref(listing.phone, listing.title, listing.id)}
-                      target="_blank"
-                      rel="noreferrer"
-                    >
-                      <WhatsAppIcon className="size-4" />
-                      WhatsApp
-                    </a>
-                  </Button>
-                  <Button variant="outline" className="h-10 rounded-full" onClick={() => setPhoneVisible(true)}>
-                    <Phone className="size-4" />
-                    {phoneVisible ? listing.phone : "Call"}
-                  </Button>
-                </div>
+                {whatsappOpen || phoneOpen ? (
+                  <div className={cn("grid gap-2", whatsappOpen && phoneOpen ? "grid-cols-2" : "grid-cols-1")}>
+                    {whatsappOpen ? (
+                      <Button variant="outline" className="h-10 rounded-full" asChild>
+                        <a
+                          href={whatsappHref(listing.phone, listing.title, listing.id)}
+                          target="_blank"
+                          rel="noreferrer"
+                        >
+                          <WhatsAppIcon className="size-4" />
+                          WhatsApp
+                        </a>
+                      </Button>
+                    ) : null}
+                    {phoneOpen ? (
+                      <Button variant="outline" className="h-10 rounded-full" onClick={() => setPhoneVisible(true)}>
+                        <Phone className="size-4" />
+                        {phoneVisible ? listing.phone : "Call"}
+                      </Button>
+                    ) : null}
+                  </div>
+                ) : null}
               </>
             )}
             {!listing.mine && myMessageCount > 0 ? (
@@ -528,7 +536,7 @@ export function ListingDetail({ id }: { id: string }) {
             safety={voice.safety}
             messagingHint={
               !listing.mine && contactOpen
-                ? "Use marketplace messages to keep the conversation with the listing, or contact the seller directly by WhatsApp or phone."
+                ? "Marketplace messages stay with this listing. Direct WhatsApp or phone contact is available only when the seller enables it."
                 : undefined
             }
           />
@@ -582,26 +590,30 @@ export function ListingDetail({ id }: { id: string }) {
               <Button className="h-10 max-w-[9.5rem] shrink-0 truncate rounded-full px-3" onClick={openMessageComposer}>
                 {auth.configured && !auth.signedIn ? "Sign in" : "Message seller"}
               </Button>
-              <Button variant="outline" size="icon" className="size-10 shrink-0 rounded-full" asChild>
-                <a
-                  href={whatsappHref(listing.phone, listing.title, listing.id)}
-                  target="_blank"
-                  rel="noreferrer"
-                  aria-label="Chat on WhatsApp"
+              {whatsappOpen ? (
+                <Button variant="outline" size="icon" className="size-10 shrink-0 rounded-full" asChild>
+                  <a
+                    href={whatsappHref(listing.phone, listing.title, listing.id)}
+                    target="_blank"
+                    rel="noreferrer"
+                    aria-label="Chat on WhatsApp"
+                  >
+                    <WhatsAppIcon className="size-4 text-[#25D366]" />
+                  </a>
+                </Button>
+              ) : null}
+              {phoneOpen ? (
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="icon"
+                  className="size-10 shrink-0 rounded-full"
+                  aria-label={phoneVisible ? `Call ${listing.phone}` : "Call seller"}
+                  onClick={revealAndCall}
                 >
-                  <WhatsAppIcon className="size-4 text-[#25D366]" />
-                </a>
-              </Button>
-              <Button
-                type="button"
-                variant="outline"
-                size="icon"
-                className="size-10 shrink-0 rounded-full"
-                aria-label={phoneVisible ? `Call ${listing.phone}` : "Call seller"}
-                onClick={revealAndCall}
-              >
-                <Phone className="size-4" />
-              </Button>
+                  <Phone className="size-4" />
+                </Button>
+              ) : null}
             </div>
           )}
         </div>
