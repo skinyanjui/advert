@@ -24,8 +24,11 @@ test("guest board payload redacts protected contact and private account state", 
 
 test("registration discloses protected features and requires legal acceptance", () => {
   const signIn = readFileSync(new URL("../src/components/sign-in-form.tsx", import.meta.url), "utf8")
-  assert.match(signIn, /saving, messaging, direct seller contact, posting, reporting, profile data/)
-  assert.match(signIn, /Agree to the Terms and Privacy Policy to continue\./)
+  const en = readFileSync(new URL("../src/lib/i18n/messages/en.ts", import.meta.url), "utf8")
+  assert.match(signIn, /t\("auth\.accountAccessBody"\)/)
+  assert.match(signIn, /t\("auth\.mustAgree"\)/)
+  assert.match(en, /saving, Messenger, direct seller contact, posting, reporting, profile data/)
+  assert.match(en, /Agree to the Terms and Privacy Policy to continue\./)
   assert.match(signIn, /channel === "phone"/)
 })
 

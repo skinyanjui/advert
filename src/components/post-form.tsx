@@ -12,7 +12,6 @@ import { ContactPhoneField } from "@/components/contact-phone-field"
 import { EmptyPanel } from "@/components/empty-panel"
 import { FormField } from "@/components/form-field"
 import { ListingCard } from "@/components/listing-card"
-import { TermsNotice } from "@/components/terms-notice"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Textarea } from "@/components/ui/textarea"
@@ -976,7 +975,6 @@ function AdForm({ existing }: { existing: Listing | null }) {
           ) : null}
 
           <div className="fixed inset-x-0 bottom-0 z-[45] flex flex-col gap-2 border-t border-neutral-200 bg-background/95 px-4 py-3 backdrop-blur md:static md:inset-auto md:z-auto md:border-0 md:bg-transparent md:px-0 md:py-0 md:backdrop-blur-none">
-            {step === 3 ? <TermsNotice /> : null}
             <div className="flex items-center gap-3">
             {step === 0 ? (
               <Button type="button" variant="ghost" onClick={() => router.push(existing ? `/listings/${existing.id}` : "/")}>

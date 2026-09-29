@@ -1,24 +1,51 @@
 "use client"
 
-import type { ReactNode } from "react"
+import { useEffect, type ReactNode } from "react"
+import { useRouter } from "next/navigation"
 
 import { EmptyPanel } from "@/components/empty-panel"
+import { usePrefs } from "@/components/prefs-provider"
 import { ListingCard } from "@/components/listing-card"
+import { useAuth } from "@/lib/auth"
+import { signInHref } from "@/lib/auth-redirect"
 import { listingGridClassName } from "@/lib/listing-grid"
 import { useMarketplace } from "@/lib/marketplace"
 
 export function SavedPage() {
+  const auth = useAuth()
+  const router = useRouter()
+  const { t } = usePrefs()
   const { ready, listings, savedIds } = useMarketplace()
   const saved = listings.filter((listing) => savedIds.includes(listing.id))
 
-  if (!ready) return <PageSkeleton title="Saved ads" />
+  useEffect(() => {
+    if (auth.ready && !auth.signedIn) router.replace(signInHref("/saved"))
+  }, [auth.ready, auth.signedIn, router])
+
+  if (!auth.ready || !ready) return <PageSkeleton title={t("saved.title")} />
+
+  if (!auth.signedIn) {
+    return (
+      <div className="mx-auto w-full max-w-[1720px] px-4 py-8 md:px-6">
+        <EmptyPanel
+          title={t("saved.signInTitle")}
+          body={t("saved.signInBody")}
+          actionHref={signInHref("/saved")}
+          actionLabel={t("nav.signIn")}
+          headingLevel={1}
+          className="mt-0"
+        />
+      </div>
+    )
+  }
 
   return (
     <Collection
-      title="Saved ads"
-      description="Saved hearts stay with your account when you are signed in."
-      emptyTitle="No saved ads yet"
-      emptyBody="Tap the heart on a listing and it will wait for you here."
+      title={t("saved.title")}
+      description={t("saved.description")}
+      emptyTitle={t("saved.emptyTitle")}
+      emptyBody={t("saved.emptyBody")}
+      actionLabel={t("saved.browse")}
       listings={saved}
     />
   )

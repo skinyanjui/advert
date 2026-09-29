@@ -38,8 +38,8 @@ export const navItems: NavItem[] = [
   {
     id: "messages",
     href: "/messages",
-    label: "Messages",
-    shortLabel: "Messages",
+    label: "Messenger",
+    shortLabel: "Messenger",
     icon: MessageCircle,
   },
   {

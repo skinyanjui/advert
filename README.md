@@ -2,7 +2,7 @@
 
 A classifieds board for buying and selling across Africa: cars, houses, jobs, electronics, and the rest of the usual categories. Search, filter by country and category, save listings, and post an ad.
 
-Listings in the catalog are sample ads. Ads you post, saved hearts, messages, reports, and profiles are stored in Supabase. Uploaded photos are served from Supabase Storage. City search uses the bundled GeoNames snapshot and the reference database.
+Listings in the catalog are sample ads. Ads you post, saved listings, Messenger conversations, reports, and profiles are stored in Supabase. Uploaded photos are served from Supabase Storage. City search uses the bundled GeoNames snapshot and the reference database.
 
 ## Run locally
 
@@ -18,7 +18,7 @@ Open [http://localhost:3000](http://localhost:3000).
 - Browse, search, and sort. A selected country shows its capital, local time, time zone, currency, languages, and calling code. Search any city in that country, or filter to cities that already have ads. A city with no ads keeps the city filter selected and opens the post form with that place filled in. Price sort keeps each currency together.
 - The country control in the top bar searches by country, capital, or ISO code.
 - A category sidebar (desktop) and category sheet (mobile)
-- Listing pages with messaging, phone reveal, WhatsApp, and “Report this ad”
+- Listing pages with inline Messenger, authenticated SMS/Text, Call and WhatsApp contact, and “Report this ad”
 - Post an ad with up to 6 photos (cover + gallery) or a category image; ads expire after 60 days and can be renewed
 - Seller accounts: email OTP / magic link, optional password, Profile settings, and session claim so guest cookie posts move onto the account
 - My ads with active / paused / sold / expired actions
@@ -40,7 +40,7 @@ Supported flows:
 
 Paste the HTML under `supabase/templates/` into Supabase Dashboard → Authentication → Email Templates (Confirm signup, Magic Link, Reset password, Change email). Prefer `token_hash` links over Management API calls. Site URL and redirect allow lists must include `/auth/confirm` and `/auth/callback` for production, previews, and localhost.
 
-Protected routes (`/my-ads`, `/messages`, `/admin/reports`) redirect unsigned visitors to `/sign-in?next=…`.
+Protected account routes (`/saved`, `/my-ads`, `/messages`, `/admin/reports`) redirect unsigned visitors to `/sign-in?next=…`. Profile keeps its public language/currency settings visible but protects private account data and mutations.
 
 ## Board database migrations
 
@@ -155,4 +155,4 @@ route still advances reminder markers as a no-op send.
 
 ## Production
 
-Production `adverts` is linked to `skinyanjui/advert` on `main` and its dedicated Supabase project is attached only to the Production environment. Each update to `main` creates a Production deployment. The webhook secret is a Vercel Secret scoped to Production; after changing environment variables, redeploy for the new value to take effect. Reference tables are readable through RLS, while snapshot imports use the server-only key. Board listing rows are not readable with the publishable key after the lock-listings migration.
+Production `adverts` targets `skinyanjui/advert` on `main`, and its dedicated Supabase project is attached only to the Production environment. A merge to `main` is not considered deployed until the corresponding Vercel deployment is confirmed `READY`; Git integration can fail or stop creating production deployments even when preview builds and CI pass. The webhook secret is a Vercel Secret scoped to Production; after changing environment variables, redeploy for the new value to take effect. Reference tables are readable through RLS, while snapshot imports use the server-only key. Board listing rows are not readable with the publishable key after the lock-listings migration.

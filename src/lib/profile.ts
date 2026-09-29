@@ -11,7 +11,7 @@ export type BoardProfile = {
   avatarUrl: string | null
   city: string | null
   countryCode: string | null
-  /** Saved call/WhatsApp number for prefilling new ads. Never on public seller overlay. */
+  /** Saved call/SMS/WhatsApp number for prefilling new ads. Never on public seller overlay. */
   phone: string | null
   /** UI language preference (en/fr/sw). Nullable until set. */
   language: string | null

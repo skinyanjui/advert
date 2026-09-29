@@ -5,6 +5,7 @@ import { useEffect, useMemo, useState, useSyncExternalStore } from "react"
 import { toast } from "sonner"
 
 import { ConversationList, type InboxFilter } from "@/components/inbox/conversation-list"
+import { usePrefs } from "@/components/prefs-provider"
 import { useAuth } from "@/lib/auth"
 import { signInHref } from "@/lib/auth-redirect"
 import { ConversationPanel } from "@/components/inbox/conversation-panel"
@@ -14,6 +15,7 @@ import { useMarketplace } from "@/lib/marketplace"
 export function MessagesPage() {
   const { ready, messages, listings, markThreadRead, sendMessage } = useMarketplace()
   const auth = useAuth()
+  const { t } = usePrefs()
   const params = useSearchParams()
   const router = useRouter()
   const threads = useMemo(() => messageThreads(messages), [messages])
@@ -58,7 +60,7 @@ export function MessagesPage() {
   if (auth.ready && auth.configured && !auth.signedIn) {
     return (
       <div className="mx-auto w-full max-w-[1720px] px-4 py-6 md:px-6">
-        <p className="text-sm text-neutral-500">Sign in to open Messenger.</p>
+        <p className="text-sm text-neutral-500">{t("messages.signIn")}</p>
       </div>
     )
   }
@@ -66,7 +68,7 @@ export function MessagesPage() {
   if (!ready) {
     return (
       <div className="mx-auto w-full max-w-[1720px] px-4 py-6 md:px-6">
-        <p className="text-sm text-neutral-500">Loading Messenger…</p>
+        <p className="text-sm text-neutral-500">{t("messages.loading")}</p>
       </div>
     )
   }
@@ -80,10 +82,10 @@ export function MessagesPage() {
         toast.error(result.reason)
         return false
       }
-      toast.success("Reply sent")
+      toast.success(t("inbox.toast.sent"))
       return true
     } catch {
-      toast.error("Could not send the message.")
+      toast.error(t("inbox.toast.sendError"))
       return false
     } finally {
       setSending(false)
@@ -92,9 +94,9 @@ export function MessagesPage() {
 
   return (
     <div className="mx-auto w-full max-w-[1720px] px-4 py-3 md:px-6">
-      <h1 className="sr-only">Messenger</h1>
+      <h1 className="sr-only">{t("messages.title")}</h1>
       {missing ? (
-        <p className="mb-3 rounded-lg border border-neutral-200 bg-white px-3 py-2 text-sm text-neutral-600">This conversation is not on this account. Choose one below.</p>
+        <p className="mb-3 rounded-lg border border-neutral-200 bg-white px-3 py-2 text-sm text-neutral-600">{t("messages.missing")}</p>
       ) : null}
       <div className="grid h-[calc(100dvh-11rem)] min-h-[26rem] min-w-0 overflow-hidden rounded-xl border border-neutral-200 bg-white md:h-[calc(100dvh-6rem)] lg:grid-cols-[360px_minmax(0,1fr)]">
         <ConversationList

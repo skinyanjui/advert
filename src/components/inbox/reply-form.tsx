@@ -4,10 +4,12 @@ import { Send } from "lucide-react"
 import { useRef, useState } from "react"
 import { toast } from "sonner"
 
+import { usePrefs } from "@/components/prefs-provider"
 import { Button } from "@/components/ui/button"
 import { Textarea } from "@/components/ui/textarea"
 
 export function ReplyForm({ placeholder, sending, onSend }: { placeholder: string; sending: boolean; onSend: (draft: string) => Promise<boolean> }) {
+  const { t } = usePrefs()
   const [draft, setDraft] = useState("")
   const submitting = useRef(false)
 
@@ -20,7 +22,7 @@ export function ReplyForm({ placeholder, sending, onSend }: { placeholder: strin
         submitting.current = true
         void onSend(draft)
           .then((ok) => { if (ok) setDraft("") })
-          .catch(() => toast.error("Could not send the message."))
+          .catch(() => toast.error(t("inbox.toast.sendError")))
           .finally(() => { submitting.current = false })
       }}
     >
@@ -28,7 +30,7 @@ export function ReplyForm({ placeholder, sending, onSend }: { placeholder: strin
         value={draft}
         onChange={(event) => setDraft(event.target.value)}
         placeholder={placeholder}
-        aria-label="Write a message about this listing"
+        aria-label={t("inbox.replyPlaceholder")}
         maxLength={1000}
         rows={2}
         className="resize-none rounded-xl"
@@ -36,7 +38,7 @@ export function ReplyForm({ placeholder, sending, onSend }: { placeholder: strin
       <div className="flex justify-end">
         <Button type="submit" disabled={sending || draft.trim().length < 8} className="rounded-full">
           <Send className="size-4" aria-hidden="true" />
-          {sending ? "Sending…" : "Send"}
+          {sending ? t("inbox.sending") : t("inbox.send")}
         </Button>
       </div>
     </form>

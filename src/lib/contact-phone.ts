@@ -1,6 +1,6 @@
 import { getCountry } from "@/lib/countries"
 
-/** Shared call/WhatsApp contact phone rules (listings + saved profile contact). */
+/** Shared call/SMS/WhatsApp contact phone rules (listings + saved profile contact). */
 
 export const contactPhoneMaxLength = 30
 

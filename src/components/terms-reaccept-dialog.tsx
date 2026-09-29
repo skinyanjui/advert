@@ -4,6 +4,7 @@ import Link from "next/link"
 import { startTransition, useCallback, useEffect, useState } from "react"
 import { toast } from "sonner"
 
+import { usePrefs } from "@/components/prefs-provider"
 import { Button } from "@/components/ui/button"
 import {
   Dialog,
@@ -30,6 +31,7 @@ type TermsPayload = {
 
 export function TermsReacceptDialog() {
   const auth = useAuth()
+  const { t } = usePrefs()
   const [open, setOpen] = useState(false)
   const [busy, setBusy] = useState(false)
 
@@ -87,13 +89,13 @@ export function TermsReacceptDialog() {
       })
       const payload = (await response.json()) as TermsPayload
       if (!response.ok) {
-        toast.error(payload.reason ?? "Could not record acceptance.")
+        toast.error(payload.reason ?? t("terms.toast.error"))
         return
       }
       setOpen(false)
-      toast.success("Thanks — Terms accepted")
+      toast.success(t("terms.toast.accepted"))
     } catch {
-      toast.error("Could not record acceptance.")
+      toast.error(t("terms.toast.error"))
     } finally {
       setBusy(false)
     }
@@ -112,28 +114,32 @@ export function TermsReacceptDialog() {
     <Dialog open={open} onOpenChange={() => {}}>
       <DialogContent className="sm:max-w-md" showCloseButton={false}>
         <DialogHeader>
-          <DialogTitle>Complete account access</DialogTitle>
+          <DialogTitle>{t("terms.reacceptTitle")}</DialogTitle>
           <DialogDescription>
-            Before protected account features become available, accept version {TERMS_VERSION} / {PRIVACY_VERSION} (effective {LEGAL_EFFECTIVE_DATE}). Public browsing remains available without an account.
+            {t("terms.reacceptBody", {
+              terms: TERMS_VERSION,
+              privacy: PRIVACY_VERSION,
+              date: LEGAL_EFFECTIVE_DATE,
+            })}
           </DialogDescription>
         </DialogHeader>
         <p className="text-sm text-neutral-600">
-          Read the{" "}
+          {t("terms.reacceptRead")}{" "}
           <Link href="/terms" className="underline underline-offset-2">
-            Terms
+            {t("auth.terms")}
           </Link>{" "}
-          and{" "}
+          {t("auth.agreeTermsAnd")}{" "}
           <Link href="/privacy" className="underline underline-offset-2">
-            Privacy Policy
+            {t("auth.privacyPolicy")}
           </Link>
           .
         </p>
         <DialogFooter>
           <Button variant="outline" disabled={busy} onClick={() => void signOut()}>
-            Sign out
+            {t("terms.signOut")}
           </Button>
           <Button disabled={busy} onClick={() => void accept()}>
-            {busy ? "Please wait…" : "Accept"}
+            {busy ? t("terms.pleaseWait") : t("terms.accept")}
           </Button>
         </DialogFooter>
       </DialogContent>
