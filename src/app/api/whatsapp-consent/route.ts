@@ -4,6 +4,7 @@ import { canOwner } from "@/lib/access-control"
 import { boardDb } from "@/lib/board-db"
 import { resolveOwner, sameOrigin } from "@/lib/board-session"
 import { cleanListing } from "@/lib/board-payload"
+import { requireCurrentTerms } from "@/lib/terms-gate"
 import { isPubliclyVisibleListing, isListingStatus } from "@/lib/listing-status"
 import {
   WHATSAPP_CONSENT_SCOPE,
@@ -27,9 +28,11 @@ export async function POST(request: Request) {
 
   const response = NextResponse.json({ ok: true })
   const actor = await resolveOwner(request)
-  if (!canOwner(actor, "contact:direct")) {
+  if (!canOwner(actor, "contact:direct") || !actor || actor.kind !== "auth") {
     return NextResponse.json({ ok: false, reason: "Sign in to use direct contact." }, { status: 401 })
   }
+  const termsBlock = await requireCurrentTerms(actor.id)
+  if (termsBlock) return termsBlock
 
   let body: { listingId?: unknown }
   try {
