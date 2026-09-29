@@ -4,7 +4,6 @@ import type { Messages } from "@/lib/i18n/messages/en"
 export const fr: Messages = {
   "prefs.language": "Langue",
   "prefs.currency": "Devise",
-  "prefs.currencyListing": "Devise de l’annonce",
   "prefs.currencyHint": "Les prix sont affichés dans la devise sélectionnée. Les conversions sont approximatives.",
   "prefs.appearance": "Apparence",
   "prefs.sectionTitle": "Langue et devise",
