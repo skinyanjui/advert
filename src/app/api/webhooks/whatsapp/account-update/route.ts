@@ -42,7 +42,7 @@ export async function POST(request: Request) {
   const updates = whatsappAccountUpdates(body)
   try {
     for (const update of updates) {
-      await recordWhatsAppAccountUpdate(update)
+      await recordWhatsAppAccountUpdate(update.wabaId, update.value)
     }
   } catch (error) {
     console.error("Could not process WhatsApp account update", error)
