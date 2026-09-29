@@ -87,7 +87,6 @@ export function ListingDetail({ id }: { id: string }) {
 
   useEffect(() => {
     if (!listing) return
-    document.title = `${listing.title} · africa classifieds`
     if (!listing.mine) trackListingContactEvent(listing.id, "listing_view")
   }, [listing])
 
