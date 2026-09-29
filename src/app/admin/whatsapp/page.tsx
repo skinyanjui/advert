@@ -71,12 +71,12 @@ export default async function Page() {
                     {status.state.replaceAll("_", " ")}
                   </span>
                 </div>
-                {status.policy ? <p className="mt-3 text-sm text-neutral-700">{status.policy}</p> : null}
-                {status.reason ? <p className="mt-1 text-xs leading-5 text-neutral-500">{status.reason}</p> : null}
+                {status.policyName ? <p className="mt-3 text-sm text-neutral-700">{status.policyName}</p> : null}
+                {status.summary ? <p className="mt-1 text-xs leading-5 text-neutral-500">{status.summary}</p> : null}
                 <dl className="mt-3 grid gap-1 text-xs text-neutral-500">
                   <div className="flex justify-between gap-3">
                     <dt>Updated</dt>
-                    <dd>{new Date(status.updatedAt).toLocaleString()}</dd>
+                    <dd>{new Date(status.lastEventAt).toLocaleString()}</dd>
                   </div>
                   {status.restrictionUntil ? (
                     <div className="flex justify-between gap-3">
@@ -109,10 +109,10 @@ export default async function Page() {
                     <p className="text-sm font-medium">{String(event.waba_id)}</p>
                     <p className="text-xs text-neutral-500">{new Date(String(event.received_at)).toLocaleString()}</p>
                   </div>
-                  <p className="text-sm">{String(event.state).replaceAll("_", " ")}</p>
+                  <p className="text-sm">{String(event.enforcement_state).replaceAll("_", " ")}</p>
                   <div>
-                    {event.policy ? <p className="text-sm text-neutral-700">{String(event.policy)}</p> : null}
-                    {event.reason ? <p className="mt-1 text-xs leading-5 text-neutral-500">{String(event.reason)}</p> : null}
+                    {event.policy_name ? <p className="text-sm text-neutral-700">{String(event.policy_name)}</p> : null}
+                    {event.summary ? <p className="mt-1 text-xs leading-5 text-neutral-500">{String(event.summary)}</p> : null}
                   </div>
                 </article>
               ))}
