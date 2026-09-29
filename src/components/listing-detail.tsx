@@ -540,7 +540,7 @@ export function ListingDetail({ id }: { id: string }) {
                       </Button>
                     ) : <span />}
                     {phoneOpen ? (
-                      <Button variant="outline" className="h-10 rounded-full" onClick={() => setPhoneVisible(true)}>
+                      <Button variant="outline" className="h-10 rounded-full" onClick={revealAndCall}>
                         <Phone className="size-4" />
                         {phoneVisible ? listing.phone : t("listing.call")}
                       </Button>
