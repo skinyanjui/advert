@@ -11,7 +11,6 @@ import { ListingCard } from "@/components/listing-card"
 import { ListingPrice } from "@/components/listing-price"
 import { WhatsAppConsentAction } from "@/components/whatsapp-consent-action"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
-import { TermsNotice } from "@/components/terms-notice"
 import { Button } from "@/components/ui/button"
 import {
   Dialog,
@@ -114,9 +113,9 @@ export function ListingDetail({ id }: { id: string }) {
   const status = effectiveListingStatus(ad)
   const contactOpen = status === "active" && !ad.mine
   const whatsappOpen =
-    contactOpen && !isSample && ad.contactWhatsApp !== false && Boolean(ad.phone.trim())
+    contactOpen && auth.signedIn && !isSample && ad.contactWhatsApp !== false && Boolean(ad.phone.trim())
   const phoneOpen =
-    contactOpen && !isSample && ad.contactPhone !== false && Boolean(ad.phone.trim())
+    contactOpen && auth.signedIn && !isSample && ad.contactPhone !== false && Boolean(ad.phone.trim())
   const expiringSoon = isListingExpiringSoon(ad.expiresAt)
   const daysLeft = daysUntilExpiry(ad.expiresAt)
   const postedHours = ad.postedAt ? hoursAgoOf(ad) : ad.hoursAgo
@@ -380,7 +379,17 @@ export function ListingDetail({ id }: { id: string }) {
                 </h1>
               </div>
               <div className="flex gap-2">
-                <Button variant="outline" className="rounded-full" onClick={() => toggleSaved(listing.id)}>
+                <Button
+                  variant="outline"
+                  className="rounded-full"
+                  onClick={() => {
+                    if (auth.configured && !auth.signedIn) {
+                      router.push(signInHref(`/listings/${listing.id}`))
+                      return
+                    }
+                    toggleSaved(listing.id)
+                  }}
+                >
                   <Heart className={cn("size-4", saved && "fill-rose-500 text-rose-500")} />
                   {saved ? "Saved" : "Save"}
                 </Button>
@@ -549,7 +558,13 @@ export function ListingDetail({ id }: { id: string }) {
               <Button
                 variant="ghost"
                 className="h-9 w-full justify-start rounded-full px-2 text-neutral-500"
-                onClick={() => setReportOpen(true)}
+                onClick={() => {
+                  if (auth.configured && !auth.signedIn) {
+                    router.push(signInHref(`/listings/${listing.id}`))
+                    return
+                  }
+                  setReportOpen(true)
+                }}
               >
                 <Flag className="size-4" />
                 Report this ad
@@ -638,7 +653,6 @@ export function ListingDetail({ id }: { id: string }) {
           {message && messageError(message) ? (
             <p className="text-xs text-amber-700">{messageError(message)}</p>
           ) : null}
-          <TermsNotice />
           <DialogFooter>
             <Button variant="outline" disabled={messageSending} onClick={() => setMessageOpen(false)}>
               Cancel
