@@ -104,6 +104,12 @@ export default function TermsPage() {
           Buyers may also use marketplace messages when available.
         </p>
         <p className="text-sm leading-6 text-neutral-700">
+          Before opening WhatsApp, a buyer must explicitly agree to receive WhatsApp replies from the named seller
+          about that specific listing. That consent is scoped to the listing and does not authorize unrelated marketing.
+          Sellers using WhatsApp for business communications remain responsible for following WhatsApp&apos;s policies,
+          applicable law, opt-out requests, and any additional consent requirements for future or different categories of messages.
+        </p>
+        <p className="text-sm leading-6 text-neutral-700">
           WhatsApp and phone conversations take place outside {site.name}. We cannot review or
           recover those conversations through the marketplace, so users should keep records needed
           for safety, payment, delivery, or dispute purposes. Third-party services have their own
