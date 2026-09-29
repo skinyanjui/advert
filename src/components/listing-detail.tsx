@@ -37,6 +37,7 @@ import { resolvePlace } from "@/lib/cities"
 import { getCountry } from "@/lib/countries"
 import { trackListingContactEvent } from "@/lib/contact-events"
 import { formatPlace, initials, smsHref, whatsappHref } from "@/lib/format"
+import { listingContactCapabilities } from "@/lib/listing-contact"
 import { listingGridClassNameLoose } from "@/lib/listing-grid"
 import { osmLinks } from "@/lib/map"
 import { useMarketplace } from "@/lib/marketplace"
@@ -113,12 +114,19 @@ export function ListingDetail({ id }: { id: string }) {
   const backHref = backSearch ? `/${ad.category}?${backSearch}` : `/${ad.category}`
   const expired = isListingExpired(ad.expiresAt)
   const status = effectiveListingStatus(ad)
-  const contactOpen = status === "active" && !ad.mine
-  const whatsappOpen =
-    contactOpen && auth.signedIn && !isSample && ad.contactWhatsApp !== false && Boolean(ad.phone.trim())
-  const phoneOpen =
-    contactOpen && auth.signedIn && !isSample && ad.contactPhone !== false && Boolean(ad.phone.trim())
-  const textOpen = phoneOpen
+  const contact = listingContactCapabilities({
+    status,
+    mine: ad.mine === true,
+    signedIn: auth.signedIn,
+    sample: isSample,
+    hasPhone: Boolean(ad.phone.trim()),
+    whatsappEnabled: ad.contactWhatsApp !== false,
+    phoneEnabled: ad.contactPhone !== false,
+  })
+  const contactOpen = contact.message
+  const whatsappOpen = contact.whatsapp
+  const textOpen = contact.text
+  const phoneOpen = contact.call
   const expiringSoon = isListingExpiringSoon(ad.expiresAt)
   const daysLeft = daysUntilExpiry(ad.expiresAt)
   const postedHours = ad.postedAt ? hoursAgoOf(ad) : ad.hoursAgo
@@ -654,11 +662,15 @@ export function ListingDetail({ id }: { id: string }) {
           </div>
           {listing.mine ? (
             <Button className="shrink-0 rounded-full" asChild>
-              <Link href={`/post?edit=${listing.id}`}>Edit ad</Link>
+              <Link href={`/post?edit=${listing.id}`}>{t("common.edit")}</Link>
             </Button>
           ) : !contactOpen ? (
             <Button className="shrink-0 rounded-full" disabled>
-              {expired ? t("listing.expired") : t("listing.sold")}
+              {contact.closedStatus === "expired"
+                ? t("listing.expired")
+                : contact.closedStatus === "paused"
+                  ? t("listing.paused")
+                  : t("listing.sold")}
             </Button>
           ) : (
             <div className="flex shrink-0 items-center gap-1.5">
@@ -671,7 +683,7 @@ export function ListingDetail({ id }: { id: string }) {
                   sellerName={listing.sellerName}
                   listingTitle={listing.title}
                   href={whatsappHref(listing.phone, listing.title)}
-                  ariaLabel="Chat on WhatsApp"
+                  ariaLabel={t("listing.whatsapp")}
                   className="inline-flex size-10 shrink-0 items-center justify-center rounded-full border border-neutral-200 bg-white transition hover:bg-neutral-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-neutral-950"
                 >
                   <WhatsAppIcon className="size-4 text-[#25D366]" />
@@ -694,7 +706,7 @@ export function ListingDetail({ id }: { id: string }) {
                   variant="outline"
                   size="icon"
                   className="size-10 shrink-0 rounded-full"
-                  aria-label={phoneVisible ? `Call ${listing.phone}` : "Call seller"}
+                  aria-label={t("listing.callPhone", { phone: listing.phone })}
                   onClick={revealAndCall}
                 >
                   <Phone className="size-4" />
@@ -707,15 +719,15 @@ export function ListingDetail({ id }: { id: string }) {
       <Dialog open={confirmRemove} onOpenChange={setConfirmRemove}>
         <DialogContent className="sm:max-w-md">
           <DialogHeader>
-            <DialogTitle>Remove this ad?</DialogTitle>
+            <DialogTitle>{t("myAds.removeTitle")}</DialogTitle>
           </DialogHeader>
-          <p className="text-sm text-neutral-600">“{listing.title}” will leave the board.</p>
+          <p className="text-sm text-neutral-600">{t("myAds.removeBody", { title: listing.title })}</p>
           <DialogFooter>
             <Button variant="outline" onClick={() => setConfirmRemove(false)}>
-              Keep it
+              {t("myAds.keepIt")}
             </Button>
             <Button variant="destructive" disabled={busy} onClick={() => void onRemove()}>
-              Remove ad
+              {t("myAds.removeAd")}
             </Button>
           </DialogFooter>
         </DialogContent>
@@ -723,14 +735,14 @@ export function ListingDetail({ id }: { id: string }) {
       <Dialog open={reportOpen} onOpenChange={setReportOpen}>
         <DialogContent className="sm:max-w-md">
           <DialogHeader>
-            <DialogTitle>Report this ad</DialogTitle>
+            <DialogTitle>{t("report.title")}</DialogTitle>
           </DialogHeader>
           <div className="grid gap-3">
             <div className="grid gap-1.5">
-              <Label htmlFor="report-reason">Reason</Label>
+              <Label htmlFor="report-reason">{t("report.reasonLabel")}</Label>
               <Select value={reportReason} onValueChange={setReportReason}>
                 <SelectTrigger id="report-reason" className="w-full">
-                  <SelectValue placeholder="Choose a reason" />
+                  <SelectValue placeholder={t("report.chooseReason")} />
                 </SelectTrigger>
                 <SelectContent>
                   {reportReasons.map((item) => (
@@ -742,22 +754,22 @@ export function ListingDetail({ id }: { id: string }) {
               </Select>
             </div>
             <div className="grid gap-1.5">
-              <Label htmlFor="report-note">Note (optional)</Label>
+              <Label htmlFor="report-note">{t("report.noteLabel")}</Label>
               <Textarea
                 id="report-note"
                 value={reportNote}
                 onChange={(event) => setReportNote(event.target.value)}
-                placeholder="Anything that helps a reviewer"
+                placeholder={t("report.notePlaceholder")}
                 rows={3}
               />
             </div>
           </div>
           <DialogFooter>
             <Button variant="outline" onClick={() => setReportOpen(false)}>
-              Cancel
+              {t("common.cancel")}
             </Button>
             <Button disabled={reportBusy || !reportReason} onClick={() => void submitReport()}>
-              {reportBusy ? "Sending…" : "Send report"}
+              {reportBusy ? t("report.sending") : t("report.send")}
             </Button>
           </DialogFooter>
         </DialogContent>
