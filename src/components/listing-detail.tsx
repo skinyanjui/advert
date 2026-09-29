@@ -8,6 +8,7 @@ import { useEffect, useRef, useState } from "react"
 import { toast } from "sonner"
 
 import { ListingCard } from "@/components/listing-card"
+import { usePrefs } from "@/components/prefs-provider"
 import { ListingPrice } from "@/components/listing-price"
 import { WhatsAppConsentAction } from "@/components/whatsapp-consent-action"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
@@ -61,6 +62,7 @@ export function ListingDetail({ id }: { id: string }) {
   const searchParams = useSearchParams()
   const router = useRouter()
   const auth = useAuth()
+  const { t } = usePrefs()
   const { listings, ready, isSaved, toggleSaved, messages, sendMessage, setListingSold, setListingPaused, renewListing, removeListing } =
     useMarketplace()
   const listing = listings.find((item) => item.id === id)
@@ -126,23 +128,23 @@ export function ListingDetail({ id }: { id: string }) {
   const expiryLabel =
     !expired && daysLeft !== undefined && daysLeft > 0
       ? daysLeft === 1
-        ? "Expires in 1 day"
-        : `Expires in ${daysLeft} days`
+        ? t("listing.expiresInOneDay")
+        : t("listing.expiresInDays", { count: daysLeft })
       : undefined
 
   async function share() {
     const url = window.location.href
     try {
       await navigator.clipboard.writeText(url)
-      toast.success("Link copied")
+      toast.success(t("toast.linkCopied"))
     } catch {
-      toast.error("Could not copy the link")
+      toast.error(t("toast.copyError"))
     }
   }
 
   function openMessageComposer() {
     if (auth.configured && !auth.signedIn) {
-      toast.error("Sign in to send a message")
+      toast.error(t("toast.signInToMessage"))
       router.push(signInHref(`/listings/${ad.id}`))
       return
     }
@@ -159,7 +161,7 @@ export function ListingDetail({ id }: { id: string }) {
   async function submitMessage() {
     if (messageSendingRef.current || !contactOpen) return
     if (auth.configured && !auth.signedIn) {
-      toast.error("Sign in to send a message")
+      toast.error(t("toast.signInToMessage"))
       router.push(signInHref(`/listings/${ad.id}`))
       return
     }
@@ -178,9 +180,9 @@ export function ListingDetail({ id }: { id: string }) {
       }
       setMessageOpen(false)
       setMessage("")
-      toast.success(`Message sent to ${ad.sellerName}`)
+      toast.success(t("toast.messageSentTo", { name: ad.sellerName }))
     } catch {
-      toast.error("Could not send your message. Please try again.")
+      toast.error(t("toast.messageError"))
     } finally {
       messageSendingRef.current = false
       setMessageSending(false)
@@ -196,7 +198,7 @@ export function ListingDetail({ id }: { id: string }) {
       toast.error(result.reason)
       return
     }
-    toast.success(next ? "Marked as sold" : "Marked as available")
+    toast.success(next ? t("myAds.toast.sold") : t("myAds.toast.available"))
   }
 
   async function onPause() {
@@ -208,7 +210,7 @@ export function ListingDetail({ id }: { id: string }) {
       toast.error(result.reason)
       return
     }
-    toast.success(next ? "Ad paused" : "Ad resumed")
+    toast.success(next ? t("myAds.toast.paused") : t("myAds.toast.resumed"))
   }
 
   async function onRenew() {
@@ -219,7 +221,7 @@ export function ListingDetail({ id }: { id: string }) {
       toast.error(result.reason)
       return
     }
-    toast.success("Ad renewed")
+    toast.success(t("myAds.toast.renewed"))
   }
 
   async function onRemove() {
@@ -231,7 +233,7 @@ export function ListingDetail({ id }: { id: string }) {
       toast.error(result.reason)
       return
     }
-    toast.success("Ad removed")
+    toast.success(t("myAds.toast.removed"))
     router.push("/my-ads")
   }
 
@@ -249,15 +251,15 @@ export function ListingDetail({ id }: { id: string }) {
       })
       const payload = (await response.json()) as { reason?: string }
       if (!response.ok) {
-        toast.error(payload.reason ?? "Could not send the report.")
+        toast.error(payload.reason ?? t("report.toast.error"))
         return
       }
       setReportOpen(false)
       setReportReason("")
       setReportNote("")
-      toast.success("Report sent. Thanks for helping keep the board safe.")
+      toast.success(t("report.toast.sent"))
     } catch {
-      toast.error("Could not send the report.")
+      toast.error(t("report.toast.error"))
     } finally {
       setReportBusy(false)
     }
@@ -303,7 +305,7 @@ export function ListingDetail({ id }: { id: string }) {
                     variant="secondary"
                     size="icon"
                     className="absolute top-1/2 left-2 size-9 -translate-y-1/2 rounded-full bg-white/95"
-                    aria-label="Previous photo"
+                    aria-label={t("listing.previousPhoto")}
                     onClick={() => setPhotoIndex((index) => (index - 1 + gallery.length) % gallery.length)}
                   >
                     <ChevronLeft className="size-4" />
@@ -313,7 +315,7 @@ export function ListingDetail({ id }: { id: string }) {
                     variant="secondary"
                     size="icon"
                     className="absolute top-1/2 right-2 size-9 -translate-y-1/2 rounded-full bg-white/95"
-                    aria-label="Next photo"
+                    aria-label={t("listing.nextPhoto")}
                     onClick={() => setPhotoIndex((index) => (index + 1) % gallery.length)}
                   >
                     <ChevronRight className="size-4" />
@@ -356,26 +358,26 @@ export function ListingDetail({ id }: { id: string }) {
               <div className="min-w-0">
                 {isSample ? (
                   <span className="mb-2 inline-flex rounded-full border border-neutral-200 bg-neutral-50 px-2 py-0.5 text-[11px] font-medium text-neutral-600">
-                    Sample listing
+                    {t("listing.sampleAd")}
                   </span>
                 ) : null}
                 {listing.sponsored ? (
-                  <p className="mb-1 text-xs font-medium tracking-wide text-sky-800 uppercase">Sponsored</p>
+                  <p className="mb-1 text-xs font-medium tracking-wide text-sky-800 uppercase">{t("listing.sponsored")}</p>
                 ) : null}
                 {listing.sold || status === "sold" ? (
-                  <p className="mb-1 text-xs font-medium tracking-wide text-neutral-500 uppercase">Sold</p>
+                  <p className="mb-1 text-xs font-medium tracking-wide text-neutral-500 uppercase">{t("listing.sold")}</p>
                 ) : null}
                 {status === "paused" && listing.mine ? (
-                  <p className="mb-1 text-xs font-medium tracking-wide text-amber-700 uppercase">Paused</p>
+                  <p className="mb-1 text-xs font-medium tracking-wide text-amber-700 uppercase">{t("listing.paused")}</p>
                 ) : null}
                 {listing.hidden && listing.mine ? (
-                  <p className="mb-1 text-xs font-medium tracking-wide text-amber-700 uppercase">Hidden from the board</p>
+                  <p className="mb-1 text-xs font-medium tracking-wide text-amber-700 uppercase">{t("listing.hiddenFromBoard")}</p>
                 ) : null}
                 {listing.mine && (expired || status === "expired") ? (
-                  <p className="mb-1 text-xs font-medium tracking-wide text-neutral-500 uppercase">Expired</p>
+                  <p className="mb-1 text-xs font-medium tracking-wide text-neutral-500 uppercase">{t("listing.expired")}</p>
                 ) : listing.mine && expiringSoon ? (
                   <p className="mb-1 text-xs font-medium tracking-wide text-amber-700 uppercase">
-                    {expiryLabel ?? "Expiring soon"}
+                    {expiryLabel ?? t("listing.expiringSoon")}
                   </p>
                 ) : null}
                 <p className="text-2xl font-semibold tracking-tight">
@@ -398,11 +400,11 @@ export function ListingDetail({ id }: { id: string }) {
                   }}
                 >
                   <Heart className={cn("size-4", saved && "fill-rose-500 text-rose-500")} />
-                  {saved ? "Saved" : "Save"}
+                  {saved ? t("listing.saved") : t("listing.saveShort")}
                 </Button>
                 <Button variant="outline" className="rounded-full" onClick={share}>
                   <Share2 />
-                  Share
+                  {t("listing.share")}
                 </Button>
               </div>
             </div>
@@ -464,39 +466,39 @@ export function ListingDetail({ id }: { id: string }) {
             </Avatar>
             <div className="min-w-0 flex-1">
               <p className="truncate font-medium">{listing.sellerName}</p>
-              <p className="text-xs text-neutral-500">Member since {listing.sellerSince}</p>
+              <p className="text-xs text-neutral-500">{t("listing.memberSince", { year: listing.sellerSince })}</p>
             </div>
           </div>
           <div className="mt-4 grid gap-2">
             {listing.mine ? (
               <>
                 <Button className="h-10 rounded-full" asChild>
-                  <Link href={`/post?edit=${listing.id}`}>Edit ad</Link>
+                  <Link href={`/post?edit=${listing.id}`}>{t("common.edit")}</Link>
                 </Button>
                 <Button variant="outline" className="h-10 rounded-full" disabled={busy} onClick={() => void onSold()}>
-                  {status === "sold" ? "Mark available" : "Mark sold"}
+                  {status === "sold" ? t("listing.markAvailable") : t("listing.markSold")}
                 </Button>
                 {status === "active" || status === "paused" ? (
                   <Button variant="outline" className="h-10 rounded-full" disabled={busy} onClick={() => void onPause()}>
-                    {status === "paused" ? "Resume ad" : "Pause ad"}
+                    {status === "paused" ? t("listing.resumeAd") : t("listing.pauseAd")}
                   </Button>
                 ) : null}
                 {status !== "sold" || expired ? (
                   <Button variant="outline" className="h-10 rounded-full" disabled={busy} onClick={() => void onRenew()}>
-                    Renew ad
+                    {t("listing.renewAd")}
                   </Button>
                 ) : null}
                 <Button variant="outline" className="h-10 rounded-full" disabled={busy} onClick={() => setConfirmRemove(true)}>
-                  Remove ad
+                  {t("listing.removeAd")}
                 </Button>
                 {threadCount > 0 ? (
                   <Button variant="outline" className="h-10 rounded-full" asChild>
                     <Link href={`/messages?listing=${listing.id}`}>
                       {unreadHere > 0
-                        ? `Messages (${unreadHere} unread)`
+                        ? t("listing.yourMessagesUnread", { count: unreadHere })
                         : threadCount === 1
-                          ? "Messages (1 conversation)"
-                          : `Messages (${threadCount} conversations)`}
+                          ? t("listing.messagesCount", { count: 1 })
+                          : t("listing.messagesCountMany", { count: threadCount })}
                     </Link>
                   </Button>
                 ) : null}
@@ -504,15 +506,15 @@ export function ListingDetail({ id }: { id: string }) {
             ) : status !== "active" ? (
               <p className="rounded-xl bg-neutral-50 px-3 py-3 text-sm text-neutral-600">
                 {status === "expired"
-                  ? "This ad has expired. Contact options are closed."
+                  ? t("listing.contactClosedExpired")
                   : status === "paused"
-                    ? "This ad is no longer available."
-                    : "This ad is marked sold. Contact options are closed."}
+                    ? t("listing.contactClosedUnavailable")
+                    : t("listing.contactClosedSold")}
               </p>
             ) : (
               <>
                 <Button className="h-10 rounded-full" onClick={openMessageComposer}>
-                  {auth.configured && !auth.signedIn ? "Sign in to message" : "Message seller"}
+                  {auth.configured && !auth.signedIn ? t("listing.signInToMessage") : t("listing.messageSeller")}
                 </Button>
                 {whatsappOpen || textOpen || phoneOpen ? (
                   <div className="grid grid-cols-3 gap-2">
@@ -522,25 +524,25 @@ export function ListingDetail({ id }: { id: string }) {
                         sellerName={listing.sellerName}
                         listingTitle={listing.title}
                         href={whatsappHref(listing.phone, listing.title)}
-                        ariaLabel="Chat on WhatsApp"
+                        ariaLabel={t("listing.whatsapp")}
                         className="inline-flex h-10 items-center justify-center gap-2 rounded-full border border-neutral-200 bg-white px-3 text-sm font-medium transition hover:bg-neutral-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-neutral-950"
                       >
                         <WhatsAppIcon className="size-4" />
-                        WhatsApp
+                        {t("listing.whatsapp")}
                       </WhatsAppConsentAction>
                     ) : <span />}
                     {textOpen ? (
                       <Button variant="outline" className="h-10 rounded-full" asChild>
                         <a href={smsHref(listing.phone, listing.title)} onClick={() => trackListingContactEvent(listing.id, "sms_click")}>
                           <MessageSquareText className="size-4" />
-                          Text
+                          {t("listing.text")}
                         </a>
                       </Button>
                     ) : <span />}
                     {phoneOpen ? (
                       <Button variant="outline" className="h-10 rounded-full" onClick={() => setPhoneVisible(true)}>
                         <Phone className="size-4" />
-                        {phoneVisible ? listing.phone : "Call"}
+                        {phoneVisible ? listing.phone : t("listing.call")}
                       </Button>
                     ) : <span />}
                   </div>
@@ -550,13 +552,13 @@ export function ListingDetail({ id }: { id: string }) {
             {!listing.mine && myMessageCount > 0 ? (
               <Button variant="outline" className="h-10 rounded-full" asChild>
                 <Link href={`/messages?listing=${listing.id}`}>
-                  {unreadHere > 0 ? `Your messages (${unreadHere} unread)` : "Your messages"}
+                  {unreadHere > 0 ? t("listing.yourMessagesUnread", { count: unreadHere }) : t("listing.yourMessages")}
                 </Link>
               </Button>
             ) : null}
             {listing.mine ? (
               <Button variant="outline" className="h-10 rounded-full" onClick={() => setPhoneVisible(true)}>
-                {phoneVisible ? listing.phone : "Show phone number"}
+                {phoneVisible ? listing.phone : t("listing.showPhone")}
               </Button>
             ) : null}
           </div>
@@ -566,13 +568,13 @@ export function ListingDetail({ id }: { id: string }) {
               className="mt-4 grid gap-3 border-t border-neutral-100 pt-4"
             >
               <div>
-                <p className="text-sm font-medium text-neutral-950">Message {listing.sellerName}</p>
+                <p className="text-sm font-medium text-neutral-950">{t("listing.messageSellerName", { name: listing.sellerName })}</p>
                 <p className="mt-0.5 text-xs text-neutral-500">
-                  This conversation stays attached to this listing.
+                  {t("listing.messageThreadHint")}
                 </p>
               </div>
               <Textarea
-                aria-label="Your message"
+                aria-label={t("listing.yourMessage")}
                 value={message}
                 onChange={(event) => setMessage(event.target.value)}
                 placeholder={voice.messagePlaceholder}
@@ -592,13 +594,13 @@ export function ListingDetail({ id }: { id: string }) {
                     setMessage("")
                   }}
                 >
-                  Cancel
+                  {t("common.cancel")}
                 </Button>
                 <Button
                   disabled={messageSending || !!messageError(message)}
                   onClick={() => void submitMessage()}
                 >
-                  {messageSending ? "Sending…" : "Send"}
+                  {messageSending ? t("listing.sending") : t("listing.send")}
                 </Button>
               </div>
             </div>
@@ -607,7 +609,7 @@ export function ListingDetail({ id }: { id: string }) {
             safety={voice.safety}
             messagingHint={
               !listing.mine && contactOpen
-                ? "Marketplace messages stay with this listing. WhatsApp, text, and phone contact are available only when the seller enables direct contact."
+                ? t("listing.contactHint")
                 : undefined
             }
           />
@@ -625,7 +627,7 @@ export function ListingDetail({ id }: { id: string }) {
                 }}
               >
                 <Flag className="size-4" />
-                Report this ad
+                {t("report.title")}
               </Button>
             </div>
           ): null}
@@ -634,7 +636,7 @@ export function ListingDetail({ id }: { id: string }) {
       </div>
       {related.length > 0 ? (
         <section className="mt-10">
-          <h2 className="text-sm font-medium text-neutral-950">Similar listings</h2>
+          <h2 className="text-sm font-medium text-neutral-950">{t("listing.similar")}</h2>
           <div className={`mt-3 ${listingGridClassNameLoose}`}>
             {related.map((item) => (
               <ListingCard key={item.id} listing={item} preserve={keptSearch(searchParams, item.subcategory)} />
@@ -656,12 +658,12 @@ export function ListingDetail({ id }: { id: string }) {
             </Button>
           ) : !contactOpen ? (
             <Button className="shrink-0 rounded-full" disabled>
-              {expired ? "Expired" : "Sold"}
+              {expired ? t("listing.expired") : t("listing.sold")}
             </Button>
           ) : (
             <div className="flex shrink-0 items-center gap-1.5">
               <Button className="h-10 max-w-[9.5rem] shrink-0 truncate rounded-full px-3" onClick={openMessageComposer}>
-                {auth.configured && !auth.signedIn ? "Sign in" : "Message seller"}
+                {auth.configured && !auth.signedIn ? t("nav.signIn") : t("listing.messageSeller")}
               </Button>
               {whatsappOpen ? (
                 <WhatsAppConsentAction
@@ -679,7 +681,7 @@ export function ListingDetail({ id }: { id: string }) {
                 <Button type="button" variant="outline" size="icon" className="size-10 shrink-0 rounded-full" asChild>
                   <a
                     href={smsHref(listing.phone, listing.title)}
-                    aria-label="Text seller"
+                    aria-label={t("listing.text")}
                     onClick={() => trackListingContactEvent(listing.id, "sms_click")}
                   >
                     <MessageSquareText className="size-4" />
