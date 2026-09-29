@@ -203,6 +203,7 @@ function ProfileNotifications() {
 }
 
 function CountryMenu({ label, query }: { label: string; query: ListingQuery }) {
+  const { t } = usePrefs()
   const pathname = usePathname()
   const searchParams = useSearchParams()
   const home = useHomePlace()
@@ -226,7 +227,7 @@ function CountryMenu({ label, query }: { label: string; query: ListingQuery }) {
 
   return (
     <HeaderMenu
-      label={`Country: ${label}`}
+      label={t("nav.country", { label })}
       summaryClassName="h-10 px-2.5 sm:max-w-48 sm:px-3 lg:max-w-44"
       panelClassName="w-64"
       onOpen={() => setLocationQuery("")}
@@ -266,8 +267,8 @@ function CountryMenu({ label, query }: { label: string; query: ListingQuery }) {
             const city = cityHits[0]
             if (city) choosePlace(city.country, city.name)
           }}
-          placeholder="Country, capital, or city"
-          aria-label="Search countries and cities"
+          placeholder={t("nav.searchPlace")}
+          aria-label={t("nav.searchPlaceLabel")}
           className="h-8"
         />
       </div>
@@ -278,7 +279,7 @@ function CountryMenu({ label, query }: { label: string; query: ListingQuery }) {
           onClick={() => clearBrowsingEverywhere()}
         >
           <span className="min-w-0 flex-1 truncate">{homeLabel}</span>
-          <span className="text-[11px] text-neutral-400">Default</span>
+          <span className="text-[11px] text-neutral-400">{t("nav.defaultPlace")}</span>
         </MenuLink>
       ) : null}
       {canSaveDefault ? (
@@ -291,7 +292,7 @@ function CountryMenu({ label, query }: { label: string; query: ListingQuery }) {
             writeHomePlace({ country: query.country, city: query.city })
           }}
         >
-          <span>Save as default</span>
+          <span>{t("nav.saveAsDefault")}</span>
           <span className="text-xs font-normal text-neutral-500">{currentLabel}</span>
         </button>
       ) : null}
@@ -302,13 +303,13 @@ function CountryMenu({ label, query }: { label: string; query: ListingQuery }) {
           className="flex h-8 w-full cursor-pointer items-center rounded-md px-2 text-left text-sm hover:bg-neutral-100"
           onClick={() => writeHomePlace(null)}
         >
-          Clear default
+          {t("nav.clearDefault")}
         </button>
       ) : null}
       {home || canSaveDefault ? <div className="mx-1 my-1 h-px bg-neutral-200" /> : null}
       {searching ? null : (
         <MenuLink href={locationHref(pathname, search, null)} onClick={() => markBrowsingEverywhere()}>
-          <span className={cn("min-w-0 flex-1 truncate", !query.country && "font-medium")}>All Africa</span>
+          <span className={cn("min-w-0 flex-1 truncate", !query.country && "font-medium")}>{t("nav.allAfrica")}</span>
         </MenuLink>
       )}
       <div className="max-h-72 overflow-y-auto">
@@ -351,7 +352,7 @@ function CountryMenu({ label, query }: { label: string; query: ListingQuery }) {
           </>
         ) : null}
         {searching && matches.length === 0 && cityHits.length === 0 ? (
-          <p className="px-2 py-3 text-xs text-neutral-500">No country or city matches.</p>
+          <p className="px-2 py-3 text-xs text-neutral-500">{t("nav.noPlaceMatches")}</p>
         ) : null}
       </div>
     </HeaderMenu>
@@ -502,6 +503,7 @@ function MenuLink({
 
 
 function SearchField({ value, onChange }: { value: string; onChange: (value: string) => void }) {
+  const { t } = usePrefs()
   const [draft, setDraft] = useState(value)
   const [focused, setFocused] = useState(false)
 
@@ -519,8 +521,8 @@ function SearchField({ value, onChange }: { value: string; onChange: (value: str
           setDraft(event.target.value)
           onChange(event.target.value)
         }}
-        placeholder="Search for cars, houses, jobs, electronics and more..."
-        aria-label="Search listings"
+        placeholder={t("nav.searchPlaceholder")}
+        aria-label={t("nav.searchListings")}
         className="h-11 rounded-full border-transparent bg-neutral-100 pr-4 pl-10 text-sm shadow-none focus-visible:border-neutral-300 focus-visible:bg-white focus-visible:ring-neutral-200"
       />
     </div>
