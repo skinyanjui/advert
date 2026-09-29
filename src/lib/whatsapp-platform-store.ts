@@ -72,3 +72,20 @@ export async function getWhatsAppPlatformStatus(wabaId: string): Promise<WhatsAp
     lastEventAt: data.last_event_at,
   }
 }
+
+
+export async function listWhatsAppPlatformStatuses() {
+  const { data, error } = await boardDb()
+    .from("whatsapp_platform_status")
+    .select("waba_id,state,restriction_until,policy,reason,updated_at")
+    .order("updated_at", { ascending: false })
+  if (error) throw new Error(error.message)
+  return (data ?? []).map((row: StatusRow) => ({
+    wabaId: row.waba_id,
+    state: row.state,
+    restrictionUntil: row.restriction_until ?? undefined,
+    policy: row.policy ?? undefined,
+    reason: row.reason ?? undefined,
+    updatedAt: row.updated_at,
+  }))
+}
