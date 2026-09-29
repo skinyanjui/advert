@@ -1,6 +1,6 @@
 import type { Metadata } from "next"
 import { Geist, Geist_Mono } from "next/font/google"
-import { Suspense } from "react"
+import { Suspense, type ReactNode } from "react"
 
 import { CategorySidebar } from "@/components/category-top-nav"
 import { HeaderFallback, SiteHeader } from "@/components/site-header"
@@ -37,7 +37,7 @@ export const metadata: Metadata = {
   description: site.tagline,
 }
 
-export default function RootLayout({ children }: LayoutProps<"/">) {
+export default function RootLayout({ children }: { children: ReactNode }) {
   return (
     <html lang="en" className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`} suppressHydrationWarning>
       <body className="flex min-h-full flex-col bg-background pb-[calc(env(safe-area-inset-bottom)+6rem)] font-sans text-foreground md:pb-0">
