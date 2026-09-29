@@ -1,5 +1,5 @@
+import { canOwner } from "@/lib/access-control"
 import { fail, ok } from "@/lib/api"
-import { isAdminEmail } from "@/lib/admin"
 import { resolveMutationOwner, resolveOwner } from "@/lib/board-session"
 import {
   dismissReport,
@@ -14,7 +14,7 @@ export const runtime = "nodejs"
 
 async function requireAdmin(request: Request, mutating: boolean) {
   const owner = mutating ? await resolveMutationOwner(request) : await resolveOwner(request)
-  if (!owner || owner.kind !== "auth" || !isAdminEmail(owner.email)) {
+  if (!canOwner(owner, "admin") || !owner || owner.kind !== "auth") {
     return undefined
   }
   return owner
