@@ -1,0 +1,36 @@
+import { isAdminEmail } from "@/lib/admin"
+import type { BoardOwner } from "@/lib/board-session"
+
+export const appRoles = ["guest", "member", "admin"] as const
+export type AppRole = (typeof appRoles)[number]
+
+export const appPermissions = [
+  "browse",
+  "contact:direct",
+  "message",
+  "save",
+  "report",
+  "post",
+  "profile",
+  "admin",
+] as const
+export type AppPermission = (typeof appPermissions)[number]
+
+const grants: Record<AppRole, ReadonlySet<AppPermission>> = {
+  guest: new Set(["browse"]),
+  member: new Set(["browse", "contact:direct", "message", "save", "report", "post", "profile"]),
+  admin: new Set(appPermissions),
+}
+
+export function roleForOwner(owner: BoardOwner | undefined): AppRole {
+  if (!owner || owner.kind !== "auth") return "guest"
+  return isAdminEmail(owner.email) ? "admin" : "member"
+}
+
+export function can(role: AppRole, permission: AppPermission): boolean {
+  return grants[role].has(permission)
+}
+
+export function canOwner(owner: BoardOwner | undefined, permission: AppPermission): boolean {
+  return can(roleForOwner(owner), permission)
+}
