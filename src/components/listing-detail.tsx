@@ -531,7 +531,7 @@ export function ListingDetail({ id }: { id: string }) {
                     ) : <span />}
                     {textOpen ? (
                       <Button variant="outline" className="h-10 rounded-full" asChild>
-                        <a href={smsHref(listing.phone, listing.title)} onClick={() => trackListingContactEvent(listing.id, "phone_click")}>
+                        <a href={smsHref(listing.phone, listing.title)} onClick={() => trackListingContactEvent(listing.id, "sms_click")}>
                           <MessageSquareText className="size-4" />
                           Text
                         </a>
@@ -607,7 +607,7 @@ export function ListingDetail({ id }: { id: string }) {
             safety={voice.safety}
             messagingHint={
               !listing.mine && contactOpen
-                ? "Marketplace messages stay with this listing. Direct WhatsApp or phone contact is available only when the seller enables it."
+                ? "Marketplace messages stay with this listing. WhatsApp, text, and phone contact are available only when the seller enables direct contact."
                 : undefined
             }
           />
@@ -680,7 +680,7 @@ export function ListingDetail({ id }: { id: string }) {
                   <a
                     href={smsHref(listing.phone, listing.title)}
                     aria-label="Text seller"
-                    onClick={() => trackListingContactEvent(listing.id, "phone_click")}
+                    onClick={() => trackListingContactEvent(listing.id, "sms_click")}
                   >
                     <MessageSquareText className="size-4" />
                   </a>
