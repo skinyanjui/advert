@@ -4,10 +4,13 @@
   "private": true,
   "scripts": {
     "dev": "next dev",
-    "build": "next build",
+    "build": "npm run ci",
     "start": "next start",
     "lint": "eslint",
-    "test": "tsx --test scripts/listing-rules.test.ts scripts/auth-redirect.test.ts scripts/messages.test.ts scripts/reports.test.ts scripts/expiry.test.ts scripts/photos.test.ts scripts/lock-listings-reads.test.ts scripts/relative-time.test.ts scripts/scroll-fades.test.ts scripts/listing-status.test.ts scripts/profile.test.ts scripts/contact-phone.test.ts scripts/contact-events.test.ts scripts/whatsapp-consent.test.ts scripts/whatsapp-platform-policy.test.ts scripts/whatsapp-webhook.test.ts scripts/posting-country.test.ts scripts/legal.test.ts scripts/fx.test.ts scripts/i18n.test.ts scripts/prefs.test.ts"
+    "test": "tsx --test scripts/listing-rules.test.ts scripts/auth-redirect.test.ts scripts/messages.test.ts scripts/reports.test.ts scripts/expiry.test.ts scripts/photos.test.ts scripts/lock-listings-reads.test.ts scripts/relative-time.test.ts scripts/scroll-fades.test.ts scripts/listing-status.test.ts scripts/profile.test.ts scripts/contact-phone.test.ts scripts/contact-events.test.ts scripts/whatsapp-consent.test.ts scripts/whatsapp-platform-policy.test.ts scripts/whatsapp-webhook.test.ts scripts/posting-country.test.ts scripts/legal.test.ts scripts/fx.test.ts scripts/i18n.test.ts scripts/prefs.test.ts",
+    "build:app": "next build",
+    "typecheck": "tsc --noEmit",
+    "ci": "npm run lint && npm run typecheck && npm test && npm run build:app"
   },
   "dependencies": {
     "@supabase/ssr": "^0.12.7",
