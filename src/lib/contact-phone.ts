@@ -1,3 +1,5 @@
+import { getCountry } from "@/lib/countries"
+
 /** Shared call/WhatsApp contact phone rules (listings + saved profile contact). */
 
 export const contactPhoneMaxLength = 30
@@ -12,10 +14,11 @@ export function contactPhoneDigits(value: string): string {
  */
 export function contactPhoneError(
   value: string,
-  options: { required?: boolean } = {},
+  options: { required?: boolean; countryCode?: string | null } = {},
 ): string | undefined {
   const trimmed = value.trim()
-  const digits = contactPhoneDigits(trimmed).length
+  const normalized = normalizeContactPhone(trimmed, options.countryCode)
+  const digits = contactPhoneDigits(normalized).length
   if (!trimmed) {
     return options.required ? "Add a phone number people can use." : undefined
   }
@@ -27,8 +30,19 @@ export function contactPhoneError(
   return undefined
 }
 
-export function normalizeContactPhone(value: string): string {
-  return value.trim().slice(0, contactPhoneMaxLength)
+export function normalizeContactPhone(value: string, countryCode?: string | null): string {
+  const trimmed = value.trim().slice(0, contactPhoneMaxLength)
+  if (!trimmed) return ""
+  const digits = contactPhoneDigits(trimmed)
+  if (!digits) return ""
+  if (trimmed.startsWith("+")) return `+${digits}`
+  if (trimmed.startsWith("00")) return `+${digits.slice(2)}`
+  const callingCode = countryCode ? getCountry(countryCode)?.callingCode : undefined
+  const countryDigits = callingCode ? contactPhoneDigits(callingCode) : ""
+  if (!countryDigits) return trimmed
+  if (digits.startsWith(countryDigits)) return `+${digits}`
+  const localDigits = digits.replace(/^0+/, "")
+  return `+${countryDigits}${localDigits}`
 }
 
 /** Placeholder uses the listing country's calling code when known; never invents a default. */
