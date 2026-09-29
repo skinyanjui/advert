@@ -1,3 +1,4 @@
+import { canOwner } from "@/lib/access-control"
 import { fail, ok } from "@/lib/api"
 import { resolveMutationOwner } from "@/lib/board-session"
 import {
@@ -16,7 +17,7 @@ type Context = { params: Promise<{ id: string }> }
 export async function PATCH(request: Request, context: Context) {
   const owner = await resolveMutationOwner(request)
   // Guests must sign in to manage browser-session ads; claim moves them on sign-in.
-  if (!owner || owner.kind !== "auth") {
+  if (!canOwner(owner, "post") || !owner || owner.kind !== "auth") {
     return fail("Sign in to manage this ad.", 401)
   }
   const { id } = await context.params
@@ -32,7 +33,7 @@ export async function PATCH(request: Request, context: Context) {
 
 export async function DELETE(request: Request, context: Context) {
   const owner = await resolveMutationOwner(request)
-  if (!owner || owner.kind !== "auth") {
+  if (!canOwner(owner, "post") || !owner || owner.kind !== "auth") {
     return fail("Sign in to manage this ad.", 401)
   }
   const { id } = await context.params
