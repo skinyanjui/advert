@@ -109,9 +109,7 @@ export default function TermsPage() {
       <section className="mt-8 space-y-3">
         <h2 className="text-base font-medium text-neutral-950">7. Contact channels and off-platform conversations</h2>
         <p className="text-sm leading-6 text-neutral-700">
-          Sellers control whether a listing offers WhatsApp or phone contact. If a seller enables
-          those options, the seller authorizes us to use the provided phone number for that purpose.
-          Buyers may also use marketplace messages when available.
+          Sellers control whether a listing offers direct phone contact. When enabled, the provided phone number may be used for calls, SMS/text messages, and WhatsApp where available. Buyers may also use the marketplace Messenger when available.
         </p>
         <p className="text-sm leading-6 text-neutral-700">
           Before opening WhatsApp, a buyer must explicitly agree to receive WhatsApp replies from the named seller

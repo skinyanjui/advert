@@ -2,6 +2,7 @@ export const contactEventTypes = [
   "listing_view",
   "whatsapp_click",
   "phone_click",
+  "sms_click",
   "message_start",
 ] as const
 

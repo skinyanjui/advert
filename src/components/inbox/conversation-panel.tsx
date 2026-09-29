@@ -14,14 +14,12 @@ import type { Listing } from "@/lib/types"
 export function ConversationPanel({
   thread,
   listing,
-  sample,
   sending,
   onBack,
   onSend,
 }: {
   thread: MessageThread | null
   listing?: Listing
-  sample: boolean
   sending: boolean
   onBack: () => void
   onSend: (draft: string) => Promise<boolean>
@@ -35,19 +33,13 @@ export function ConversationPanel({
               <ArrowLeft aria-hidden="true" />
             </Button>
             <div className="min-w-0 flex-1">
-              <p className="text-[11px] font-medium tracking-wide text-neutral-500 uppercase">{thread.viewerIsSeller ? "Selling" : "Buying"} · {sample ? "Sample conversation" : "Conversation"}</p>
+              <p className="text-[11px] font-medium tracking-wide text-neutral-500 uppercase">{thread.viewerIsSeller ? "Selling" : "Buying"} · Messenger</p>
               <p className="truncate text-sm font-semibold text-neutral-950">{thread.peerName}</p>
             </div>
           </div>
           <OfferContext thread={thread} listing={listing} />
-          <MessageHistory conversationId={thread.conversationId} messages={thread.messages} sample={sample} />
-          {sample ? (
-            <div className="border-t border-neutral-200 bg-white px-4 py-4 text-sm text-neutral-600 sm:px-5">
-              Sample messages · Replies unavailable.
-            </div>
-          ) : (
-            <ReplyForm key={thread.conversationId} placeholder={thread.viewerIsSeller ? "Reply to the buyer…" : "Write another message…"} sending={sending} onSend={onSend} />
-          )}
+          <MessageHistory conversationId={thread.conversationId} messages={thread.messages} />
+          <ReplyForm key={thread.conversationId} placeholder={thread.viewerIsSeller ? "Reply to the buyer…" : "Write another message…"} sending={sending} onSend={onSend} />
         </div>
       ) : (
         <div className="flex h-full min-h-[30rem] flex-col items-center justify-center px-6 text-center">

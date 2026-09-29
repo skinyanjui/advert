@@ -34,7 +34,7 @@ export default function PrivacyPage() {
           <li>Listings you post (title, description, photos, location, and related fields)</li>
           <li>Messages you send through the board</li>
           <li>Reports you submit about listings</li>
-          <li>Contact-intent events such as listing views and clicks to message, call, or open WhatsApp</li>
+          <li>Contact-intent events such as listing views and clicks to message, text, call, or open WhatsApp</li>
           <li>WhatsApp consent records, including the listing, named seller, consent text/version, account or session identifier, and time</li>
           <li>WhatsApp Business Platform enforcement metadata received for our business account, such as warnings, restrictions, policy references, and restriction periods</li>
           <li>
@@ -56,11 +56,9 @@ export default function PrivacyPage() {
       </section>
 
       <section className="mt-8 space-y-3">
-        <h2 className="text-base font-medium text-neutral-950">Direct contact and WhatsApp</h2>
+        <h2 className="text-base font-medium text-neutral-950">Direct contact, text, and WhatsApp</h2>
         <p className="text-sm leading-6 text-neutral-700">
-          Sellers choose whether a listing allows WhatsApp and phone calls. If a seller enables a
-          direct contact option, we use the phone number they provided to create that contact link.
-          A buyer must be signed in before the service returns or displays seller direct-contact details. Buyers do not need to save the number before opening WhatsApp.
+          Sellers choose whether a listing allows direct phone contact. When enabled, we may use the phone number they provided to create call, SMS/text, and WhatsApp links. A buyer must be signed in before the service returns or displays seller direct-contact details. Buyers do not need to save the number before using those links.
         </p>
         <p className="text-sm leading-6 text-neutral-700">
           Opening WhatsApp leaves {site.name} and uses WhatsApp&apos;s service. WhatsApp may receive

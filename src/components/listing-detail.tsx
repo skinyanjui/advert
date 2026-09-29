@@ -1,6 +1,6 @@
 "use client"
 
-import { ArrowLeft, ChevronLeft, ChevronRight, Clock, Flag, Heart, MapPin, Phone, Share2 } from "lucide-react"
+import { ArrowLeft, ChevronLeft, ChevronRight, Clock, Flag, Heart, MapPin, MessageSquareText, Phone, Share2 } from "lucide-react"
 import Image from "next/image"
 import Link from "next/link"
 import { useRouter, useSearchParams } from "next/navigation"
@@ -35,7 +35,7 @@ import { seedListings } from "@/lib/catalog"
 import { resolvePlace } from "@/lib/cities"
 import { getCountry } from "@/lib/countries"
 import { trackListingContactEvent } from "@/lib/contact-events"
-import { formatPlace, initials, whatsappHref } from "@/lib/format"
+import { formatPlace, initials, smsHref, whatsappHref } from "@/lib/format"
 import { listingGridClassNameLoose } from "@/lib/listing-grid"
 import { osmLinks } from "@/lib/map"
 import { useMarketplace } from "@/lib/marketplace"
@@ -116,6 +116,7 @@ export function ListingDetail({ id }: { id: string }) {
     contactOpen && auth.signedIn && !isSample && ad.contactWhatsApp !== false && Boolean(ad.phone.trim())
   const phoneOpen =
     contactOpen && auth.signedIn && !isSample && ad.contactPhone !== false && Boolean(ad.phone.trim())
+  const textOpen = phoneOpen
   const expiringSoon = isListingExpiringSoon(ad.expiresAt)
   const daysLeft = daysUntilExpiry(ad.expiresAt)
   const postedHours = ad.postedAt ? hoursAgoOf(ad) : ad.hoursAgo
@@ -513,27 +514,35 @@ export function ListingDetail({ id }: { id: string }) {
                 <Button className="h-10 rounded-full" onClick={openMessageComposer}>
                   {auth.configured && !auth.signedIn ? "Sign in to message" : "Message seller"}
                 </Button>
-                {whatsappOpen || phoneOpen ? (
-                  <div className={cn("grid gap-2", whatsappOpen && phoneOpen ? "grid-cols-2" : "grid-cols-1")}>
+                {whatsappOpen || textOpen || phoneOpen ? (
+                  <div className="grid grid-cols-3 gap-2">
                     {whatsappOpen ? (
                       <WhatsAppConsentAction
                         listingId={listing.id}
                         sellerName={listing.sellerName}
                         listingTitle={listing.title}
-                        href={whatsappHref(listing.phone, listing.title, listing.id)}
+                        href={whatsappHref(listing.phone, listing.title)}
                         ariaLabel="Chat on WhatsApp"
-                        className="inline-flex h-10 items-center justify-center gap-2 rounded-full border border-neutral-200 bg-white px-4 text-sm font-medium transition hover:bg-neutral-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-neutral-950"
+                        className="inline-flex h-10 items-center justify-center gap-2 rounded-full border border-neutral-200 bg-white px-3 text-sm font-medium transition hover:bg-neutral-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-neutral-950"
                       >
                         <WhatsAppIcon className="size-4" />
                         WhatsApp
                       </WhatsAppConsentAction>
-                    ) : null}
+                    ) : <span />}
+                    {textOpen ? (
+                      <Button variant="outline" className="h-10 rounded-full" asChild>
+                        <a href={smsHref(listing.phone, listing.title)} onClick={() => trackListingContactEvent(listing.id, "sms_click")}>
+                          <MessageSquareText className="size-4" />
+                          Text
+                        </a>
+                      </Button>
+                    ) : <span />}
                     {phoneOpen ? (
                       <Button variant="outline" className="h-10 rounded-full" onClick={() => setPhoneVisible(true)}>
                         <Phone className="size-4" />
                         {phoneVisible ? listing.phone : "Call"}
                       </Button>
-                    ) : null}
+                    ) : <span />}
                   </div>
                 ) : null}
               </>
@@ -598,7 +607,7 @@ export function ListingDetail({ id }: { id: string }) {
             safety={voice.safety}
             messagingHint={
               !listing.mine && contactOpen
-                ? "Marketplace messages stay with this listing. Direct WhatsApp or phone contact is available only when the seller enables it."
+                ? "Marketplace messages stay with this listing. WhatsApp, text, and phone contact are available only when the seller enables direct contact."
                 : undefined
             }
           />
@@ -618,11 +627,8 @@ export function ListingDetail({ id }: { id: string }) {
                 <Flag className="size-4" />
                 Report this ad
               </Button>
-              <p className="mt-1 px-2 text-[11px] text-neutral-400">Listing ID {listing.id}</p>
             </div>
-          ) : listing.id ? (
-            <p className="mt-3 text-[11px] text-neutral-400">Listing ID {listing.id}</p>
-          ) : null}
+          ): null}
           </>
         </aside>
       </div>
@@ -662,12 +668,23 @@ export function ListingDetail({ id }: { id: string }) {
                   listingId={listing.id}
                   sellerName={listing.sellerName}
                   listingTitle={listing.title}
-                  href={whatsappHref(listing.phone, listing.title, listing.id)}
+                  href={whatsappHref(listing.phone, listing.title)}
                   ariaLabel="Chat on WhatsApp"
                   className="inline-flex size-10 shrink-0 items-center justify-center rounded-full border border-neutral-200 bg-white transition hover:bg-neutral-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-neutral-950"
                 >
                   <WhatsAppIcon className="size-4 text-[#25D366]" />
                 </WhatsAppConsentAction>
+              ) : null}
+              {textOpen ? (
+                <Button type="button" variant="outline" size="icon" className="size-10 shrink-0 rounded-full" asChild>
+                  <a
+                    href={smsHref(listing.phone, listing.title)}
+                    aria-label="Text seller"
+                    onClick={() => trackListingContactEvent(listing.id, "sms_click")}
+                  >
+                    <MessageSquareText className="size-4" />
+                  </a>
+                </Button>
               ) : null}
               {phoneOpen ? (
                 <Button

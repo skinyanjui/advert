@@ -1,4 +1,5 @@
 import assert from "node:assert/strict"
+import { readFileSync } from "node:fs"
 import { test } from "node:test"
 
 import {
@@ -113,4 +114,17 @@ test("isBoardMessage rejects legacy sample-reply shape", () => {
     false,
   )
   assert.equal(isBoardMessage(sample()), true)
+})
+
+
+test("Messenger uses real account threads without sample inbox fallback or reply-time legal prompt", () => {
+  const page = readFileSync(new URL("../src/components/messages-page.tsx", import.meta.url), "utf8")
+  const reply = readFileSync(new URL("../src/components/inbox/reply-form.tsx", import.meta.url), "utf8")
+  const list = readFileSync(new URL("../src/components/inbox/conversation-list.tsx", import.meta.url), "utf8")
+
+  assert.match(page, /signInHref\("\/messages"\)/)
+  assert.doesNotMatch(page, /sampleThreads/)
+  assert.doesNotMatch(page, /showingSamples/)
+  assert.match(list, />Messenger</)
+  assert.doesNotMatch(reply, /TermsNotice/)
 })

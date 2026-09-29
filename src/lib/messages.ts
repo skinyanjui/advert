@@ -70,7 +70,7 @@ export function unreadMessageCount(messages: BoardMessage[]): number {
   return messages.filter((item) => !item.read && !item.fromMe).length
 }
 
-/** Show unread incoming messages first, then the latest messages already opened in the inbox. */
+/** Show unread incoming messages first, then the latest messages already opened in Messenger. */
 export function recentMessageNotifications(messages: BoardMessage[], limit = 6): BoardMessage[] {
   const incoming = messages.filter((message) => !message.fromMe)
   const newestFirst = (left: BoardMessage, right: BoardMessage) => right.sentAt.localeCompare(left.sentAt)

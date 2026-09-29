@@ -22,7 +22,7 @@ Open [http://localhost:3000](http://localhost:3000).
 - Post an ad with up to 6 photos (cover + gallery) or a category image; ads expire after 60 days and can be renewed
 - Seller accounts: email OTP / magic link, optional password, Profile settings, and session claim so guest cookie posts move onto the account
 - My ads with active / paused / sold / expired actions
-- Messages inbox for real buyer–seller threads
+- Messenger for real buyer–seller listing threads
 - Saved ads
 - Admin report review at `/admin/reports` for emails listed in `ADMIN_EMAILS`
 - Supabase Postgres stores board data; a public Storage bucket serves listing photos. Apply `database/board.sql`, then the migrations below, on the connected Supabase project before deploying the board routes.
@@ -61,6 +61,7 @@ Apply in order on the board Supabase project (SQL editor), after `database/board
 13. `database/migrations/20260929_contact_events.sql` — first-party listing/contact intent events; no phone numbers or message contents
 14. `database/migrations/20260929_whatsapp_consents.sql` — scoped buyer WhatsApp consent records; no phone numbers or message contents
 15. `database/migrations/20260929_whatsapp_platform_enforcement.sql` — WABA policy-warning/restriction state and event history
+16. `database/migrations/20260929_contact_sms.sql` — adds SMS/text contact intent to the contact-event allow-list
 
 After the lock migration, anyone with only the publishable key must not be able to read `board_listings` (including phones).
 
@@ -121,9 +122,7 @@ per ad. The cover photo is stored as `image` and mirrored as the first entry in
 `listing-photos`, and stores only the resulting public URLs in Postgres.
 Sellers can add, remove, reorder, and set the cover when editing.
 
-A signed, HTTP-only, same-site `board_session` cookie still identifies guest
-owners for legacy posts, saves, and messages; the server rejects cross-origin
-writes. Prefer signing in so ownership survives cookie clears and other devices.
+A signed, HTTP-only, same-site `board_session` cookie remains only for legacy ownership migration and public browsing continuity. Protected account actions—including saves, Messenger, direct seller contact, posting, reporting, profile access, and listing management—require an authenticated member role.
 The optional `BOARD_SESSION_SECRET` can be set to a dedicated random value of at
 least 32 characters; otherwise the server-only Supabase key signs sessions with
 a separate HMAC context. Keep that key private.
@@ -141,16 +140,16 @@ route still advances reminder markers as a no-op send.
 ## Marketplace contact and compliance notes
 
 - Listing phone numbers are normalized server-side using the listing country before they are stored.
-- Sellers can independently enable WhatsApp and phone calls; marketplace messaging remains separate.
-- Click-to-chat uses WhatsApp's `wa.me` flow and includes the listing ID in the prefilled message.
+- Sellers can enable direct phone contact; authenticated buyers can use Call, SMS/Text, or WhatsApp where the listing allows it. Marketplace Messenger remains a separate on-site channel.
+- Click-to-chat uses WhatsApp's `wa.me` flow with listing context in the prefilled message; the contact UI does not display the internal listing ID.
 - Before opening WhatsApp, buyers explicitly consent to receive replies from the named seller about that listing. The server stores the consent text/version, seller/listing snapshots, buyer auth/session identifier, and timestamp. The consent does not authorize unrelated marketing.
 - Sellers using WhatsApp for business communications remain responsible for WhatsApp policy, applicable communications law, opt-out handling, and any additional consent required for future or different message categories.
 - If the WhatsApp Business Platform is enabled, subscribe the WABA to `account_update` at `/api/webhooks/whatsapp/account-update`. Configure server-only `WHATSAPP_WEBHOOK_VERIFY_TOKEN` and `WHATSAPP_APP_SECRET` values.
 - WABA enforcement events are mapped to `warning`, `template_block`, `all_messages_block`, `account_lock`, or `disabled`. Future platform senders must call `assertWhatsAppPlatformSendAllowed()` before sending. Template blocks prevent marketing/utility/authentication templates while preserving service replies; all-message blocks, locks, and disablement stop every platform send.
 - Admins can inspect current WABA enforcement state and recent events at `/admin/whatsapp`. Appeals and acknowledgments still occur in Meta Business Support Home; the marketplace does not override Meta enforcement.
-- Contact analytics records only listing ID, event type, timestamp, and the existing auth/session owner identifier; it does not store phone numbers or WhatsApp/message contents.
+- Contact analytics records only listing ID, event type (including message, SMS/text, call, or WhatsApp intent), timestamp, and the existing authenticated/session owner identifier; it does not store phone numbers or off-platform message contents.
 - Phone data stays behind the server-side board API; do not restore public `SELECT` access to `board_listings`.
-- The Terms and Privacy drafts describe the off-platform WhatsApp handoff and must receive legal review before production reliance.
+- The Terms and Privacy drafts describe Messenger plus off-platform SMS/text, phone, and WhatsApp handoffs and must receive legal review before production reliance.
 - Before operating at a scale or model covered by seller-verification laws such as the U.S. INFORM Consumers Act, implement the required seller collection, verification, disclosure, suspension, data-security, and consumer reporting procedures. The current app does not claim that operational compliance.
 - Configure a real public support address and, where legally required, a telephone reporting mechanism before relying on the marketplace for regulated seller-disclosure/reporting obligations.
 

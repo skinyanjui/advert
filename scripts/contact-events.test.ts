@@ -7,6 +7,7 @@ test("contact event types are allow-listed", () => {
   assert.equal(isContactEventType("listing_view"), true)
   assert.equal(isContactEventType("whatsapp_click"), true)
   assert.equal(isContactEventType("phone_click"), true)
+  assert.equal(isContactEventType("sms_click"), true)
   assert.equal(isContactEventType("message_start"), true)
   assert.equal(isContactEventType("phone_number"), false)
 })
