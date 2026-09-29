@@ -96,31 +96,37 @@ export function ProfileMenu({ notifications }: { notifications: ReactNode }) {
               </Link>
             </>
           ) : null}
-          <Link href="/messages" onClick={() => setOpen(false)} className={rowClass}>
-            <MessageCircle className="size-4" aria-hidden="true" />
-            <span className="flex-1">{t("nav.messages")}</span>
-            {unread > 0 ? <NavBadge count={unread} placement="inline" ariaLabel={t("nav.unreadMessages", { count: unread })} /> : null}
-          </Link>
-          <Link href="/saved" onClick={() => setOpen(false)} className={rowClass}>
-            <Bookmark className="size-4" aria-hidden="true" />
-            <span className="flex-1">{t("nav.saved")}</span>
-            {savedIds.length > 0 ? <span className="text-xs tabular-nums text-muted-foreground">{savedIds.length}</span> : null}
-          </Link>
+          {auth.signedIn ? (
+            <>
+              <Link href="/messages" onClick={() => setOpen(false)} className={rowClass}>
+                <MessageCircle className="size-4" aria-hidden="true" />
+                <span className="flex-1">{t("nav.messages")}</span>
+                {unread > 0 ? <NavBadge count={unread} placement="inline" ariaLabel={t("nav.unreadMessages", { count: unread })} /> : null}
+              </Link>
+              <Link href="/saved" onClick={() => setOpen(false)} className={rowClass}>
+                <Bookmark className="size-4" aria-hidden="true" />
+                <span className="flex-1">{t("nav.saved")}</span>
+                {savedIds.length > 0 ? <span className="text-xs tabular-nums text-muted-foreground">{savedIds.length}</span> : null}
+              </Link>
+            </>
+          ) : null}
         </nav>
 
-        <details className="group border-t border-border px-1 py-1">
-          <summary className={`${rowClass} cursor-pointer list-none [&::-webkit-details-marker]:hidden`}>
-            <Bell className="size-4" aria-hidden="true" />
-            <span className="flex-1">{t("nav.notifications")}</span>
-            {unread > 0 ? <span className="text-xs tabular-nums text-muted-foreground">{unread}</span> : null}
-            <ChevronDown className="size-4 text-muted-foreground transition-transform group-open:rotate-180" aria-hidden="true" />
-          </summary>
-          <div onClickCapture={(event) => {
-            if ((event.target as Element).closest("a")) setOpen(false)
-          }}>
-            {notifications}
-          </div>
-        </details>
+        {auth.signedIn ? (
+          <details className="group border-t border-border px-1 py-1">
+            <summary className={`${rowClass} cursor-pointer list-none [&::-webkit-details-marker]:hidden`}>
+              <Bell className="size-4" aria-hidden="true" />
+              <span className="flex-1">{t("nav.notifications")}</span>
+              {unread > 0 ? <span className="text-xs tabular-nums text-muted-foreground">{unread}</span> : null}
+              <ChevronDown className="size-4 text-muted-foreground transition-transform group-open:rotate-180" aria-hidden="true" />
+            </summary>
+            <div onClickCapture={(event) => {
+              if ((event.target as Element).closest("a")) setOpen(false)
+            }}>
+              {notifications}
+            </div>
+          </details>
+        ) : null}
 
         <details className="group border-t border-border px-1 py-1">
           <summary className={`${rowClass} cursor-pointer list-none [&::-webkit-details-marker]:hidden`}>
