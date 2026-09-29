@@ -78,3 +78,12 @@ test("onboarding no longer promises guest access to protected posting", () => {
   assert.match(signIn, /Protected account actions stay unavailable|auth\.notConfiguredBody/)
   assert.match(readme, /not considered deployed until the corresponding Vercel deployment is confirmed `READY`/)
 })
+
+
+test("Vercel automatic Git deployments are production-only", () => {
+  const config = JSON.parse(source("vercel.json")) as {
+    git?: { deploymentEnabled?: Record<string, boolean> }
+  }
+  assert.equal(config.git?.deploymentEnabled?.["**"], false)
+  assert.equal(config.git?.deploymentEnabled?.main, true)
+})
