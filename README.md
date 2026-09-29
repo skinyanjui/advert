@@ -58,6 +58,7 @@ Apply in order on the board Supabase project (SQL editor), after `database/board
 10. `database/migrations/20260928_sponsored_ads.sql` — `board_listings.sponsored`, `undisclosed_promo` report reason, `moderation_actions`
 11. `supabase/migrations/20260928_profile_settings.sql`
 12. `supabase/migrations/20260928_profile_buyer_contact.sql`
+13. `database/migrations/20260929_contact_events.sql` — first-party listing/contact intent events; no phone numbers or message contents
 
 After the lock migration, anyone with only the publishable key must not be able to read `board_listings` (including phones).
 
@@ -140,6 +141,7 @@ route still advances reminder markers as a no-op send.
 - Listing phone numbers are normalized server-side using the listing country before they are stored.
 - Sellers can independently enable WhatsApp and phone calls; marketplace messaging remains separate.
 - Click-to-chat uses WhatsApp's `wa.me` flow and includes the listing ID in the prefilled message.
+- Contact analytics records only listing ID, event type, timestamp, and the existing auth/session owner identifier; it does not store phone numbers or WhatsApp/message contents.
 - Phone data stays behind the server-side board API; do not restore public `SELECT` access to `board_listings`.
 - The Terms and Privacy drafts describe the off-platform WhatsApp handoff and must receive legal review before production reliance.
 - Before operating at a scale or model covered by seller-verification laws such as the U.S. INFORM Consumers Act, implement the required seller collection, verification, disclosure, suspension, data-security, and consumer reporting procedures. The current app does not claim that operational compliance.
