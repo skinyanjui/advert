@@ -15,6 +15,8 @@ test("contact phone validation matches listing digit rules", () => {
   assert.equal(contactPhoneError(""), undefined)
   assert.equal(contactPhoneError("123"), "Add a phone number people can use.")
   assert.equal(contactPhoneError("+254712345678"), undefined)
+  assert.equal(normalizeContactPhone("0712 345 678", "KE"), "+254712345678")
+  assert.equal(normalizeContactPhone("00254712345678", "KE"), "+254712345678")
   assert.equal(contactPhoneError("1".repeat(16)), "Use a shorter phone number.")
   assert.equal(normalizeContactPhone("  +254 712 345 678  "), "+254 712 345 678")
 })
