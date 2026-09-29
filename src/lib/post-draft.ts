@@ -17,6 +17,8 @@ export type PostDraft = {
   city: string
   description: string
   phone: string
+  contactWhatsApp?: boolean
+  contactPhone?: boolean
   photos: string[]
   sponsored?: boolean
   savedAt: number
