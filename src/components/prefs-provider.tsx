@@ -217,9 +217,9 @@ export function PrefsProvider({ children }: { children: ReactNode }) {
       if (currency === listingCurrency) {
         return { primary: original, approximate: false }
       }
-      if (!fx?.rates) return { primary: original, approximate: false }
+      if (!fx?.rates) return { primary: "—", approximate: false }
       const converted = convertAmount(listing.price, listingCurrency, currency, fx.rates, fx.base)
-      if (converted === null) return { primary: original, approximate: false }
+      if (converted === null) return { primary: "—", approximate: false }
       const money = formatMoney(converted, currency)
       const approx = listing.priceSuffix ? `${money} ${listing.priceSuffix}` : money
       return {
