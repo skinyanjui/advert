@@ -1,8 +1,8 @@
 /** Draft legal document versions. Bump when Terms or Privacy text changes. */
-export const TERMS_VERSION = "2026-09-28-draft"
-export const PRIVACY_VERSION = "2026-09-28-draft"
+export const TERMS_VERSION = "2026-09-29-draft"
+export const PRIVACY_VERSION = "2026-09-29-draft"
 
-export const LEGAL_EFFECTIVE_DATE = "2026-09-28"
+export const LEGAL_EFFECTIVE_DATE = "2026-09-29"
 
 /** Human-readable prohibited categories aligned with listing-rules refusals. */
 export const PROHIBITED_ITEM_SUMMARY = [
