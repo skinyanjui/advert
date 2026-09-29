@@ -5,7 +5,7 @@ export const fr: Messages = {
   "prefs.language": "Langue",
   "prefs.currency": "Devise",
   "prefs.currencyListing": "Devise de l’annonce",
-  "prefs.currencyHint": "Les prix convertis sont approximatifs et indiqués avec ≈.",
+  "prefs.currencyHint": "Les prix sont affichés dans la devise sélectionnée. Les conversions sont approximatives.",
   "prefs.appearance": "Apparence",
   "prefs.sectionTitle": "Langue et devise",
   "prefs.sectionBody": "S’applique sur cet appareil. Connecté, aussi enregistré sur votre profil.",
