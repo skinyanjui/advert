@@ -434,12 +434,6 @@ export function ListingDetail({ id }: { id: string }) {
           id="listing-contact"
           className="h-fit rounded-2xl border border-neutral-200 bg-white p-4 lg:sticky lg:top-[145px]"
         >
-          {isSample ? (
-            <div className="rounded-xl bg-amber-50 p-4 text-sm text-amber-950">
-              <p className="font-semibold">Sample listing</p>
-              <p className="mt-1 leading-5">This ad is an example. Its seller and contact details are fictional, so messaging and calls are unavailable.</p>
-            </div>
-          ) : (
           <>
           <div className="flex items-center gap-3">
             <Avatar className="size-11">
@@ -487,6 +481,10 @@ export function ListingDetail({ id }: { id: string }) {
                   </Button>
                 ) : null}
               </>
+            ) : isSample ? (
+              <Button className="h-10 rounded-full" disabled>
+                Sample ad
+              </Button>
             ) : status !== "active" ? (
               <p className="rounded-xl bg-neutral-50 px-3 py-3 text-sm text-neutral-600">
                 {status === "expired"
@@ -562,7 +560,6 @@ export function ListingDetail({ id }: { id: string }) {
             <p className="mt-3 text-[11px] text-neutral-400">Listing ID {listing.id}</p>
           ) : null}
           </>
-          )}
         </aside>
       </div>
       {related.length > 0 ? (
