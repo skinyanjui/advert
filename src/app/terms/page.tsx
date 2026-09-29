@@ -110,6 +110,12 @@ export default function TermsPage() {
           applicable law, opt-out requests, and any additional consent requirements for future or different categories of messages.
         </p>
         <p className="text-sm leading-6 text-neutral-700">
+          If {site.name} enables the WhatsApp Business Platform, platform-originated messages are also subject to
+          WhatsApp account quality, policy enforcement, messaging restrictions, and account suspension or disablement.
+          We may automatically stop affected message categories, or all platform messaging, when a restriction is reported.
+          Appeals and policy reviews remain Meta&apos;s process; an internal status shown by {site.name} does not override a Meta restriction.
+        </p>
+        <p className="text-sm leading-6 text-neutral-700">
           WhatsApp and phone conversations take place outside {site.name}. We cannot review or
           recover those conversations through the marketplace, so users should keep records needed
           for safety, payment, delivery, or dispute purposes. Third-party services have their own
