@@ -74,18 +74,38 @@ export async function getWhatsAppPlatformStatus(wabaId: string): Promise<WhatsAp
 }
 
 
-export async function listWhatsAppPlatformStatuses() {
+type WhatsAppStatusRow = {
+  waba_id: string
+  enforcement_state: WhatsAppPlatformStatus["state"]
+  restriction_until: string | null
+  policy_name: string | null
+  summary: string | null
+  last_event_at: string | null
+}
+
+export async function listWhatsAppPlatformStatuses(): Promise<WhatsAppPlatformStatus[]> {
   const { data, error } = await boardDb()
-    .from("whatsapp_platform_status")
-    .select("waba_id,state,restriction_until,policy,reason,updated_at")
+    .from("board_whatsapp_platform_status")
+    .select("waba_id,enforcement_state,restriction_until,policy_name,summary,last_event_at")
     .order("updated_at", { ascending: false })
   if (error) throw new Error(error.message)
-  return (data ?? []).map((row: StatusRow) => ({
+
+  return ((data ?? []) as WhatsAppStatusRow[]).map((row) => ({
     wabaId: row.waba_id,
-    state: row.state,
-    restrictionUntil: row.restriction_until ?? undefined,
-    policy: row.policy ?? undefined,
-    reason: row.reason ?? undefined,
-    updatedAt: row.updated_at,
+    state: row.enforcement_state,
+    restrictionUntil: row.restriction_until,
+    policyName: row.policy_name,
+    summary: row.summary,
+    lastEventAt: row.last_event_at,
   }))
+}
+
+export async function listWhatsAppPlatformEvents(limit = 50) {
+  const { data, error } = await boardDb()
+    .from("board_whatsapp_enforcement_events")
+    .select("id,waba_id,enforcement_state,restriction_until,policy_name,summary,received_at")
+    .order("received_at", { ascending: false })
+    .limit(Math.max(1, Math.min(limit, 100)))
+  if (error) throw new Error(error.message)
+  return data ?? []
 }
