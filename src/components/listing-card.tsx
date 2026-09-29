@@ -3,8 +3,12 @@
 import { Heart, MapPin } from "lucide-react"
 import Image from "next/image"
 import Link from "next/link"
+import { useRouter } from "next/navigation"
 
 import { ListingPrice } from "@/components/listing-price"
+import { useAuth } from "@/lib/auth"
+import { signInHref } from "@/lib/auth-redirect"
+import { seedListings } from "@/lib/catalog"
 import { WhatsAppConsentAction } from "@/components/whatsapp-consent-action"
 import { countryCodeOf, formatDistance, formatPlace, whatsappHref } from "@/lib/format"
 import { isListingExpired } from "@/lib/expiry"
@@ -17,6 +21,8 @@ import {
 } from "@/lib/relative-time"
 import type { Listing } from "@/lib/types"
 import { cn } from "@/lib/utils"
+
+const sampleIds = new Set(seedListings.map((item) => item.id))
 
 export function ListingCard({
   listing,
@@ -32,11 +38,23 @@ export function ListingCard({
   preserve?: string
 }) {
   const { isSaved, toggleSaved } = useMarketplace()
+  const auth = useAuth()
+  const router = useRouter()
+  const isSample = sampleIds.has(listing.id)
   const saved = isSaved(listing.id)
   const placeFull = formatPlace(listing)
   const countryCode = countryCodeOf(listing)
   const away = distanceKm === undefined ? undefined : formatDistance(distanceKm)
-  const whatsappAvailable = linked && listing.contactWhatsApp !== false && !listing.mine && !listing.sold && !listing.hidden && !isListingExpired(listing.expiresAt) && Boolean(listing.phone.trim())
+  const whatsappAvailable =
+    linked &&
+    auth.signedIn &&
+    !isSample &&
+    listing.contactWhatsApp !== false &&
+    !listing.mine &&
+    !listing.sold &&
+    !listing.hidden &&
+    !isListingExpired(listing.expiresAt) &&
+    Boolean(listing.phone.trim())
   const listingHref = preserve ? `/listings/${listing.id}?${preserve}` : `/listings/${listing.id}`
   const body = (
     <>
@@ -133,7 +151,13 @@ export function ListingCard({
           type="button"
           aria-pressed={saved}
           aria-label={saved ? `Remove ${listing.title} from saved` : `Save ${listing.title}`}
-          onClick={() => toggleSaved(listing.id)}
+          onClick={() => {
+            if (auth.configured && !auth.signedIn) {
+              router.push(signInHref(listingHref))
+              return
+            }
+            toggleSaved(listing.id)
+          }}
           className="absolute top-2 right-2 z-20 flex size-7 items-center justify-center rounded-full bg-white/95 text-neutral-700 shadow-sm transition hover:scale-105"
         >
           <Heart className={cn("size-4", saved && "fill-rose-500 text-rose-500")} />

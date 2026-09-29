@@ -1,8 +1,10 @@
 import { NextResponse } from "next/server"
 
+import { canOwner } from "@/lib/access-control"
 import { boardDb } from "@/lib/board-db"
-import { newSession, resolveOwner, sameOrigin } from "@/lib/board-session"
+import { resolveOwner, sameOrigin } from "@/lib/board-session"
 import { cleanListing } from "@/lib/board-payload"
+import { requireCurrentTerms } from "@/lib/terms-gate"
 import { isPubliclyVisibleListing, isListingStatus } from "@/lib/listing-status"
 import {
   WHATSAPP_CONSENT_SCOPE,
@@ -25,8 +27,12 @@ export async function POST(request: Request) {
   if (!sameOrigin(request)) return NextResponse.json({ ok: false, reason: "Invalid request." }, { status: 403 })
 
   const response = NextResponse.json({ ok: true })
-  let actor = await resolveOwner(request)
-  if (!actor) actor = { id: newSession(response), kind: "session" }
+  const actor = await resolveOwner(request)
+  if (!canOwner(actor, "contact:direct") || !actor || actor.kind !== "auth") {
+    return NextResponse.json({ ok: false, reason: "Sign in to use direct contact." }, { status: 401 })
+  }
+  const termsBlock = await requireCurrentTerms(actor.id)
+  if (termsBlock) return termsBlock
 
   let body: { listingId?: unknown }
   try {

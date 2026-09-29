@@ -382,7 +382,13 @@ function toggleSaved(id: string) {
         headers: requestHeaders(),
         body: JSON.stringify({ listingId: id }),
       })
-      if (!response.ok) throw new Error("save")
+      if (!response.ok) {
+        const reason = await readFailure(response, "Could not update saved listings.")
+        memory = { ...memory, savedIds: previous, ready: true }
+        emit()
+        toast.error(reason)
+        return
+      }
       const payload = (await response.json()) as { savedIds?: unknown }
       const next = parseBoardState({ posted: [], savedIds: payload.savedIds, messages: [] }).savedIds
       memory = { ...memory, savedIds: next, ready: true }

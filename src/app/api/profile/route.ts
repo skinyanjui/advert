@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server"
 
+import { canOwner } from "@/lib/access-control"
 import { fail, ok } from "@/lib/api"
 import { resolveMutationOwner, resolveOwner } from "@/lib/board-session"
 import { deleteAccount, getProfile, updateProfile } from "@/lib/profile-store"
@@ -9,7 +10,7 @@ export const runtime = "nodejs"
 
 export async function GET(request: Request) {
   const owner = await resolveOwner(request)
-  if (!owner || owner.kind !== "auth") {
+  if (!canOwner(owner, "profile") || !owner || owner.kind !== "auth") {
     return fail("Sign in to view your profile.", 401)
   }
   try {
@@ -22,7 +23,7 @@ export async function GET(request: Request) {
 
 export async function PATCH(request: Request) {
   const owner = await resolveMutationOwner(request)
-  if (!owner || owner.kind !== "auth") {
+  if (!canOwner(owner, "profile") || !owner || owner.kind !== "auth") {
     return fail("Sign in to update your profile.", 401)
   }
   try {
@@ -69,7 +70,7 @@ export async function PATCH(request: Request) {
 
 export async function DELETE(request: Request) {
   const owner = await resolveMutationOwner(request)
-  if (!owner || owner.kind !== "auth") {
+  if (!canOwner(owner, "profile") || !owner || owner.kind !== "auth") {
     return fail("Sign in to delete your account.", 401)
   }
   try {
