@@ -22,7 +22,7 @@ Open [http://localhost:3000](http://localhost:3000).
 - Post an ad with up to 6 photos (cover + gallery) or a category image; ads expire after 60 days and can be renewed
 - Seller accounts: email OTP / magic link, optional password, Profile settings, and session claim so guest cookie posts move onto the account
 - My ads with active / paused / sold / expired actions
-- Messages inbox for real buyer–seller threads
+- Messenger for real buyer–seller listing threads
 - Saved ads
 - Admin report review at `/admin/reports` for emails listed in `ADMIN_EMAILS`
 - Supabase Postgres stores board data; a public Storage bucket serves listing photos. Apply `database/board.sql`, then the migrations below, on the connected Supabase project before deploying the board routes.
