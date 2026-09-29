@@ -1,6 +1,5 @@
 import { NextResponse } from "next/server"
 import { fail, ok } from "@/lib/api"
-import { isAdminEmail } from "@/lib/admin"
 import { canOwner } from "@/lib/access-control"
 import { newSession, resolveMutationOwner, resolveOwner } from "@/lib/board-session"
 import { importBoard, listBoard } from "@/lib/board-store"
@@ -31,7 +30,7 @@ export async function GET(request: Request) {
         messages: privateAccess ? state.messages : [],
         auth: owner.kind === "auth",
         email: owner.email ?? null,
-        admin: owner.kind === "auth" && isAdminEmail(owner.email),
+        admin: canOwner(owner, "admin"),
       })
     }
     const response = NextResponse.json({
