@@ -19,8 +19,8 @@ import { offeredLocales, translate, type MessageKey, type TranslateValues } from
 import { htmlLang, type Locale } from "@/lib/i18n/locales"
 import {
   currencyStorageKey,
+  defaultCurrencyPreference,
   languageStorageKey,
-  listingCurrencyPreference,
   normalizeCurrencyPreference,
   normalizeLanguagePreference,
   type CurrencyPreference,
@@ -37,7 +37,7 @@ function readLanguage(): Locale {
 }
 
 function readCurrency(): CurrencyPreference {
-  if (typeof window === "undefined") return listingCurrencyPreference
+  if (typeof window === "undefined") return defaultCurrencyPreference
   return normalizeCurrencyPreference(localStorage.getItem(currencyStorageKey))
 }
 
@@ -80,7 +80,7 @@ export function useLanguagePreference(): Locale {
 }
 
 export function useCurrencyPreference(): CurrencyPreference {
-  return useSyncExternalStore(subscribeCurrency, readCurrency, () => listingCurrencyPreference)
+  return useSyncExternalStore(subscribeCurrency, readCurrency, () => defaultCurrencyPreference)
 }
 
 type PrefsContextValue = {
@@ -92,7 +92,7 @@ type PrefsContextValue = {
   t: (key: MessageKey, values?: TranslateValues) => string
   formatListingPrice: (
     listing: Pick<Listing, "price" | "priceSuffix" | "currency">,
-  ) => { primary: string; secondary?: string; approximate: boolean }
+  ) => { primary: string; approximate: boolean }
 }
 
 const PrefsContext = createContext<PrefsContextValue | null>(null)
@@ -120,7 +120,7 @@ export function PrefsProvider({ children }: { children: ReactNode }) {
         const body = (await response.json()) as { ok?: boolean; rates?: FxRates }
         if (!cancelled && body.ok && body.rates) setFx(body.rates)
       } catch {
-        /* silent: show listing currency */
+        /* silent: keep the last available display state */
       }
     })()
     return () => {
@@ -214,7 +214,7 @@ export function PrefsProvider({ children }: { children: ReactNode }) {
     (listing: Pick<Listing, "price" | "priceSuffix" | "currency">) => {
       const original = formatPrice(listing)
       const listingCurrency = listing.currency ?? "USD"
-      if (currency === listingCurrencyPreference || currency === listingCurrency) {
+      if (currency === listingCurrency) {
         return { primary: original, approximate: false }
       }
       if (!fx?.rates) return { primary: original, approximate: false }
@@ -224,7 +224,6 @@ export function PrefsProvider({ children }: { children: ReactNode }) {
       const approx = listing.priceSuffix ? `${money} ${listing.priceSuffix}` : money
       return {
         primary: `≈ ${approx}`,
-        secondary: original,
         approximate: true,
       }
     },
