@@ -121,9 +121,9 @@ export function normalizeProfileUpdate(input: ProfileUpdateInput): {
     if (input.phone === null || !input.phone.trim()) {
       phone = null
     } else {
-      const reason = contactPhoneError(input.phone, { required: false })
+      const reason = contactPhoneError(input.phone, { required: false, countryCode })
       if (reason) return { ok: false, reason }
-      phone = normalizeContactPhone(input.phone) || null
+      phone = normalizeContactPhone(input.phone, countryCode) || null
     }
   }
 
