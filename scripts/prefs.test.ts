@@ -8,8 +8,8 @@ import {
   normalizeProfileUpdate,
 } from "../src/lib/profile"
 import {
+  defaultCurrencyPreference,
   isCurrencyPreference,
-  listingCurrencyPreference,
   normalizeCurrencyPreference,
   normalizeLanguagePreference,
 } from "../src/lib/prefs"
@@ -35,12 +35,11 @@ test("language and currency preference validation", () => {
   assert.equal(languageError("fr"), undefined)
   assert.equal(languageError("sw"), undefined)
   assert.equal(languageError("de"), "Choose a supported language.")
-  assert.equal(currencyPreferenceError("listing"), undefined)
   assert.equal(currencyPreferenceError("USD"), undefined)
   assert.equal(currencyPreferenceError("KES"), undefined)
   assert.equal(currencyPreferenceError("CAD"), "Choose a currency used on the board.")
-  assert.equal(isCurrencyPreference("listing"), true)
-  assert.equal(normalizeCurrencyPreference("kes"), listingCurrencyPreference) // invalid casing path via isCurrencyPreference
+  assert.equal(isCurrencyPreference("listing"), false)
+  assert.equal(normalizeCurrencyPreference("kes"), defaultCurrencyPreference) // invalid casing path via isCurrencyPreference
   assert.equal(normalizeCurrencyPreference("KES"), "KES")
   assert.equal(normalizeLanguagePreference("fr"), "fr")
   assert.equal(normalizeLanguagePreference("de"), "en")
@@ -54,8 +53,7 @@ test("normalizeProfileUpdate accepts language and currency patches", () => {
     assert.equal(ok.value.currency, "KES")
   }
   const listing = normalizeProfileUpdate({ currency: "listing" })
-  assert.equal(listing.ok, true)
-  if (listing.ok) assert.equal(listing.value.currency, "listing")
+  assert.equal(listing.ok, false)
   const bad = normalizeProfileUpdate({ language: "xx" })
   assert.equal(bad.ok, false)
 })
