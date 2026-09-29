@@ -116,10 +116,10 @@ export function ListingCard({
         <div className="flex h-full flex-col">{body}</div>
       )}
       {linked ? (
-        <div className={cn("grid gap-1.5 px-2 pb-2", whatsappAvailable ? "grid-cols-2" : "grid-cols-1")}>
+        <div className="flex items-center gap-1.5 px-2 pb-2">
           <Link
             href={listingHref}
-            className="inline-flex h-8 items-center justify-center gap-1 rounded-lg border border-neutral-200 bg-white px-2 text-[11px] font-medium text-neutral-900 transition hover:bg-neutral-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-neutral-950"
+            className="inline-flex h-8 min-w-0 flex-1 items-center justify-center gap-1 rounded-lg border border-neutral-200 bg-white px-2 text-[11px] font-medium text-neutral-900 transition hover:bg-neutral-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-neutral-950"
           >
             View listing <ArrowRight className="size-3" aria-hidden="true" />
           </Link>
@@ -129,10 +129,10 @@ export function ListingCard({
               target="_blank"
               rel="noreferrer"
               aria-label={`Chat with seller about ${listing.title} on WhatsApp`}
-              className="inline-flex h-8 items-center justify-center gap-1.5 rounded-lg bg-[#25D366] px-2 text-[11px] font-semibold text-white transition hover:brightness-95 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-neutral-950"
+              title="Chat on WhatsApp"
+              className="inline-flex size-8 shrink-0 items-center justify-center rounded-lg border border-neutral-200 bg-white text-[#25D366] transition hover:border-[#25D366]/40 hover:bg-[#25D366]/5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-neutral-950"
             >
-              <WhatsAppIcon className="size-3.5" />
-              WhatsApp
+              <WhatsAppIcon className="size-4" />
             </a>
           ) : null}
         </div>
