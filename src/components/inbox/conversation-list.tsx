@@ -17,7 +17,6 @@ export function ConversationList({
   threads,
   listings,
   activeId,
-  sample,
   search,
   onSearch,
   filter,
@@ -28,7 +27,6 @@ export function ConversationList({
   threads: MessageThread[]
   listings: Map<string, Listing>
   activeId?: string
-  sample: boolean
   search: string
   onSearch: (value: string) => void
   filter: InboxFilter
@@ -64,7 +62,7 @@ export function ConversationList({
       {threads.length ? (
         <ul className="min-w-0 divide-y divide-neutral-100 overflow-y-auto">
           {threads.map((thread) => (
-            <ConversationRow key={thread.conversationId} thread={thread} listing={listings.get(thread.listingId)} active={activeId === thread.conversationId} sample={sample} />
+            <ConversationRow key={thread.conversationId} thread={thread} listing={listings.get(thread.listingId)} active={activeId === thread.conversationId} />
           ))}
         </ul>
       ) : (
@@ -76,12 +74,12 @@ export function ConversationList({
   )
 }
 
-function ConversationRow({ thread, listing, active, sample }: { thread: MessageThread; listing?: Listing; active: boolean; sample: boolean }) {
+function ConversationRow({ thread, listing, active }: { thread: MessageThread; listing?: Listing; active: boolean }) {
   const preview = thread.messages.at(-1)
   return (
     <li>
       <Link
-        href={`/messages?${sample ? "demo" : "c"}=${encodeURIComponent(thread.conversationId)}`}
+        href={`/messages?c=${encodeURIComponent(thread.conversationId)}`}
         aria-current={active ? "page" : undefined}
         className={cn("flex min-w-0 gap-3 px-4 py-4 transition-colors hover:bg-neutral-50 focus-visible:outline-2 focus-visible:outline-neutral-950", thread.unread > 0 && "bg-blue-50/40", active && "bg-neutral-100")}
       >
@@ -89,7 +87,7 @@ function ConversationRow({ thread, listing, active, sample }: { thread: MessageT
         <span className="min-w-0 flex-1">
           <span className="flex min-w-0 items-start justify-between gap-2">
             <span className={cn("truncate text-sm text-neutral-950", thread.unread ? "font-semibold" : "font-medium")}>{listing?.title ?? thread.listingTitle}</span>
-            <span className="shrink-0 text-[11px] text-neutral-500">{sample ? "Sample" : formatMessageWhen(thread.latestAt)}</span>
+            <span className="shrink-0 text-[11px] text-neutral-500">{formatMessageWhen(thread.latestAt)}</span>
           </span>
           <span className="mt-0.5 flex min-w-0 items-center gap-1.5 text-xs text-neutral-600">
             <span className="truncate">{thread.viewerIsSeller ? "Buyer" : "Seller"}: {thread.peerName}</span>
