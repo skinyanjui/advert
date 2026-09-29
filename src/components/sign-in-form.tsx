@@ -94,7 +94,7 @@ export function SignInForm({ nextHref }: { nextHref?: string } = {}) {
     return (
       <EmptyPanel
         title="Sign-in is not configured"
-        body="Add the public Supabase URL and publishable key, enable Email auth, and apply the seller-accounts SQL migration. Until then you can still post with this browser session."
+        body="Add the public Supabase URL and publishable key, enable authentication, and apply the account migrations. Protected account actions stay unavailable until sign-in is configured."
         actionHref="/post"
         actionLabel="Post an ad"
         className="mt-0 py-10"
