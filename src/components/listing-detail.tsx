@@ -347,7 +347,9 @@ export function ListingDetail({ id }: { id: string }) {
             <div className="flex flex-wrap items-start justify-between gap-3">
               <div className="min-w-0">
                 {isSample ? (
-                  <p className="mb-1 text-xs font-semibold tracking-wide text-amber-800 uppercase">Sample ad · contact unavailable</p>
+                  <span className="mb-2 inline-flex rounded-full border border-neutral-200 bg-neutral-50 px-2 py-0.5 text-[11px] font-medium text-neutral-600">
+                    Sample listing
+                  </span>
                 ) : null}
                 {listing.sponsored ? (
                   <p className="mb-1 text-xs font-medium tracking-wide text-sky-800 uppercase">Sponsored</p>
@@ -442,8 +444,15 @@ export function ListingDetail({ id }: { id: string }) {
                 {initials(listing.sellerName)}
               </AvatarFallback>
             </Avatar>
-            <div>
-              <p className="font-medium">{listing.sellerName}</p>
+            <div className="min-w-0 flex-1">
+              <div className="flex min-w-0 items-center gap-2">
+                <p className="truncate font-medium">{listing.sellerName}</p>
+                {isSample ? (
+                  <span className="shrink-0 rounded-full bg-neutral-100 px-2 py-0.5 text-[10px] font-medium text-neutral-500">
+                    Sample profile
+                  </span>
+                ) : null}
+              </div>
               <p className="text-xs text-neutral-500">Member since {listing.sellerSince}</p>
             </div>
           </div>
@@ -482,8 +491,8 @@ export function ListingDetail({ id }: { id: string }) {
                 ) : null}
               </>
             ) : isSample ? (
-              <Button className="h-10 rounded-full" disabled>
-                Sample ad
+              <Button variant="outline" className="h-10 rounded-full" disabled>
+                Contact unavailable
               </Button>
             ) : status !== "active" ? (
               <p className="rounded-xl bg-neutral-50 px-3 py-3 text-sm text-neutral-600">
@@ -586,7 +595,7 @@ export function ListingDetail({ id }: { id: string }) {
             </Button>
           ) : !contactOpen ? (
             <Button className="shrink-0 rounded-full" disabled>
-              {isSample ? "Sample ad" : expired ? "Expired" : "Sold"}
+              {isSample ? "Contact unavailable" : expired ? "Expired" : "Sold"}
             </Button>
           ) : (
             <div className="flex shrink-0 items-center gap-1.5">
