@@ -69,7 +69,7 @@ export function deriveWhatsAppEnforcementState(value: unknown): {
 
   let state: WhatsAppEnforcementState = "unknown"
   if (/permanent|disabled|offboard/.test(text)) state = "disabled"
-  else if (/account.?lock|locked|indefinite/.test(text)) state = "account_locked"
+  else if (/account.?lock|\blocked\b|indefinite/.test(text)) state = "account_locked"
   else if (/all.?message|any.?message|30.?day|7.?day|5.?day/.test(text)) state = "all_messages_restricted"
   else if (/marketing|utility|authentication|template|1.?day|3.?day/.test(text)) state = "template_restricted"
   else if (/warning|violation/.test(text)) state = "warning"
