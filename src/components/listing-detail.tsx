@@ -489,9 +489,27 @@ export function ListingDetail({ id }: { id: string }) {
                     : "This ad is marked sold. Contact options are closed."}
               </p>
             ) : (
-              <Button className="h-10 rounded-full" onClick={openMessageComposer}>
-                {auth.configured && !auth.signedIn ? "Sign in to message" : voice.messageLabel}
-              </Button>
+              <>
+                <Button className="h-10 rounded-full" onClick={openMessageComposer}>
+                  {auth.configured && !auth.signedIn ? "Sign in to message" : "Message seller"}
+                </Button>
+                <div className="grid grid-cols-2 gap-2">
+                  <Button variant="outline" className="h-10 rounded-full" asChild>
+                    <a
+                      href={whatsappHref(listing.phone, listing.title, listing.id)}
+                      target="_blank"
+                      rel="noreferrer"
+                    >
+                      <WhatsAppIcon className="size-4" />
+                      WhatsApp
+                    </a>
+                  </Button>
+                  <Button variant="outline" className="h-10 rounded-full" onClick={() => setPhoneVisible(true)}>
+                    <Phone className="size-4" />
+                    {phoneVisible ? listing.phone : "Call"}
+                  </Button>
+                </div>
+              </>
             )}
             {!listing.mine && myMessageCount > 0 ? (
               <Button variant="outline" className="h-10 rounded-full" asChild>
@@ -500,14 +518,7 @@ export function ListingDetail({ id }: { id: string }) {
                 </Link>
               </Button>
             ) : null}
-            {contactOpen ? (
-              <Button variant="outline" className="h-10 rounded-full" asChild>
-                <a href={whatsappHref(listing.phone, listing.title)} target="_blank" rel="noreferrer">
-                  WhatsApp
-                </a>
-              </Button>
-            ) : null}
-            {contactOpen || listing.mine ? (
+            {listing.mine ? (
               <Button variant="outline" className="h-10 rounded-full" onClick={() => setPhoneVisible(true)}>
                 {phoneVisible ? listing.phone : "Show phone number"}
               </Button>
@@ -517,7 +528,7 @@ export function ListingDetail({ id }: { id: string }) {
             safety={voice.safety}
             messagingHint={
               !listing.mine && contactOpen
-                ? "Prefer WhatsApp or a call using the number above. On-site messages go to the seller’s inbox on this board."
+                ? "Use marketplace messages to keep the conversation with the listing, or contact the seller directly by WhatsApp or phone."
                 : undefined
             }
           />
@@ -568,14 +579,17 @@ export function ListingDetail({ id }: { id: string }) {
             </Button>
           ) : (
             <div className="flex shrink-0 items-center gap-1.5">
+              <Button className="h-10 max-w-[9.5rem] shrink-0 truncate rounded-full px-3" onClick={openMessageComposer}>
+                {auth.configured && !auth.signedIn ? "Sign in" : "Message seller"}
+              </Button>
               <Button variant="outline" size="icon" className="size-10 shrink-0 rounded-full" asChild>
                 <a
-                  href={whatsappHref(listing.phone, listing.title)}
+                  href={whatsappHref(listing.phone, listing.title, listing.id)}
                   target="_blank"
                   rel="noreferrer"
-                  aria-label="WhatsApp"
+                  aria-label="Chat on WhatsApp"
                 >
-                  <WhatsAppIcon className="size-4" />
+                  <WhatsAppIcon className="size-4 text-[#25D366]" />
                 </a>
               </Button>
               <Button
@@ -583,13 +597,10 @@ export function ListingDetail({ id }: { id: string }) {
                 variant="outline"
                 size="icon"
                 className="size-10 shrink-0 rounded-full"
-                aria-label={phoneVisible ? `Call ${listing.phone}` : "Show phone number and call"}
+                aria-label={phoneVisible ? `Call ${listing.phone}` : "Call seller"}
                 onClick={revealAndCall}
               >
                 <Phone className="size-4" />
-              </Button>
-              <Button className="h-10 max-w-[9.5rem] shrink-0 truncate rounded-full px-3" onClick={openMessageComposer}>
-                {auth.configured && !auth.signedIn ? "Sign in to message" : voice.messageLabel}
               </Button>
             </div>
           )}
