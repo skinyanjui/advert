@@ -5,7 +5,7 @@ export const sw: Messages = {
   "prefs.language": "Lugha",
   "prefs.currency": "Sarafu",
   "prefs.currencyListing": "Sarafu ya tangazo",
-  "prefs.currencyHint": "Bei zilizobadilishwa ni makadirio na huonyeshwa kwa ≈.",
+  "prefs.currencyHint": "Bei zinaonyeshwa kwa sarafu uliyochagua. Bei zilizobadilishwa ni makadirio.",
   "prefs.appearance": "Muonekano",
   "prefs.sectionTitle": "Lugha na sarafu",
   "prefs.sectionBody": "Inatumika kwenye kifaa hiki. Ukiingia, pia huhifadhiwa kwenye wasifu wako.",
