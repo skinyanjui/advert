@@ -12,11 +12,7 @@ import {
 import { boardCurrencyOptions } from "@/lib/fx"
 import { offeredLocales } from "@/lib/i18n"
 import { isLocale, localeLabel, type Locale } from "@/lib/i18n/locales"
-import {
-  isCurrencyPreference,
-  listingCurrencyPreference,
-  type CurrencyPreference,
-} from "@/lib/prefs"
+import { isCurrencyPreference, type CurrencyPreference } from "@/lib/prefs"
 
 export function LanguageCurrencyFields({
   layout = "stack",
@@ -66,7 +62,6 @@ export function LanguageCurrencyFields({
           <SelectValue />
         </SelectTrigger>
         <SelectContent className="z-[90] max-h-72">
-          <SelectItem value={listingCurrencyPreference}>{t("prefs.currencyListing")}</SelectItem>
           {currencies.map((item) => (
             <SelectItem key={item.code} value={item.code}>
               {item.label}

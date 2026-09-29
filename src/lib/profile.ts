@@ -3,7 +3,6 @@ import { canonicalCountry } from "@/lib/countries"
 import { boardCurrencyCodes } from "@/lib/fx"
 import { isLocale } from "@/lib/i18n/locales"
 import { photoFileError } from "@/lib/photos"
-import { listingCurrencyPreference } from "@/lib/prefs"
 
 export type BoardProfile = {
   userId: string
@@ -16,7 +15,7 @@ export type BoardProfile = {
   phone: string | null
   /** UI language preference (en/fr/sw). Nullable until set. */
   language: string | null
-  /** Display currency preference, or `listing` for posted currency. Nullable until set. */
+  /** Saved display currency preference. Nullable until set. */
   currency: string | null
   createdAt: string | null
 }
@@ -66,7 +65,6 @@ export function languageError(value: string | null | undefined): string | undefi
 
 export function currencyPreferenceError(value: string | null | undefined): string | undefined {
   if (value === null || value === undefined || value === "") return undefined
-  if (value === listingCurrencyPreference) return undefined
   if (!/^[A-Z]{3}$/.test(value)) return "Choose a valid currency."
   if (!boardCurrencyCodes().includes(value)) return "Choose a currency used on the board."
   return undefined
@@ -145,10 +143,7 @@ export function normalizeProfileUpdate(input: ProfileUpdateInput): {
       currency = null
     } else {
       const raw = input.currency.trim()
-      const normalized =
-        raw.toLowerCase() === listingCurrencyPreference
-          ? listingCurrencyPreference
-          : raw.toUpperCase()
+      const normalized = raw.toUpperCase()
       const reason = currencyPreferenceError(normalized)
       if (reason) return { ok: false, reason }
       currency = normalized

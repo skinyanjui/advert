@@ -3,11 +3,9 @@ import { isLocale, type Locale } from "@/lib/i18n/locales"
 
 export const languageStorageKey = "africa-classifieds-language"
 export const currencyStorageKey = "africa-classifieds-currency"
+export const defaultCurrencyPreference = "USD" as const
 
-/** Show each listing in the currency it was posted in. */
-export const listingCurrencyPreference = "listing" as const
-
-export type CurrencyPreference = typeof listingCurrencyPreference | string
+export type CurrencyPreference = string
 
 export function isLocalePreference(value: string | null | undefined): value is Locale {
   return isLocale(value)
@@ -15,14 +13,13 @@ export function isLocalePreference(value: string | null | undefined): value is L
 
 export function isCurrencyPreference(value: string | null | undefined): value is CurrencyPreference {
   if (!value) return false
-  if (value === listingCurrencyPreference) return true
   return boardCurrencyCodes().includes(value)
 }
 
 export function normalizeCurrencyPreference(
   value: string | null | undefined,
 ): CurrencyPreference {
-  return isCurrencyPreference(value) ? value : listingCurrencyPreference
+  return isCurrencyPreference(value) ? value : defaultCurrencyPreference
 }
 
 export function normalizeLanguagePreference(value: string | null | undefined): Locale {
