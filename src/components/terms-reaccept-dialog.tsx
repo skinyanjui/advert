@@ -126,11 +126,11 @@ export function TermsReacceptDialog() {
         <p className="text-sm text-neutral-600">
           {t("terms.reacceptRead")}{" "}
           <Link href="/terms" className="underline underline-offset-2">
-            Terms
+            {t("auth.terms")}
           </Link>{" "}
-          and{" "}
+          {t("auth.agreeTermsAnd")}{" "}
           <Link href="/privacy" className="underline underline-offset-2">
-            Privacy Policy
+            {t("auth.privacyPolicy")}
           </Link>
           .
         </p>
