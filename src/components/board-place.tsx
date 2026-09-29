@@ -5,7 +5,6 @@ import { useEffect, useMemo, useRef, useState } from "react"
 import { Input } from "@/components/ui/input"
 import { resolvePlace, searchCities } from "@/lib/cities"
 import { countryName, fold } from "@/lib/countries"
-import { osmLinks } from "@/lib/map"
 
 type PlaceSource = "listed" | "geonames"
 
@@ -138,47 +137,6 @@ export function BoardCitySearch({
           No cities match
         </p>
       ) : null}
-    </div>
-  )
-}
-
-export function CityMap({ country, city }: { country: string; city: string }) {
-  const [resolved, setResolved] = useState<{ key: string; place: PlaceHit | null }>({
-    key: "",
-    place: null,
-  })
-  const key = `${country}|${city}`
-  const place = resolved.key === key ? resolved.place : null
-
-  useEffect(() => {
-    const params = new URLSearchParams({ country, q: city, exact: "1" })
-    let cancel = false
-    fetch(`/api/cities?${params}`)
-      .then((response) => (response.ok ? response.json() : { places: [] }))
-      .then((data: { places?: PlaceHit[] }) => {
-        if (!cancel) setResolved({ key, place: data.places?.[0] ?? null })
-      })
-      .catch(() => {
-        if (!cancel) setResolved({ key, place: null })
-      })
-    return () => {
-      cancel = true
-    }
-  }, [country, city, key])
-
-  if (!place) return null
-  const links = osmLinks(place.lat, place.lng)
-  return (
-    <div className="mb-4 overflow-hidden rounded-2xl border border-neutral-200 bg-white">
-      <iframe title={`Map of ${place.name}`} src={links.embed} className="h-40 w-full" loading="lazy" />
-      <a
-        href={links.external}
-        target="_blank"
-        rel="noreferrer"
-        className="block border-t px-3 py-2 text-xs text-neutral-500 hover:text-neutral-900"
-      >
-        Open {place.name} in OpenStreetMap
-      </a>
     </div>
   )
 }
