@@ -86,3 +86,13 @@ test("terms intent helpers use a one-hour localStorage TTL", () => {
   assert.match(source, /60 \* 60 \* 1000/)
   assert.match(source, /TERMS_ACCEPTED_EVENT/)
 })
+
+
+test("SMS contact migration expands analytics allow-list without exposing contact data", () => {
+  const sql = readFileSync(
+    new URL("../database/migrations/20260929_contact_sms.sql", import.meta.url),
+    "utf8",
+  )
+  assert.match(sql, /sms_click/)
+  assert.match(sql, /board_contact_events_event_type_check/)
+})
