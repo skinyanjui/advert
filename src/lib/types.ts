@@ -77,6 +77,10 @@ export type Listing = {
   /** Public avatar from board_profiles when the seller has one. */
   sellerAvatar?: string
   phone: string
+  /** Seller allows buyers to open WhatsApp for this listing. Legacy listings default to true. */
+  contactWhatsApp?: boolean
+  /** Seller allows buyers to call this listing phone. Legacy listings default to true. */
+  contactPhone?: boolean
   /** Owner lifecycle: active | paused | sold | expired (column + effective). */
   status?: ListingStatus
   /** Owner marked the ad as sold; hidden from the main board. */
