@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server"
 import { fail, ok } from "@/lib/api"
 import { isAdminEmail } from "@/lib/admin"
+import { canOwner } from "@/lib/access-control"
 import { newSession, resolveMutationOwner, resolveOwner } from "@/lib/board-session"
 import { importBoard, listBoard } from "@/lib/board-store"
 
@@ -12,8 +13,20 @@ export async function GET(request: Request) {
     const owner = await resolveOwner(request)
     if (owner) {
       const state = await listBoard(owner.id)
+      const privateAccess = canOwner(owner, "profile")
+      const posted = privateAccess
+        ? state.posted
+        : state.posted.map((listing) => ({
+            ...listing,
+            phone: "",
+            contactPhone: false,
+            contactWhatsApp: false,
+          }))
       return NextResponse.json({
         ...state,
+        posted,
+        savedIds: privateAccess ? state.savedIds : [],
+        messages: privateAccess ? state.messages : [],
         auth: owner.kind === "auth",
         email: owner.email ?? null,
         admin: owner.kind === "auth" && isAdminEmail(owner.email),
@@ -29,8 +42,14 @@ export async function GET(request: Request) {
     })
     const id = newSession(response)
     const state = await listBoard(id)
+    const posted = state.posted.map((listing) => ({
+      ...listing,
+      phone: "",
+      contactPhone: false,
+      contactWhatsApp: false,
+    }))
     return NextResponse.json(
-      { ...state, auth: false, email: null, admin: false },
+      { ...state, posted, savedIds: [], messages: [], auth: false, email: null, admin: false },
       { headers: response.headers },
     )
   } catch {
