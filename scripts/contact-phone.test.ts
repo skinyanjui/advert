@@ -68,7 +68,7 @@ test("public seller overlay select never includes phone", () => {
     /\.select\("user_id,display_name,avatar_url,created_at,phone"\)/,
   )
   const page = readFileSync(new URL("../src/components/account-page.tsx", import.meta.url), "utf8")
-  assert.match(page, /Buyer contact/)
+  assert.match(page, /t\("profile\.buyerContact"\)/)
   assert.match(page, /ContactPhoneField/)
   const form = readFileSync(new URL("../src/components/post-form.tsx", import.meta.url), "utf8")
   assert.match(form, /prefillListingPhone/)
