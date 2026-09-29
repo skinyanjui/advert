@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server"
 
 import { boardDb } from "@/lib/board-db"
-import { newSession, resolveOwner, sameOrigin, type BoardOwner } from "@/lib/board-session"
+import { newSession, resolveOwner, sameOrigin } from "@/lib/board-session"
 import { cleanListing } from "@/lib/board-payload"
 import { isPubliclyVisibleListing, isListingStatus } from "@/lib/listing-status"
 import {
