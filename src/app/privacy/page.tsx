@@ -49,11 +49,18 @@ export default function PrivacyPage() {
       </section>
 
       <section className="mt-8 space-y-3">
+        <h2 className="text-base font-medium text-neutral-950">Access controls</h2>
+        <p className="text-sm leading-6 text-neutral-700">
+          Public visitors receive public listing information only. Seller direct-contact details, saved listings, marketplace messages, reports, profile information, account-management data, and administrative information are restricted to authenticated roles with the required permission. We apply these checks on the server as well as in the interface.
+        </p>
+      </section>
+
+      <section className="mt-8 space-y-3">
         <h2 className="text-base font-medium text-neutral-950">Direct contact and WhatsApp</h2>
         <p className="text-sm leading-6 text-neutral-700">
           Sellers choose whether a listing allows WhatsApp and phone calls. If a seller enables a
           direct contact option, we use the phone number they provided to create that contact link.
-          Buyers do not need to save the number before opening WhatsApp.
+          A buyer must be signed in before the service returns or displays seller direct-contact details. Buyers do not need to save the number before opening WhatsApp.
         </p>
         <p className="text-sm leading-6 text-neutral-700">
           Opening WhatsApp leaves {site.name} and uses WhatsApp&apos;s service. WhatsApp may receive
