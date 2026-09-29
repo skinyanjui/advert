@@ -4,7 +4,7 @@ import { ArrowUpDown } from "lucide-react"
 import Link from "next/link"
 import { useMemo } from "react"
 
-import { BoardCitySearch, CityMap } from "@/components/board-place"
+import { BoardCitySearch } from "@/components/board-place"
 import { ListingCard } from "@/components/listing-card"
 import { Button } from "@/components/ui/button"
 import { listingGridClassName } from "@/lib/listing-grid"
@@ -152,7 +152,6 @@ export function Browse() {
             ) : null}
           </div>
         ) : null}
-        {query.country && query.city ? <CityMap country={query.country} city={query.city} /> : null}
         {visible.length === 0 ? (
           <EmptyResults
             country={query.country}
