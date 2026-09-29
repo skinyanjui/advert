@@ -5,6 +5,7 @@ import Image from "next/image"
 import Link from "next/link"
 
 import { ListingPrice } from "@/components/listing-price"
+import { trackListingContactEvent } from "@/lib/contact-events"
 import { countryCodeOf, formatDistance, formatPlace, whatsappHref } from "@/lib/format"
 import { isListingExpired } from "@/lib/expiry"
 import { useMarketplace } from "@/lib/marketplace"
@@ -122,6 +123,7 @@ export function ListingCard({
           rel="noreferrer"
           aria-label={`Chat with seller about ${listing.title} on WhatsApp`}
           title="Chat on WhatsApp"
+          onClick={() => trackListingContactEvent(listing.id, "whatsapp_click")}
           className="absolute right-2 bottom-2 z-20 inline-flex size-7 items-center justify-center rounded-full border border-neutral-200 bg-white text-[#25D366] shadow-sm transition hover:border-[#25D366]/40 hover:bg-[#25D366]/5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-neutral-950"
         >
           <WhatsAppIcon className="size-3.5" />
