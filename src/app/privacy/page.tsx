@@ -36,6 +36,7 @@ export default function PrivacyPage() {
           <li>Reports you submit about listings</li>
           <li>Contact-intent events such as listing views and clicks to message, call, or open WhatsApp</li>
           <li>WhatsApp consent records, including the listing, named seller, consent text/version, account or session identifier, and time</li>
+          <li>WhatsApp Business Platform enforcement metadata received for our business account, such as warnings, restrictions, policy references, and restriction periods</li>
           <li>
             IP address and user agent when we record Terms and Privacy acceptance, so we can show
             when and how you agreed
@@ -61,7 +62,7 @@ export default function PrivacyPage() {
           this click-to-chat feature. Before opening WhatsApp, we ask the buyer to agree to receive WhatsApp replies from the named seller
           about that specific listing. We record that scoped consent and the wording/version shown at the time. The consent does not authorize
           unrelated marketing. We may also record that the WhatsApp button was clicked, but not the WhatsApp conversation or its contents.
-          Marketplace messages sent through {site.name} remain separate and are stored by us as described in this policy.
+          Marketplace messages sent through {site.name} remain separate and are stored by us as described in this policy. If we later use the WhatsApp Business Platform, we may receive account-level policy and restriction notices from Meta through webhooks so we can suspend affected outbound messaging.
         </p>
       </section>
 
@@ -78,7 +79,7 @@ export default function PrivacyPage() {
       <section className="mt-8 space-y-3">
         <h2 className="text-base font-medium text-neutral-950">Retention</h2>
         <p className="text-sm leading-6 text-neutral-700">
-          We keep account, listing, message, report, contact-intent, and WhatsApp consent records while your account is active and for
+          We keep account, listing, message, report, contact-intent, WhatsApp consent, and business-platform enforcement records while your account is active and for
           a reasonable period afterward for safety, dispute, and legal reasons, then delete or
           anonymise them when they are no longer needed. Terms and Privacy acceptance records are
           deleted with your account.
