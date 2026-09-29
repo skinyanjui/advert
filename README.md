@@ -60,6 +60,7 @@ Apply in order on the board Supabase project (SQL editor), after `database/board
 12. `supabase/migrations/20260928_profile_buyer_contact.sql`
 13. `database/migrations/20260929_contact_events.sql` — first-party listing/contact intent events; no phone numbers or message contents
 14. `database/migrations/20260929_whatsapp_consents.sql` — scoped buyer WhatsApp consent records; no phone numbers or message contents
+15. `database/migrations/20260929_whatsapp_platform_enforcement.sql` — WABA policy-warning/restriction state and event history
 
 After the lock migration, anyone with only the publishable key must not be able to read `board_listings` (including phones).
 
@@ -144,6 +145,9 @@ route still advances reminder markers as a no-op send.
 - Click-to-chat uses WhatsApp's `wa.me` flow and includes the listing ID in the prefilled message.
 - Before opening WhatsApp, buyers explicitly consent to receive replies from the named seller about that listing. The server stores the consent text/version, seller/listing snapshots, buyer auth/session identifier, and timestamp. The consent does not authorize unrelated marketing.
 - Sellers using WhatsApp for business communications remain responsible for WhatsApp policy, applicable communications law, opt-out handling, and any additional consent required for future or different message categories.
+- If the WhatsApp Business Platform is enabled, subscribe the WABA to `account_update` at `/api/webhooks/whatsapp/account-update`. Configure server-only `WHATSAPP_WEBHOOK_VERIFY_TOKEN` and `WHATSAPP_APP_SECRET` values.
+- WABA enforcement events are mapped to `warning`, `template_block`, `all_messages_block`, `account_lock`, or `disabled`. Future platform senders must call `assertWhatsAppPlatformSendAllowed()` before sending. Template blocks prevent marketing/utility/authentication templates while preserving service replies; all-message blocks, locks, and disablement stop every platform send.
+- Admins can inspect current WABA enforcement state and recent events at `/admin/whatsapp`. Appeals and acknowledgments still occur in Meta Business Support Home; the marketplace does not override Meta enforcement.
 - Contact analytics records only listing ID, event type, timestamp, and the existing auth/session owner identifier; it does not store phone numbers or WhatsApp/message contents.
 - Phone data stays behind the server-side board API; do not restore public `SELECT` access to `board_listings`.
 - The Terms and Privacy drafts describe the off-platform WhatsApp handoff and must receive legal review before production reliance.
