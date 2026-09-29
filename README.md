@@ -15,7 +15,7 @@ Open [http://localhost:3000](http://localhost:3000).
 
 ## What’s included
 
-- Browse, search, and sort. A selected country shows its capital, local time, time zone, currency, languages, and calling code. Search any city in that country, or filter to cities that already have ads. A city with no ads shows a map and opens the post form with that place filled in. Price sort keeps each currency together.
+- Browse, search, and sort. A selected country shows its capital, local time, time zone, currency, languages, and calling code. Search any city in that country, or filter to cities that already have ads. A city with no ads keeps the city filter selected and opens the post form with that place filled in. Price sort keeps each currency together.
 - The country control in the top bar searches by country, capital, or ISO code.
 - A category sidebar (desktop) and category sheet (mobile)
 - Listing pages with messaging, phone reveal, WhatsApp, and “Report this ad”
