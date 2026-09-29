@@ -35,7 +35,7 @@ export function ListingCard({
   const placeFull = formatPlace(listing)
   const countryCode = countryCodeOf(listing)
   const away = distanceKm === undefined ? undefined : formatDistance(distanceKm)
-  const whatsappAvailable = linked && !listing.mine && !listing.sold && !listing.hidden && !isListingExpired(listing.expiresAt) && Boolean(listing.phone.trim())
+  const whatsappAvailable = linked && listing.contactWhatsApp !== false && !listing.mine && !listing.sold && !listing.hidden && !isListingExpired(listing.expiresAt) && Boolean(listing.phone.trim())
   const listingHref = preserve ? `/listings/${listing.id}?${preserve}` : `/listings/${listing.id}`
   const body = (
     <>
