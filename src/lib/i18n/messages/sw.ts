@@ -4,7 +4,6 @@ import type { Messages } from "@/lib/i18n/messages/en"
 export const sw: Messages = {
   "prefs.language": "Lugha",
   "prefs.currency": "Sarafu",
-  "prefs.currencyListing": "Sarafu ya tangazo",
   "prefs.currencyHint": "Bei zinaonyeshwa kwa sarafu uliyochagua. Bei zilizobadilishwa ni makadirio.",
   "prefs.appearance": "Muonekano",
   "prefs.sectionTitle": "Lugha na sarafu",
