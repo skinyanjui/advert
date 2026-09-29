@@ -31,6 +31,16 @@ export default function TermsPage() {
       </p>
 
       <section className="mt-8 space-y-3">
+        <h2 className="text-base font-medium text-neutral-950">Account access and permissions</h2>
+        <p className="text-sm leading-6 text-neutral-700">
+          Browsing public listings does not require an account. Features that expose account data or enable transactions between users require sign-in, including saving listings, marketplace messaging, direct seller contact details, posting or managing ads, submitting reports, profile and account tools, and moderation functions.
+        </p>
+        <p className="text-sm leading-6 text-neutral-700">
+          Access is role-based. Signed-out visitors receive public listing information only. Signed-in members receive member features and may access only their own private account resources. Administrative functions require an authorized administrator role. We may deny or revoke access when authorization checks fail.
+        </p>
+      </section>
+
+      <section className="mt-8 space-y-3">
         <h2 className="text-base font-medium text-neutral-950">1. The platform is not a party to sales</h2>
         <p className="text-sm leading-6 text-neutral-700">
           {site.name} helps people list and find goods and services. We are not the buyer or the
@@ -162,7 +172,7 @@ export default function TermsPage() {
         <h2 className="text-base font-medium text-neutral-950">12. Changes</h2>
         <p className="text-sm leading-6 text-neutral-700">
           When we change these Terms or the Privacy Policy, we update the version shown on this page
-          and ask you to accept the new versions before posting ads or sending messages. We may also
+          and, when acceptance is required, present it at account creation or the next account-access boundary before protected features become available. We may also
           notify you by email or an in-product notice. Continued use after you accept means you agree
           to the updated versions.
         </p>
