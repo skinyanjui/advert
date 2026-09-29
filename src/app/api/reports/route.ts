@@ -1,5 +1,6 @@
 import { fail, ok } from "@/lib/api"
 import { canOwner } from "@/lib/access-control"
+import { requireCurrentTerms } from "@/lib/terms-gate"
 import { resolveMutationOwner } from "@/lib/board-session"
 import { createReport } from "@/lib/board-store"
 
@@ -8,7 +9,9 @@ export const runtime = "nodejs"
 
 export async function POST(request: Request) {
   const owner = await resolveMutationOwner(request)
-  if (!canOwner(owner, "report")) return fail("Sign in to report a listing.", 401)
+  if (!canOwner(owner, "report") || !owner || owner.kind !== "auth") return fail("Sign in to report a listing.", 401)
+  const termsBlock = await requireCurrentTerms(owner.id)
+  if (termsBlock) return termsBlock
   try {
     const body = (await request.json()) as {
       listingId?: unknown
