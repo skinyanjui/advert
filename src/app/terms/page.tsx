@@ -97,7 +97,22 @@ export default function TermsPage() {
       </section>
 
       <section className="mt-8 space-y-3">
-        <h2 className="text-base font-medium text-neutral-950">7. Disputes</h2>
+        <h2 className="text-base font-medium text-neutral-950">7. Contact channels and off-platform conversations</h2>
+        <p className="text-sm leading-6 text-neutral-700">
+          Sellers control whether a listing offers WhatsApp or phone contact. If a seller enables
+          those options, the seller authorizes us to use the provided phone number for that purpose.
+          Buyers may also use marketplace messages when available.
+        </p>
+        <p className="text-sm leading-6 text-neutral-700">
+          WhatsApp and phone conversations take place outside {site.name}. We cannot review or
+          recover those conversations through the marketplace, so users should keep records needed
+          for safety, payment, delivery, or dispute purposes. Third-party services have their own
+          terms and privacy practices.
+        </p>
+      </section>
+
+      <section className="mt-8 space-y-3">
+        <h2 className="text-base font-medium text-neutral-950">8. Disputes</h2>
         <p className="text-sm leading-6 text-neutral-700">
           If you have a problem with another user or with the service, contact support first. If we
           cannot resolve it, the next step is{" "}
@@ -108,7 +123,7 @@ export default function TermsPage() {
       </section>
 
       <section className="mt-8 space-y-3">
-        <h2 className="text-base font-medium text-neutral-950">8. Consumer law</h2>
+        <h2 className="text-base font-medium text-neutral-950">9. Consumer law</h2>
         <p className="text-sm leading-6 text-neutral-700">
           You keep any rights your local consumer law gives you that cannot be limited or waived by
           contract. If a term conflicts with those rights, those rights prevail.
@@ -116,7 +131,7 @@ export default function TermsPage() {
       </section>
 
       <section className="mt-8 space-y-3">
-        <h2 className="text-base font-medium text-neutral-950">9. Governing law</h2>
+        <h2 className="text-base font-medium text-neutral-950">10. Governing law</h2>
         <p className="rounded-xl border border-dashed border-neutral-300 bg-neutral-50 px-3 py-2 text-sm leading-6 text-neutral-700">
           <strong>[PLACEHOLDER — lawyer to decide]</strong> Governing law and venue are not set in
           this draft. Do not treat any country as the default governing law until counsel fills this
@@ -125,14 +140,14 @@ export default function TermsPage() {
       </section>
 
       <section className="mt-8 space-y-3">
-        <h2 className="text-base font-medium text-neutral-950">10. Severability</h2>
+        <h2 className="text-base font-medium text-neutral-950">11. Severability</h2>
         <p className="text-sm leading-6 text-neutral-700">
           If a court finds part of these Terms unenforceable, the rest still applies.
         </p>
       </section>
 
       <section className="mt-8 space-y-3">
-        <h2 className="text-base font-medium text-neutral-950">11. Changes</h2>
+        <h2 className="text-base font-medium text-neutral-950">12. Changes</h2>
         <p className="text-sm leading-6 text-neutral-700">
           When we change these Terms or the Privacy Policy, we update the version shown on this page
           and ask you to accept the new versions before posting ads or sending messages. We may also
@@ -142,7 +157,7 @@ export default function TermsPage() {
       </section>
 
       <section className="mt-8 space-y-3">
-        <h2 className="text-base font-medium text-neutral-950">12. Contact</h2>
+        <h2 className="text-base font-medium text-neutral-950">13. Contact</h2>
         <p className="text-sm leading-6 text-neutral-700">
           {contactHref && site.supportEmail ? (
             <>
