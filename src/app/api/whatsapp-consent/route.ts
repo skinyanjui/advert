@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server"
 
+import { canOwner } from "@/lib/access-control"
 import { boardDb } from "@/lib/board-db"
 import { resolveOwner, sameOrigin } from "@/lib/board-session"
 import { cleanListing } from "@/lib/board-payload"
