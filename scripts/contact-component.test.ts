@@ -17,4 +17,8 @@ test("development listings use the operational message flow without fictional ex
   assert.match(detail, /id="listing-message-composer"/)
   assert.match(detail, /This conversation stays attached to this listing\./)
   assert.doesNotMatch(detail, /<Dialog open=\{messageOpen && contactOpen\}/)
+  assert.match(detail, /smsHref\(listing\.phone, listing\.title\)/)
+  assert.match(detail, />\s*Text\s*</)
+  assert.match(detail, /Chat on WhatsApp/)
+  assert.doesNotMatch(detail, />Listing ID \{listing\.id\}</)
 })
