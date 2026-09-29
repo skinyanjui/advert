@@ -112,9 +112,11 @@ export function ListingDetail({ id }: { id: string }) {
   const backHref = backSearch ? `/${ad.category}?${backSearch}` : `/${ad.category}`
   const expired = isListingExpired(ad.expiresAt)
   const status = effectiveListingStatus(ad)
-  const contactOpen = !isSample && status === "active" && !ad.mine
-  const whatsappOpen = contactOpen && ad.contactWhatsApp !== false && Boolean(ad.phone.trim())
-  const phoneOpen = contactOpen && ad.contactPhone !== false && Boolean(ad.phone.trim())
+  const contactOpen = status === "active" && !ad.mine
+  const whatsappOpen =
+    contactOpen && !isSample && ad.contactWhatsApp !== false && Boolean(ad.phone.trim())
+  const phoneOpen =
+    contactOpen && !isSample && ad.contactPhone !== false && Boolean(ad.phone.trim())
   const expiringSoon = isListingExpiringSoon(ad.expiresAt)
   const daysLeft = daysUntilExpiry(ad.expiresAt)
   const postedHours = ad.postedAt ? hoursAgoOf(ad) : ad.hoursAgo
@@ -483,22 +485,6 @@ export function ListingDetail({ id }: { id: string }) {
                   </Button>
                 ) : null}
               </>
-            ) : isSample ? (
-              <>
-                <Button className="h-10 rounded-full" disabled>
-                  Message seller
-                </Button>
-                <div className="grid grid-cols-2 gap-2">
-                  <Button variant="outline" className="h-10 rounded-full" disabled>
-                    <WhatsAppIcon className="size-4" />
-                    WhatsApp
-                  </Button>
-                  <Button variant="outline" className="h-10 rounded-full" disabled>
-                    <Phone className="size-4" />
-                    Call
-                  </Button>
-                </div>
-              </>
             ) : status !== "active" ? (
               <p className="rounded-xl bg-neutral-50 px-3 py-3 text-sm text-neutral-600">
                 {status === "expired"
@@ -600,7 +586,7 @@ export function ListingDetail({ id }: { id: string }) {
             </Button>
           ) : !contactOpen ? (
             <Button className="shrink-0 rounded-full" disabled>
-              {isSample ? "Message seller" : expired ? "Expired" : "Sold"}
+              {expired ? "Expired" : "Sold"}
             </Button>
           ) : (
             <div className="flex shrink-0 items-center gap-1.5">
