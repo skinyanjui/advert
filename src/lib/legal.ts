@@ -1,6 +1,6 @@
 /** Draft legal document versions. Bump when Terms or Privacy text changes. */
 export const TERMS_VERSION = "2026-09-29-draft"
-export const PRIVACY_VERSION = "2026-09-29-draft"
+export const PRIVACY_VERSION = "2026-09-29-contact-analytics-draft"
 
 export const LEGAL_EFFECTIVE_DATE = "2026-09-29"
 
