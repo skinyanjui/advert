@@ -110,6 +110,8 @@ function AdForm({ existing }: { existing: Listing | null }) {
   const [place, setPlace] = useState<ChosenPlace | null>(placeFromListing(existing))
   const [description, setDescription] = useState(existing?.description ?? "")
   const [phone, setPhone] = useState(existing?.phone ?? "")
+  const [contactWhatsApp, setContactWhatsApp] = useState(existing?.contactWhatsApp !== false)
+  const [contactPhone, setContactPhone] = useState(existing?.contactPhone !== false)
   const [sponsored, setSponsored] = useState(existing?.sponsored === true)
   const sponsoredLocked = existing?.sponsoredLocked === true
   const [photos, setPhotos] = useState<string[]>(existing ? listingImages(existing) : [])
@@ -159,6 +161,8 @@ function AdForm({ existing }: { existing: Listing | null }) {
       setCity(draft.city)
       setDescription(draft.description)
       setPhone(draft.phone)
+      setContactWhatsApp(draft.contactWhatsApp !== false)
+      setContactPhone(draft.contactPhone !== false)
       setPhotos(draft.photos)
       setSponsored(draft.sponsored === true)
       setPlace(locatedPlace(null, draft.country, draft.city))
@@ -233,6 +237,8 @@ function AdForm({ existing }: { existing: Listing | null }) {
         city,
         description,
         phone,
+        contactWhatsApp,
+        contactPhone,
         photos,
         sponsored,
       })
@@ -258,6 +264,8 @@ function AdForm({ existing }: { existing: Listing | null }) {
     city,
     description,
     phone,
+    contactWhatsApp,
+    contactPhone,
     photos,
     sponsored,
   ])
@@ -289,6 +297,8 @@ function AdForm({ existing }: { existing: Listing | null }) {
       sellerName: existing?.sellerName ?? "Amina K.",
       sellerSince: existing?.sellerSince ?? sellerSinceFromUser(auth.user),
       phone: phone || callingCode || "+000",
+      contactWhatsApp,
+      contactPhone,
       sponsored: sponsoredLocked || sponsored || undefined,
       sponsoredLocked: sponsoredLocked || undefined,
       mine: true,
@@ -308,6 +318,8 @@ function AdForm({ existing }: { existing: Listing | null }) {
     description,
     phone,
     callingCode,
+    contactWhatsApp,
+    contactPhone,
     sponsored,
     sponsoredLocked,
     existing,
@@ -373,6 +385,8 @@ function AdForm({ existing }: { existing: Listing | null }) {
       city,
       description,
       phone,
+      contactWhatsApp,
+      contactPhone,
     })
   }
 
@@ -487,7 +501,9 @@ function AdForm({ existing }: { existing: Listing | null }) {
       hoursAgo: existing?.hoursAgo ?? 0,
       postedAt: existing?.postedAt ?? new Date().toISOString(),
       description: description.trim().slice(0, 2000),
-      phone: normalizeContactPhone(phone),
+      phone: normalizeContactPhone(phone, country),
+      contactWhatsApp,
+      contactPhone,
       image: preview.image,
       images: preview.images,
       condition: keptDetails.condition || subcategory.name,
@@ -509,6 +525,8 @@ function AdForm({ existing }: { existing: Listing | null }) {
         city,
         description,
         phone,
+        contactWhatsApp,
+        contactPhone,
         photos,
         sponsored,
       })
@@ -922,9 +940,30 @@ function AdForm({ existing }: { existing: Listing | null }) {
                   </span>
                 </span>
               </label>
-              <p className="text-xs leading-5 text-neutral-500">
-                Buyers can call, open WhatsApp with this number, or leave an on-site note. Prefer a number you check often.
-              </p>
+              <div className="grid gap-2">
+                <p className="text-xs font-medium text-neutral-700">Direct contact</p>
+                <label className="flex items-center gap-2 text-sm text-neutral-700">
+                  <input
+                    type="checkbox"
+                    className="size-4 rounded border-neutral-300"
+                    checked={contactWhatsApp}
+                    onChange={(event) => setContactWhatsApp(event.target.checked)}
+                  />
+                  WhatsApp
+                </label>
+                <label className="flex items-center gap-2 text-sm text-neutral-700">
+                  <input
+                    type="checkbox"
+                    className="size-4 rounded border-neutral-300"
+                    checked={contactPhone}
+                    onChange={(event) => setContactPhone(event.target.checked)}
+                  />
+                  Phone calls
+                </label>
+                <p className="text-xs leading-5 text-neutral-500">
+                  Buyers can always use marketplace messages. Your phone number is used only for the direct contact options you enable.
+                </p>
+              </div>
             </section>
           ) : null}
 
