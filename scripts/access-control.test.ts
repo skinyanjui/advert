@@ -28,3 +28,17 @@ test("registration discloses protected features and requires legal acceptance", 
   assert.match(signIn, /Agree to the Terms and Privacy Policy to continue\./)
   assert.match(signIn, /channel === "phone"/)
 })
+
+
+test("protected mutations require RBAC and current legal acceptance", () => {
+  const board = readFileSync(new URL("../src/app/api/board/route.ts", import.meta.url), "utf8")
+  const listing = readFileSync(new URL("../src/app/api/listings/[id]/route.ts", import.meta.url), "utf8")
+  const contributing = readFileSync(new URL("../CONTRIBUTING.md", import.meta.url), "utf8")
+
+  assert.match(board, /canOwner\(owner, "profile"\)/)
+  assert.match(board, /requireCurrentTerms\(owner\.id\)/)
+  assert.match(listing, /canOwner\(owner, "post"\)/)
+  assert.equal((listing.match(/requireCurrentTerms\(owner\.id\)/g) ?? []).length, 2)
+  assert.match(contributing, /role-based access control as a default requirement/i)
+  assert.match(contributing, /UI visibility is never the security boundary/i)
+})

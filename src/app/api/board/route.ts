@@ -3,7 +3,7 @@ import { fail, ok } from "@/lib/api"
 import { canOwner } from "@/lib/access-control"
 import { newSession, resolveMutationOwner, resolveOwner } from "@/lib/board-session"
 import { importBoard, listBoard } from "@/lib/board-store"
-import { getTermsStatus } from "@/lib/terms-gate"
+import { getTermsStatus, requireCurrentTerms } from "@/lib/terms-gate"
 
 export const dynamic = "force-dynamic"
 export const runtime = "nodejs"
@@ -60,7 +60,11 @@ export async function GET(request: Request) {
 
 export async function POST(request: Request) {
   const owner = await resolveMutationOwner(request)
-  if (!owner) return fail("A valid browser session is required.", 403)
+  if (!canOwner(owner, "profile") || !owner || owner.kind !== "auth") {
+    return fail("Sign in to import account data.", 401)
+  }
+  const termsBlock = await requireCurrentTerms(owner.id)
+  if (termsBlock) return termsBlock
   try {
     const body: unknown = await request.json()
     return ok(await importBoard(owner.id, body))
