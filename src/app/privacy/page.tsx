@@ -30,7 +30,7 @@ export default function PrivacyPage() {
         <ul className="list-disc space-y-1 pl-5 text-sm leading-6 text-neutral-700">
           <li>Email address and sign-in details</li>
           <li>Profile information (such as display name, city, and country)</li>
-          <li>Phone number you provide for buyers to reach you</li>
+          <li>Phone number you provide for buyer contact, plus the direct-contact options you enable</li>
           <li>Listings you post (title, description, photos, location, and related fields)</li>
           <li>Messages you send through the board</li>
           <li>Reports you submit about listings</li>
@@ -43,6 +43,22 @@ export default function PrivacyPage() {
             preferences
           </li>
         </ul>
+      </section>
+
+      <section className="mt-8 space-y-3">
+        <h2 className="text-base font-medium text-neutral-950">Direct contact and WhatsApp</h2>
+        <p className="text-sm leading-6 text-neutral-700">
+          Sellers choose whether a listing allows WhatsApp and phone calls. If a seller enables a
+          direct contact option, we use the phone number they provided to create that contact link.
+          Buyers do not need to save the number before opening WhatsApp.
+        </p>
+        <p className="text-sm leading-6 text-neutral-700">
+          Opening WhatsApp leaves {site.name} and uses WhatsApp&apos;s service. WhatsApp may receive
+          information such as the phone numbers involved and technical information under its own
+          terms and privacy policy. We do not receive the contents of WhatsApp conversations through
+          this click-to-chat feature. Marketplace messages sent through {site.name} remain separate
+          and are stored by us as described in this policy.
+        </p>
       </section>
 
       <section className="mt-8 space-y-3">
