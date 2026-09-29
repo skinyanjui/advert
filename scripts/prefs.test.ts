@@ -58,6 +58,14 @@ test("normalizeProfileUpdate accepts language and currency patches", () => {
   assert.equal(bad.ok, false)
 })
 
+test("account onboarding captures a concrete default display currency", () => {
+  const signIn = readFileSync(new URL("../src/components/sign-in-form.tsx", import.meta.url), "utf8")
+  assert.match(signIn, /Default currency/)
+  assert.match(signIn, /onboarding-currency/)
+  assert.match(signIn, /setCurrency/)
+  assert.doesNotMatch(signIn, /Listing currency/)
+})
+
 test("listing grids use 5 columns from xl (1280px) and keep 2 cols on small screens", () => {
   assert.match(listingGridClassName, /grid-cols-2/)
   assert.match(listingGridClassName, /lg:grid-cols-3/)
