@@ -68,7 +68,7 @@ export function listingFieldErrors(input: ListingFields): FieldErrors {
     errors.description = "Write at least 20 characters. This is the paragraph on the listing."
   }
   if (input.city.trim().length < 2) errors.city = "Add the city."
-  const phoneReason = contactPhoneError(input.phone, { required: true })
+  const phoneReason = contactPhoneError(input.phone, { required: true, countryCode: input.country })
   if (phoneReason) errors.phone = phoneReason
 
   const combined = `${input.title} ${input.description}`
@@ -127,7 +127,7 @@ function normalizeListing(listing: Listing): Listing {
     currency: listing.currency ?? "USD",
     description: listing.description.trim().slice(0, 2000),
     city: listing.city.trim().slice(0, 80),
-    phone: normalizeContactPhone(listing.phone),
+    phone: normalizeContactPhone(listing.phone, listing.country),
     subcategory: subcategory?.id,
     details,
     condition: details?.condition || subcategory?.name || listing.condition,
