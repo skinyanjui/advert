@@ -60,7 +60,7 @@ test("normalizeProfileUpdate accepts language and currency patches", () => {
 
 test("account onboarding captures a concrete default display currency", () => {
   const signIn = readFileSync(new URL("../src/components/sign-in-form.tsx", import.meta.url), "utf8")
-  assert.match(signIn, /Default currency/)
+  assert.match(signIn, /label=\{t\("prefs\.currency"\)\}/)
   assert.match(signIn, /onboarding-currency/)
   assert.match(signIn, /setCurrency/)
   assert.doesNotMatch(signIn, /Listing currency/)
