@@ -6,7 +6,7 @@ export const en = {
   "prefs.language": "Language",
   "prefs.currency": "Currency",
   "prefs.currencyListing": "Listing currency",
-  "prefs.currencyHint": "Converted prices are approximate and labelled with ≈.",
+  "prefs.currencyHint": "Prices are shown in your selected currency. Converted prices are approximate.",
   "prefs.appearance": "Appearance",
   "prefs.sectionTitle": "Language & currency",
   "prefs.sectionBody": "Applies on this device. When signed in, also saved to your profile.",
