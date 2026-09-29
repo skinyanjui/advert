@@ -1,4 +1,3 @@
-import "server-only"
 
 export const whatsappMessageClasses = ["marketing", "utility", "authentication", "service"] as const
 export type WhatsAppMessageClass = (typeof whatsappMessageClasses)[number]
