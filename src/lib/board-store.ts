@@ -40,6 +40,7 @@ type Row = {
   sponsored_locked?: boolean | null
 }
 const seedIds = new Set(seedListings.map((item) => item.id))
+const developmentSellerId = "00000000-0000-4000-8000-000000000001"
 const listingIdPattern = /^ad-[a-zA-Z0-9-]{1,64}$/
 const listingSelect =
   "id,owner_id,posted_at,payload,hidden_at,hidden_reason,expires_at,status,sold_at"
@@ -637,7 +638,44 @@ export async function createMessage(viewerId: string, listingId: string, body: s
   const reason = messageError(body.trim())
   if (reason) return { ok: false, reason }
   if (seedIds.has(listingId)) {
-    return { ok: false, reason: "Sample listings cannot receive messages. Open a live ad instead." }
+    const listing = seedListings.find((item) => item.id === listingId)
+    if (!listing) return { ok: false, reason: "That listing is no longer on the board." }
+    const db = boardDb()
+    const { data: existing, error: existingError } = await db
+      .from("board_conversations")
+      .select("id,listing_id,listing_owner_id,buyer_id,listing_title,seller_name,buyer_last_read_at,seller_last_read_at")
+      .eq("listing_id", listingId)
+      .eq("buyer_id", viewerId)
+      .maybeSingle()
+    check(existingError)
+
+    let conversation = existing as ConversationRow | null
+    if (!conversation) {
+      const created: ConversationRow = {
+        id: crypto.randomUUID(),
+        listing_id: listingId,
+        listing_owner_id: developmentSellerId,
+        buyer_id: viewerId,
+        listing_title: listing.title,
+        seller_name: listing.sellerName,
+        buyer_last_read_at: new Date().toISOString(),
+        seller_last_read_at: null,
+      }
+      const { error: insertConversation } = await db.from("board_conversations").insert({
+        id: created.id,
+        listing_id: created.listing_id,
+        listing_owner_id: created.listing_owner_id,
+        buyer_id: created.buyer_id,
+        listing_title: created.listing_title,
+        seller_name: created.seller_name,
+        buyer_last_read_at: created.buyer_last_read_at,
+        updated_at: new Date().toISOString(),
+      })
+      check(insertConversation)
+      conversation = created
+    }
+
+    return appendMessage(viewerId, conversation, body.trim())
   }
   const db = boardDb()
   const { data: row, error } = await db
