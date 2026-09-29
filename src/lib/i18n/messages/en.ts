@@ -5,7 +5,6 @@
 export const en = {
   "prefs.language": "Language",
   "prefs.currency": "Currency",
-  "prefs.currencyListing": "Listing currency",
   "prefs.currencyHint": "Prices are shown in your selected currency. Converted prices are approximate.",
   "prefs.appearance": "Appearance",
   "prefs.sectionTitle": "Language & currency",
