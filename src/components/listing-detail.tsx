@@ -9,6 +9,7 @@ import { toast } from "sonner"
 
 import { ListingCard } from "@/components/listing-card"
 import { ListingPrice } from "@/components/listing-price"
+import { WhatsAppConsentAction } from "@/components/whatsapp-consent-action"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { TermsNotice } from "@/components/terms-notice"
 import { Button } from "@/components/ui/button"
@@ -503,17 +504,17 @@ export function ListingDetail({ id }: { id: string }) {
                 {whatsappOpen || phoneOpen ? (
                   <div className={cn("grid gap-2", whatsappOpen && phoneOpen ? "grid-cols-2" : "grid-cols-1")}>
                     {whatsappOpen ? (
-                      <Button variant="outline" className="h-10 rounded-full" asChild>
-                        <a
-                          href={whatsappHref(listing.phone, listing.title, listing.id)}
-                          target="_blank"
-                          rel="noreferrer"
-                          onClick={() => trackListingContactEvent(listing.id, "whatsapp_click")}
-                        >
-                          <WhatsAppIcon className="size-4" />
-                          WhatsApp
-                        </a>
-                      </Button>
+                      <WhatsAppConsentAction
+                        listingId={listing.id}
+                        sellerName={listing.sellerName}
+                        listingTitle={listing.title}
+                        href={whatsappHref(listing.phone, listing.title, listing.id)}
+                        ariaLabel="Chat on WhatsApp"
+                        className="inline-flex h-10 items-center justify-center gap-2 rounded-full border border-neutral-200 bg-white px-4 text-sm font-medium transition hover:bg-neutral-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-neutral-950"
+                      >
+                        <WhatsAppIcon className="size-4" />
+                        WhatsApp
+                      </WhatsAppConsentAction>
                     ) : null}
                     {phoneOpen ? (
                       <Button variant="outline" className="h-10 rounded-full" onClick={() => setPhoneVisible(true)}>
@@ -597,17 +598,16 @@ export function ListingDetail({ id }: { id: string }) {
                 {auth.configured && !auth.signedIn ? "Sign in" : "Message seller"}
               </Button>
               {whatsappOpen ? (
-                <Button variant="outline" size="icon" className="size-10 shrink-0 rounded-full" asChild>
-                  <a
-                    href={whatsappHref(listing.phone, listing.title, listing.id)}
-                    target="_blank"
-                    rel="noreferrer"
-                    aria-label="Chat on WhatsApp"
-                    onClick={() => trackListingContactEvent(listing.id, "whatsapp_click")}
-                  >
-                    <WhatsAppIcon className="size-4 text-[#25D366]" />
-                  </a>
-                </Button>
+                <WhatsAppConsentAction
+                  listingId={listing.id}
+                  sellerName={listing.sellerName}
+                  listingTitle={listing.title}
+                  href={whatsappHref(listing.phone, listing.title, listing.id)}
+                  ariaLabel="Chat on WhatsApp"
+                  className="inline-flex size-10 shrink-0 items-center justify-center rounded-full border border-neutral-200 bg-white transition hover:bg-neutral-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-neutral-950"
+                >
+                  <WhatsAppIcon className="size-4 text-[#25D366]" />
+                </WhatsAppConsentAction>
               ) : null}
               {phoneOpen ? (
                 <Button
