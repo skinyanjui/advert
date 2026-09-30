@@ -91,7 +91,7 @@ export default async function PrivacyChoicesPage() {
       <section className="mt-8 space-y-3">
         <h2 className="text-base font-medium text-neutral-950">Other U.S. state requests</h2>
         <p className="text-sm leading-6 text-neutral-700">
-          Where applicable, residents covered by laws such as Colorado, Oregon, or Texas privacy
+          Where applicable, residents covered by laws such as Colorado, Oregon, Texas, or Indiana privacy
           laws may have rights to access, correct, delete, obtain a portable copy, and opt out of
           covered sale, targeted advertising, or certain profiling. The request form includes these
           choices and records the jurisdiction for review.
