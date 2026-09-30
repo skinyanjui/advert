@@ -257,7 +257,7 @@ export function ListingDetail({ id }: { id: string }) {
           note: reportNote,
         }),
       })
-      const payload = (await response.json()) as { reason?: string }
+      const payload = (await response.json()) as { reason?: string; autoHidden?: boolean }
       if (!response.ok) {
         toast.error(payload.reason ?? t("report.toast.error"))
         return
@@ -265,7 +265,7 @@ export function ListingDetail({ id }: { id: string }) {
       setReportOpen(false)
       setReportReason("")
       setReportNote("")
-      toast.success(t("report.toast.sent"))
+      toast.success(payload.autoHidden ? t("report.toast.autoHidden") : t("report.toast.sent"))
     } catch {
       toast.error(t("report.toast.error"))
     } finally {
@@ -753,6 +753,9 @@ export function ListingDetail({ id }: { id: string }) {
                 </SelectContent>
               </Select>
             </div>
+            <p className="rounded-lg bg-neutral-50 px-3 py-2 text-xs leading-5 text-neutral-600">
+              {t("report.automationHint")}
+            </p>
             <div className="grid gap-1.5">
               <Label htmlFor="report-note">{t("report.noteLabel")}</Label>
               <Textarea
