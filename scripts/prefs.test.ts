@@ -109,3 +109,16 @@ test("header moves notifications into the profile menu and drops top-nav message
   assert.doesNotMatch(header, /NotificationsMenu/)
   assert.doesNotMatch(header, /<Bell/)
 })
+
+
+test("desktop header exposes an accessible light dark system theme menu", () => {
+  const header = readFileSync(new URL("../src/components/site-header.tsx", import.meta.url), "utf8")
+  const theme = readFileSync(new URL("../src/components/theme-choices.tsx", import.meta.url), "utf8")
+  assert.match(header, /<ThemeMenu \/>/)
+  assert.match(header, /hidden md:block/)
+  assert.match(theme, /role="menuitemradio"/)
+  assert.match(theme, /aria-checked=\{choice === option\}/)
+  assert.match(theme, /themeChoices\.map/)
+  assert.match(theme, /<Check/)
+  assert.match(theme, /resolved === "dark"/)
+})
