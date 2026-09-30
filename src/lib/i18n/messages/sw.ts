@@ -428,6 +428,8 @@ export const sw: Messages = {
   "report.noteLabel": "Maelezo (si lazima)",
   "report.notePlaceholder": "Cho chote kinachosaidia mkaguzi",
   "report.send": "Tuma ripoti",
+  "report.automationHint": "Ripoti hukaguliwa na wasimamizi. Ripoti kadhaa tofauti zinazosubiri zinaweza kuficha tangazo kwa muda kabla ya ukaguzi; ripoti zikikataliwa tangazo linaweza kurudishwa.",
+  "report.toast.autoHidden": "Ripoti imetumwa. Tangazo limefichwa kwa muda likisubiri ukaguzi.",
   "report.sending": "Inatuma…",
   "report.toast.sent": "Ripoti imetumwa. Asante kwa kusaidia kuweka bweni salama.",
   "report.toast.error": "Haikuweza kutuma ripoti.",
