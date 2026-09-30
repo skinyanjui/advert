@@ -26,6 +26,7 @@ export const en = {
   "nav.site": "Site",
   "nav.terms": "Terms",
   "nav.privacy": "Privacy",
+  "nav.privacyRights": "Privacy & rights",
   "nav.contact": "Contact",
   "nav.signIn": "Sign in",
   "nav.signOut": "Sign out",
