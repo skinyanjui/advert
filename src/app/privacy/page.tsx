@@ -278,6 +278,18 @@ export default function PrivacyPage() {
       </section>
 
       <section className="mt-8 space-y-3">
+        <h2 className="text-base font-medium text-neutral-950">Security incidents and breach response</h2>
+        <p className="text-sm leading-6 text-neutral-700">
+          We maintain an internal incident register for suspected security or personal-data incidents.
+          When an incident occurs, we record discovery and containment timing, affected data and
+          jurisdictions, estimated scope, notification assessments, and actions taken. Where an
+          applicable law requires notification to a regulator, affected individuals, or another
+          party, we will use the applicable legal standard and deadline rather than a single global
+          deadline.
+        </p>
+      </section>
+
+      <section className="mt-8 space-y-3">
         <h2 className="text-base font-medium text-neutral-950">Processors</h2>
         <p className="text-sm leading-6 text-neutral-700">
           We use <strong>Supabase</strong> (database, auth, and storage) and <strong>Vercel</strong>{" "}
