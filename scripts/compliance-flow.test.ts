@@ -129,6 +129,7 @@ test("compliance registry covers current and conditional law-to-product controls
     "eprivacy",
     "accessibility",
     "advertising",
+    "fair_access_ads",
     "inform",
     "communications",
     "coppa",
@@ -182,4 +183,33 @@ test("compliance incidents use one canonical admin route and component", () => {
   const account = source("src/components/account-page.tsx")
   assert.match(compliance, /href="\/admin\/incidents"/)
   assert.match(account, /href="\/admin\/incidents"/)
+})
+
+
+test("privacy jurisdictions include Indiana in code and migration", () => {
+  const rights = source("src/lib/privacy-rights.ts")
+  const migration = source("database/migrations/20260929_privacy_rights_workflow.sql")
+  const en = source("src/lib/i18n/messages/en.ts")
+  assert.match(rights, /id: "indiana"/)
+  assert.match(migration, /'indiana'/)
+  assert.match(en, /privacyRequest\.jurisdiction\.indiana/)
+})
+
+test("residential housing and job listings require versioned fair-access evidence", () => {
+  const rules = source("src/lib/listing-rules.ts")
+  const post = source("src/components/post-form.tsx")
+  const types = source("src/lib/types.ts")
+  const reports = source("src/lib/reports.ts")
+  const migration = source("database/migrations/20260929_discrimination_listing_reports.sql")
+
+  assert.match(rules, /residentialPropertyTypes/)
+  assert.match(rules, /category === "jobs"/)
+  assert.match(rules, /errors\.fairAccess/)
+  assert.match(post, /post\.fairAccessHousing/)
+  assert.match(post, /post\.fairAccessJobs/)
+  assert.match(post, /FAIR_ACCESS_ATTESTATION_VERSION/)
+  assert.match(types, /fairAccessAttested/)
+  assert.match(types, /fairAccessAttestationVersion/)
+  assert.match(reports, /id: "discrimination"/)
+  assert.match(migration, /'discrimination'/)
 })
