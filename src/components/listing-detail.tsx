@@ -509,6 +509,11 @@ export function ListingDetail({ id }: { id: string }) {
                 <Button variant="outline" className="h-10 rounded-full" disabled={busy} onClick={() => setConfirmRemove(true)}>
                   {t("listing.removeAd")}
                 </Button>
+                {listing.hidden ? (
+                  <Button variant="outline" className="h-10 rounded-full" asChild>
+                    <Link href="/account/moderation">Review moderation decision</Link>
+                  </Button>
+                ) : null}
                 {threadCount > 0 ? (
                   <Button variant="outline" className="h-10 rounded-full" asChild>
                     <Link href={`/messages?listing=${listing.id}`}>
