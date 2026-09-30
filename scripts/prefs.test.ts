@@ -93,7 +93,7 @@ test("guest browsing preferences stay accessible outside authentication", () => 
   const profile = readFileSync(new URL("../src/components/profile-menu.tsx", import.meta.url), "utf8")
   const account = readFileSync(new URL("../src/components/account-page.tsx", import.meta.url), "utf8")
   assert.match(header, /<ProfileMenu \/>/)
-  assert.match(header, /<LanguageCurrencyFields layout="menu" idPrefix="header-pref" \/>/)
+  assert.match(header, /<LanguageCurrencyMenu \/>/)
   assert.match(header, /<ThemeMenu \/>/)
   assert.match(categories, /<LanguageCurrencyFields layout="menu" idPrefix="mobile-pref" \/>/)
   assert.match(categories, /<ThemeChoices \/>/)

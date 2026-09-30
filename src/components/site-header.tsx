@@ -9,7 +9,7 @@ import { Logo } from "@/components/logo"
 import { CategoryTopNav } from "@/components/category-top-nav"
 import { PostLink, usePostAdHref } from "@/components/post-link"
 import { ProfileMenu } from "@/components/profile-menu"
-import { LanguageCurrencyFields } from "@/components/language-currency-fields"
+import { LanguageCurrencyMenu } from "@/components/language-currency-fields"
 import { ThemeMenu } from "@/components/theme-choices"
 import { usePrefs } from "@/components/prefs-provider"
 import { Button, buttonVariants } from "@/components/ui/button"
@@ -95,11 +95,11 @@ function TopNavActions({ pathname, locationLabel, query }: { pathname: string; l
           <HeaderMenu
             label="Language and currency"
             panelRole="region"
-            panelClassName="w-72"
+            panelClassName="w-auto p-0"
             summaryClassName="h-8 border-transparent bg-transparent px-2 shadow-none hover:bg-muted"
             summary={<span className="text-xs font-medium">{t("prefs.language")} · {t("prefs.currency")}</span>}
           >
-            <LanguageCurrencyFields layout="menu" idPrefix="header-pref" />
+            <LanguageCurrencyMenu />
           </HeaderMenu>
           <ThemeMenu />
         </div>
