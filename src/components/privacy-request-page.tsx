@@ -134,8 +134,7 @@ export function PrivacyRequestPage() {
       <header>
         <h1 className="text-2xl font-semibold tracking-tight">{t("privacyRequest.title")}</h1>
         <p className="mt-2 text-sm leading-6 text-neutral-600">
-          Use this form to exercise privacy rights that apply to you. We use a 30-day internal response target;
-          a legal deadline may differ by jurisdiction or request.
+          {t("privacyRequest.intro")}
         </p>
       </header>
 
