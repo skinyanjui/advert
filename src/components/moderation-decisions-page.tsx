@@ -1,7 +1,7 @@
 "use client"
 
 import Link from "next/link"
-import { useEffect, useState } from "react"
+import { useCallback, useEffect, useState } from "react"
 import { toast } from "sonner"
 
 import { Button } from "@/components/ui/button"
@@ -9,13 +9,13 @@ import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle }
 import { Textarea } from "@/components/ui/textarea"
 import type { ModerationDecisionRecord } from "@/lib/moderation-redress"
 
-export function ModerationDecisionsPage() {
+export function ModerationDecisionsPage({ now }: { now: string }) {
   const [decisions, setDecisions] = useState<ModerationDecisionRecord[]>([])
   const [loading, setLoading] = useState(true)
   const [reasons, setReasons] = useState<Record<string, string>>({})
   const [busyId, setBusyId] = useState<string | null>(null)
 
-  async function load() {
+  const load = useCallback(async () => {
     try {
       const response = await fetch("/api/moderation/decisions", { cache: "no-store" })
       const payload = (await response.json()) as { decisions?: ModerationDecisionRecord[]; reason?: string }
@@ -29,11 +29,14 @@ export function ModerationDecisionsPage() {
     } finally {
       setLoading(false)
     }
-  }
+  }, [])
 
   useEffect(() => {
-    void load()
-  }, [])
+    const timer = window.setTimeout(() => {
+      void load()
+    }, 0)
+    return () => window.clearTimeout(timer)
+  }, [load])
 
   async function appeal(decisionId: string) {
     const reason = reasons[decisionId]?.trim() ?? ""
@@ -84,7 +87,7 @@ export function ModerationDecisionsPage() {
         {decisions.map((decision) => {
           const appealOpen =
             Boolean(decision.appealUntil) &&
-            new Date(decision.appealUntil!).getTime() >= Date.now() &&
+            new Date(decision.appealUntil!).getTime() >= new Date(now).getTime() &&
             !decision.appeal
           return (
             <Card key={decision.id}>
