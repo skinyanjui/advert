@@ -141,3 +141,19 @@ test("top nav is composed from responsive component boundaries with deliberate b
   assert.match(css, /--border: oklch\(0\.84 0 0\)/)
   assert.match(css, /--input: oklch\(0\.78 0 0\)/)
 })
+
+
+test("top navigation uses a compact visual scale without shrinking interaction semantics", () => {
+  const header = readFileSync(new URL("../src/components/site-header.tsx", import.meta.url), "utf8")
+  const profile = readFileSync(new URL("../src/components/profile-menu.tsx", import.meta.url), "utf8")
+  const theme = readFileSync(new URL("../src/components/theme-choices.tsx", import.meta.url), "utf8")
+  const categories = readFileSync(new URL("../src/components/category-top-nav.tsx", import.meta.url), "utf8")
+  assert.match(header, /h-14 max-w-\[1720px\]/)
+  assert.match(header, /md:h-16/)
+  assert.match(header, /md:max-w-\[620px\]/)
+  assert.match(header, /summaryClassName="h-8/)
+  assert.match(header, /className="h-9 rounded-full border-input/)
+  assert.match(profile, /relative flex size-8/)
+  assert.match(theme, /flex size-8 items-center/)
+  assert.match(categories, /size-8 shrink-0 rounded-full/)
+})
