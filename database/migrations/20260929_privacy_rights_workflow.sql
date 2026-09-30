@@ -27,6 +27,7 @@ create table if not exists public.privacy_requests (
       'colorado',
       'oregon',
       'texas',
+      'indiana',
       'kenya',
       'nigeria',
       'south_africa',
