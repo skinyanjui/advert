@@ -58,7 +58,9 @@ test("onboarding and terms set an adult-only account boundary", () => {
 test("federal regulatory readiness covers marketplace communications consumer protection and DMCA", () => {
   const terms = source("src/app/terms/page.tsx")
   assert.match(terms, /INFORM Consumers Act/)
+  assert.match(terms, /CAN-SPAM Act/)
   assert.match(terms, /Telephone Consumer Protection Act/)
+  assert.match(terms, /Children[^\n]*Online Privacy Protection Act \(COPPA\)/)
   assert.match(terms, /Federal Trade Commission Act/)
   assert.match(terms, /Digital Millennium Copyright Act section 512/)
   assert.match(terms, /DMCA AGENT DETAILS/)
