@@ -113,7 +113,7 @@ test("marketplace surfaces prioritize listing value over duplicate controls", ()
   assert.match(panel, /thread\.viewerIsSeller \? t\("inbox\.buyer"\) : t\("inbox\.seller"\)/)
   assert.match(myAds, /mine\.some\(\(listing\) => listing\.hidden\)/)
   assert.match(myAds, /mine\.length > 0/)
-  assert.match(header, /h-14 max-w-\[1720px\]/)
+  assert.match(header, /grid h-14 w-full/)
 })
 
 
@@ -182,7 +182,7 @@ test("primary marketplace surfaces share one full-width spacing system", () => {
   const messages = source("src/components/messages-page.tsx")
   const myAds = source("src/components/my-ads-page.tsx")
 
-  assert.match(header, /flex h-14 w-full/)
+  assert.match(header, /grid h-14 w-full/)
   assert.match(header, /px-3/)
   assert.match(browse, /<div className="w-full">/)
   assert.match(browse, /px-3 pt-0 pb-16 md:px-4/)
@@ -192,4 +192,25 @@ test("primary marketplace surfaces share one full-width spacing system", () => {
     assert.match(page, /w-full px-3/)
     assert.match(page, /md:px-4/)
   }
+})
+
+
+test("desktop marketplace spacing follows the shared 248px and 16px rhythm", () => {
+  const header = source("src/components/site-header.tsx")
+  const categories = source("src/components/category-nav.tsx")
+  const categoryShell = source("src/components/category-top-nav.tsx")
+  const card = source("src/components/listing-card.tsx")
+  const sidebar = source("src/components/ui/sidebar.tsx")
+
+  assert.match(header, /md:grid-cols-\[15\.5rem_minmax\(0,1fr\)_auto\]/)
+  assert.match(header, /md:px-0/)
+  assert.match(header, /md:px-4/)
+  assert.match(header, /className="h-8 rounded-full border-input/)
+  assert.match(sidebar, /SIDEBAR_WIDTH = "15\.5rem"/)
+  assert.match(categories, /flex h-10 w-full/)
+  assert.match(categoryShell, /shrink-0 border-t border-sidebar-border px-2 py-2/)
+  assert.doesNotMatch(categoryShell, /absolute bottom-2 left-1\/2/)
+  assert.match(card, /border border-border\/70 bg-card/)
+  assert.match(card, /px-3 py-2\.5/)
+  assert.match(card, /mt-1\.5 flex min-w-0 items-center/)
 })

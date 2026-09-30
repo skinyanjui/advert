@@ -41,7 +41,7 @@ function TopNav() {
   const locationLabel = query.country ? countryName(query.country) : t("nav.allAfrica")
 
   return (
-    <div className="flex h-14 w-full items-center gap-1 px-3 sm:gap-1.5 md:relative md:h-16 md:gap-2 md:px-4 xl:gap-3">
+    <div className="grid h-14 w-full grid-cols-[auto_minmax(0,1fr)] items-center gap-2 px-3 md:h-16 md:grid-cols-[15.5rem_minmax(0,1fr)_auto] md:gap-0 md:px-0">
       <TopNavBrand />
       <TopNavDiscovery search={query.q} onSearchChange={(value) => update({ q: value })} />
       <TopNavActions pathname={pathname} locationLabel={locationLabel} query={query} />
@@ -51,7 +51,7 @@ function TopNav() {
 
 function TopNavBrand() {
   return (
-    <div className="shrink-0">
+    <div className="shrink-0 md:flex md:h-16 md:items-center md:px-4">
       <Logo iconOnly className="xl:hidden" />
       <Logo className="hidden xl:flex" />
     </div>
@@ -60,7 +60,7 @@ function TopNavBrand() {
 
 function TopNavDiscovery({ search, onSearchChange }: { search: string; onSearchChange: (value: string) => void }) {
   return (
-    <div className="relative mx-auto flex min-w-0 flex-1 items-center gap-1.5 md:max-w-[620px] md:gap-1.5">
+    <div className="relative flex min-w-0 items-center gap-2 md:px-4">
       <TopNavSearch value={search} onChange={onSearchChange} />
       <TopNavCategories />
     </div>
@@ -86,7 +86,7 @@ function TopNavCategories() {
 function TopNavActions({ pathname, locationLabel, query }: { pathname: string; locationLabel: string; query: ListingQuery }) {
   const { t } = usePrefs()
   return (
-    <div className="fixed inset-x-2 bottom-[calc(env(safe-area-inset-bottom)+0.5rem)] z-50 mx-auto flex max-w-md items-center rounded-2xl border border-border bg-background/95 p-1.5 shadow-lg backdrop-blur md:static md:inset-auto md:ml-auto md:max-w-none md:shrink-0 md:rounded-none md:border-0 md:bg-transparent md:p-0 md:shadow-none md:backdrop-blur-none">
+    <div className="fixed inset-x-2 bottom-[calc(env(safe-area-inset-bottom)+0.5rem)] z-50 mx-auto flex max-w-md items-center rounded-2xl border border-border bg-background/95 p-1.5 shadow-lg backdrop-blur md:static md:inset-auto md:ml-0 md:max-w-none md:shrink-0 md:rounded-none md:border-0 md:bg-transparent md:pr-4 md:pl-2 md:shadow-none md:backdrop-blur-none">
       <nav aria-label={t("nav.navigation")} className="flex w-full items-center justify-between gap-1 md:justify-end md:gap-1.5 lg:gap-2">
         <TopNavHome pathname={pathname} />
         <CountryMenu label={locationLabel} query={query} />
@@ -568,7 +568,7 @@ function SearchField({ value, onChange }: { value: string; onChange: (value: str
         }}
         placeholder={t("nav.searchPlaceholder")}
         aria-label={t("nav.searchListings")}
-        className="h-9 rounded-full border-input bg-background pr-3 pl-9 text-[13px] shadow-none sm:h-9 focus-visible:border-ring focus-visible:bg-background focus-visible:ring-ring/30"
+        className="h-8 rounded-full border-input bg-background pr-3 pl-9 text-[13px] shadow-none focus-visible:border-ring focus-visible:bg-background focus-visible:ring-ring/30"
       />
     </div>
   )

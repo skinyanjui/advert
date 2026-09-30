@@ -150,7 +150,7 @@ function CategorySidebarScroller() {
       <div
         ref={scrollerRef}
         tabIndex={-1}
-        className="h-full min-h-0 overflow-y-auto px-2 pt-3 pb-2 outline-none [&_[aria-current=page]]:scroll-mb-10 [&_[aria-current=page]]:scroll-mt-2"
+        className="h-full min-h-0 overflow-y-auto px-2 py-2 outline-none [&_[aria-current=page]]:scroll-mb-10 [&_[aria-current=page]]:scroll-mt-2"
       >
         <div>
           <Suspense fallback={<TopNavFallback />}>
@@ -172,6 +172,7 @@ function CategorySidebarScroller() {
           bottom ? "opacity-100" : "opacity-0",
         )}
       />
+      <div className={cn("shrink-0 border-t border-sidebar-border px-2 py-2", bottom ? "block" : "hidden")}>
       <button
         ref={moreChipRef}
         type="button"
@@ -179,13 +180,14 @@ function CategorySidebarScroller() {
         tabIndex={bottom ? 0 : -1}
         aria-hidden={!bottom}
         className={cn(
-          "absolute bottom-2 left-1/2 z-[2] inline-flex -translate-x-1/2 items-center gap-1 whitespace-nowrap rounded-md border border-neutral-200 bg-sidebar/95 px-2.5 py-1 text-xs text-neutral-600 shadow-sm backdrop-blur-sm transition-opacity duration-200 hover:bg-neutral-50 hover:text-neutral-950 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-neutral-950 motion-reduce:transition-none dark:border-neutral-700 dark:text-neutral-300 dark:hover:bg-neutral-800 dark:hover:text-neutral-50",
+          "flex h-8 w-full items-center justify-center gap-1 whitespace-nowrap rounded-md text-xs text-neutral-600 transition-colors hover:bg-neutral-50 hover:text-neutral-950 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-neutral-950 dark:text-neutral-300 dark:hover:bg-neutral-800 dark:hover:text-neutral-50",
           bottom ? "opacity-100" : "pointer-events-none opacity-0",
         )}
       >
         More categories
         <ChevronDown className="size-3.5 shrink-0 opacity-70" aria-hidden />
       </button>
+      </div>
     </SidebarContent>
   )
 }

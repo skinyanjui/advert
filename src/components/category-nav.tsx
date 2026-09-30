@@ -96,7 +96,7 @@ function CategoryButton({
       onClick={onNavigate}
       aria-current={active ? "page" : undefined}
       className={cn(
-        "flex w-full items-center gap-2.5 rounded-lg px-2.5 py-2 text-left text-sm transition-colors",
+        "flex h-10 w-full items-center gap-2.5 rounded-lg px-2.5 text-left text-sm transition-colors",
         active
           ? "bg-neutral-100 font-medium text-neutral-950"
           : "text-neutral-600 hover:bg-neutral-50 hover:text-neutral-950",

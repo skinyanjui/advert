@@ -79,13 +79,13 @@ export function ListingCard({
           </span>
         ) : null}
       </div>
-      <div className="grid min-h-[4.75rem] grid-rows-[minmax(1.25rem,auto)_1rem_0.875rem_1.125rem] gap-y-0.5 px-2 pt-2 pb-2 xl:px-2">
+      <div className="px-3 py-2.5">
         <p className="min-w-0 text-sm leading-5 font-semibold tracking-tight text-foreground">
           <ListingPrice listing={listing} />
         </p>
-        <h3 className="truncate text-[13px] leading-4 text-foreground/85 xl:text-[12px]">{listing.title}</h3>
+        <h3 className="mt-1 truncate text-[13px] leading-4 text-foreground/85">{listing.title}</h3>
         <p
-          className="flex min-w-0 items-center gap-1 text-[11px] leading-3.5 text-muted-foreground"
+          className="mt-1.5 flex min-w-0 items-center gap-1 text-[11px] leading-3.5 text-muted-foreground"
           title={placeFull}
           aria-label={placeFull}
         >
@@ -95,7 +95,7 @@ export function ListingCard({
             <span className="shrink-0">, {countryCode}{away ? ` · ${away}` : ""}</span>
           </span>
         </p>
-        <div className="flex items-center pr-9 text-[11px] leading-none text-muted-foreground">
+        <div className="mt-1 flex items-center pr-9 text-[11px] leading-none text-muted-foreground">
           <PostedLabel listing={listing} />
         </div>
       </div>
@@ -103,7 +103,7 @@ export function ListingCard({
   )
 
   return (
-    <article className="group relative flex h-full flex-col overflow-hidden rounded-xl border border-border bg-background transition-colors hover:border-foreground/20">
+    <article className="group relative flex h-full flex-col overflow-hidden rounded-xl border border-border/70 bg-card transition-colors hover:border-foreground/20">
       <div className="flex h-full flex-col">{body}</div>
       {linked ? (
         <Link
