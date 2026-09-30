@@ -317,7 +317,7 @@ export const sw: Messages = {
   "profile.pendingEmail": "Inasubiri uthibitisho kwa {email}. Angalia kikasha hicho (na barua pepe yako ya sasa ikiwa mabadiliko salama yamewashwa).",
   "profile.signOutAll": "Toka katika vifaa vyote",
   "privacyRequest.title": "Ombi la faragha",
-  "privacyRequest.intro": "Tumia fomu hii kutumia haki za faragha zinazokuhusu. Tunatumia lengo la ndani la siku 28 kwa maombi mengi na siku 15 kwa maombi ya California ya kujiondoa au kupunguza; muda wa kisheria unaweza kutofautiana kulingana na eneo au ombi.",
+  "privacyRequest.intro": "Tumia fomu hii kutumia haki za faragha zinazokuhusu. Tunatumia lengo la ndani la siku 28 za kalenda kwa maombi mengi na siku 15 za kazi kwa maombi ya California ya kujiondoa au kupunguza; muda wa kisheria unaweza kutofautiana kulingana na eneo au ombi.",
   "privacyRequest.sensitiveWarning": "Usiweke nenosiri, nambari ya kitambulisho cha serikali, taarifa za benki, taarifa za afya, au nyaraka nyeti kwenye fomu hii. Ikiwa uthibitisho unahitajika, tutatumia hatua tofauti.",
   "privacyRequest.detailsTitle": "Maelezo ya ombi",
   "privacyRequest.detailsBody": "Chagua eneo na haki inayofaa zaidi. Kuchagua Nyingine / sina uhakika hakutazuia ukaguzi.",
