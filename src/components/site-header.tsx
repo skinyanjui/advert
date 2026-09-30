@@ -74,10 +74,8 @@ export function SiteHeader() {
                   <span className="hidden xl:inline">{t("nav.postShort")}</span>
                 </Link>
               </Button>
-              <div className="hidden md:block">
-                <ThemeMenu />
-              </div>
               <ProfileMenu notifications={<ProfileNotifications />} />
+              <ThemeMenu />
             </nav>
           </div>
         </div>
