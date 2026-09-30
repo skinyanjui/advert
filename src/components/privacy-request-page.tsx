@@ -82,6 +82,13 @@ export function PrivacyRequestPage() {
     return null
   }, [requestType])
 
+  function startAppeal(request: RequestRecord) {
+    setRequestType("appeal")
+    setJurisdiction(request.jurisdiction)
+    setDetails(`Appeal of privacy request ${request.id}: `)
+    window.scrollTo({ top: 0, behavior: "smooth" })
+  }
+
   async function submit() {
     if (submitting) return
     setSubmitting(true)
@@ -270,6 +277,11 @@ export function PrivacyRequestPage() {
                   <span className="rounded-full bg-neutral-100 px-2 py-1 text-xs">{privacyStatusLabel(request.status)}</span>
                 </div>
                 {request.resolution ? <p className="mt-2 text-neutral-600">{request.resolution}</p> : null}
+                {request.status === "denied" ? (
+                  <Button type="button" variant="outline" className="mt-2 h-8 rounded-full" onClick={() => startAppeal(request)}>
+                    Appeal decision
+                  </Button>
+                ) : null}
                 <p className="mt-2 break-all text-xs text-neutral-400">{request.id}</p>
               </li>
             ))}
