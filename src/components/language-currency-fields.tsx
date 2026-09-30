@@ -15,10 +15,10 @@ import { isLocale, localeLabel, type Locale } from "@/lib/i18n/locales"
 import { isCurrencyPreference, type CurrencyPreference } from "@/lib/prefs"
 
 export function LanguageCurrencyFields({
-  layout = "stack",
+  layout = "row",
   idPrefix = "pref",
 }: {
-  layout?: "stack" | "menu"
+  layout?: "row" | "menu"
   idPrefix?: string
 }) {
   const { language, currency, setLanguage, setCurrency, t } = usePrefs()
@@ -32,7 +32,7 @@ export function LanguageCurrencyFields({
           if (isLocale(value) && offeredLocales.includes(value)) setLanguage(value)
         }}
       >
-        <SelectTrigger id={`${idPrefix}-language`} className={layout === "menu" ? "w-full" : "w-full max-w-xs"}>
+        <SelectTrigger id={`${idPrefix}-language`} className="w-full min-w-0">
           <SelectValue />
         </SelectTrigger>
         <SelectContent className="z-[90]">
@@ -50,7 +50,7 @@ export function LanguageCurrencyFields({
     <FormField
       label={t("prefs.currency")}
       htmlFor={`${idPrefix}-currency`}
-      hint={layout === "stack" ? t("prefs.currencyHint") : undefined}
+      hint={layout === "row" ? t("prefs.currencyHint") : undefined}
     >
       <Select
         value={currency}
@@ -58,7 +58,7 @@ export function LanguageCurrencyFields({
           if (isCurrencyPreference(value)) setCurrency(value as CurrencyPreference)
         }}
       >
-        <SelectTrigger id={`${idPrefix}-currency`} className={layout === "menu" ? "w-full" : "w-full max-w-xs"}>
+        <SelectTrigger id={`${idPrefix}-currency`} className="w-full min-w-0">
           <SelectValue />
         </SelectTrigger>
         <SelectContent className="z-[90] max-h-72">
@@ -72,19 +72,16 @@ export function LanguageCurrencyFields({
     </FormField>
   )
 
-  if (layout === "menu") {
-    return (
-      <div className="space-y-2 px-2 py-1.5">
-        {languageField}
-        {currencyField}
-      </div>
-    )
-  }
-
   return (
-    <div className="grid gap-4 sm:grid-cols-2">
-      {languageField}
-      {currencyField}
+    <div
+      className={
+        layout === "menu"
+          ? "grid grid-cols-2 gap-2 px-2 py-1.5"
+          : "grid grid-cols-2 gap-3"
+      }
+    >
+      <div className="min-w-0">{languageField}</div>
+      <div className="min-w-0">{currencyField}</div>
     </div>
   )
 }
