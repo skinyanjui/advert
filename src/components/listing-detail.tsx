@@ -1,6 +1,6 @@
 "use client"
 
-import { ArrowLeft, ChevronLeft, ChevronRight, Clock, Flag, Heart, MapPin, MessageSquareText, Phone, Share2 } from "lucide-react"
+import { ArrowLeft, ChevronLeft, ChevronRight, Flag, Heart, MapPin, MessageSquareText, MoreHorizontal, Phone, Share2 } from "lucide-react"
 import Image from "next/image"
 import Link from "next/link"
 import { useRouter, useSearchParams } from "next/navigation"
@@ -35,11 +35,9 @@ import { signInHref } from "@/lib/auth-redirect"
 import { relatedListings } from "@/lib/board"
 import { seedListings } from "@/lib/catalog"
 import { resolvePlace } from "@/lib/cities"
-import { getCountry } from "@/lib/countries"
 import { trackListingContactEvent } from "@/lib/contact-events"
 import { formatPlace, initials, smsHref, whatsappHref } from "@/lib/format"
 import { listingContactCapabilities } from "@/lib/listing-contact"
-import { listingGridClassNameLoose } from "@/lib/listing-grid"
 import { osmLinks } from "@/lib/map"
 import { useMarketplace } from "@/lib/marketplace"
 import { messageError } from "@/lib/messages"
@@ -54,7 +52,6 @@ import {
   postedDateTime,
 } from "@/lib/relative-time"
 import { reportReasons } from "@/lib/reports"
-import { useClientTime } from "@/lib/use-client-time"
 import { categoryName, type Listing } from "@/lib/types"
 import { cn } from "@/lib/utils"
 
@@ -82,6 +79,8 @@ export function ListingDetail({ id }: { id: string }) {
   const [reportBusy, setReportBusy] = useState(false)
   const [busy, setBusy] = useState(false)
   const [confirmRemove, setConfirmRemove] = useState(false)
+  const [descriptionOpen, setDescriptionOpen] = useState(false)
+  const [mobileContactOpen, setMobileContactOpen] = useState(false)
   const [photoIndex, setPhotoIndex] = useState(0)
   const [photoListingId, setPhotoListingId] = useState(id)
   if (photoListingId !== id) {
@@ -113,7 +112,7 @@ export function ListingDetail({ id }: { id: string }) {
     ...(voice.typeName ? [{ label: "Type", value: voice.typeName }] : []),
     ...listingFacts(ad),
   ]
-  const related = relatedListings(listings, ad)
+  const related = relatedListings(listings, ad).slice(0, 4)
   const backSearch = keptSearch(searchParams, ad.subcategory)
   const backHref = backSearch ? `/${ad.category}?${backSearch}` : `/${ad.category}`
   const expired = isListingExpired(ad.expiresAt)
@@ -147,9 +146,14 @@ export function ListingDetail({ id }: { id: string }) {
   async function share() {
     const url = window.location.href
     try {
+      if (navigator.share) {
+        await navigator.share({ title: ad.title, url })
+        return
+      }
       await navigator.clipboard.writeText(url)
       toast.success(t("toast.linkCopied"))
-    } catch {
+    } catch (error) {
+      if (error instanceof DOMException && error.name === "AbortError") return
       toast.error(t("toast.copyError"))
     }
   }
@@ -299,15 +303,15 @@ export function ListingDetail({ id }: { id: string }) {
       <div className="mx-auto w-full max-w-[1100px]">
       <Link
         href={backHref}
-        className="inline-flex items-center gap-1.5 text-sm text-neutral-500 hover:text-neutral-900"
+        className="inline-flex items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground"
       >
         <ArrowLeft className="size-4" />
         {categoryName(listing.category)}
       </Link>
       <div className="mt-4 grid gap-6 lg:grid-cols-[minmax(0,1fr)_320px]">
         <div>
-          <div className="overflow-hidden rounded-2xl border border-neutral-200 bg-neutral-100">
-            <div className="relative">
+          <div className="overflow-hidden rounded-xl bg-muted">
+            <div className="group relative">
               <Image
                 src={activePhoto ?? listing.image}
                 alt={`${listing.title}, photo ${Math.min(photoIndex, gallery.length - 1) + 1} of ${gallery.length}`}
@@ -318,179 +322,100 @@ export function ListingDetail({ id }: { id: string }) {
               />
               {gallery.length > 1 ? (
                 <>
-                  <Button
-                    type="button"
-                    variant="secondary"
-                    size="icon"
-                    className="absolute top-1/2 left-2 size-9 -translate-y-1/2 rounded-full bg-white/95"
-                    aria-label={t("listing.previousPhoto")}
-                    onClick={() => setPhotoIndex((index) => (index - 1 + gallery.length) % gallery.length)}
-                  >
+                  <Button type="button" variant="secondary" size="icon" className="absolute top-1/2 left-2 size-8 -translate-y-1/2 rounded-full bg-background/85 opacity-80 shadow-none backdrop-blur hover:opacity-100" aria-label={t("listing.previousPhoto")} onClick={() => setPhotoIndex((index) => (index - 1 + gallery.length) % gallery.length)}>
                     <ChevronLeft className="size-4" />
                   </Button>
-                  <Button
-                    type="button"
-                    variant="secondary"
-                    size="icon"
-                    className="absolute top-1/2 right-2 size-9 -translate-y-1/2 rounded-full bg-white/95"
-                    aria-label={t("listing.nextPhoto")}
-                    onClick={() => setPhotoIndex((index) => (index + 1) % gallery.length)}
-                  >
+                  <Button type="button" variant="secondary" size="icon" className="absolute top-1/2 right-2 size-8 -translate-y-1/2 rounded-full bg-background/85 opacity-80 shadow-none backdrop-blur hover:opacity-100" aria-label={t("listing.nextPhoto")} onClick={() => setPhotoIndex((index) => (index + 1) % gallery.length)}>
                     <ChevronRight className="size-4" />
                   </Button>
-                  <span className="absolute right-3 bottom-3 rounded-full bg-black/70 px-2 py-0.5 text-[11px] font-medium text-white">
+                  <span className="absolute right-3 bottom-3 rounded-full bg-background/85 px-2 py-0.5 text-[11px] font-medium text-foreground backdrop-blur">
                     {Math.min(photoIndex, gallery.length - 1) + 1} / {gallery.length}
                   </span>
                 </>
               ) : null}
             </div>
-            {gallery.length > 1 ? (
-              <div className="flex gap-2 overflow-x-auto border-t border-neutral-200 bg-white p-2 [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+            {gallery.length >= 4 ? (
+              <div className="flex gap-1.5 overflow-x-auto bg-background p-1.5 [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
                 {gallery.map((photo, index) => (
-                  <button
-                    key={`${index}-${photo.slice(0, 24)}`}
-                    type="button"
-                    aria-label={`Show photo ${index + 1}`}
-                    aria-current={index === photoIndex}
-                    className={cn(
-                      "relative h-16 w-20 shrink-0 overflow-hidden rounded-lg border",
-                      index === photoIndex ? "border-neutral-950" : "border-neutral-200",
-                    )}
-                    onClick={() => setPhotoIndex(index)}
-                  >
-                    <Image
-                      src={photo}
-                      alt=""
-                      fill
-                      sizes="80px"
-                      unoptimized={photo.startsWith("data:")}
-                      className="object-cover"
-                    />
+                  <button key={`${index}-${photo.slice(0, 24)}`} type="button" aria-label={`Show photo ${index + 1}`} aria-current={index === photoIndex} className={cn("relative h-12 w-16 shrink-0 overflow-hidden rounded-md ring-1 ring-inset", index === photoIndex ? "ring-foreground" : "ring-border")} onClick={() => setPhotoIndex(index)}>
+                    <Image src={photo} alt="" fill sizes="64px" unoptimized={photo.startsWith("data:")} className="object-cover" />
                   </button>
                 ))}
               </div>
             ) : null}
           </div>
           <div className="mt-5">
-            <div className="flex flex-wrap items-start justify-between gap-3">
+            <div className="flex items-start justify-between gap-3">
               <div className="min-w-0">
-                {isSample ? (
-                  <span className="mb-2 inline-flex rounded-full border border-neutral-200 bg-neutral-50 px-2 py-0.5 text-[11px] font-medium text-neutral-600">
-                    {t("listing.sampleAd")}
-                  </span>
-                ) : null}
-                {listing.sponsored ? (
-                  <p className="mb-1 text-xs font-medium tracking-wide text-sky-800 uppercase">{t("listing.sponsored")}</p>
-                ) : null}
-                {listing.sold || status === "sold" ? (
-                  <p className="mb-1 text-xs font-medium tracking-wide text-neutral-500 uppercase">{t("listing.sold")}</p>
-                ) : null}
-                {status === "paused" && listing.mine ? (
-                  <p className="mb-1 text-xs font-medium tracking-wide text-amber-700 uppercase">{t("listing.paused")}</p>
-                ) : null}
-                {listing.hidden && listing.mine ? (
-                  <p className="mb-1 text-xs font-medium tracking-wide text-amber-700 uppercase">{t("listing.hiddenFromBoard")}</p>
-                ) : null}
-                {listing.mine && (expired || status === "expired") ? (
-                  <p className="mb-1 text-xs font-medium tracking-wide text-neutral-500 uppercase">{t("listing.expired")}</p>
-                ) : listing.mine && expiringSoon ? (
-                  <p className="mb-1 text-xs font-medium tracking-wide text-amber-700 uppercase">
-                    {expiryLabel ?? t("listing.expiringSoon")}
-                  </p>
-                ) : null}
-                <p className="text-2xl font-semibold tracking-tight">
-                  <ListingPrice listing={listing} />
-                </p>
-                <h1 className="mt-1 text-xl font-semibold tracking-tight text-neutral-950">
-                  {listing.title}
-                </h1>
+                <ListingStatus listing={listing} status={status} isSample={isSample} expired={expired} expiringSoon={expiringSoon} expiryLabel={expiryLabel} />
+                <p className="text-2xl font-semibold tracking-tight text-foreground"><ListingPrice listing={listing} /></p>
+                <h1 className="mt-1 text-xl font-semibold tracking-tight text-foreground">{listing.title}</h1>
+                <div className="mt-2 flex min-w-0 items-center gap-1.5 text-sm text-muted-foreground">
+                  <MapPin className="size-4 shrink-0" />
+                  <span className="truncate">{formatPlace(listing)}</span>
+                  <span aria-hidden="true">·</span>
+                  <time dateTime={postedIso} title={postedFull} suppressHydrationWarning={Boolean(postedIso)} className="shrink-0">{postedLabel}</time>
+                  {listing.mine && expiringSoon && expiryLabel ? <><span aria-hidden="true">·</span><span className="shrink-0">{expiryLabel}</span></> : null}
+                </div>
               </div>
-              <div className="flex gap-2">
-                <Button
-                  variant="outline"
-                  className="rounded-full"
-                  onClick={() => {
-                    if (auth.configured && !auth.signedIn) {
-                      router.push(signInHref(`/listings/${listing.id}`))
-                      return
-                    }
-                    toggleSaved(listing.id)
-                  }}
-                >
+              <div className="flex shrink-0 items-center gap-1">
+                <Button variant="ghost" size="icon" className="rounded-full text-muted-foreground" aria-label={saved ? t("listing.saved") : t("listing.saveShort")} title={saved ? t("listing.saved") : t("listing.saveShort")} onClick={() => {
+                  if (auth.configured && !auth.signedIn) {
+                    router.push(signInHref(`/listings/${listing.id}`))
+                    return
+                  }
+                  toggleSaved(listing.id)
+                }}>
                   <Heart className={cn("size-4", saved && "fill-rose-500 text-rose-500")} />
-                  {saved ? t("listing.saved") : t("listing.saveShort")}
                 </Button>
                 <Button variant="ghost" size="icon" className="rounded-full text-muted-foreground" aria-label={t("listing.share")} title={t("listing.share")} onClick={share}>
                   <Share2 className="size-4" />
                 </Button>
               </div>
             </div>
-            <div className="mt-3 flex flex-wrap items-center gap-x-3 gap-y-1 text-sm text-neutral-500">
-              <span className="inline-flex min-w-0 items-center gap-1">
-                <MapPin className="size-4 shrink-0" />
-                <span className="truncate">{formatPlace(listing)}</span>
-              </span>
-              <span className="text-neutral-300" aria-hidden="true">
-                ·
-              </span>
-              <time
-                dateTime={postedIso}
-                title={postedFull}
-                suppressHydrationWarning={Boolean(postedIso)}
-                className="inline-flex items-center gap-1"
-              >
-                <Clock className="size-4 shrink-0" />
-                {postedLabel}
-                {postedFull ? <span className="text-neutral-400">({postedFull})</span> : null}
-              </time>
-              {expiryLabel && !(listing.mine && (expired || expiringSoon)) ? (
-                <>
-                  <span className="text-neutral-300" aria-hidden="true">
-                    ·
-                  </span>
-                  <span>{expiryLabel}</span>
-                </>
-              ) : null}
-            </div>
           </div>
           {facts.length > 0 ? (
-            <section className="mt-6">
-              <h2 className="text-sm font-medium text-neutral-950">{voice.detailHeading}</h2>
-              <dl className="mt-3 grid grid-cols-2 gap-x-4 gap-y-3 text-sm sm:grid-cols-3">
-                {facts.map((fact) => (
-                  <Fact key={fact.label} label={fact.label} value={fact.value} />
-                ))}
+            <section className="mt-5">
+              <h2 className="text-sm font-medium text-foreground">{voice.detailHeading}</h2>
+              <dl className="mt-2 grid grid-cols-2 overflow-hidden rounded-xl border border-border bg-muted/30 sm:grid-cols-3">
+                {facts.map((fact) => <Fact key={fact.label} label={fact.label} value={fact.value} />)}
               </dl>
             </section>
           ) : null}
           <section className="mt-6">
-            <h2 className="text-sm font-medium text-neutral-950">{voice.aboutHeading}</h2>
-            <p className="mt-2 max-w-2xl text-sm leading-6 text-neutral-700">{listing.description}</p>
+            <h2 className="text-sm font-medium text-foreground">{voice.aboutHeading}</h2>
+            <p className={cn("mt-2 max-w-[68ch] text-[15px] leading-7 text-foreground/80", !descriptionOpen && "line-clamp-6")}>{listing.description}</p>
+            {listing.description.length > 420 ? (
+              <button type="button" className="mt-2 text-sm font-medium text-foreground underline-offset-4 hover:underline" onClick={() => setDescriptionOpen((open) => !open)}>
+                {descriptionOpen ? "Show less" : "Show more"}
+              </button>
+            ) : null}
           </section>
           <PlacePanel listing={listing} />
         </div>
         <aside
           id="listing-contact"
-          className="h-fit rounded-2xl border border-border bg-background p-4 lg:sticky lg:top-20"
+          className="h-fit border-y border-border py-4 lg:sticky lg:top-16 lg:rounded-xl lg:border lg:p-4"
         >
           <>
+          {listing.mine ? <p className="mb-3 text-xs font-medium uppercase tracking-wide text-muted-foreground">Your listing</p> : null}
           <div className="flex items-center gap-3">
             <Avatar className="size-11">
               {listing.sellerAvatar ? <AvatarImage src={listing.sellerAvatar} alt="" /> : null}
-              <AvatarFallback className="bg-neutral-950 text-sm font-medium text-white">
+              <AvatarFallback className="bg-foreground text-sm font-medium text-background">
                 {initials(listing.sellerName)}
               </AvatarFallback>
             </Avatar>
             <div className="min-w-0 flex-1">
               <p className="truncate font-medium">{listing.sellerName}</p>
-              <p className="text-xs text-neutral-500">{t("listing.memberSince", { year: listing.sellerSince })}</p>
+              <p className="text-xs text-muted-foreground">{t("listing.memberSince", { year: listing.sellerSince })}</p>
             </div>
           </div>
           <div className="mt-4 grid gap-2">
             {listing.mine ? (
               <>
-                <Button className="h-10 rounded-full" asChild><Link href={`/post?edit=${listing.id}`}>{t("common.edit")}</Link></Button>
-                {threadCount > 0 ? <Button variant="outline" className="h-10 rounded-full" asChild><Link href={`/messages?listing=${listing.id}`}>{unreadHere > 0 ? t("listing.yourMessagesUnread", { count: unreadHere }) : threadCount === 1 ? t("listing.messagesCount", { count: 1 }) : t("listing.messagesCountMany", { count: threadCount })}</Link></Button> : null}
+                <Button className="h-9 rounded-full" asChild><Link href={`/post?edit=${listing.id}`}>{t("common.edit")}</Link></Button>
+                {threadCount > 0 ? <Button variant="outline" className="h-9 rounded-full" asChild><Link href={`/messages?listing=${listing.id}`}>{unreadHere > 0 ? t("listing.yourMessagesUnread", { count: unreadHere }) : threadCount === 1 ? t("listing.messagesCount", { count: 1 }) : t("listing.messagesCountMany", { count: threadCount })}</Link></Button> : null}
                 <details className="group rounded-xl border border-border">
                   <summary className="cursor-pointer list-none px-3 py-2.5 text-sm font-medium text-muted-foreground hover:text-foreground">Manage listing</summary>
                   <div className="grid gap-1 border-t border-border p-2">
@@ -502,7 +427,7 @@ export function ListingDetail({ id }: { id: string }) {
                   </div>
                 </details>
               </>            ) : status !== "active" ? (
-              <p className="rounded-xl bg-neutral-50 px-3 py-3 text-sm text-neutral-600">
+              <p className="rounded-xl bg-muted/40 px-3 py-3 text-sm text-muted-foreground">
                 {status === "expired"
                   ? t("listing.contactClosedExpired")
                   : status === "paused"
@@ -515,7 +440,7 @@ export function ListingDetail({ id }: { id: string }) {
                   {auth.configured && !auth.signedIn ? t("listing.signInToMessage") : t("listing.messageSeller")}
                 </Button>
                 {whatsappOpen || textOpen || phoneOpen ? (
-                  <div className="grid grid-cols-3 gap-2">
+                  <div className="flex flex-wrap gap-2">
                     {whatsappOpen ? (
                       <WhatsAppConsentAction
                         listingId={listing.id}
@@ -523,14 +448,14 @@ export function ListingDetail({ id }: { id: string }) {
                         listingTitle={listing.title}
                         href={whatsappHref(listing.phone, listing.title)}
                         ariaLabel={t("listing.whatsapp")}
-                        className="inline-flex h-10 items-center justify-center gap-2 rounded-full border border-neutral-200 bg-white px-3 text-sm font-medium transition hover:bg-neutral-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-neutral-950"
+                        className="inline-flex h-9 items-center justify-center gap-2 rounded-full border border-border bg-background px-3 text-sm font-medium transition hover:bg-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
                       >
                         <WhatsAppIcon className="size-4" />
                         {t("listing.whatsapp")}
                       </WhatsAppConsentAction>
-                    ) : <span />}
+                    ) : null}
                     {textOpen ? (
-                      <Button variant="outline" className="h-10 rounded-full" asChild>
+                      <Button variant="outline" className="h-9 rounded-full" asChild>
                         <a href={smsHref(listing.phone, listing.title)} onClick={() => trackListingContactEvent(listing.id, "sms_click")}>
                           <MessageSquareText className="size-4" />
                           {t("listing.text")}
@@ -538,7 +463,7 @@ export function ListingDetail({ id }: { id: string }) {
                       </Button>
                     ) : <span />}
                     {phoneOpen ? (
-                      <Button variant="outline" className="h-10 rounded-full" onClick={revealAndCall}>
+                      <Button variant="outline" className="h-9 rounded-full" onClick={revealAndCall}>
                         <Phone className="size-4" />
                         {phoneVisible ? listing.phone : t("listing.call")}
                       </Button>
@@ -548,7 +473,7 @@ export function ListingDetail({ id }: { id: string }) {
               </>
             )}
             {!listing.mine && myMessageCount > 0 ? (
-              <Button variant="outline" className="h-10 rounded-full" asChild>
+              <Button variant="outline" className="h-9 rounded-full" asChild>
                 <Link href={`/messages?listing=${listing.id}`}>
                   {unreadHere > 0 ? t("listing.yourMessagesUnread", { count: unreadHere }) : t("listing.yourMessages")}
                 </Link>
@@ -563,11 +488,11 @@ export function ListingDetail({ id }: { id: string }) {
           {!listing.mine && contactOpen && messageOpen ? (
             <div
               id="listing-message-composer"
-              className="mt-4 grid gap-3 border-t border-neutral-100 pt-4"
+              className="mt-4 grid gap-3 border-t border-border pt-4"
             >
               <div>
-                <p className="text-sm font-medium text-neutral-950">{t("listing.messageSellerName", { name: listing.sellerName })}</p>
-                <p className="mt-0.5 text-xs text-neutral-500">
+                <p className="text-sm font-medium text-foreground">{t("listing.messageSellerName", { name: listing.sellerName })}</p>
+                <p className="mt-0.5 text-xs text-muted-foreground">
                   {t("listing.messageThreadHint")}
                 </p>
               </div>
@@ -612,10 +537,10 @@ export function ListingDetail({ id }: { id: string }) {
             }
           />
           {!listing.mine && listing.id.startsWith("ad-") ? (
-            <div className="mt-3 border-t border-neutral-100 pt-3">
+            <div className="mt-3 border-t border-border pt-3">
               <Button
                 variant="ghost"
-                className="h-9 w-full justify-start rounded-full px-2 text-neutral-500"
+                className="h-9 w-full justify-start rounded-full px-2 text-muted-foreground"
                 onClick={() => {
                   if (auth.configured && !auth.signedIn) {
                     router.push(signInHref(`/listings/${listing.id}`))
@@ -634,84 +559,49 @@ export function ListingDetail({ id }: { id: string }) {
       </div>
       {related.length > 0 ? (
         <section className="mt-10">
-          <h2 className="text-sm font-medium text-neutral-950">{t("listing.similar")}</h2>
-          <div className={`mt-3 ${listingGridClassNameLoose}`}>
+          <h2 className="text-sm font-medium text-foreground">{t("listing.similar")}</h2>
+          <div className="mt-3 grid grid-cols-2 gap-3 md:grid-cols-4">
             {related.map((item) => (
               <ListingCard key={item.id} listing={item} preserve={keptSearch(searchParams, item.subcategory)} />
             ))}
           </div>
         </section>
       ) : null}
-      <div className="fixed inset-x-0 bottom-[calc(env(safe-area-inset-bottom)+5.25rem)] z-20 border-t bg-white p-3 md:bottom-0 lg:hidden">
-        <div className="mx-auto flex max-w-[1100px] items-center gap-2 sm:gap-3">
+      <div className="fixed inset-x-0 bottom-[calc(env(safe-area-inset-bottom)+5.25rem)] z-20 border-t border-border bg-background/95 p-3 backdrop-blur md:bottom-0 lg:hidden">
+        <div className="mx-auto flex max-w-[1100px] items-center gap-2">
           <div className="min-w-0 flex-1">
-            <p className="truncate text-sm font-semibold">
-              <ListingPrice listing={listing} />
-            </p>
-            <p className="truncate text-xs text-neutral-500">{formatPlace(listing)}</p>
+            <p className="truncate text-sm font-semibold"><ListingPrice listing={listing} /></p>
+            <p className="truncate text-xs text-muted-foreground">{formatPlace(listing)}</p>
           </div>
           {listing.mine ? (
-            <Button className="shrink-0 rounded-full" asChild>
-              <Link href={`/post?edit=${listing.id}`}>{t("common.edit")}</Link>
-            </Button>
+            <Button className="shrink-0 rounded-full" asChild><Link href={`/post?edit=${listing.id}`}>{t("common.edit")}</Link></Button>
           ) : !contactOpen ? (
-            <Button className="shrink-0 rounded-full" disabled>
-              {contact.closedStatus === "expired"
-                ? t("listing.expired")
-                : contact.closedStatus === "paused"
-                  ? t("listing.paused")
-                  : t("listing.sold")}
-            </Button>
+            <Button className="shrink-0 rounded-full" disabled>{contact.closedStatus === "expired" ? t("listing.expired") : contact.closedStatus === "paused" ? t("listing.paused") : t("listing.sold")}</Button>
           ) : (
-            <div className="flex shrink-0 items-center gap-1.5">
-              <Button className="h-10 max-w-[9.5rem] shrink-0 truncate rounded-full px-3" onClick={openMessageComposer}>
-                {auth.configured && !auth.signedIn ? t("nav.signIn") : t("listing.messageSeller")}
-              </Button>
-              {whatsappOpen ? (
-                <WhatsAppConsentAction
-                  listingId={listing.id}
-                  sellerName={listing.sellerName}
-                  listingTitle={listing.title}
-                  href={whatsappHref(listing.phone, listing.title)}
-                  ariaLabel={t("listing.whatsapp")}
-                  className="inline-flex size-10 shrink-0 items-center justify-center rounded-full border border-neutral-200 bg-white transition hover:bg-neutral-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-neutral-950"
-                >
-                  <WhatsAppIcon className="size-4 text-[#25D366]" />
-                </WhatsAppConsentAction>
-              ) : null}
-              {textOpen ? (
-                <Button type="button" variant="outline" size="icon" className="size-10 shrink-0 rounded-full" asChild>
-                  <a
-                    href={smsHref(listing.phone, listing.title)}
-                    aria-label={t("listing.text")}
-                    onClick={() => trackListingContactEvent(listing.id, "sms_click")}
-                  >
-                    <MessageSquareText className="size-4" />
-                  </a>
+            <>
+              <Button className="h-10 shrink-0 rounded-full px-4" onClick={openMessageComposer}>{auth.configured && !auth.signedIn ? t("nav.signIn") : t("listing.messageSeller")}</Button>
+              {whatsappOpen || textOpen || phoneOpen ? (
+                <Button type="button" variant="outline" size="icon" className="size-10 shrink-0 rounded-full" aria-label="More contact options" aria-expanded={mobileContactOpen} onClick={() => setMobileContactOpen((open) => !open)}>
+                  <MoreHorizontal className="size-4" />
                 </Button>
               ) : null}
-              {phoneOpen ? (
-                <Button
-                  type="button"
-                  variant="outline"
-                  size="icon"
-                  className="size-10 shrink-0 rounded-full"
-                  aria-label={t("listing.callPhone", { phone: listing.phone })}
-                  onClick={revealAndCall}
-                >
-                  <Phone className="size-4" />
-                </Button>
-              ) : null}
-            </div>
+            </>
           )}
         </div>
+        {mobileContactOpen && !listing.mine && contactOpen ? (
+          <div className="mx-auto mt-2 flex max-w-[1100px] justify-end gap-2">
+            {whatsappOpen ? <WhatsAppConsentAction listingId={listing.id} sellerName={listing.sellerName} listingTitle={listing.title} href={whatsappHref(listing.phone, listing.title)} ariaLabel={t("listing.whatsapp")} className="inline-flex h-9 items-center justify-center gap-2 rounded-full border border-border bg-background px-3 text-sm font-medium"><WhatsAppIcon className="size-4" />{t("listing.whatsapp")}</WhatsAppConsentAction> : null}
+            {textOpen ? <Button variant="outline" className="h-9 rounded-full" asChild><a href={smsHref(listing.phone, listing.title)} onClick={() => trackListingContactEvent(listing.id, "sms_click")}><MessageSquareText className="size-4" />{t("listing.text")}</a></Button> : null}
+            {phoneOpen ? <Button variant="outline" className="h-9 rounded-full" onClick={revealAndCall}><Phone className="size-4" />{t("listing.call")}</Button> : null}
+          </div>
+        ) : null}
       </div>
       <Dialog open={confirmRemove} onOpenChange={setConfirmRemove}>
         <DialogContent className="sm:max-w-md">
           <DialogHeader>
             <DialogTitle>{t("myAds.removeTitle")}</DialogTitle>
           </DialogHeader>
-          <p className="text-sm text-neutral-600">{t("myAds.removeBody", { title: listing.title })}</p>
+          <p className="text-sm text-muted-foreground">{t("myAds.removeBody", { title: listing.title })}</p>
           <DialogFooter>
             <Button variant="outline" onClick={() => setConfirmRemove(false)}>
               {t("myAds.keepIt")}
@@ -743,12 +633,12 @@ export function ListingDetail({ id }: { id: string }) {
                 </SelectContent>
               </Select>
             </div>
-            <p className="rounded-lg bg-neutral-50 px-3 py-2 text-xs leading-5 text-neutral-600">
+            <p className="rounded-lg bg-muted/40 px-3 py-2 text-xs leading-5 text-muted-foreground">
               {t("report.automationHint")}
             </p>
             {reportReason === "illegal_content" ? (
-              <div className="grid gap-3 rounded-xl border border-neutral-200 p-3">
-                <p className="text-xs leading-5 text-neutral-600">{t("report.illegalHint")}</p>
+              <div className="grid gap-3 rounded-xl border border-border p-3">
+                <p className="text-xs leading-5 text-muted-foreground">{t("report.illegalHint")}</p>
                 <div className="grid gap-1.5">
                   <Label htmlFor="report-jurisdiction">{t("report.jurisdictionLabel")}</Label>
                   <Input
@@ -770,7 +660,7 @@ export function ListingDetail({ id }: { id: string }) {
                     rows={4}
                   />
                 </div>
-                <label className="flex items-start gap-2 text-sm text-neutral-700">
+                <label className="flex items-start gap-2 text-sm text-foreground/80">
                   <input
                     type="checkbox"
                     className="mt-0.5 size-4 shrink-0"
@@ -843,42 +733,24 @@ function WhatsAppIcon({ className }: { className?: string }) {
 
 function PlacePanel({ listing }: { listing: Listing }) {
   const [mapOpen, setMapOpen] = useState(false)
-  const country = getCountry(listing.country)
   const resolved = resolvePlace(listing.country, listing.city)
   const point =
     typeof listing.latitude === "number" && typeof listing.longitude === "number"
       ? { lat: listing.latitude, lng: listing.longitude, pinned: true }
       : { lat: resolved.lat, lng: resolved.lng, pinned: resolved.matched }
-  const canMap = point.pinned
-  const timeZone = listing.timezone ?? (canMap ? resolved.timezone : country?.timezone ?? resolved.timezone)
-  const localTime = useClientTime(timeZone)
+  if (!point.pinned) return null
   const links = osmLinks(point.lat, point.lng)
-  if (!localTime && !canMap) return null
 
   return (
     <section className="mt-6">
-      <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-sm text-neutral-500">
-        {localTime ? <p>{localTime}</p> : null}
-        {canMap ? (
-          <button
-            type="button"
-            className="text-neutral-700 underline-offset-2 hover:underline"
-            aria-expanded={mapOpen}
-            onClick={() => setMapOpen((open) => !open)}
-          >
-            {mapOpen ? "Hide map" : "Show map"}
-          </button>
-        ) : null}
-      </div>
-      {canMap && mapOpen ? (
-        <div className="mt-3 overflow-hidden rounded-xl border border-neutral-200">
+      <button type="button" className="inline-flex items-center gap-1.5 text-sm font-medium text-muted-foreground hover:text-foreground" aria-expanded={mapOpen} onClick={() => setMapOpen((open) => !open)}>
+        <MapPin className="size-4" />
+        {mapOpen ? "Hide map" : `View ${listing.city} on map`}
+      </button>
+      {mapOpen ? (
+        <div className="mt-3 overflow-hidden rounded-xl border border-border">
           <iframe title={`Map of ${listing.city}`} src={links.embed} className="h-56 w-full" loading="lazy" />
-          <a
-            href={links.external}
-            target="_blank"
-            rel="noreferrer"
-            className="block border-t px-3 py-2 text-xs text-neutral-500 hover:text-neutral-900"
-          >
+          <a href={links.external} target="_blank" rel="noreferrer" className="block border-t border-border px-3 py-2 text-xs text-muted-foreground hover:text-foreground">
             Open {listing.city} in OpenStreetMap
           </a>
         </div>
@@ -895,7 +767,7 @@ function SafetyNote({ safety, messagingHint }: { safety: string; messagingHint?:
   const hasMore = Boolean(rest || messagingHint)
 
   return (
-    <div className="mt-4 text-xs leading-5 text-neutral-500">
+    <div className="mt-4 text-xs leading-5 text-muted-foreground">
       <p>
         {lead}
         {hasMore && !open ? (
@@ -903,7 +775,7 @@ function SafetyNote({ safety, messagingHint }: { safety: string; messagingHint?:
             {" "}
             <button
               type="button"
-              className="font-medium text-neutral-700 underline-offset-2 hover:underline"
+              className="font-medium text-foreground underline-offset-2 hover:underline"
               onClick={() => setOpen(true)}
             >
               More
@@ -917,7 +789,7 @@ function SafetyNote({ safety, messagingHint }: { safety: string; messagingHint?:
           {messagingHint ? <p>{messagingHint}</p> : null}
           <button
             type="button"
-            className="font-medium text-neutral-700 underline-offset-2 hover:underline"
+            className="font-medium text-foreground underline-offset-2 hover:underline"
             onClick={() => setOpen(false)}
           >
             Less
@@ -930,18 +802,31 @@ function SafetyNote({ safety, messagingHint }: { safety: string; messagingHint?:
 
 function Fact({ label, value }: { label: string; value: string }) {
   return (
-    <div>
-      <dt className="text-xs text-neutral-500">{label}</dt>
-      <dd className="mt-0.5 font-medium text-neutral-900">{value}</dd>
+    <div className="min-w-0 border-b border-r border-border px-3 py-2.5 last:border-r-0">
+      <dt className="text-[11px] text-muted-foreground">{label}</dt>
+      <dd className="mt-0.5 truncate text-sm font-medium text-foreground">{value}</dd>
     </div>
   )
+}
+
+function ListingStatus({ listing, status, isSample, expired, expiringSoon, expiryLabel }: { listing: Listing; status: string; isSample: boolean; expired: boolean; expiringSoon: boolean; expiryLabel?: string }) {
+  const labels: string[] = []
+  if (listing.mine && listing.hidden) labels.push("Hidden")
+  else if (status === "sold") labels.push("Sold")
+  else if (listing.mine && status === "paused") labels.push("Paused")
+  else if (listing.mine && (expired || status === "expired")) labels.push("Expired")
+  else if (listing.mine && expiringSoon) labels.push(expiryLabel ?? "Expiring soon")
+  if (listing.sponsored) labels.push("Sponsored")
+  else if (isSample) labels.push("Sample")
+  if (labels.length === 0) return null
+  return <p className="mb-2 text-xs font-medium uppercase tracking-wide text-muted-foreground">{labels.slice(0, 2).join(" · ")}</p>
 }
 
 function MissingListing() {
   return (
     <div className="mx-auto max-w-lg px-4 py-24 text-center">
       <h1 className="text-xl font-semibold tracking-tight">This listing is no longer available</h1>
-      <p className="mt-2 text-sm text-neutral-500">
+      <p className="mt-2 text-sm text-muted-foreground">
         It may have been sold, paused, expired, or removed.
       </p>
       <Button asChild className="mt-5 rounded-full">
