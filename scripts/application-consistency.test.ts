@@ -282,6 +282,7 @@ test("settings and workflow surfaces follow the marketplace hierarchy", () => {
   assert.ok(account.includes("<CardTitle>Profile</CardTitle>"))
   assert.match(post, /grid w-full items-start gap-6 px-3/)
   assert.match(post, /const steps = \["Listing", "Details", "Review"\]/)
+  assert.match(post, /grid grid-cols-3 gap-2/)
   assert.match(post, /<PostingLocationFields/)
   assert.match(post, /<PostPhotoGallery/)
   assert.doesNotMatch(post, /Amina K\.|\+000/)

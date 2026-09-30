@@ -89,7 +89,7 @@ export function listingFieldErrors(input: ListingFields): FieldErrors {
     errors.fairAccess = "Confirm the fair-access rule for this housing or job listing."
   }
   if (input.city.trim().length < 2) errors.city = "Add the city."
-  const directContactEnabled = input.contactWhatsApp !== false || input.contactPhone !== false
+  const directContactEnabled = input.contactWhatsApp === true || input.contactPhone === true
   const phoneReason = contactPhoneError(input.phone, { required: directContactEnabled, countryCode: input.country })
   if (phoneReason) errors.phone = phoneReason
 
@@ -158,8 +158,8 @@ function normalizeListing(listing: Listing): Listing {
       listing.contactWhatsApp === false && listing.contactPhone === false
         ? ""
         : normalizeContactPhone(listing.phone, listing.country),
-    contactWhatsApp: listing.contactWhatsApp === false ? false : true,
-    contactPhone: listing.contactPhone === false ? false : true,
+    contactWhatsApp: listing.contactWhatsApp === true,
+    contactPhone: listing.contactPhone === true,
     subcategory: subcategory?.id,
     details,
     condition: details?.condition || subcategory?.name || listing.condition,

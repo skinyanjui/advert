@@ -625,7 +625,7 @@ function AdForm({ existing }: { existing: Listing | null }) {
           </p>
         ) : null}
 
-        <ol className="mt-6 grid grid-cols-4 gap-2" aria-label="Posting steps">
+        <ol className="mt-6 grid grid-cols-3 gap-2" aria-label="Posting steps">
           {steps.map((label, index) => {
             const current = index === step
             const open = index === step || reachable(index)
