@@ -1,8 +1,10 @@
 /** Draft legal document versions. Bump when Terms or Privacy text changes. */
-export const TERMS_VERSION = "2026-09-29-regulatory-privacy-draft"
-export const PRIVACY_VERSION = "2026-09-29-regulatory-privacy-draft"
+export const TERMS_VERSION = "2026-09-29-compliance-flow-draft"
+export const PRIVACY_VERSION = "2026-09-29-compliance-flow-draft"
 
 export const LEGAL_EFFECTIVE_DATE = "2026-09-29"
+export const LEGAL_DISCLOSURE_VERSION = "2026-09-29-compliance-flow-v1"
+export const ACCOUNT_MIN_AGE = 18
 
 /** Human-readable prohibited categories aligned with listing-rules refusals. */
 export const PROHIBITED_ITEM_SUMMARY = [
