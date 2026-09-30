@@ -2,12 +2,15 @@ import type { Metadata } from "next"
 import Link from "next/link"
 
 import { LEGAL_EFFECTIVE_DATE, PRIVACY_VERSION, TERMS_VERSION } from "@/lib/legal"
+import { legalOperatorIdentity, privacyOfficerContacts } from "@/lib/legal-config"
 import { SUPPORT_CONTACT_PLACEHOLDER, site, siteSupportMailto } from "@/lib/site"
 
 export const metadata: Metadata = { title: "Privacy Policy" }
 
 export default function PrivacyPage() {
   const contactHref = siteSupportMailto()
+  const operator = legalOperatorIdentity()
+  const privacyContacts = privacyOfficerContacts()
   return (
     <div className="mx-auto w-full max-w-2xl px-4 py-10 md:px-6">
       <div
@@ -75,9 +78,15 @@ export default function PrivacyPage() {
         <h2 className="text-base font-medium text-neutral-950">Controller and privacy contact</h2>
         <p className="text-sm leading-6 text-neutral-700">
           For data-protection purposes, the operator of {site.name} is the controller of the personal
-          data described in this policy. <strong>[OPERATOR LEGAL NAME AND BUSINESS ADDRESS — lawyer to complete]</strong>.
-          The support contact below is also the privacy contact. If an EU representative or data
-          protection officer is legally required, their contact details must be added here before relying on this draft.
+          data described in this policy.{" "}
+          {operator.complete ? (
+            <strong>{operator.name} · {operator.address}</strong>
+          ) : (
+            <strong>[OPERATOR LEGAL NAME AND BUSINESS ADDRESS — configure before final legal approval]</strong>
+          )}
+          . The support contact below is also the privacy contact.
+          {privacyContacts.dpoEmail ? <> Data protection contact: <strong>{privacyContacts.dpoEmail}</strong>.</> : null}
+          {privacyContacts.euRepresentative ? <> EU representative: <strong>{privacyContacts.euRepresentative}</strong>.</> : null}
         </p>
       </section>
 
@@ -197,6 +206,48 @@ export default function PrivacyPage() {
       </section>
 
       <section className="mt-8 space-y-3">
+        <h2 className="text-base font-medium text-neutral-950">Other U.S. state privacy laws</h2>
+        <p className="text-sm leading-6 text-neutral-700">
+          Where laws such as the Colorado Privacy Act, Oregon Consumer Privacy Act, or Texas Data
+          Privacy and Security Act apply to us, covered residents may have rights that include access,
+          correction, deletion, a portable copy, and opt-outs from covered sale, targeted advertising,
+          or certain profiling. Some states also require recognition of universal opt-out signals.
+          Applicability depends on each law&apos;s thresholds, exemptions, residents, and processing activity.
+        </p>
+      </section>
+
+      <section className="mt-8 space-y-3">
+        <h2 className="text-base font-medium text-neutral-950">African privacy rights</h2>
+        <p className="text-sm leading-6 text-neutral-700">
+          Where applicable, privacy laws including Kenya&apos;s Data Protection Act, Nigeria&apos;s Data
+          Protection Act, South Africa&apos;s POPIA, and Ghana&apos;s Data Protection Act provide rights
+          that can include being informed, access, correction or rectification, deletion or erasure,
+          objection or restriction, and in some jurisdictions portability or protections concerning
+          automated decisions. Local registration, officer, transfer, breach, and response requirements
+          depend on the operator&apos;s activities and each country&apos;s rules.
+        </p>
+      </section>
+
+      <section className="mt-8 space-y-3">
+        <h2 className="text-base font-medium text-neutral-950">How to exercise privacy rights</h2>
+        <p className="text-sm leading-6 text-neutral-700">
+          Use the{" "}
+          <Link href="/privacy/request" className="underline underline-offset-2">
+            Privacy request form
+          </Link>
+          {" "}for access, portability, correction, deletion, restriction, objection, consent withdrawal,
+          opt-out, sensitive-data limitation, or an appeal. Signed-in requests for the account holder
+          can be treated as account-verified; other requests may require a separate identity or
+          authorized-agent verification step before personal data is disclosed or changed.
+        </p>
+        <p className="text-sm leading-6 text-neutral-700">
+          Do not submit passwords, government identification numbers, bank information, medical
+          records, or identity-document images in the request form. If additional verification is
+          necessary, we will use a separate process appropriate to the request.
+        </p>
+      </section>
+
+      <section className="mt-8 space-y-3">
         <h2 className="text-base font-medium text-neutral-950">Processors</h2>
         <p className="text-sm leading-6 text-neutral-700">
           We use <strong>Supabase</strong> (database, auth, and storage) and <strong>Vercel</strong>{" "}
@@ -209,7 +260,7 @@ export default function PrivacyPage() {
       <section className="mt-8 space-y-3">
         <h2 className="text-base font-medium text-neutral-950">Retention</h2>
         <p className="text-sm leading-6 text-neutral-700">
-          We keep account, listing, message, report, contact-intent, WhatsApp consent, and business-platform enforcement records only for as long as reasonably needed for the purposes described above, account operation, safety, disputes, security, or legal obligations. Account deletion removes account-linked listings, saves, conversations, submitted reports, authenticated contact-intent events, and WhatsApp consent records from the active application data, subject to narrow legal or safety exceptions. Terms and Privacy acceptance records are linked to the authentication account and are deleted with it. Backup and service-provider copies may persist for a limited period under provider retention processes.
+          We keep account, listing, message, report, contact-intent, WhatsApp consent, and business-platform enforcement records only for as long as reasonably needed for the purposes described above, account operation, safety, disputes, security, or legal obligations. Account deletion removes account-linked listings, saves, conversations, submitted reports, authenticated contact-intent events, and WhatsApp consent records from the active application data, subject to narrow legal or safety exceptions. Terms and Privacy acceptance records are linked to the authentication account and are deleted with it. Privacy-request case records may be retained after account deletion only as reasonably needed to document request handling, satisfy legal obligations, or resolve disputes, then deleted or de-identified. Backup and service-provider copies may persist for a limited period under provider retention processes.
         </p>
       </section>
 
