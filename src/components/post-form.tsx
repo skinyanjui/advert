@@ -888,7 +888,7 @@ function AdForm({ existing }: { existing: Listing | null }) {
                     <span>{t("post.fairAccessConfirm")}</span>
                   </label>
                   {errors.fairAccess ? (
-                    <p className="mt-2 text-xs">{errors.fairAccess}</p>
+                    <p className="mt-2 text-xs">{t("post.fairAccessRequired")}</p>
                   ) : null}
                 </div>
               ) : null}
