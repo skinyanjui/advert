@@ -45,7 +45,9 @@ test("privacy requests have a tracked server-only lifecycle", () => {
   assert.match(route, /actingAsAgent/)
   assert.match(route, /verificationRequired/)
   assert.match(admin, /updatePrivacyRequest/)
-  assert.match(page, /Do not enter passwords, government ID numbers, bank information, medical information/)
+  assert.match(page, /privacyRequest\.sensitiveWarning/)
+  const en = source("src/lib/i18n/messages/en.ts")
+  assert.match(en, /Do not enter passwords, government ID numbers, bank information, medical information/)
 })
 
 test("privacy target is stricter for California opt-out requests", () => {
