@@ -27,7 +27,10 @@ export const complianceFacts = {
   significantDecisionAdmt: false,
   safetyModerationAutomation: true,
   gpcRecognized: true,
+  dntDisclosed: true,
   privacyRightsWorkflow: true,
+  structuredIllegalContentNotice: true,
+  moderationRedress: true,
   dataExport: true,
   accountDeletion: true,
 } as const
@@ -99,6 +102,25 @@ export function complianceItems(): ComplianceItem[] {
       ],
     },
     {
+      id: "caloppa",
+      law: "California Online Privacy Protection Act (CalOPPA)",
+      scope: "Applies to operators of commercial websites or online services that collect covered personal information from California consumers.",
+      state: "implemented",
+      implemented: [
+        "Privacy Policy is conspicuously linked from the product and describes categories collected, uses, processors/third parties, retention, effective/version dates, and correction/deletion methods.",
+        "Privacy Choices and the Privacy Policy disclose the current response to browser Do Not Track signals and the absence of third-party cross-site behavioral advertising in the current product.",
+        "Global Privacy Control is handled separately where CCPA/CPRA opt-out duties apply.",
+      ],
+      triggers: [
+        "Any new third party that tracks users across unrelated sites or apps.",
+        "Any material change to categories collected, sharing practices, retention, or user choices.",
+      ],
+      operatorActions: [
+        "Keep the DNT/tracking disclosure synchronized with actual analytics, advertising SDKs, and third-party scripts.",
+        "Maintain a conspicuous Privacy Policy link in production navigation/footer surfaces.",
+      ],
+    },
+    {
       id: "us_states",
       law: "Colorado, Oregon, Texas and other U.S. state privacy laws",
       scope: "Conditional on each state law's thresholds, exemptions, residents, and processing activities.",
@@ -144,7 +166,10 @@ export function complianceItems(): ComplianceItem[] {
       scope: "Conditional on providing covered intermediary/online-platform services to recipients in the EU; marketplace-specific duties depend on the service and trader/consumer contracting model.",
       state: "conditional",
       implemented: [
-        "A simple listing report mechanism, moderation records, seller contact fields, sponsored labels, and admin review exist.",
+        "Listing reports include a structured illegal-content notice path with listing location, optional jurisdiction, legal/factual explanation, and a good-faith attestation.",
+        "Restrictive moderator actions require a written reason, record the affected seller, policy basis, restriction type, and whether the decision was automated.",
+        "Moderation removals are reversible hidden states rather than destructive deletes.",
+        "Affected sellers receive an in-product statement of reasons and a free six-month appeal path; appeals are reviewed by an administrator and can reverse the restriction.",
         "Temporary report-threshold hiding is disclosed and can be reversed by moderator review.",
       ],
       triggers: [
@@ -155,7 +180,7 @@ export function complianceItems(): ComplianceItem[] {
       operatorActions: [
         "Before an EU launch, perform a DSA classification and small/micro-enterprise applicability review.",
         "If marketplace trader-traceability rules apply, add the legally required trader identity/verification fields before permitting EU trader offers; do not collect those documents speculatively for non-EU users.",
-        "Add DSA-specific notice-and-action, statement-of-reasons, complaint/appeal, and transparency reporting workflows if in scope.",
+        "If in scope, validate the implemented notice/action and appeal workflow against the operator's DSA classification, add out-of-court redress information and any required Transparency Database submission/integration, and produce the required transparency reporting metrics.",
       ],
     },
     {
