@@ -30,6 +30,7 @@ export async function exportPrivacyData(userId: string, email?: string | null) {
     contactEvents,
     whatsappConsents,
     termsAcceptances,
+    privacyRequests,
   ] = await Promise.all([
     getProfile(userId, email),
     db
@@ -73,9 +74,14 @@ export async function exportPrivacyData(userId: string, email?: string | null) {
       .order("consented_at", { ascending: false }),
     db
       .from("terms_acceptances")
-      .select("terms_version,privacy_version,accepted_at,ip,user_agent,context")
+      .select("terms_version,privacy_version,age_attested,privacy_acknowledged,disclosure_version,locale,accepted_at,ip,user_agent,context")
       .eq("user_id", userId)
       .order("accepted_at", { ascending: false }),
+    db
+      .from("privacy_requests")
+      .select("id,jurisdiction,request_type,status,received_at,due_at,verified_at,completed_at,resolution")
+      .eq("user_id", userId)
+      .order("received_at", { ascending: false }),
   ])
 
   for (const result of [
@@ -88,6 +94,7 @@ export async function exportPrivacyData(userId: string, email?: string | null) {
     contactEvents,
     whatsappConsents,
     termsAcceptances,
+    privacyRequests,
   ]) {
     check(result.error)
   }
@@ -140,6 +147,21 @@ export async function exportPrivacyData(userId: string, email?: string | null) {
     contactEvents: contactEvents.data ?? [],
     whatsappConsentsGiven: whatsappConsents.data ?? [],
     legalAcceptances: termsAcceptances.data ?? [],
+    privacyRequests: privacyRequests.data ?? [],
+    currentProcessingFacts: {
+      sellsPersonalInformation: false,
+      crossContextBehavioralAdvertising: false,
+      thirdPartyAdvertisingPixels: false,
+      marketingEmail: false,
+      marketingRobotexts: false,
+      significantDecisionAdmt: false,
+    },
+    serviceProvidersAndHandoffs: [
+      "Supabase — authentication, database, and storage",
+      "Vercel — hosting and delivery",
+      "Resend — transactional email when configured",
+      "WhatsApp / Meta — only when a user chooses an off-platform WhatsApp contact action or where the Business Platform is enabled",
+    ],
     note:
       "This export contains account data and messages you sent. Other users' private account identifiers and message contents are not included.",
   }
