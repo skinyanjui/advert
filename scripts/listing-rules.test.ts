@@ -76,6 +76,7 @@ test("acceptListing keeps direct contact opt-in when flags are omitted", () => {
   const result = acceptListing({
     ...base,
     id: "ad-private-contact",
+    subcategory: "cars",
     hoursAgo: 0,
     image: "/listings/sedan.jpg",
     condition: "Used",
