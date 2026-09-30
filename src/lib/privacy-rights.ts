@@ -4,6 +4,7 @@ export const privacyJurisdictions = [
   { id: "colorado", label: "Colorado" },
   { id: "oregon", label: "Oregon" },
   { id: "texas", label: "Texas" },
+  { id: "indiana", label: "Indiana" },
   { id: "kenya", label: "Kenya" },
   { id: "nigeria", label: "Nigeria" },
   { id: "south_africa", label: "South Africa" },
