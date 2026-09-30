@@ -25,6 +25,7 @@ export const sw: Messages = {
   "nav.site": "Tovuti",
   "nav.terms": "Masharti",
   "nav.privacy": "Faragha",
+  "nav.privacyRights": "Faragha na haki",
   "nav.contact": "Wasiliana",
   "nav.signIn": "Ingia",
   "nav.signOut": "Toka",
