@@ -63,12 +63,41 @@ export function complianceConfiguration() {
     dmcaAgentRegistrationStatus: dmcaRegistrationStatus(),
     euRepresentative: configured("PRIVACY_EU_REPRESENTATIVE"),
     dpoContact: configured("PRIVACY_DPO_EMAIL"),
+    soc2Report: configured("COMPLIANCE_SOC2_REPORT"),
+    iso27001Certificate: configured("COMPLIANCE_ISO27001_CERTIFICATE"),
+    casaTier2Assessment: configured("COMPLIANCE_CASA_TIER2_ASSESSMENT"),
+    dpfParticipation: configured("COMPLIANCE_DPF_PARTICIPATION"),
+    pciDssAttestation: configured("COMPLIANCE_PCI_DSS_ATTESTATION"),
   }
 }
 
 export function complianceItems(): ComplianceItem[] {
   const config = complianceConfiguration()
   return [
+    {
+      id: "assurance",
+      law: "Security assurance & transfer frameworks",
+      scope: "SOC 2, ISO/IEC 27001:2022, CASA Tier 2, EU-U.S. Data Privacy Framework, and PCI DSS are tracked separately from privacy-law implementation. No certification, attestation, assessment, or DPF participation is claimed unless operator evidence is configured.",
+      state: "operator_action",
+      implemented: [
+        "Server-side RBAC, authenticated privacy operations, service-role isolation, and security-oriented response headers provide baseline technical controls.",
+        "The product registry keeps payment processing, advertising, and high-risk processing facts explicit so scope changes can trigger reassessment.",
+      ],
+      triggers: [
+        "SOC 2: pursue an independent SOC examination when customers or enterprise procurement require assurance over relevant Trust Services Criteria.",
+        "ISO/IEC 27001:2022: establish and operate an ISMS before seeking accredited certification.",
+        "CASA Tier 2: applicable when a platform or integration requires the Cloud Application Security Assessment Tier 2 process.",
+        "EU-U.S. DPF: do not claim participation unless the legal entity has completed and maintains the formal self-certification process.",
+        "PCI DSS v4.0.1: reassess scope before the service stores, processes, transmits, or can affect the security of payment card account data.",
+      ],
+      operatorActions: [
+        config.soc2Report ? "SOC 2 evidence is configured." : "No SOC 2 report is recorded; do not display a SOC 2 badge or attestation claim.",
+        config.iso27001Certificate ? "ISO/IEC 27001 certificate evidence is configured." : "No ISO/IEC 27001:2022 certificate is recorded; do not claim certification.",
+        config.casaTier2Assessment ? "CASA Tier 2 assessment evidence is configured." : "No CASA Tier 2 assessment is recorded; do not claim completion.",
+        config.dpfParticipation ? "DPF participation evidence is configured." : "No EU-U.S. DPF participation is recorded; do not claim DPF certification/participation.",
+        config.pciDssAttestation ? "PCI DSS attestation evidence is configured." : "No PCI DSS attestation is recorded; current product fact says buyer payment processing is disabled.",
+      ],
+    },
     {
       id: "gdpr",
       law: "EU / EEA GDPR",

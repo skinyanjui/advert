@@ -90,6 +90,11 @@ export default async function Page() {
           <Fact label="DMCA registration renewal date" value={config.dmcaAgentRegistrationExpiresOn ?? "Not configured"} />
           <Fact label="EU representative" value={config.euRepresentative ? "Configured" : "Not configured / may not be required"} />
           <Fact label="DPO contact" value={config.dpoContact ? "Configured" : "Not configured / may not be required"} />
+          <Fact label="SOC 2 report evidence" value={configured(config.soc2Report)} />
+          <Fact label="ISO/IEC 27001:2022 certificate" value={configured(config.iso27001Certificate)} />
+          <Fact label="CASA Tier 2 assessment" value={configured(config.casaTier2Assessment)} />
+          <Fact label="EU-U.S. DPF participation" value={configured(config.dpfParticipation)} />
+          <Fact label="PCI DSS attestation" value={configured(config.pciDssAttestation)} />
           <Fact label="Supabase leaked-password protection" value="Operator action: audit reported disabled" />
           <Fact label="Counsel-approved French legal documents" value="Missing" />
           <Fact label="Counsel-approved Swahili legal documents" value="Missing" />

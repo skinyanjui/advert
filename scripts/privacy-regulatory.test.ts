@@ -75,3 +75,31 @@ test("public privacy contact can be configured without hard-coding an address", 
   assert.match(site, /NEXT_PUBLIC_SUPPORT_EMAIL/)
   assert.match(env, /NEXT_PUBLIC_SUPPORT_EMAIL=privacy@example\.com/)
 })
+
+
+test("assurance frameworks stay evidence-gated and never become decorative compliance claims", () => {
+  const compliance = source("src/lib/compliance.ts")
+  const env = source(".env.example")
+  const contact = source("src/app/contact/page.tsx")
+  const nextConfig = source("next.config.ts")
+
+  for (const key of [
+    "COMPLIANCE_SOC2_REPORT",
+    "COMPLIANCE_ISO27001_CERTIFICATE",
+    "COMPLIANCE_CASA_TIER2_ASSESSMENT",
+    "COMPLIANCE_DPF_PARTICIPATION",
+    "COMPLIANCE_PCI_DSS_ATTESTATION",
+  ]) {
+    assert.match(env, new RegExp(key))
+    assert.match(compliance, new RegExp(key))
+  }
+  assert.match(compliance, /ISO\/IEC 27001:2022/)
+  assert.match(compliance, /PCI DSS v4\.0\.1/)
+  assert.match(compliance, /do not display a SOC 2 badge/)
+  assert.match(compliance, /do not claim DPF certification\/participation/)
+  assert.match(contact, /Security/)
+  assert.match(contact, /Legal & compliance/)
+  assert.match(nextConfig, /X-Content-Type-Options/)
+  assert.match(nextConfig, /Strict-Transport-Security/)
+  assert.match(nextConfig, /Permissions-Policy/)
+})

@@ -1,4 +1,4 @@
-import { ExternalLink, Flag, HelpCircle, LockKeyhole, Mail, MessageCircle, ShieldAlert } from "lucide-react"
+import { ExternalLink, Flag, HelpCircle, LockKeyhole, Mail, MessageCircle, Scale, Shield, ShieldAlert } from "lucide-react"
 import Link from "next/link"
 import type { Metadata } from "next"
 
@@ -27,6 +27,18 @@ const departments = [
     body: "For scams, suspicious activity, harassment, or an urgent marketplace safety concern. For a specific ad, Report on the listing sends the right context.",
     icon: ShieldAlert,
     subject: "Safety or abuse report",
+  },
+  {
+    title: "Security",
+    body: "Report a security vulnerability or ask about security controls and assurance documentation.",
+    icon: Shield,
+    subject: "Security",
+  },
+  {
+    title: "Legal & compliance",
+    body: "Legal notices, regulatory questions, compliance inquiries, or formal business requests.",
+    icon: Scale,
+    subject: "Legal or compliance",
   },
   {
     title: "Privacy",
