@@ -1,5 +1,5 @@
-/** Default destination after a successful sign-in or email link. */
-export const DEFAULT_AUTH_NEXT = "/account"
+/** Default destination for a standalone sign-in. Protected actions pass their own `next` destination. */
+export const DEFAULT_AUTH_NEXT = "/"
 
 const UNSAFE_NEXT = /[\u0000-\u001F\u007F\s\\]/
 

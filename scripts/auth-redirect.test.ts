@@ -74,7 +74,9 @@ test("callback and confirm share the same next-param safety", () => {
   assert.equal(safeAuthNext("/auth/reset", "/auth/reset"), "/auth/reset")
   assert.equal(safeAuthNext("//evil", "/auth/reset"), "/auth/reset")
   assert.equal(signInHref("/my-ads"), "/sign-in?next=%2Fmy-ads")
-  assert.equal(signInHref("/account"), "/sign-in")
+  assert.equal(DEFAULT_AUTH_NEXT, "/")
+  assert.equal(signInHref(), "/sign-in")
+  assert.equal(signInHref("/account"), "/sign-in?next=%2Faccount")
 })
 
 test("protected routes match my-ads, messages, and admin reports", () => {
@@ -86,6 +88,12 @@ test("protected routes match my-ads, messages, and admin reports", () => {
   assert.equal(isProtectedAuthPath("/account"), false)
   assert.equal(isProtectedAuthPath("/post"), false)
   assert.equal(isProtectedAuthPath("/sign-in"), false)
+})
+
+test("standalone sign-in lands on marketplace while intentful sign-in preserves next", () => {
+  assert.equal(safeAuthNext(null), "/")
+  assert.equal(signInHref("/post"), "/sign-in?next=%2Fpost")
+  assert.equal(signInHref("/saved"), "/sign-in?next=%2Fsaved")
 })
 
 test("protected-route sign-in href preserves next", () => {

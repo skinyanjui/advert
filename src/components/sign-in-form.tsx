@@ -7,7 +7,6 @@ import { toast } from "sonner"
 
 import { EmptyPanel } from "@/components/empty-panel"
 import { FormField } from "@/components/form-field"
-import { LanguageCurrencyFields } from "@/components/language-currency-fields"
 import { usePrefs } from "@/components/prefs-provider"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
@@ -235,11 +234,6 @@ export function SignInForm({ nextHref }: { nextHref?: string } = {}) {
     (channel === "email" && method === "password" && passwordMode === "sign-up")
   const needsTermsForAction = showTermsCheckbox
   const legalReady = ageConfirmed && agreedToTerms
-  const showPreferenceSetup =
-    auth.googleEnabled ||
-    (channel === "email" && method === "link" && !sent) ||
-    (channel === "email" && method === "password" && passwordMode === "sign-up")
-
   return (
     <div className="mx-auto w-full max-w-md space-y-4">
       <header>
@@ -248,12 +242,6 @@ export function SignInForm({ nextHref }: { nextHref?: string } = {}) {
           {t("auth.accountAccessBody")}
         </p>
       </header>
-
-      {showPreferenceSetup ? (
-        <div className="rounded-xl border border-neutral-200 bg-white px-3 py-3">
-          <LanguageCurrencyFields idPrefix="onboarding" />
-        </div>
-      ) : null}
 
       {showTermsCheckbox ? (
         <div className="space-y-2">

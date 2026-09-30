@@ -1,7 +1,7 @@
 import { type EmailOtpType } from "@supabase/supabase-js"
 import { NextResponse, type NextRequest } from "next/server"
 
-import { applySafeAuthNext, safeAuthNext } from "@/lib/auth-redirect"
+import { DEFAULT_AUTH_NEXT, applySafeAuthNext, safeAuthNext } from "@/lib/auth-redirect"
 import { createServerSupabase } from "@/lib/supabase/server"
 
 export const dynamic = "force-dynamic"
@@ -12,7 +12,7 @@ export async function GET(request: NextRequest) {
   const { searchParams } = new URL(request.url)
   const token_hash = searchParams.get("token_hash")
   const type = searchParams.get("type") as EmailOtpType | null
-  const fallback = type === "recovery" ? "/auth/reset" : "/account"
+  const fallback = type === "recovery" ? "/auth/reset" : DEFAULT_AUTH_NEXT
   const nextPath = safeAuthNext(searchParams.get("next"), fallback)
 
   const redirectTo = request.nextUrl.clone()
