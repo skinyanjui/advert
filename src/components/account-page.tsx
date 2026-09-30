@@ -115,9 +115,15 @@ export function AccountPage() {
 
       {isAdmin ? (
         <Card size="sm">
-          <CardContent className="pt-(--card-spacing)">
+          <CardContent className="flex flex-wrap gap-2 pt-(--card-spacing)">
             <Button asChild variant="outline">
               <Link href="/admin/reports">{t("profile.reports")}</Link>
+            </Button>
+            <Button asChild variant="outline">
+              <Link href="/admin/privacy">{t("profile.privacyRequestsAdmin")}</Link>
+            </Button>
+            <Button asChild variant="outline">
+              <Link href="/admin/compliance">{t("profile.complianceAdmin")}</Link>
             </Button>
           </CardContent>
         </Card>
@@ -715,6 +721,9 @@ function SignedInProfile({
           </Button>
           <Button type="button" variant="ghost" asChild>
             <Link href="/privacy/choices">{t("profile.privacyChoices")}</Link>
+          </Button>
+          <Button type="button" variant="ghost" asChild>
+            <Link href="/privacy/request">{t("profile.privacyRequest")}</Link>
           </Button>
         </CardFooter>
       </Card>
