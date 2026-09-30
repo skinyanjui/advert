@@ -753,7 +753,7 @@ function SignedInProfile({
           <DialogHeader>
             <DialogTitle>Delete account?</DialogTitle>
             <DialogDescription>
-              Your ads, saved items, and conversations will be removed. Type DELETE to confirm.
+              Your account, ads, saved items, conversations, submitted reports, authenticated contact events, and account-linked WhatsApp consent records will be removed from active application data. Narrow privacy-request case records may be retained when reasonably needed to document request handling or satisfy legal obligations. Provider backups may persist for their limited backup-retention period. Type DELETE to confirm.
             </DialogDescription>
           </DialogHeader>
           <div className="grid gap-2">
