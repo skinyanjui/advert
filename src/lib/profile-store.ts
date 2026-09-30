@@ -337,6 +337,36 @@ export async function deleteAccount(userId: string): Promise<DeleteAccountResult
     issues.push({ step: "board_messages", message: legacyMessagesError.message, ids: [userId] })
   }
 
+  const { error: reportsError } = await db.from("board_reports").delete().eq("reporter_id", userId)
+  if (reportsError) {
+    issues.push({ step: "board_reports", message: reportsError.message, ids: [userId] })
+  }
+
+  const { error: reviewedByError } = await db
+    .from("board_reports")
+    .update({ reviewed_by: null })
+    .eq("reviewed_by", userId)
+  if (reviewedByError) {
+    issues.push({ step: "board_reports_reviewed_by", message: reviewedByError.message, ids: [userId] })
+  }
+
+  const { error: contactEventsError } = await db
+    .from("board_contact_events")
+    .delete()
+    .eq("actor_id", userId)
+    .eq("actor_kind", "auth")
+  if (contactEventsError) {
+    issues.push({ step: "board_contact_events", message: contactEventsError.message, ids: [userId] })
+  }
+
+  const { error: whatsappConsentsError } = await db
+    .from("board_whatsapp_consents")
+    .delete()
+    .or(`buyer_id.eq.${userId},seller_id.eq.${userId}`)
+  if (whatsappConsentsError) {
+    issues.push({ step: "board_whatsapp_consents", message: whatsappConsentsError.message, ids: [userId] })
+  }
+
   if (conversationIds.length > 0) {
     const { error: deleteConversationsError } = await db
       .from("board_conversations")
