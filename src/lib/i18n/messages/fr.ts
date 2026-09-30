@@ -25,6 +25,7 @@ export const fr: Messages = {
   "nav.site": "Site",
   "nav.terms": "Conditions",
   "nav.privacy": "Confidentialité",
+  "nav.privacyRights": "Confidentialité et droits",
   "nav.contact": "Contact",
   "nav.signIn": "Se connecter",
   "nav.signOut": "Se déconnecter",
