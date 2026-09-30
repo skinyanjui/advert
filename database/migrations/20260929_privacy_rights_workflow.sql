@@ -109,3 +109,60 @@ alter table public.privacy_request_events enable row level security;
 
 revoke all on table public.privacy_requests, public.privacy_request_events from anon, authenticated;
 -- The application uses the server-only service role after API-level RBAC.
+
+
+create table if not exists public.compliance_incidents (
+  id uuid primary key,
+  title text not null check (char_length(title) between 3 and 200),
+  severity text not null default 'medium'
+    check (severity in ('low', 'medium', 'high', 'critical')),
+  status text not null default 'open'
+    check (status in ('open', 'investigating', 'contained', 'closed')),
+  discovered_at timestamptz not null,
+  contained_at timestamptz,
+  closed_at timestamptz,
+  personal_data_involved boolean not null default false,
+  sensitive_data_involved boolean not null default false,
+  affected_people_estimate integer check (affected_people_estimate is null or affected_people_estimate >= 0),
+  jurisdictions text[] not null default '{}',
+  description text not null check (char_length(description) <= 5000),
+  assessment text check (assessment is null or char_length(assessment) <= 5000),
+  regulator_notification_required boolean,
+  user_notification_required boolean,
+  regulator_notified_at timestamptz,
+  users_notified_at timestamptz,
+  owner_user_id uuid references auth.users (id) on delete set null,
+  created_at timestamptz not null default now(),
+  updated_at timestamptz not null default now()
+);
+
+create index if not exists compliance_incidents_status_discovered
+  on public.compliance_incidents (status, discovered_at desc);
+
+create table if not exists public.compliance_incident_events (
+  id uuid primary key,
+  incident_id uuid not null references public.compliance_incidents (id) on delete cascade,
+  actor_user_id uuid references auth.users (id) on delete set null,
+  event_type text not null check (
+    event_type in (
+      'created',
+      'investigation_started',
+      'contained',
+      'assessment_updated',
+      'regulator_notified',
+      'users_notified',
+      'closed',
+      'updated'
+    )
+  ),
+  note text check (note is null or char_length(note) <= 3000),
+  created_at timestamptz not null default now()
+);
+
+create index if not exists compliance_incident_events_incident_created
+  on public.compliance_incident_events (incident_id, created_at);
+
+alter table public.compliance_incidents enable row level security;
+alter table public.compliance_incident_events enable row level security;
+revoke all on table public.compliance_incidents, public.compliance_incident_events from anon, authenticated;
+-- Incident records are admin-only through server APIs.
