@@ -79,7 +79,7 @@ export async function exportPrivacyData(userId: string, email?: string | null) {
       .order("accepted_at", { ascending: false }),
     db
       .from("privacy_requests")
-      .select("id,jurisdiction,request_type,status,received_at,due_at,verified_at,completed_at,resolution")
+      .select("id,jurisdiction,request_type,status,received_at,due_at,verified_at,verification_method,acknowledgment_sent_at,completed_at,resolution")
       .eq("user_id", userId)
       .order("received_at", { ascending: false }),
   ])
