@@ -179,3 +179,17 @@ test("browse keeps sorting behavior but removes the dedicated sort toolbar", () 
   assert.doesNotMatch(browse, /resultSummary/)
   assert.doesNotMatch(browse, /closestFirst/)
 })
+
+
+test("browse removes duplicate city controls and keeps listings visually dominant", () => {
+  const browse = readFileSync(new URL("../src/components/browse.tsx", import.meta.url), "utf8")
+  assert.match(browse, /<BoardCitySearch/)
+  assert.doesNotMatch(browse, /function CityPill/)
+  assert.doesNotMatch(browse, /All cities<\//)
+  assert.match(browse, /mb-3 max-w-sm/)
+  assert.match(browse, /Search all cities/)
+  assert.match(browse, /View all types/)
+  assert.doesNotMatch(browse, /onClearCity/)
+  assert.doesNotMatch(browse, /onClearType/)
+  assert.doesNotMatch(browse, /const narrowed/)
+})

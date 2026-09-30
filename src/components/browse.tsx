@@ -76,36 +76,17 @@ export function Browse() {
       : countryName(query.country)
     : "All Africa"
   const preserve = boardSearch(query)
-  const narrowed = Boolean(query.q || query.category || query.type || query.country || query.city)
-    : undefined
   return (
     <div className="mx-auto w-full max-w-[1720px]">
       <section className="min-w-0 px-4 pt-0 pb-16 md:px-6">
         {query.country ? (
-          <div className="mb-4 flex flex-col gap-2 sm:flex-row sm:items-center">
+          <div className="mb-3 max-w-sm">
             <BoardCitySearch
               country={query.country}
               city={cityLabel}
               places={cityOptions}
               onSelect={(city) => update({ city })}
             />
-            {cityOptions.length > 0 ? (
-              <div className="flex min-w-0 gap-1 overflow-x-auto pb-1 [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
-                <CityPill active={!query.city} onClick={() => update({ city: null })}>
-                  All cities
-                </CityPill>
-                {cityOptions.map((city) => (
-                  <CityPill
-                    key={city.name}
-                    active={fold(query.city ?? "") === fold(city.name)}
-                    onClick={() => update({ city: city.name })}
-                  >
-                    {city.name}
-                    <span className="opacity-60">{city.count}</span>
-                  </CityPill>
-                ))}
-              </div>
-            ) : null}
           </div>
         ) : null}
         {visible.length === 0 ? (
@@ -115,10 +96,10 @@ export function Browse() {
             category={query.category}
             type={query.type}
             typeName={typeName}
-            onClearCity={() => update({ city: null })}
-            onClearType={() => update({ type: null })}
-            onClear={() => {
-              clear()
+            onBroaden={() => {
+              if (query.city) update({ city: null })
+              else if (query.type) update({ type: null })
+              else clear()
             }}
           />
         ) : (
@@ -138,48 +119,20 @@ export function Browse() {
   )
 }
 
-function CityPill({
-  active,
-  onClick,
-  children,
-}: {
-  active: boolean
-  onClick: () => void
-  children: React.ReactNode
-}) {
-  return (
-    <button
-      type="button"
-      onClick={onClick}
-      className={
-        active
-          ? "inline-flex h-8 shrink-0 items-center gap-1.5 rounded-full bg-neutral-950 px-3 text-xs font-medium text-white"
-          : "inline-flex h-8 shrink-0 items-center gap-1.5 rounded-full bg-white px-3 text-xs text-neutral-600 ring-1 ring-neutral-200 hover:text-neutral-950"
-      }
-    >
-      {children}
-    </button>
-  )
-}
-
 function EmptyResults({
   country,
   city,
   category,
   type,
   typeName,
-  onClearCity,
-  onClearType,
-  onClear,
+  onBroaden,
 }: {
   country?: string
   city?: string
   category?: string
   type?: string
   typeName?: string
-  onClearCity: () => void
-  onClearType: () => void
-  onClear: () => void
+  onBroaden: () => void
 }) {
   const place = city && country ? `${city}, ${countryName(country)}` : country ? countryName(country) : undefined
   const postHref = postAdHref(country ? { country, city } : null, { category, type })
@@ -195,24 +148,14 @@ function EmptyResults({
           : "Nothing in this country and category fits that search. Clear the filters or try a broader word like “toyota” or “rent”."}
       </p>
       <div className="mt-5 flex flex-wrap items-center justify-center gap-2">
+        <Button variant="outline" className="rounded-full" onClick={onBroaden}>
+          {city ? "Search all cities" : type ? "View all types" : "Clear filters"}
+        </Button>
         {country || category ? (
           <Button asChild className="rounded-full">
             <Link href={postHref}>{city ? `Post an ad in ${city}` : "Post an ad"}</Link>
           </Button>
         ) : null}
-        {type ? (
-          <Button variant="outline" className="rounded-full" onClick={onClearType}>
-            All types
-          </Button>
-        ) : null}
-        {city ? (
-          <Button variant="outline" className="rounded-full" onClick={onClearCity}>
-            All cities
-          </Button>
-        ) : null}
-        <Button variant={country ? "ghost" : "default"} className="rounded-full" onClick={onClear}>
-          Clear filters
-        </Button>
       </div>
     </div>
   )
