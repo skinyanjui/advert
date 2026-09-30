@@ -291,7 +291,7 @@ test("global browsing preferences are available to guests without entering auth"
   const header = source("src/components/site-header.tsx")
   const categories = source("src/components/category-top-nav.tsx")
   const menu = source("src/components/profile-menu.tsx")
-  assert.match(header, /<ProfileMenu \/>[\s\S]*header-pref[\s\S]*<ThemeMenu \/>/)
+  assert.match(header, /<ProfileMenu \/>[\s\S]*<LanguageCurrencyMenu \/>[\s\S]*<ThemeMenu \/>/)
   assert.match(categories, /mobile-pref/)
   assert.match(categories, /<ThemeChoices \/>/)
   assert.doesNotMatch(menu, /ThemeMenu|ThemeChoices|LanguageCurrencyFields/)
