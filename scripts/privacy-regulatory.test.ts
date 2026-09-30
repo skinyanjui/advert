@@ -103,3 +103,21 @@ test("assurance frameworks stay evidence-gated and never become decorative compl
   assert.match(nextConfig, /Strict-Transport-Security/)
   assert.match(nextConfig, /Permissions-Policy/)
 })
+
+
+test("listing flow applies privacy by default and rejects obvious sensitive payment data", () => {
+  const post = source("src/components/post-form.tsx")
+  const rules = source("src/lib/listing-rules.ts")
+  const privacy = source("src/app/privacy/page.tsx")
+  const terms = source("src/app/terms/page.tsx")
+
+  assert.match(post, /marketplace messaging only/)
+  assert.match(post, /payment-card details/)
+  assert.match(rules, /paymentCardPattern/)
+  assert.match(rules, /sensitiveIdentifierPattern/)
+  assert.match(rules, /Remove payment-card or sensitive identity information/)
+  assert.match(privacy, /New listings default to marketplace messaging/)
+  assert.match(privacy, /regulations effective January 1, 2026/)
+  assert.match(privacy, /beginning January 1, 2027/)
+  assert.match(terms, /do not hold purchase money, escrow payments, or collect payment-card details/)
+})

@@ -116,8 +116,8 @@ function AdForm({ existing }: { existing: Listing | null }) {
   const [place, setPlace] = useState<ChosenPlace | null>(placeFromListing(existing))
   const [description, setDescription] = useState(existing?.description ?? "")
   const [phone, setPhone] = useState(existing?.phone ?? "")
-  const [contactWhatsApp, setContactWhatsApp] = useState(existing?.contactWhatsApp !== false)
-  const [contactPhone, setContactPhone] = useState(existing?.contactPhone !== false)
+  const [contactWhatsApp, setContactWhatsApp] = useState(existing ? existing.contactWhatsApp !== false : false)
+  const [contactPhone, setContactPhone] = useState(existing ? existing.contactPhone !== false : false)
   const [sponsored, setSponsored] = useState(existing?.sponsored === true)
   const [fairAccessAttested, setFairAccessAttested] = useState(existing?.fairAccessAttested === true)
   const sponsoredLocked = existing?.sponsoredLocked === true
@@ -970,9 +970,9 @@ function AdForm({ existing }: { existing: Listing | null }) {
                 id="listing-phone"
                 value={phone}
                 countryCode={country}
-                required
+                required={contactWhatsApp || contactPhone}
                 error={errors.phone}
-                hint={plan.safety}
+                hint={contactWhatsApp || contactPhone ? plan.safety : "Optional. Marketplace messages work without sharing a phone number."}
                 onChange={(value) => {
                   setPhone(value)
                   setErrors((current) => ({ ...current, phone: undefined }))
@@ -999,7 +999,10 @@ function AdForm({ existing }: { existing: Listing | null }) {
                 </span>
               </label>
               <div className="grid gap-2">
-                <p className="text-xs font-medium text-neutral-700">Direct contact</p>
+                <div>
+                  <p className="text-xs font-medium text-neutral-700">Direct contact</p>
+                  <p className="mt-0.5 text-xs leading-5 text-neutral-500">Off by default. Turn on only the ways you want buyers to contact you outside marketplace messages.</p>
+                </div>
                 <label className="flex items-center gap-2 text-sm text-neutral-700">
                   <input
                     type="checkbox"
@@ -1019,10 +1022,13 @@ function AdForm({ existing }: { existing: Listing | null }) {
                   Phone calls
                 </label>
                 <p className="text-xs leading-5 text-neutral-500">
-                  Buyers can always use marketplace messages. Your phone number is used only for the direct contact options you enable.
+                  Buyers can always use marketplace messages. If both options are off, we do not require a listing phone number. If you enable one, the number is used only for the direct contact options you choose.
                   If you use WhatsApp for a business, make sure your seller/profile name clearly identifies that business. Buyers must consent
                   before we open WhatsApp, and that consent is limited to replies about the listing—not unrelated marketing.
                 </p>
+              </div>
+              <div className="rounded-xl bg-neutral-50 px-3 py-2.5 text-xs leading-5 text-neutral-600">
+                By publishing, you confirm the listing information is accurate and may be shown publicly. Do not put passwords, payment-card details, government ID numbers, medical information, or other unnecessary sensitive personal data in the title, description, photos, or custom fields. See our <Link href="/privacy" className="font-medium underline underline-offset-2">Privacy Policy</Link>.
               </div>
             </section>
           ) : null}

@@ -120,6 +120,7 @@ test("compliance registry covers current and conditional law-to-product controls
   const choices = source("src/app/privacy/choices/page.tsx")
 
   for (const id of [
+    "assurance",
     "gdpr",
     "california",
     "caloppa",

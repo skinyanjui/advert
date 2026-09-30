@@ -19,6 +19,8 @@ export function requiresFairAccessAttestation(
 
 /** Lightweight title/description refusals — not a full moderation system. */
 const prohibited = /\b(cocaine|heroin|fentanyl|methamphetamine|ak-?47|grenade|human trafficking|child porn)\b/i
+const paymentCardPattern = /\b(?:\d[ -]*?){13,19}\b/
+const sensitiveIdentifierPattern = /\b(?:cvv|cvc|card security code|social security number|ssn|passport number)\b/i
 
 export type ListingFields = {
   title: string
@@ -90,8 +92,10 @@ export function listingFieldErrors(input: ListingFields): FieldErrors {
   const phoneReason = contactPhoneError(input.phone, { required: directContactEnabled, countryCode: input.country })
   if (phoneReason) errors.phone = phoneReason
 
-  const combined = `${input.title} ${input.description}`
-  if (prohibited.test(combined)) {
+  const combined = `${input.title} ${input.description} ${Object.values(input.details).join(" ")}`
+  if (paymentCardPattern.test(combined) || sensitiveIdentifierPattern.test(combined)) {
+    errors.form = "Remove payment-card or sensitive identity information. Listings should contain only information buyers need."
+  } else if (prohibited.test(combined)) {
     errors.form = "This listing looks like a prohibited item. Remove it or reword the ad."
   }
 

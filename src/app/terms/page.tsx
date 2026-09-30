@@ -112,7 +112,7 @@ export default function TermsPage() {
         <h2 className="text-base font-medium text-neutral-950">1. The platform is not a party to sales</h2>
         <p className="text-sm leading-6 text-neutral-700">
           {site.name} helps people list and find goods and services. We are not the buyer or the
-          seller. Buyers pay sellers directly. We do not hold purchase money, escrow payments, or
+          seller. Buyers pay sellers directly. We do not hold purchase money, escrow payments, or collect payment-card details for listing transactions.
           guarantee that a sale will complete.
         </p>
       </section>
@@ -176,7 +176,7 @@ export default function TermsPage() {
         <h2 className="text-base font-medium text-neutral-950">5. Removal and suspension</h2>
         <p className="text-sm leading-6 text-neutral-700">
           We may hide, remove, or refuse listings, and suspend or end accounts, when we believe
-          content or behaviour breaks these Terms, our listing rules, or the law, or harms other
+          Do not publish passwords, payment-card details, government identification numbers, medical information, or other unnecessary sensitive personal information in a listing. We may reject or remove content that exposes such information. Where content or behaviour breaks these Terms, our listing rules, or the law, or harms other
           users. We may also act on reports from the community. Multiple distinct pending reports
           can automatically hide a listing temporarily before moderator review. A moderator can
           dismiss reports and restore the listing, or take further action. This report-threshold
@@ -199,7 +199,7 @@ export default function TermsPage() {
       <section className="mt-8 space-y-3">
         <h2 className="text-base font-medium text-neutral-950">7. Contact channels and off-platform conversations</h2>
         <p className="text-sm leading-6 text-neutral-700">
-          Sellers control whether a listing offers direct phone contact. When enabled, the provided phone number may be used for calls, SMS/text messages, and WhatsApp where available. Buyers may also use the marketplace Messenger when available.
+          Marketplace messaging is the default contact method for new listings. Sellers control whether a listing additionally offers direct phone or WhatsApp contact. When enabled, the provided phone number may be used for calls, SMS/text messages, and WhatsApp where available. Buyers may also use the marketplace Messenger when available.
         </p>
         <p className="text-sm leading-6 text-neutral-700">
           Before opening WhatsApp, a buyer must explicitly agree to receive WhatsApp replies from the named seller

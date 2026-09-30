@@ -107,6 +107,7 @@ export function complianceItems(): ComplianceItem[] {
         "Privacy notice describes purposes, legal bases, recipients/processors, retention approach, transfers, and rights.",
         "Access/portability export, profile correction, deletion, objection/restriction/consent-withdrawal request types, and tracked privacy cases are implemented.",
         "Account and privacy data are protected with server-side RBAC and service-role-only privacy case storage.",
+        "New listings default to marketplace messaging; optional direct phone/WhatsApp sharing is off until the seller enables it, and listing validation rejects apparent payment-card or sensitive identity data.",
       ],
       triggers: [
         "EEA establishment, EEA offering, or covered monitoring.",
@@ -135,6 +136,7 @@ export function complianceItems(): ComplianceItem[] {
         "Notice-at-collection categories/purposes, rights, Privacy Choices, no-sale/share statement, and GPC recognition are implemented.",
         "Access, portability, correction, deletion, opt-out, limit-sensitive, agent, and appeal-capable request intake is tracked.",
         "Current product registry states no sale/share, targeted advertising, third-party ad pixels, or significant-decision ADMT.",
+        "Listing contact defaults minimize personal information disclosure and sensitive/payment-card patterns are rejected from listing text.",
       ],
       triggers: [
         "CCPA/CPRA business thresholds.",

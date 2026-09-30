@@ -33,7 +33,7 @@ export default function PrivacyPage() {
         <ul className="list-disc space-y-1 pl-5 text-sm leading-6 text-neutral-700">
           <li>Email address and sign-in details</li>
           <li>Profile information (such as display name, city, and country)</li>
-          <li>Phone number you provide for buyer contact, plus the direct-contact options you enable</li>
+          <li>Optional phone number you provide for buyer contact, plus the direct-contact options you deliberately enable. New listings default to marketplace messaging only.</li>
           <li>Listings you post (title, description, photos, location, and related fields)</li>
           <li>Messages you send through the board</li>
           <li>Reports you submit about listings</li>
@@ -61,7 +61,7 @@ export default function PrivacyPage() {
       <section className="mt-8 space-y-3">
         <h2 className="text-base font-medium text-neutral-950">Direct contact, text, and WhatsApp</h2>
         <p className="text-sm leading-6 text-neutral-700">
-          Sellers choose whether a listing allows direct phone contact. When enabled, we may use the phone number they provided to create call, SMS/text, and WhatsApp links. A buyer must be signed in before the service returns or displays seller direct-contact details. Buyers do not need to save the number before using those links.
+          New listings default to marketplace messaging without direct phone or WhatsApp contact. Sellers choose whether a listing allows direct phone contact or WhatsApp. When enabled, we may use the phone number they provided to create call, SMS/text, and WhatsApp links. A buyer must be signed in before the service returns or displays seller direct-contact details. Buyers do not need to save the number before using those links.
         </p>
         <p className="text-sm leading-6 text-neutral-700">
           Opening WhatsApp leaves {site.name} and uses WhatsApp&apos;s service. WhatsApp may receive
@@ -136,7 +136,7 @@ export default function PrivacyPage() {
         <h2 className="text-base font-medium text-neutral-950">Sale, sharing, targeted advertising, and GPC</h2>
         <p className="text-sm leading-6 text-neutral-700">
           The current application does not sell personal information and does not share personal
-          information for cross-context behavioral advertising. It does not currently run third-party
+          information for cross-context behavioral advertising. It does not use automated decisionmaking technology to make significant decisions about consumers. It does not currently run third-party
           advertising pixels or behavioral-ad tracking. If those practices change, we will update this
           notice and provide required choices before relying on the new practice.
         </p>
@@ -168,7 +168,7 @@ export default function PrivacyPage() {
       <section className="mt-8 space-y-3">
         <h2 className="text-base font-medium text-neutral-950">California privacy rights</h2>
         <p className="text-sm leading-6 text-neutral-700">
-          Where the CCPA, as amended by the CPRA, applies to us, California residents may have rights
+          Where the CCPA, as amended by the CPRA and applicable regulations effective January 1, 2026, applies to us, California residents may have rights
           to know/access, delete, and correct personal information; opt out of sale or sharing; limit
           certain uses or disclosures of sensitive personal information; and receive non-discriminatory
           service for exercising those rights. We currently do not sell or share personal information
@@ -180,7 +180,10 @@ export default function PrivacyPage() {
         <h2 className="text-base font-medium text-neutral-950">Children and age</h2>
         <p className="text-sm leading-6 text-neutral-700">
           Accounts are intended for people age 18 or older. The service is not directed to children
-          under 13, and we do not knowingly seek personal information from children under 13. If we
+          The 2026 California regulations add requirements for covered risk assessments and cybersecurity audits and, beginning January 1, 2027, requirements for covered uses of automated decisionmaking technology. Those duties depend on the business and processing triggers; we will reassess them before enabling significant-decision ADMT or other covered high-risk processing.
+        </p>
+        <p className="text-sm leading-6 text-neutral-700">
+          The service is intended for adults. We do not knowingly seek personal information from children under 13. If we
           learn that an account was created in violation of this age rule, we may suspend or delete it
           and remove associated personal data as appropriate.
         </p>
@@ -211,7 +214,7 @@ export default function PrivacyPage() {
         <h2 className="text-base font-medium text-neutral-950">Security and data minimization</h2>
         <p className="text-sm leading-6 text-neutral-700">
           We use role-based access controls, server-side authorization, restricted database access,
-          and data minimization measures designed to protect account information. No system can be
+          and data minimization measures designed to protect account information. Listing forms default optional direct-contact sharing off, require only category-relevant fields, and instruct sellers not to publish payment-card details, government identifiers, medical information, or other unnecessary sensitive personal data. No system can be
           guaranteed completely secure. We review what data the service collects and avoid collecting
           sensitive identifiers such as government IDs, tax IDs, or bank details unless a future legal
           or product requirement makes them necessary.
