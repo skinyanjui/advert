@@ -91,7 +91,7 @@ export function ThemeMenu() {
           type="button"
           aria-label="Appearance"
           title="Appearance"
-          className="flex size-9 items-center justify-center rounded-full text-foreground outline-none transition-colors hover:bg-muted focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+          className="flex size-9 items-center justify-center rounded-full border border-input bg-background text-foreground outline-none transition-colors hover:bg-muted focus-visible:border-ring focus-visible:ring-2 focus-visible:ring-ring/40 focus-visible:ring-offset-2"
         >
           {resolved === "dark" ? <Moon className="size-4" aria-hidden="true" /> : <Sun className="size-4" aria-hidden="true" />}
         </button>
