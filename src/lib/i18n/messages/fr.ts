@@ -428,6 +428,8 @@ export const fr: Messages = {
   "report.noteLabel": "Note (facultatif)",
   "report.notePlaceholder": "Tout ce qui aide un examinateur",
   "report.send": "Envoyer le signalement",
+  "report.automationHint": "Les signalements sont examinés par des modérateurs. Plusieurs signalements distincts en attente peuvent masquer temporairement une annonce avant examen ; leur rejet peut la rétablir.",
+  "report.toast.autoHidden": "Signalement envoyé. L’annonce a été temporairement masquée en attendant l’examen.",
   "report.sending": "Envoi…",
   "report.toast.sent": "Signalement envoyé. Merci d’aider à garder le tableau sûr.",
   "report.toast.error": "Impossible d’envoyer le signalement.",
