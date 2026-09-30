@@ -149,7 +149,8 @@ export async function createPrivacyRequest(input: CreatePrivacyRequestInput) {
   check(eventError)
 
   const created = unpack(data as PrivacyRequestRow)
-  const emailResult = await sendEmail({
+  const emailResult = input.verified
+    ? await sendEmail({
     to: input.requestEmail,
     subject: `${site.name}: privacy request received`,
     text: [
@@ -170,6 +171,7 @@ export async function createPrivacyRequest(input: CreatePrivacyRequestInput) {
       "Do not reply with passwords, government ID numbers, bank information, medical records, or identity-document images.",
     ].join("\n"),
   })
+    : { ok: true as const, provider: "noop" as const }
 
   if (emailResult.ok && emailResult.provider === "resend") {
     const sentAt = new Date().toISOString()
