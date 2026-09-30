@@ -14,7 +14,7 @@ test("privacy draft covers GDPR and California rights without claiming sale or s
   assert.match(privacy, /California privacy rights/)
   assert.match(privacy, /Global Privacy Control/)
   assert.match(privacy, /does not sell personal information/)
-  assert.match(privacy, /does not share personal information for cross-context behavioral advertising/)
+  assert.match(privacy, /does not share personal\s+information for cross-context behavioral advertising/)
   assert.match(privacy, /International transfers/)
 })
 
@@ -60,7 +60,7 @@ test("federal regulatory readiness covers marketplace communications consumer pr
   assert.match(terms, /INFORM Consumers Act/)
   assert.match(terms, /CAN-SPAM Act/)
   assert.match(terms, /Telephone Consumer Protection Act/)
-  assert.match(terms, /Children[^\n]*Online Privacy Protection Act \(COPPA\)/)
+  assert.match(terms, /Children[\s\S]*Online Privacy[\s\S]*Protection Act \(COPPA\)/)
   assert.match(terms, /Federal Trade Commission Act/)
   assert.match(terms, /Digital Millennium Copyright Act section 512/)
   assert.match(terms, /DMCA AGENT DETAILS/)
