@@ -124,7 +124,7 @@ export async function createPrivacyRequest(input: CreatePrivacyRequestInput) {
       locale: input.locale,
       status,
       received_at: now,
-      due_at: privacyDueAt(new Date(now)),
+      due_at: privacyDueAt(input.jurisdiction, input.requestType, new Date(now)),
       verified_at: input.verified ? now : null,
       verification_method: input.verified ? "authenticated_account" : null,
       updated_at: now,
