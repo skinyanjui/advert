@@ -1,6 +1,7 @@
 "use client"
 
 import Link from "next/link"
+import { usePathname } from "next/navigation"
 import { startTransition, useCallback, useEffect, useState } from "react"
 import { toast } from "sonner"
 
@@ -31,6 +32,7 @@ type TermsPayload = {
 
 export function TermsReacceptDialog() {
   const auth = useAuth()
+  const pathname = usePathname()
   const { t } = usePrefs()
   const [open, setOpen] = useState(false)
   const [busy, setBusy] = useState(false)
@@ -140,7 +142,13 @@ export function TermsReacceptDialog() {
     setBusy(false)
   }
 
-  if (!auth.signedIn) return null
+  const selfServiceRoute =
+    pathname === "/terms" ||
+    pathname === "/privacy" ||
+    pathname.startsWith("/privacy/") ||
+    pathname === "/account"
+
+  if (!auth.signedIn || selfServiceRoute) return null
 
   return (
     <Dialog open={open} onOpenChange={() => {}}>
