@@ -48,6 +48,13 @@ create unique index if not exists moderation_appeals_one_open_per_action
 create index if not exists moderation_appeals_status_submitted
   on public.moderation_appeals (status, submitted_at);
 
+create index if not exists moderation_appeals_appellant_idx
+  on public.moderation_appeals (appellant_user_id);
+
+create index if not exists moderation_appeals_reviewed_by_idx
+  on public.moderation_appeals (reviewed_by)
+  where reviewed_by is not null;
+
 alter table public.moderation_appeals enable row level security;
 revoke all on table public.moderation_appeals from anon, authenticated;
 
