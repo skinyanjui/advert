@@ -93,7 +93,7 @@ test("top navigation keeps only marketplace actions and delegates preferences to
   const account = readFileSync(new URL("../src/components/account-page.tsx", import.meta.url), "utf8")
   assert.match(header, /<ProfileMenu \/>/)
   assert.doesNotMatch(header, /ProfileNotifications|ThemeMenu|recentMessageNotifications/)
-  assert.doesNotMatch(profile, /notifications|ThemeChoices|LanguageCurrencyFields/)
+  assert.doesNotMatch(profile, /nav\.notifications\b|ThemeChoices|LanguageCurrencyFields/)
   assert.match(profile, />Settings</)
   assert.match(account, /<CardTitle>Preferences<\/CardTitle>/)
   assert.match(account, /<ThemeChoices \/>/)

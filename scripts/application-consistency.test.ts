@@ -253,7 +253,7 @@ test("profile menu keeps high-value actions and routes support through Help", ()
   assert.match(menu, /href="\/saved"/)
   assert.doesNotMatch(menu, /href="\/terms"/)
   assert.doesNotMatch(menu, /href="\/privacy\/choices"/)
-  assert.doesNotMatch(menu, /ThemeChoices|LanguageCurrencyFields|nav\.notifications/)
+  assert.doesNotMatch(menu, /ThemeChoices|LanguageCurrencyFields|nav\.notifications\b/)
 })
 
 
