@@ -168,7 +168,9 @@ test("housing and job listings require versioned fair-access evidence", () => {
   const reports = source("src/lib/reports.ts")
   const migration = source("database/migrations/20260929_discrimination_listing_reports.sql")
 
-  assert.match(rules, /category === "property" \|\| category === "jobs"/)
+  assert.match(rules, /category === "jobs"/)
+  assert.match(rules, /residentialPropertyTypes/)
+  assert.match(rules, /category === "property"/)
   assert.match(rules, /errors\.fairAccess/)
   assert.match(post, /post\.fairAccessHousing/)
   assert.match(post, /post\.fairAccessJobs/)
