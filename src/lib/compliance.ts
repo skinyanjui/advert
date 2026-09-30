@@ -122,7 +122,7 @@ export function complianceItems(): ComplianceItem[] {
     },
     {
       id: "us_states",
-      law: "Colorado, Oregon, Texas and other U.S. state privacy laws",
+      law: "Colorado, Oregon, Texas, Indiana and other U.S. state privacy laws",
       scope: "Conditional on each state law's thresholds, exemptions, residents, and processing activities.",
       state: "conditional",
       implemented: [
@@ -231,6 +231,27 @@ export function complianceItems(): ComplianceItem[] {
       operatorActions: [
         "Keep commercial disclosures clear, prominent, proximate, and in the language of the surrounding content.",
         "Before adding ranking boosts or paid recommendation products, disclose the commercial nature and ranking effect clearly.",
+      ],
+    },
+    {
+      id: "fair_access_ads",
+      law: "U.S. Fair Housing Act and federal equal-employment advertising laws",
+      scope: "Applies according to the housing/employment advertisement, the poster's legal status, statutory coverage, exemptions, and applicable federal, state, and local law.",
+      state: "implemented",
+      implemented: [
+        "Covered residential Property and Jobs posting flows show category-specific anti-discrimination disclosures.",
+        "Submissions in scope require a versioned fair-access attestation stored with the listing payload and revalidated by the server.",
+        "Users can report discriminatory housing or employment content, and moderators can review it through the existing reversible moderation/redress workflow.",
+        "The product does not infer protected characteristics or automatically decide legality from keywords.",
+      ],
+      triggers: [
+        "Housing offered for sale or rental and employment/recruitment advertising.",
+        "Expansion into ad targeting, recommendation, or delivery systems that could selectively exclude protected groups.",
+        "State or local protected-class and advertising rules beyond federal baselines.",
+      ],
+      operatorActions: [
+        "Keep the fair-access disclosure and protected-trait guidance synchronized with applicable jurisdictions.",
+        "Before adding demographic targeting or optimization for housing/jobs, perform a dedicated discrimination and automated-ad-delivery review.",
       ],
     },
     {

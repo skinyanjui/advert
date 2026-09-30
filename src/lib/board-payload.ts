@@ -55,6 +55,9 @@ export function cleanListing(value: unknown): Listing | undefined {
     mine: value.mine === true ? true : undefined,
     sponsored: value.sponsored === true ? true : undefined,
     sponsoredLocked: value.sponsoredLocked === true ? true : undefined,
+    fairAccessAttested: value.fairAccessAttested === true ? true : undefined,
+    fairAccessAttestationVersion:
+      value.fairAccessAttested === true ? cleanText(value.fairAccessAttestationVersion) : undefined,
     contactWhatsApp: value.contactWhatsApp === false ? false : true,
     contactPhone: value.contactPhone === false ? false : true,
   }

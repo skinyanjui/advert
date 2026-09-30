@@ -21,6 +21,7 @@ export type PostDraft = {
   contactPhone?: boolean
   photos: string[]
   sponsored?: boolean
+  fairAccessAttested?: boolean
   savedAt: number
 }
 

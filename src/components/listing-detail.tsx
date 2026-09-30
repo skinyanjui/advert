@@ -762,7 +762,7 @@ export function ListingDetail({ id }: { id: string }) {
                 <SelectContent>
                   {reportReasons.map((item) => (
                     <SelectItem key={item.id} value={item.id}>
-                      {item.label}
+                      {t(`report.reason.${item.id}`)}
                     </SelectItem>
                   ))}
                 </SelectContent>
