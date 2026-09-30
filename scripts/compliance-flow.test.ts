@@ -213,3 +213,17 @@ test("residential housing and job listings require versioned fair-access evidenc
   assert.match(reports, /id: "discrimination"/)
   assert.match(migration, /'discrimination'/)
 })
+
+
+test("compliance readiness keeps external operator evidence explicit", () => {
+  const compliance = source("src/lib/compliance.ts")
+  const page = source("src/app/admin/compliance/page.tsx")
+  const env = source(".env.example")
+
+  assert.match(compliance, /DMCA_AGENT_REGISTRATION_EXPIRES_ON/)
+  assert.match(compliance, /Expired \/ renew registration/)
+  assert.match(page, /DMCA registration renewal date/)
+  assert.match(env, /DMCA_AGENT_REGISTRATION_EXPIRES_ON=/)
+  assert.equal((page.match(/href="\/admin\/privacy"/g) ?? []).length, 1)
+  assert.equal((page.match(/href="\/admin\/incidents"/g) ?? []).length, 1)
+})

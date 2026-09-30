@@ -35,7 +35,21 @@ export const complianceFacts = {
   accountDeletion: true,
 } as const
 
+function dmcaRegistrationStatus() {
+  if (process.env.DMCA_AGENT_REGISTERED !== "1") return "Not confirmed"
+  const rawExpiry = process.env.DMCA_AGENT_REGISTRATION_EXPIRES_ON?.trim()
+  if (!rawExpiry) return "Confirmed; renewal date missing"
+  const expiresAt = new Date(`${rawExpiry}T23:59:59.999Z`)
+  if (Number.isNaN(expiresAt.getTime())) return "Confirmed; renewal date invalid"
+  return expiresAt.getTime() >= Date.now()
+    ? "Confirmed / current"
+    : "Expired / renew registration"
+}
+
 export function complianceConfiguration() {
+  const dmcaAgentRegistrationExpiresOn =
+    process.env.DMCA_AGENT_REGISTRATION_EXPIRES_ON?.trim() || null
+
   return {
     supportEmail: configured("NEXT_PUBLIC_SUPPORT_EMAIL"),
     operatorName: configured("LEGAL_OPERATOR_NAME"),
@@ -45,6 +59,8 @@ export function complianceConfiguration() {
       configured("DMCA_AGENT_EMAIL") &&
       configured("DMCA_AGENT_ADDRESS"),
     dmcaAgentRegistered: process.env.DMCA_AGENT_REGISTERED === "1",
+    dmcaAgentRegistrationExpiresOn,
+    dmcaAgentRegistrationStatus: dmcaRegistrationStatus(),
     euRepresentative: configured("PRIVACY_EU_REPRESENTATIVE"),
     dpoContact: configured("PRIVACY_DPO_EMAIL"),
   }
