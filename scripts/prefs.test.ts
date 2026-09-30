@@ -178,4 +178,8 @@ test("listing sort control follows compact header geometry and avoids stacked to
   assert.match(browse, /h-8 gap-1\.5 rounded-full border-input/)
   assert.doesNotMatch(browse, /border-b border-neutral-200\/80/)
   assert.doesNotMatch(browse, /shadow-sm md:top-\[72px\]/)
+  assert.doesNotMatch(browse, /-mx-4/)
+  assert.doesNotMatch(browse, /md:-mx-6/)
+  assert.match(browse, /min-w-0 flex-1/)
+  assert.match(browse, /mb-3 flex min-h-10 items-center gap-3/)
 })

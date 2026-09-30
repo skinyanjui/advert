@@ -110,13 +110,15 @@ export function Browse() {
   return (
     <div className="mx-auto w-full max-w-[1720px]">
       <section className="min-w-0 px-4 pt-0 pb-16 md:px-6">
-        {resultSummary ? (
-          <div className="mb-2 hidden items-baseline gap-2 md:flex">
-            <p className="truncate text-sm text-neutral-500">{resultSummary}</p>
-            {closestFirst ? <span className="text-xs text-neutral-400">Nearby first</span> : null}
+        <div className="sticky top-14 z-40 mb-3 flex min-h-10 items-center gap-3 bg-background/95 py-1 backdrop-blur md:top-16">
+          <div className="min-w-0 flex-1">
+            {resultSummary ? (
+              <div className="hidden min-w-0 items-baseline gap-2 md:flex">
+                <p className="truncate text-sm text-muted-foreground">{resultSummary}</p>
+                {closestFirst ? <span className="shrink-0 text-xs text-muted-foreground/70">Nearby first</span> : null}
+              </div>
+            ) : null}
           </div>
-        ) : null}
-        <div className="sticky top-14 z-40 -mx-4 mb-2 flex items-center justify-end bg-background/95 px-4 py-1 backdrop-blur md:top-16 md:-mx-6 md:px-6">
           <Select
             value={query.sort}
             onValueChange={(value) => {
