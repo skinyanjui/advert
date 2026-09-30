@@ -400,7 +400,7 @@ export function ListingDetail({ id }: { id: string }) {
           <>
           {listing.mine ? <p className="mb-3 text-xs font-medium uppercase tracking-wide text-muted-foreground">Your listing</p> : null}
           <div className="flex items-center gap-3">
-            <Avatar className="size-11">
+            <Avatar className="size-10">
               {listing.sellerAvatar ? <AvatarImage src={listing.sellerAvatar} alt="" /> : null}
               <AvatarFallback className="bg-foreground text-sm font-medium text-background">
                 {initials(listing.sellerName)}
@@ -436,7 +436,7 @@ export function ListingDetail({ id }: { id: string }) {
               </p>
             ) : (
               <>
-                <Button className="h-10 rounded-full" onClick={openMessageComposer}>
+                <Button className="h-10 w-full rounded-full" onClick={openMessageComposer}>
                   {auth.configured && !auth.signedIn ? t("listing.signInToMessage") : t("listing.messageSeller")}
                 </Button>
                 {whatsappOpen || textOpen || phoneOpen ? (
@@ -461,13 +461,13 @@ export function ListingDetail({ id }: { id: string }) {
                           {t("listing.text")}
                         </a>
                       </Button>
-                    ) : <span />}
+                    ) : null}
                     {phoneOpen ? (
                       <Button variant="outline" className="h-9 rounded-full" onClick={revealAndCall}>
                         <Phone className="size-4" />
                         {phoneVisible ? listing.phone : t("listing.call")}
                       </Button>
-                    ) : <span />}
+                    ) : null}
                   </div>
                 ) : null}
               </>
@@ -528,6 +528,7 @@ export function ListingDetail({ id }: { id: string }) {
               </div>
             </div>
           ) : null}
+          <div className="mt-4 border-t border-border pt-3">
           <SafetyNote
             safety={voice.safety}
             messagingHint={
@@ -536,6 +537,7 @@ export function ListingDetail({ id }: { id: string }) {
                 : undefined
             }
           />
+          </div>
           {!listing.mine && listing.id.startsWith("ad-") ? (
             <div className="mt-3 border-t border-border pt-3">
               <Button
@@ -767,7 +769,7 @@ function SafetyNote({ safety, messagingHint }: { safety: string; messagingHint?:
   const hasMore = Boolean(rest || messagingHint)
 
   return (
-    <div className="mt-4 text-xs leading-5 text-muted-foreground">
+    <div className="text-xs leading-5 text-muted-foreground">
       <p>
         {lead}
         {hasMore && !open ? (
@@ -802,7 +804,7 @@ function SafetyNote({ safety, messagingHint }: { safety: string; messagingHint?:
 
 function Fact({ label, value }: { label: string; value: string }) {
   return (
-    <div className="min-w-0 border-b border-r border-border px-3 py-2.5 last:border-r-0">
+    <div className="min-w-0 border-b border-r border-border px-3 py-2.5 [&:nth-last-child(-n+2)]:border-b-0 sm:[&:nth-last-child(-n+3)]:border-b-0">
       <dt className="text-[11px] text-muted-foreground">{label}</dt>
       <dd className="mt-0.5 truncate text-sm font-medium text-foreground">{value}</dd>
     </div>
@@ -839,10 +841,10 @@ function MissingListing() {
 function DetailSkeleton() {
   return (
     <div className="mx-auto w-full max-w-[1720px] px-4 py-8 md:px-6">
-      <div className="h-4 w-28 rounded bg-neutral-200" />
-      <div className="mt-4 aspect-[16/10] rounded-2xl bg-neutral-200" />
-      <div className="mt-5 h-7 w-48 rounded bg-neutral-200" />
-      <div className="mt-2 h-5 w-72 rounded bg-neutral-100" />
+      <div className="h-4 w-28 rounded bg-muted" />
+      <div className="mt-4 aspect-[16/10] rounded-xl bg-muted" />
+      <div className="mt-5 h-7 w-48 rounded bg-muted" />
+      <div className="mt-2 h-5 w-72 rounded bg-muted/60" />
     </div>
   )
 }

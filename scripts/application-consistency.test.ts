@@ -132,3 +132,12 @@ test("listing detail uses a progressive transaction hierarchy", () => {
   assert.doesNotMatch(detail, /listingGridClassNameLoose/)
   assert.doesNotMatch(detail, /bg-white/)
 })
+
+
+test("listing detail follow-up removes residual layout placeholders and chrome", () => {
+  const detail = source("src/components/listing-detail.tsx")
+  assert.doesNotMatch(detail, /\) : <span \/>/)
+  assert.match(detail, /h-10 w-full rounded-full.*openMessageComposer/)
+  assert.match(detail, /border-t border-border pt-3/)
+  assert.doesNotMatch(detail, /bg-neutral-200|bg-neutral-100/)
+})
