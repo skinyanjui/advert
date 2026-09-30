@@ -12,6 +12,7 @@ import { ContactPhoneField } from "@/components/contact-phone-field"
 import { EmptyPanel } from "@/components/empty-panel"
 import { FormField } from "@/components/form-field"
 import { ListingCard } from "@/components/listing-card"
+import { usePrefs } from "@/components/prefs-provider"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Textarea } from "@/components/ui/textarea"
@@ -35,7 +36,12 @@ import {
   type CountryRecord,
 } from "@/lib/countries"
 import { formatPrice } from "@/lib/format"
-import { listingFieldErrors, type FieldErrors as RuleErrors } from "@/lib/listing-rules"
+import {
+  FAIR_ACCESS_ATTESTATION_VERSION,
+  listingFieldErrors,
+  requiresFairAccessAttestation,
+  type FieldErrors as RuleErrors,
+} from "@/lib/listing-rules"
 import { useMarketplace } from "@/lib/marketplace"
 import { listingImages, maxListingPhotos, photoFileError, withCoverImage } from "@/lib/photos"
 import { clearPostDraft, readPostDraft, writePostDraft } from "@/lib/post-draft"
@@ -91,6 +97,7 @@ function AdForm({ existing }: { existing: Listing | null }) {
       : undefined
   const { addListing, updateListing } = useMarketplace()
   const auth = useAuth()
+  const { t } = usePrefs()
 
   const [step, setStep] = useState(seeded ? 2 : startingCategory ? 1 : 0)
   const [category, setCategory] = useState<CategoryId | null>(startingCategory)
@@ -112,6 +119,7 @@ function AdForm({ existing }: { existing: Listing | null }) {
   const [contactWhatsApp, setContactWhatsApp] = useState(existing?.contactWhatsApp !== false)
   const [contactPhone, setContactPhone] = useState(existing?.contactPhone !== false)
   const [sponsored, setSponsored] = useState(existing?.sponsored === true)
+  const [fairAccessAttested, setFairAccessAttested] = useState(existing?.fairAccessAttested === true)
   const sponsoredLocked = existing?.sponsoredLocked === true
   const [photos, setPhotos] = useState<string[]>(existing ? listingImages(existing) : [])
   const [errors, setErrors] = useState<FieldErrors>({})
@@ -164,6 +172,7 @@ function AdForm({ existing }: { existing: Listing | null }) {
       setContactPhone(draft.contactPhone !== false)
       setPhotos(draft.photos)
       setSponsored(draft.sponsored === true)
+      setFairAccessAttested(draft.fairAccessAttested === true)
       setPlace(locatedPlace(null, draft.country, draft.city))
       if (auth.signedIn) toast.success("Restored your draft")
     }, 0)
@@ -240,6 +249,7 @@ function AdForm({ existing }: { existing: Listing | null }) {
         contactPhone,
         photos,
         sponsored,
+        fairAccessAttested,
       })
       if (result.ok && result.omittedPhotos && !omittedPhotosToastShown.current) {
         omittedPhotosToastShown.current = true
@@ -267,6 +277,7 @@ function AdForm({ existing }: { existing: Listing | null }) {
     contactPhone,
     photos,
     sponsored,
+    fairAccessAttested,
   ])
 
   const preview = useMemo<Listing>(() => {
@@ -300,6 +311,11 @@ function AdForm({ existing }: { existing: Listing | null }) {
       contactPhone,
       sponsored: sponsoredLocked || sponsored || undefined,
       sponsoredLocked: sponsoredLocked || undefined,
+      fairAccessAttested: requiresFairAccessAttestation(nextCategory) ? fairAccessAttested : undefined,
+      fairAccessAttestationVersion:
+        requiresFairAccessAttestation(nextCategory) && fairAccessAttested
+          ? FAIR_ACCESS_ATTESTATION_VERSION
+          : undefined,
       mine: true,
     }
   }, [
@@ -321,6 +337,7 @@ function AdForm({ existing }: { existing: Listing | null }) {
     contactPhone,
     sponsored,
     sponsoredLocked,
+    fairAccessAttested,
     existing,
     auth.user,
   ])
@@ -329,6 +346,7 @@ function AdForm({ existing }: { existing: Listing | null }) {
     if (id !== category) {
       setSubcategoryId(null)
       setDetails({})
+      setFairAccessAttested(false)
     }
     setCategory(id)
     setErrors({})
@@ -386,6 +404,7 @@ function AdForm({ existing }: { existing: Listing | null }) {
       phone,
       contactWhatsApp,
       contactPhone,
+      fairAccessAttested,
     })
   }
 
@@ -509,6 +528,11 @@ function AdForm({ existing }: { existing: Listing | null }) {
       sold: existing?.sold,
       sponsored: sponsoredLocked || sponsored || undefined,
       sponsoredLocked: sponsoredLocked || undefined,
+      fairAccessAttested: requiresFairAccessAttestation(category) ? fairAccessAttested : undefined,
+      fairAccessAttestationVersion:
+        requiresFairAccessAttestation(category) && fairAccessAttested
+          ? FAIR_ACCESS_ATTESTATION_VERSION
+          : undefined,
     }
     if (auth.configured && !auth.signedIn) {
       const draftResult = writePostDraft({
@@ -528,6 +552,7 @@ function AdForm({ existing }: { existing: Listing | null }) {
         contactPhone,
         photos,
         sponsored,
+        fairAccessAttested,
       })
       if (draftResult.ok && draftResult.omittedPhotos && !omittedPhotosToastShown.current) {
         omittedPhotosToastShown.current = true
@@ -834,6 +859,40 @@ function AdForm({ existing }: { existing: Listing | null }) {
                   </div>
                 ))}
               </div>
+              {requiresFairAccessAttestation(category) ? (
+                <div
+                  className={cn(
+                    "rounded-xl border px-3 py-3 text-sm",
+                    errors.fairAccess
+                      ? "border-destructive/40 bg-destructive/5 text-destructive"
+                      : "border-neutral-200 bg-neutral-50 text-neutral-700",
+                  )}
+                  data-field-error={errors.fairAccess ? true : undefined}
+                >
+                  <p className="font-medium text-neutral-900">{t("post.fairAccessTitle")}</p>
+                  <p className="mt-1 leading-5">
+                    {category === "property"
+                      ? t("post.fairAccessHousing")
+                      : t("post.fairAccessJobs")}
+                  </p>
+                  <label className="mt-3 flex items-start gap-2">
+                    <input
+                      type="checkbox"
+                      className="mt-0.5 size-4 shrink-0 rounded border-neutral-300"
+                      checked={fairAccessAttested}
+                      onChange={(event) => {
+                        setFairAccessAttested(event.target.checked)
+                        setErrors((current) => ({ ...current, fairAccess: undefined }))
+                      }}
+                    />
+                    <span>{t("post.fairAccessConfirm")}</span>
+                  </label>
+                  {errors.fairAccess ? (
+                    <p className="mt-2 text-xs">{errors.fairAccess}</p>
+                  ) : null}
+                </div>
+              ) : null}
+
               <Field
                 label={plan.descriptionLabel}
                 required
