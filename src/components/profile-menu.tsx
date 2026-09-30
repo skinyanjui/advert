@@ -1,6 +1,6 @@
 "use client"
 
-import { Bell, Bookmark, ChevronDown, LogOut, MessageCircle, Settings2, Tag, UserRound } from "lucide-react"
+import { Bell, Bookmark, ChevronDown, FileText, LogOut, MessageCircle, Settings2, ShieldCheck, Tag, UserRound } from "lucide-react"
 import Link from "next/link"
 import { useState, type ReactNode } from "react"
 import { toast } from "sonner"
@@ -127,6 +127,17 @@ export function ProfileMenu({ notifications }: { notifications: ReactNode }) {
             </div>
           </details>
         ) : null}
+
+        <nav aria-label={t("nav.privacyRights")} className="border-t border-border px-1 py-1.5">
+          <Link href="/privacy/choices" onClick={() => setOpen(false)} className={rowClass}>
+            <ShieldCheck className="size-4" aria-hidden="true" />
+            <span className="flex-1">{t("nav.privacyRights")}</span>
+          </Link>
+          <Link href="/terms" onClick={() => setOpen(false)} className={rowClass}>
+            <FileText className="size-4" aria-hidden="true" />
+            <span className="flex-1">{t("nav.terms")}</span>
+          </Link>
+        </nav>
 
         <details className="group border-t border-border px-1 py-1">
           <summary className={`${rowClass} cursor-pointer list-none [&::-webkit-details-marker]:hidden`}>
