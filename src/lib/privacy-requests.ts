@@ -20,6 +20,7 @@ type CreatePrivacyRequestInput = {
   details: string | null
   locale: string | null
   verified: boolean
+  verificationRequired: boolean
 }
 
 export type PrivacyRequestRecord = {
@@ -109,7 +110,8 @@ export async function createPrivacyRequest(input: CreatePrivacyRequestInput) {
 
   const id = crypto.randomUUID()
   const now = new Date().toISOString()
-  const status: PrivacyRequestStatus = input.verified ? "received" : "verification_required"
+  const status: PrivacyRequestStatus =
+    input.verified || !input.verificationRequired ? "received" : "verification_required"
   const { data, error } = await db
     .from("privacy_requests")
     .insert({
@@ -138,7 +140,11 @@ export async function createPrivacyRequest(input: CreatePrivacyRequestInput) {
     request_id: id,
     actor_user_id: input.userId,
     event_type: "created",
-    note: input.verified ? "Request submitted by an authenticated account." : "Identity verification required before account data is disclosed or changed.",
+    note: input.verified
+      ? "Request submitted by an authenticated account."
+      : input.verificationRequired
+        ? "Identity verification required before account data is disclosed or changed."
+        : "Request type does not require identity verification before the choice is honored.",
   })
   check(eventError)
 
@@ -157,7 +163,9 @@ export async function createPrivacyRequest(input: CreatePrivacyRequestInput) {
       "",
       created.status === "verification_required"
         ? "Identity or authority verification is required before account data is disclosed or changed."
-        : "This request was submitted from a signed-in account and is marked account-verified.",
+        : created.verificationMethod === "authenticated_account"
+          ? "This request was submitted from a signed-in account and is marked account-verified."
+          : "This request type can be processed without identity verification; we may still need information needed to apply the choice.",
       "",
       "Do not reply with passwords, government ID numbers, bank information, medical records, or identity-document images.",
     ].join("\n"),
