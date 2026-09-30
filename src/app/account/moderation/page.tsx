@@ -12,5 +12,5 @@ export default async function Page() {
   const supabase = await createServerSupabase()
   const { data } = await supabase.auth.getUser()
   if (!data.user?.id) redirect(signInHref("/account/moderation"))
-  return <ModerationDecisionsPage />
+  return <ModerationDecisionsPage now={new Date().toISOString()} />
 }
