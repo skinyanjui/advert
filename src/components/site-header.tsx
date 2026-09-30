@@ -1,6 +1,6 @@
 "use client"
 
-import { ChevronDown, MapPin, Search } from "lucide-react"
+import { ChevronDown, Globe2, MapPin, Search } from "lucide-react"
 import Link from "next/link"
 import { usePathname, useRouter, useSearchParams } from "next/navigation"
 import { useEffect, useRef, useState, type ReactNode } from "react"
@@ -96,8 +96,8 @@ function TopNavActions({ pathname, locationLabel, query }: { pathname: string; l
             label="Language and currency"
             panelRole="region"
             panelClassName="w-auto p-0"
-            summaryClassName="h-8 border-transparent bg-transparent px-2 shadow-none hover:bg-muted"
-            summary={<span className="text-xs font-medium">{t("prefs.language")} · {t("prefs.currency")}</span>}
+            summaryClassName="size-8 justify-center border-transparent bg-transparent p-0 shadow-none hover:bg-muted"
+            summary={<Globe2 className="size-4" aria-hidden="true" />}
           >
             <LanguageCurrencyMenu />
           </HeaderMenu>

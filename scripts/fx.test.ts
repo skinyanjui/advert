@@ -1,7 +1,7 @@
 import assert from "node:assert/strict"
 import { test } from "node:test"
 
-import { boardCurrencyCodes, convertAmount } from "../src/lib/fx"
+import { boardCurrencyCodes, boardCurrencyOptions, convertAmount } from "../src/lib/fx"
 
 test("board currencies include USD and EUR and primary market codes", () => {
   const codes = boardCurrencyCodes()
@@ -11,6 +11,12 @@ test("board currencies include USD and EUR and primary market codes", () => {
   assert.ok(codes.includes("NGN"))
   assert.ok(codes.includes("ZAR"))
   assert.deepEqual(codes, [...codes].sort((a, b) => a.localeCompare(b)))
+})
+
+test("currency option labels do not repeat their ISO code", () => {
+  for (const option of boardCurrencyOptions()) {
+    assert.equal(option.label.includes(option.code), false)
+  }
 })
 
 test("convertAmount converts via USD base rates", () => {

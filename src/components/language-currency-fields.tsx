@@ -113,7 +113,7 @@ export function LanguageCurrencyMenu() {
         <div className="grid max-h-64 grid-cols-2 gap-1 overflow-y-auto pr-1 sm:grid-cols-3">
           {currencies.map((item) => (
             <button key={item.code} type="button" onClick={() => setCurrency(item.code as CurrencyPreference)} className="flex min-h-12 items-center justify-between gap-2 rounded-lg px-3 text-left text-sm hover:bg-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring">
-              <span className="min-w-0"><span className="block font-medium">{item.code}</span><span className="block truncate text-xs text-muted-foreground">{item.label}</span></span>{currency === item.code ? <Check className="size-4 shrink-0" aria-hidden /> : null}
+              <span className="min-w-0"><span className="block font-medium">{item.label}</span><span className="block text-xs text-muted-foreground">{item.code}</span></span>{currency === item.code ? <Check className="size-4 shrink-0" aria-hidden /> : null}
             </button>
           ))}
         </div>
