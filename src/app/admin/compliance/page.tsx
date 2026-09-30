@@ -58,6 +58,7 @@ export default async function Page() {
           <Fact label="Sells personal information" value={yesNo(complianceFacts.sellsPersonalInformation)} />
           <Fact label="Cross-context behavioral advertising" value={yesNo(complianceFacts.crossContextBehavioralAdvertising)} />
           <Fact label="Significant-decision ADMT" value={yesNo(complianceFacts.significantDecisionAdmt)} />
+          <Fact label="Safety moderation automation" value={yesNo(complianceFacts.safetyModerationAutomation)} />
           <Fact label="GPC recognized" value={yesNo(complianceFacts.gpcRecognized)} />
           <Fact label="Privacy rights workflow" value={yesNo(complianceFacts.privacyRightsWorkflow)} />
         </dl>
