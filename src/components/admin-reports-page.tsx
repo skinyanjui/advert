@@ -15,6 +15,9 @@ type AdminReport = {
   listingTitle: string
   reason: ReportReasonId
   note: string | null
+  legalBasis: string | null
+  jurisdiction: string | null
+  goodFaith: boolean
   createdAt: string
   listingHidden: boolean
 }
@@ -123,6 +126,16 @@ export function AdminReportsClient({
                   </Link>
                   <p className="mt-1 text-sm text-neutral-600">{reportReasonLabel(report.reason)}</p>
                   {report.note ? <p className="mt-1 text-sm text-neutral-500">{report.note}</p> : null}
+                  {report.reason === "illegal_content" ? (
+                    <div className="mt-2 rounded-lg bg-neutral-50 px-3 py-2 text-sm text-neutral-700">
+                      <p className="font-medium text-neutral-900">Illegal-content notice</p>
+                      {report.jurisdiction ? <p className="mt-1">Jurisdiction: {report.jurisdiction}</p> : null}
+                      <p className="mt-1">{report.legalBasis ?? "No legal explanation recorded."}</p>
+                      <p className="mt-1 text-xs text-neutral-500">
+                        Good-faith attestation: {report.goodFaith ? "confirmed" : "not confirmed"}
+                      </p>
+                    </div>
+                  ) : null}
                   <p className="mt-2 text-xs text-neutral-400">
                     {new Date(report.createdAt).toLocaleString()}
                     {report.listingHidden ? " · currently hidden" : ""}
