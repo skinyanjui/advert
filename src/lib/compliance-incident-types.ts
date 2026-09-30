@@ -31,6 +31,6 @@ export function isIncidentSeverity(value: string): value is ComplianceIncidentSe
 }
 
 export function incidentStatusLabel(value: ComplianceIncidentStatus): string {
-  if (value === "in_progress") return "In progress"
+  if (value === "investigating") return "Investigating"
   return value.charAt(0).toUpperCase() + value.slice(1)
 }
