@@ -429,6 +429,8 @@ export const en = {
   "report.noteLabel": "Note (optional)",
   "report.notePlaceholder": "Anything that helps a reviewer",
   "report.send": "Send report",
+  "report.automationHint": "Reports are reviewed by moderators. Multiple distinct pending reports can temporarily hide a listing before review; dismissing reports can restore it.",
+  "report.toast.autoHidden": "Report sent. The listing was temporarily hidden pending moderation review.",
   "report.sending": "Sending…",
   "report.toast.sent": "Report sent. Thanks for helping keep the board safe.",
   "report.toast.error": "Could not send the report.",
