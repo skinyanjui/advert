@@ -52,10 +52,6 @@ export function PrivacyRequestPage() {
   const accountEmail = auth.email?.trim().toLowerCase() ?? ""
 
   useEffect(() => {
-    if (accountEmail) setEmail(accountEmail)
-  }, [accountEmail])
-
-  useEffect(() => {
     if (!auth.ready || !auth.signedIn) return
     void fetch("/api/privacy/requests", { cache: "no-store" })
       .then(async (response) => {
@@ -97,7 +93,7 @@ export function PrivacyRequestPage() {
         method: "POST",
         headers: { "content-type": "application/json" },
         body: JSON.stringify({
-          email,
+          email: accountEmail || email,
           actingAsAgent,
           subjectEmail: actingAsAgent ? subjectEmail : null,
           jurisdiction,
@@ -161,7 +157,7 @@ export function PrivacyRequestPage() {
               id="privacy-email"
               type="email"
               autoComplete="email"
-              value={email}
+              value={accountEmail || email}
               readOnly={Boolean(accountEmail)}
               aria-readonly={Boolean(accountEmail)}
               onChange={(event) => setEmail(event.target.value)}
@@ -242,7 +238,7 @@ export function PrivacyRequestPage() {
 
           <Button
             type="button"
-            disabled={submitting || !email.trim() || (actingAsAgent && !subjectEmail.trim())}
+            disabled={submitting || !(accountEmail || email).trim() || (actingAsAgent && !subjectEmail.trim())}
             onClick={() => void submit()}
           >
             {submitting ? t("privacyRequest.submitting") : t("privacyRequest.submit")}
