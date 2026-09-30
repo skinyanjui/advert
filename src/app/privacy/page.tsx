@@ -248,6 +248,23 @@ export default function PrivacyPage() {
       </section>
 
       <section className="mt-8 space-y-3">
+        <h2 className="text-base font-medium text-neutral-950">Moderation and automated processing</h2>
+        <p className="text-sm leading-6 text-neutral-700">
+          We use listing rules, rate limits, report counts, and moderator review to protect the
+          marketplace. Multiple distinct pending reports can temporarily hide a listing until a
+          moderator reviews the reports; dismissing reports can restore it. We record moderation
+          actions needed to operate and secure the service.
+        </p>
+        <p className="text-sm leading-6 text-neutral-700">
+          The current application does not use personal data for solely automated decisions that
+          determine access to credit, employment, housing, insurance, education, or another
+          similarly significant service. Before adding significant-decision automated processing or
+          profiling, we will reassess applicable notice, assessment, explanation, access, and
+          opt-out/appeal requirements.
+        </p>
+      </section>
+
+      <section className="mt-8 space-y-3">
         <h2 className="text-base font-medium text-neutral-950">Processors</h2>
         <p className="text-sm leading-6 text-neutral-700">
           We use <strong>Supabase</strong> (database, auth, and storage) and <strong>Vercel</strong>{" "}
