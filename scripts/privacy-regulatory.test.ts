@@ -111,7 +111,7 @@ test("listing flow applies privacy by default and rejects obvious sensitive paym
   const privacy = source("src/app/privacy/page.tsx")
   const terms = source("src/app/terms/page.tsx")
 
-  assert.match(post, /marketplace messaging only/)
+  assert.match(post, /Marketplace messages work without sharing a phone number/)
   assert.match(post, /payment-card details/)
   assert.match(rules, /paymentCardPattern/)
   assert.match(rules, /sensitiveIdentifierPattern/)
