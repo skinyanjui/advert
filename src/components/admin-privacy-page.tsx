@@ -18,9 +18,11 @@ type Action = "verify" | "start" | "complete" | "deny"
 export function AdminPrivacyPage({
   initialRequests,
   loadError,
+  now,
 }: {
   initialRequests: PrivacyRequestRecord[]
   loadError: boolean
+  now: string
 }) {
   const [requests, setRequests] = useState(initialRequests)
   const [status, setStatus] = useState<"" | PrivacyRequestStatus>("")
@@ -95,7 +97,7 @@ export function AdminPrivacyPage({
         {visible.map((request) => {
           const overdue =
             !["completed", "denied"].includes(request.status) &&
-            new Date(request.dueAt).getTime() < Date.now()
+            new Date(request.dueAt).getTime() < new Date(now).getTime()
           return (
             <li key={request.id} className="rounded-2xl border border-neutral-200 bg-white p-4">
               <div className="flex flex-wrap items-start justify-between gap-3">
