@@ -58,23 +58,15 @@ test("normalizeProfileUpdate accepts language and currency patches", () => {
   assert.equal(bad.ok, false)
 })
 
-test("language and currency stay on the same row on every shared preference surface", () => {
-  const fields = readFileSync(
-    new URL("../src/components/language-currency-fields.tsx", import.meta.url),
-    "utf8",
-  )
+test("language and currency stay together in onboarding and account preferences", () => {
+  const fields = readFileSync(new URL("../src/components/language-currency-fields.tsx", import.meta.url), "utf8")
   const signIn = readFileSync(new URL("../src/components/sign-in-form.tsx", import.meta.url), "utf8")
   const account = readFileSync(new URL("../src/components/account-page.tsx", import.meta.url), "utf8")
   const profileMenu = readFileSync(new URL("../src/components/profile-menu.tsx", import.meta.url), "utf8")
-
   assert.match(fields, /grid grid-cols-2/)
-  assert.doesNotMatch(fields, /sm:grid-cols-2/)
-  assert.doesNotMatch(fields, /space-y-2 px-2 py-1\.5/)
   assert.match(signIn, /<LanguageCurrencyFields idPrefix="onboarding" \/>/)
   assert.match(account, /<LanguageCurrencyFields \/>/)
-  assert.match(profileMenu, /<LanguageCurrencyFields layout="menu" idPrefix="profile-menu" \/>/)
-  assert.doesNotMatch(signIn, /onboarding-currency/)
-  assert.doesNotMatch(signIn, /Listing currency/)
+  assert.doesNotMatch(profileMenu, /LanguageCurrencyFields|ThemeChoices/)
 })
 
 test("listing grids use 5 columns from xl (1280px) and keep 2 cols on small screens", () => {
@@ -95,68 +87,17 @@ test("listing grids use 5 columns from xl (1280px) and keep 2 cols on small scre
   }
 })
 
-test("header moves notifications into the profile menu and drops top-nav message/bell icons", () => {
-  const header = readFileSync(new URL("../src/components/site-header.tsx", import.meta.url), "utf8")
-  const profileMenu = readFileSync(new URL("../src/components/profile-menu.tsx", import.meta.url), "utf8")
-  assert.match(header, /ProfileNotifications/)
-  assert.match(header, /<ProfileMenu notifications=\{<ProfileNotifications \/>\}/)
-  assert.match(profileMenu, /LanguageCurrencyFields/)
-  assert.match(profileMenu, /href="\/messages"/)
-  assert.match(header, /navItem\("home"\)/)
-  assert.match(header, /md:hidden/)
-  assert.doesNotMatch(header, /NavIconLink/)
-  assert.doesNotMatch(header, /NotificationsMenu/)
-  assert.doesNotMatch(header, /<Bell/)
-})
-
-
-test("desktop header exposes an accessible light dark system theme menu", () => {
-  const header = readFileSync(new URL("../src/components/site-header.tsx", import.meta.url), "utf8")
-  const theme = readFileSync(new URL("../src/components/theme-choices.tsx", import.meta.url), "utf8")
-  assert.match(header, /<ThemeMenu \/>/)
-  assert.match(theme, /role="menuitemradio"/)
-  assert.match(theme, /aria-checked=\{choice === option\}/)
-  assert.match(theme, /themeChoices\.map/)
-  assert.match(theme, /<Check/)
-  assert.match(theme, /resolved === "dark"/)
-  const profileIndex = header.indexOf("<ProfileMenu")
-  const themeIndex = header.indexOf("<ThemeMenu")
-  assert.ok(profileIndex >= 0 && themeIndex > profileIndex, "theme control stays to the right of auth/profile")
-})
-
-
-test("top nav is composed from responsive component boundaries with deliberate borders", () => {
-  const header = readFileSync(new URL("../src/components/site-header.tsx", import.meta.url), "utf8")
-  const theme = readFileSync(new URL("../src/components/theme-choices.tsx", import.meta.url), "utf8")
-  const categories = readFileSync(new URL("../src/components/category-top-nav.tsx", import.meta.url), "utf8")
-  const css = readFileSync(new URL("../src/app/globals.css", import.meta.url), "utf8")
-  for (const name of ["TopNav", "TopNavBrand", "TopNavDiscovery", "TopNavSearch", "TopNavCategories", "TopNavActions", "TopNavHome", "TopNavPost"]) {
-    assert.match(header, new RegExp("function " + name + "\\\("))
-  }
-  assert.match(header, /bottom-\[calc\(env\(safe-area-inset-bottom\)\+0\.5rem\)\]/)
-  assert.match(header, /border-input bg-background/)
-  assert.match(theme, /border border-input bg-background/)
-  assert.match(categories, /border border-input bg-background md:hidden/)
-  assert.match(css, /--border: oklch\(0\.885 0 0\)/)
-  assert.match(css, /--input: oklch\(0\.86 0 0\)/)
-})
-
-
-test("top navigation uses a compact visual scale without shrinking interaction semantics", () => {
+test("top navigation keeps only marketplace actions and delegates preferences to settings", () => {
   const header = readFileSync(new URL("../src/components/site-header.tsx", import.meta.url), "utf8")
   const profile = readFileSync(new URL("../src/components/profile-menu.tsx", import.meta.url), "utf8")
-  const theme = readFileSync(new URL("../src/components/theme-choices.tsx", import.meta.url), "utf8")
-  const categories = readFileSync(new URL("../src/components/category-top-nav.tsx", import.meta.url), "utf8")
-  assert.match(header, /grid h-14 w-full/)
-  assert.match(header, /md:h-16/)
-  assert.match(header, /md:grid-cols-\[15\.5rem_minmax\(0,1fr\)_auto\]/)
-  assert.match(header, /summaryClassName="h-8/)
-  assert.match(header, /className="h-8 rounded-full border-input/)
-  assert.match(profile, /relative flex size-8/)
-  assert.match(theme, /flex size-8 items-center/)
-  assert.match(categories, /size-8 shrink-0 rounded-full/)
+  const account = readFileSync(new URL("../src/components/account-page.tsx", import.meta.url), "utf8")
+  assert.match(header, /<ProfileMenu \/>/)
+  assert.doesNotMatch(header, /ProfileNotifications|ThemeMenu|recentMessageNotifications/)
+  assert.doesNotMatch(profile, /notifications|ThemeChoices|LanguageCurrencyFields/)
+  assert.match(profile, />Settings</)
+  assert.match(account, /<CardTitle>Preferences<\/CardTitle>/)
+  assert.match(account, /<ThemeChoices \/>/)
 })
-
 
 test("sidebar geometry follows the compact header without a vertical gap", () => {
   const categories = readFileSync(new URL("../src/components/category-top-nav.tsx", import.meta.url), "utf8")

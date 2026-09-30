@@ -13,6 +13,7 @@ import { FormField } from "@/components/form-field"
 import { LanguageCurrencyFields } from "@/components/language-currency-fields"
 import { usePrefs } from "@/components/prefs-provider"
 import { KeepAdsPrompt } from "@/components/sign-in-form"
+import { ThemeChoices } from "@/components/theme-choices"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
@@ -454,12 +455,14 @@ function SignedInProfile({
     <>
       <Card size="sm">
         <CardHeader>
-          <CardTitle>Language & currency</CardTitle>
-          <CardDescription>
-            Applies on this device and is saved to your profile when signed in.
-          </CardDescription>
+          <CardTitle>Preferences</CardTitle>
+          <CardDescription>Appearance, language, and currency for this device and account.</CardDescription>
         </CardHeader>
-        <CardContent>
+        <CardContent className="space-y-4">
+          <div className="space-y-2">
+            <Label>Appearance</Label>
+            <ThemeChoices />
+          </div>
           <LanguageCurrencyFields />
         </CardContent>
       </Card>

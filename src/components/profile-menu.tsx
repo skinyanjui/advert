@@ -1,14 +1,12 @@
 "use client"
 
-import { Bell, Bookmark, ChevronDown, CircleHelp, LogOut, MessageCircle, Settings2, Tag, UserRound } from "lucide-react"
+import { Bookmark, CircleHelp, LogOut, MessageCircle, Settings2, Tag, UserRound } from "lucide-react"
 import Link from "next/link"
-import { useState, type ReactNode } from "react"
+import { useState } from "react"
 import { toast } from "sonner"
 
-import { LanguageCurrencyFields } from "@/components/language-currency-fields"
 import { NavBadge } from "@/components/nav-badge"
 import { usePrefs } from "@/components/prefs-provider"
-import { ThemeChoices } from "@/components/theme-choices"
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
 import { useNavCounts } from "@/hooks/use-nav-counts"
 import { useAuth } from "@/lib/auth"
@@ -16,7 +14,7 @@ import { useMarketplace } from "@/lib/marketplace"
 
 const rowClass = "flex min-h-10 items-center gap-3 rounded-lg px-3 py-2 text-sm text-foreground outline-none hover:bg-muted focus-visible:ring-2 focus-visible:ring-ring"
 
-export function ProfileMenu({ notifications }: { notifications: ReactNode }) {
+export function ProfileMenu() {
   const auth = useAuth()
   const { savedIds, ready, refreshBoard } = useMarketplace()
   const { t } = usePrefs()
@@ -86,9 +84,6 @@ export function ProfileMenu({ notifications }: { notifications: ReactNode }) {
         <nav aria-label={t("nav.profile")} className="border-t border-border px-1 py-1.5">
           {auth.signedIn ? (
             <>
-              <Link href="/account" onClick={() => setOpen(false)} className={rowClass}>
-                <UserRound className="size-4" aria-hidden="true" />{t("nav.profile")}
-              </Link>
               <Link href="/my-ads" onClick={() => setOpen(false)} className={rowClass}>
                 <Tag className="size-4" aria-hidden="true" />
                 <span className="flex-1">{t("nav.myAds")}</span>
@@ -112,22 +107,6 @@ export function ProfileMenu({ notifications }: { notifications: ReactNode }) {
           ) : null}
         </nav>
 
-        {auth.signedIn ? (
-          <details className="group border-t border-border px-1 py-1">
-            <summary className={`${rowClass} cursor-pointer list-none [&::-webkit-details-marker]:hidden`}>
-              <Bell className="size-4" aria-hidden="true" />
-              <span className="flex-1">{t("nav.notifications")}</span>
-              {unread > 0 ? <span className="text-xs tabular-nums text-muted-foreground">{unread}</span> : null}
-              <ChevronDown className="size-4 text-muted-foreground transition-transform group-open:rotate-180" aria-hidden="true" />
-            </summary>
-            <div onClickCapture={(event) => {
-              if ((event.target as Element).closest("a")) setOpen(false)
-            }}>
-              {notifications}
-            </div>
-          </details>
-        ) : null}
-
         <nav aria-label="Help" className="border-t border-border px-1 py-1.5">
           <Link href="/help" onClick={() => setOpen(false)} className={rowClass}>
             <CircleHelp className="size-4" aria-hidden="true" />
@@ -135,17 +114,14 @@ export function ProfileMenu({ notifications }: { notifications: ReactNode }) {
           </Link>
         </nav>
 
-        <details className="group border-t border-border px-1 py-1">
-          <summary className={`${rowClass} cursor-pointer list-none [&::-webkit-details-marker]:hidden`}>
-            <Settings2 className="size-4" aria-hidden="true" />
-            <span className="flex-1">{t("prefs.appearance")}</span>
-            <ChevronDown className="size-4 text-muted-foreground transition-transform group-open:rotate-180" aria-hidden="true" />
-          </summary>
-          <div className="space-y-3 px-2 py-3">
-            <ThemeChoices />
-            <LanguageCurrencyFields layout="menu" idPrefix="profile-menu" />
-          </div>
-        </details>
+        {auth.signedIn ? (
+          <nav aria-label="Settings" className="border-t border-border px-1 py-1.5">
+            <Link href="/account" onClick={() => setOpen(false)} className={rowClass}>
+              <Settings2 className="size-4" aria-hidden="true" />
+              <span className="flex-1">Settings</span>
+            </Link>
+          </nav>
+        ) : null}
 
         {auth.signedIn ? (
           <div className="border-t border-border px-1 pt-1">

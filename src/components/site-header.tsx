@@ -1,6 +1,6 @@
 "use client"
 
-import { ChevronDown, Inbox, MapPin, MessageCircle, RefreshCw, Search } from "lucide-react"
+import { ChevronDown, MapPin, Search } from "lucide-react"
 import Link from "next/link"
 import { usePathname, useRouter, useSearchParams } from "next/navigation"
 import { useEffect, useRef, useState, type ReactNode } from "react"
@@ -9,7 +9,6 @@ import { Logo } from "@/components/logo"
 import { CategoryTopNav } from "@/components/category-top-nav"
 import { PostLink, usePostAdHref } from "@/components/post-link"
 import { ProfileMenu } from "@/components/profile-menu"
-import { ThemeMenu } from "@/components/theme-choices"
 import { usePrefs } from "@/components/prefs-provider"
 import { Button, buttonVariants } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -17,8 +16,6 @@ import { searchCitiesAnywhere } from "@/lib/cities"
 import { countries, countryName, fold, moreCountries, primaryCountries } from "@/lib/countries"
 import { formatPlaceLabel } from "@/lib/format"
 import { clearBrowsingEverywhere, markBrowsingEverywhere, useHomePlace, writeHomePlace } from "@/lib/home-place"
-import { useMarketplace } from "@/lib/marketplace"
-import { recentMessageNotifications, unreadMessageCount } from "@/lib/messages"
 import { navItem } from "@/lib/nav"
 import { categoryFromPath, useListingQuery, type ListingQuery } from "@/lib/use-listing-query"
 import { cn } from "@/lib/utils"
@@ -91,8 +88,7 @@ function TopNavActions({ pathname, locationLabel, query }: { pathname: string; l
         <TopNavHome pathname={pathname} />
         <CountryMenu label={locationLabel} query={query} />
         <TopNavPost />
-        <ProfileMenu notifications={<ProfileNotifications />} />
-        <ThemeMenu />
+        <ProfileMenu />
       </nav>
     </div>
   )
@@ -124,126 +120,6 @@ function TopNavPost() {
         <span className="hidden xl:inline">{t("nav.postShort")}</span>
       </Link>
     </Button>
-  )
-}
-
-function ProfileNotifications() {
-  const { messages, ready, refreshBoard } = useMarketplace()
-  const { t } = usePrefs()
-  const [view, setView] = useState<"all" | "unread">("all")
-  const [refreshing, setRefreshing] = useState(false)
-  const unread = unreadMessageCount(messages)
-  const notifications = recentMessageNotifications(messages, 8)
-  const visible = view === "unread" ? notifications.filter((item) => !item.read) : notifications
-
-  async function onRefresh() {
-    setRefreshing(true)
-    try {
-      await refreshBoard({ force: true })
-    } finally {
-      setRefreshing(false)
-    }
-  }
-
-  return (
-    <div role="region" aria-label={unread > 0 ? t("nav.notificationsUnread", { count: unread }) : t("nav.notifications")}>
-      <div className="flex items-center justify-between gap-3 px-4 py-2">
-        <div className="min-w-0">
-          <h2 className="text-sm font-semibold text-neutral-950">{t("nav.notifications")}</h2>
-          <p className="text-xs text-neutral-500" aria-live="polite">
-            {unread > 0
-              ? t("nav.notificationsUnreadCount", {
-                  count: unread,
-                  messages: unread === 1 ? t("nav.messageOne") : t("nav.messageMany"),
-                })
-              : t("nav.notificationsRecent")}
-          </p>
-        </div>
-        <Button
-          type="button"
-          variant="outline"
-          size="icon"
-          aria-label={t("nav.refreshNotifications")}
-          title={t("nav.refreshNotifications")}
-          disabled={!ready || refreshing}
-          onClick={() => void onRefresh()}
-          className="size-8 shrink-0 rounded-full"
-        >
-          <RefreshCw className={cn("size-3.5", refreshing && "animate-spin")} aria-hidden="true" />
-        </Button>
-      </div>
-      <div className="flex gap-1 px-3 pb-2" aria-label={t("nav.filterNotifications")}>
-        {(["all", "unread"] as const).map((option) => (
-          <button
-            key={option}
-            type="button"
-            aria-pressed={view === option}
-            onClick={() => setView(option)}
-            className={cn(
-              "rounded-full px-3 py-1 text-xs font-medium transition-colors",
-              view === option ? "bg-neutral-950 text-white" : "text-neutral-600 hover:bg-neutral-100",
-            )}
-          >
-            {option === "all" ? t("nav.filterAll") : `${t("nav.filterUnread")}${unread ? ` ${unread}` : ""}`}
-          </button>
-        ))}
-      </div>
-      <div className="max-h-[min(14rem,calc(100dvh-22rem))] min-h-28 overflow-y-auto px-2 pb-2">
-        {!ready && notifications.length === 0 ? (
-          <p role="status" className="px-3 py-8 text-center text-sm text-neutral-500">
-            {t("nav.notificationsLoading")}
-          </p>
-        ) : null}
-        {ready && visible.length === 0 ? (
-          <div className="flex min-h-28 flex-col items-center justify-center px-5 py-5 text-center">
-            <span className="flex size-9 items-center justify-center rounded-full bg-neutral-100 text-neutral-600">
-              <Inbox className="size-4" aria-hidden="true" />
-            </span>
-            <p className="mt-2 text-sm font-medium text-neutral-950">
-              {view === "unread" ? t("nav.notificationsEmptyUnread") : t("nav.notificationsEmptyAll")}
-            </p>
-            <p className="mt-1 max-w-56 text-xs leading-5 text-neutral-500">
-              {view === "unread" ? t("nav.notificationsEmptyUnreadHint") : t("nav.notificationsEmptyAllHint")}
-            </p>
-          </div>
-        ) : null}
-        {visible.length > 0 ? (
-          <ul className="space-y-0.5">
-            {visible.map((item) => (
-              <li key={item.id}>
-                <Link
-                  href={`/messages?c=${encodeURIComponent(item.conversationId)}`}
-                  className={cn(
-                    "flex items-start gap-3 rounded-xl px-3 py-2.5 outline-none hover:bg-neutral-100 focus-visible:ring-2 focus-visible:ring-neutral-950",
-                    !item.read && "bg-neutral-50",
-                  )}
-                >
-                  <span className="mt-0.5 flex size-8 shrink-0 items-center justify-center rounded-full bg-white ring-1 ring-neutral-200">
-                    <MessageCircle className="size-3.5 text-neutral-700" aria-hidden="true" />
-                  </span>
-                  <span className="min-w-0 flex-1">
-                    <span className="sr-only">{item.read ? t("nav.readPrefix") : t("nav.unreadPrefix")}</span>
-                    <span className="flex items-start justify-between gap-2">
-                      <span className={cn("min-w-0 truncate text-sm", item.read ? "text-neutral-700" : "font-semibold text-neutral-950")}>
-                        {item.viewerIsSeller ? t("nav.newInquiry") : t("nav.sellerReply")}
-                      </span>
-                      {!item.read ? <span className="mt-1 size-2 shrink-0 rounded-full bg-neutral-950" aria-hidden="true" /> : null}
-                    </span>
-                    <span className="block truncate text-xs font-medium text-neutral-600">{item.listingTitle}</span>
-                    <span className="mt-0.5 line-clamp-2 text-xs leading-5 text-neutral-500">{item.body}</span>
-                  </span>
-                </Link>
-              </li>
-            ))}
-          </ul>
-        ) : null}
-      </div>
-      <div className="border-t border-neutral-200 p-2">
-        <Button asChild variant="ghost" className="h-9 w-full rounded-full text-xs font-medium text-neutral-700">
-          <Link href="/messages">{t("nav.openMessages")}</Link>
-        </Button>
-      </div>
-    </div>
   )
 }
 
