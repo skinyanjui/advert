@@ -6,6 +6,7 @@ export const reportReasons = [
   { id: "wrong_category", label: "Wrong category" },
   { id: "offensive", label: "Offensive or abusive" },
   { id: "undisclosed_promo", label: "Undisclosed paid promotion" },
+  { id: "discrimination", label: "Discriminatory housing or job listing" },
   { id: "other", label: "Something else" },
 ] as const
 
