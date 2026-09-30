@@ -44,7 +44,18 @@ export default async function Page() {
   return (
     <div className="mx-auto w-full max-w-5xl px-4 py-8 md:px-6">
       <h1 className="text-2xl font-semibold tracking-tight">Compliance</h1>
-      <p className="mt-1 max-w-3xl text-sm leading-6 text-neutral-500">
+      <div className="mt-3 flex flex-wrap gap-2">
+        <Link href="/admin/privacy" className="inline-flex h-9 items-center rounded-full border border-neutral-200 bg-white px-3 text-sm font-medium">
+          Privacy requests
+        </Link>
+        <Link href="/admin/moderation-appeals" className="inline-flex h-9 items-center rounded-full border border-neutral-200 bg-white px-3 text-sm font-medium">
+          Moderation appeals
+        </Link>
+        <Link href="/admin/incidents" className="inline-flex h-9 items-center rounded-full border border-neutral-200 bg-white px-3 text-sm font-medium">
+          Compliance incidents
+        </Link>
+      </div>
+      <p className="mt-4 max-w-3xl text-sm leading-6 text-neutral-500">
         Operational law-to-product registry. “Implemented” means the named product control exists; it does not mean a regulator or lawyer has certified legal compliance. Conditional duties must be re-evaluated when product facts or scale change.
       </p>
 
