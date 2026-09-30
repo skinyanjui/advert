@@ -44,8 +44,10 @@ export default function TermsPage() {
         <h2 className="text-base font-medium text-neutral-950">Age eligibility</h2>
         <p className="text-sm leading-6 text-neutral-700">
           You must be at least 18 years old to create or use an account. The service is not directed
-          to children under 13. If we learn that an account was created in violation of this rule, we
-          may suspend or delete it and remove associated personal data as appropriate.
+          to children under 13. This age boundary is also intended to avoid knowingly collecting
+          children&apos;s personal information in circumstances covered by the Children&apos;s Online Privacy
+          Protection Act (COPPA). If we learn that an account was created in violation of this rule,
+          we may suspend or delete it and remove associated personal data as appropriate.
         </p>
       </section>
 
@@ -66,8 +68,9 @@ export default function TermsPage() {
         <h2 className="text-base font-medium text-neutral-950">Commercial email and automated calls or texts</h2>
         <p className="text-sm leading-6 text-neutral-700">
           Account and security communications are treated as transactional. If we send commercial
-          marketing email, we will provide required sender information and a working opt-out process.
-          Creating an account or providing a phone number does not authorize automated marketing calls
+          marketing email, we will follow applicable CAN-SPAM Act requirements, including required
+          sender information and a working opt-out process. Creating an account or providing a phone
+          number does not authorize automated marketing calls
           or robotexts. Separate consent will be used where the Telephone Consumer Protection Act or
           other applicable law requires it.
         </p>
