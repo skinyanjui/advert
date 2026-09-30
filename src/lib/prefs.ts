@@ -3,7 +3,7 @@ import { isLocale, type Locale } from "@/lib/i18n/locales"
 
 export const languageStorageKey = "africa-classifieds-language"
 export const currencyStorageKey = "africa-classifieds-currency"
-export const defaultCurrencyPreference = "USD" as const
+export const defaultCurrencyPreference = "KES" as const
 
 export type CurrencyPreference = string
 

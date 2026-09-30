@@ -35,10 +35,11 @@ test("language and currency preference validation", () => {
   assert.equal(languageError("fr"), undefined)
   assert.equal(languageError("sw"), undefined)
   assert.equal(languageError("de"), "Choose a supported language.")
-  assert.equal(currencyPreferenceError("USD"), undefined)
+  assert.equal(currencyPreferenceError("USD"), "Choose a currency used on the board.")
   assert.equal(currencyPreferenceError("KES"), undefined)
   assert.equal(currencyPreferenceError("CAD"), "Choose a currency used on the board.")
   assert.equal(isCurrencyPreference("listing"), false)
+  assert.equal(defaultCurrencyPreference, "KES")
   assert.equal(normalizeCurrencyPreference("kes"), defaultCurrencyPreference) // invalid casing path via isCurrencyPreference
   assert.equal(normalizeCurrencyPreference("KES"), "KES")
   assert.equal(normalizeLanguagePreference("fr"), "fr")

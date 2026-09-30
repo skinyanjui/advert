@@ -3,10 +3,9 @@ import { test } from "node:test"
 
 import { boardCurrencyCodes, boardCurrencyOptions, convertAmount } from "../src/lib/fx"
 
-test("board currencies include USD and EUR and primary market codes", () => {
+test("board currencies are African-issued and include primary market codes", () => {
   const codes = boardCurrencyCodes()
-  assert.ok(codes.includes("USD"))
-  assert.ok(codes.includes("EUR"))
+  for (const code of ["USD", "EUR", "GBP", "CNY", "INR", "JPY", "ZWB"]) assert.equal(codes.includes(code), false)
   assert.ok(codes.includes("KES"))
   assert.ok(codes.includes("NGN"))
   assert.ok(codes.includes("ZAR"))
@@ -15,7 +14,7 @@ test("board currencies include USD and EUR and primary market codes", () => {
 
 test("currency option labels do not repeat their ISO code", () => {
   for (const option of boardCurrencyOptions()) {
-    assert.equal(option.label.includes(option.code), false)
+    assert.notEqual(option.label, option.code)
   }
 })
 

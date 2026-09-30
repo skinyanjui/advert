@@ -1,15 +1,15 @@
 import { countries, currencyLabel } from "@/lib/countries"
 
-/** Currencies that appear on the board (country data), always including USD and EUR. */
+const nonAfricanTenderCodes = new Set(["CNY", "EUR", "GBP", "INR", "JPY", "USD", "ZWB"])
+
+/** African-issued currencies represented by the board's Africa country data. */
 export function boardCurrencyCodes(): string[] {
   const codes = new Set<string>()
   for (const country of countries) {
     for (const currency of country.currencies) {
-      codes.add(currency.code)
+      if (!nonAfricanTenderCodes.has(currency.code) && currency.name !== currency.code) codes.add(currency.code)
     }
   }
-  codes.add("USD")
-  codes.add("EUR")
   return [...codes].sort((a, b) => a.localeCompare(b))
 }
 
