@@ -36,6 +36,7 @@ export function TermsReacceptDialog() {
   const [busy, setBusy] = useState(false)
   const [ageConfirmed, setAgeConfirmed] = useState(false)
   const [agreedToTerms, setAgreedToTerms] = useState(false)
+  const [serviceUnavailable, setServiceUnavailable] = useState(false)
 
   const refresh = useCallback(async () => {
     if (!auth.ready || !auth.signedIn || !auth.configured) {
@@ -49,10 +50,16 @@ export function TermsReacceptDialog() {
       if (!response.ok) return
       const payload = (await response.json()) as TermsPayload
       if (payload.tableMissing) {
-        startTransition(() => setOpen(false))
+        startTransition(() => {
+          setServiceUnavailable(true)
+          setOpen(true)
+          setAgeConfirmed(false)
+          setAgreedToTerms(false)
+        })
         return
       }
       startTransition(() => {
+        setServiceUnavailable(false)
         const nextOpen = payload.current === false
         setOpen(nextOpen)
         if (nextOpen) {
@@ -159,6 +166,11 @@ export function TermsReacceptDialog() {
           </Link>
           .
         </p>
+        {serviceUnavailable ? (
+          <p className="rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-sm text-amber-950">
+            {t("terms.unavailable")}
+          </p>
+        ) : null}
         <div className="space-y-2">
           <label className="flex items-start gap-2 rounded-xl border border-neutral-200 px-3 py-2.5 text-sm text-neutral-700">
             <input
@@ -193,7 +205,7 @@ export function TermsReacceptDialog() {
           <Button variant="outline" disabled={busy} onClick={() => void signOut()}>
             {t("terms.signOut")}
           </Button>
-          <Button disabled={busy || !ageConfirmed || !agreedToTerms} onClick={() => void accept()}>
+          <Button disabled={busy || serviceUnavailable || !ageConfirmed || !agreedToTerms} onClick={() => void accept()}>
             {busy ? t("terms.pleaseWait") : t("terms.accept")}
           </Button>
         </DialogFooter>
