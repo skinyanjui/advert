@@ -14,6 +14,7 @@ test("legal acceptance stores separate age and privacy evidence", () => {
   const acceptance = source("src/lib/terms-acceptance.ts")
   const gate = source("src/lib/terms-gate.ts")
   const client = source("src/lib/terms-client.ts")
+  const reaccept = source("src/components/terms-reaccept-dialog.tsx")
   const migration = source("database/migrations/20260929_privacy_rights_workflow.sql")
 
   assert.match(signIn, /ageConfirmed/)
@@ -31,6 +32,9 @@ test("legal acceptance stores separate age and privacy evidence", () => {
   assert.match(client, /if \(!intent \|\| !hasTermsIntent\(\)\) return false/)
   assert.doesNotMatch(client, /ageAttested: intent\?\.ageAttested \?\? true/)
   assert.doesNotMatch(client, /privacyAcknowledged: intent\?\.privacyAcknowledged \?\? true/)
+  assert.match(reaccept, /pathname === "\/terms"/)
+  assert.match(reaccept, /pathname\.startsWith\("\/privacy\/"\)/)
+  assert.match(reaccept, /pathname === "\/account"/)
   assert.match(migration, /age_attested boolean not null default false/)
   assert.match(migration, /privacy_acknowledged boolean not null default false/)
 })
