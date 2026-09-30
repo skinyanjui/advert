@@ -195,10 +195,10 @@ export function CategoryTopNav() {
   return (
     <SidebarTrigger
       aria-label="Browse categories"
-      className="size-9 shrink-0 rounded-full border border-input bg-background md:hidden"
+      className="size-8 shrink-0 rounded-full border border-input bg-background md:hidden"
       size="icon-lg"
     >
-      <Menu className="size-5" />
+      <Menu className="size-4" />
       <span className="sr-only">Browse categories</span>
     </SidebarTrigger>
   )
