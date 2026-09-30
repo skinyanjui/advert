@@ -318,7 +318,7 @@ export const en = {
   "profile.pendingEmail": "Pending confirmation for {email}. Check that inbox (and your current email if Secure email change is on).",
   "profile.signOutAll": "Sign out of all devices",
   "privacyRequest.title": "Privacy request",
-  "privacyRequest.intro": "Use this form to exercise privacy rights that apply to you. We use a 30-day internal response target; a legal deadline may differ by jurisdiction or request.",
+  "privacyRequest.intro": "Use this form to exercise privacy rights that apply to you. We use a 28-day internal response target for most requests and a 15-day target for California opt-out or limit requests; the legal deadline may differ by jurisdiction or request.",
   "privacyRequest.sensitiveWarning": "Do not enter passwords, government ID numbers, bank information, medical information, or other sensitive documents in this form. If identity verification is needed, we will use a separate verification step.",
   "privacyRequest.detailsTitle": "Request details",
   "privacyRequest.detailsBody": "Choose the location and right that best fit the request. Choosing Other / not sure will not block review.",
