@@ -1,5 +1,5 @@
 import assert from "node:assert/strict"
-import { readFileSync } from "node:fs"
+import { existsSync, readFileSync } from "node:fs"
 import { test } from "node:test"
 
 import { privacyDueAt } from "../src/lib/privacy-rights"
@@ -162,4 +162,24 @@ test("privacy export includes compliance records tied to the account", () => {
   assert.match(helper, /privacyRequests/)
   assert.match(helper, /moderationDecisions/)
   assert.match(helper, /moderationAppeals/)
+})
+
+
+test("compliance incidents use one canonical admin route and component", () => {
+  assert.equal(
+    existsSync(new URL("../src/app/admin/compliance/incidents/page.tsx", import.meta.url)),
+    false,
+  )
+  assert.equal(
+    existsSync(new URL("../src/app/api/admin/compliance/incidents/route.ts", import.meta.url)),
+    false,
+  )
+  assert.equal(
+    existsSync(new URL("../src/components/admin-compliance-incidents.tsx", import.meta.url)),
+    false,
+  )
+  const compliance = source("src/app/admin/compliance/page.tsx")
+  const account = source("src/components/account-page.tsx")
+  assert.match(compliance, /href="\/admin\/incidents"/)
+  assert.match(account, /href="\/admin\/incidents"/)
 })
