@@ -3,6 +3,7 @@ import "server-only"
 import { fail } from "@/lib/api"
 import { boardDb } from "@/lib/board-db"
 import {
+  LEGAL_ACCEPTANCE_UNAVAILABLE_MESSAGE,
   LEGAL_DISCLOSURE_VERSION,
   PRIVACY_VERSION,
   TERMS_OUTDATED_MESSAGE,
@@ -52,7 +53,7 @@ export async function getTermsStatus(userId: string): Promise<TermsStatus> {
       .limit(1)
       .maybeSingle()
     if (error) {
-      if (isMissingRelationError(error)) return { ...base, tableMissing: true, current: true }
+      if (isMissingRelationError(error)) return { ...base, tableMissing: true, current: false }
       throw new Error(error.message)
     }
     if (!data) {
@@ -74,15 +75,16 @@ export async function getTermsStatus(userId: string): Promise<TermsStatus> {
     }
   } catch (error) {
     if (isMissingRelationError(error as { code?: string; message?: string })) {
-      return { ...base, tableMissing: true, current: true }
+      return { ...base, tableMissing: true, current: false }
     }
     throw error
   }
 }
 
-/** Returns a 428 response when the user's latest acceptance is not current. No-op if the table is missing. */
+/** Returns a 428 response when acceptance is outdated and a 503 when the acceptance store is unavailable. */
 export async function requireCurrentTerms(userId: string): Promise<NextResponse | null> {
   const status = await getTermsStatus(userId)
-  if (status.tableMissing || status.current) return null
+  if (status.tableMissing) return fail(LEGAL_ACCEPTANCE_UNAVAILABLE_MESSAGE, 503)
+  if (status.current) return null
   return fail(TERMS_OUTDATED_MESSAGE, 428)
 }
