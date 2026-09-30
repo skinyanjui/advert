@@ -165,3 +165,10 @@ test("stale navigation utilities and starter assets stay removed", () => {
     assert.equal(existsSync(new URL(path, import.meta.url)), false)
   }
 })
+
+
+test("country helpers expose only live marketplace utilities", () => {
+  const countries = source("src/lib/countries.ts")
+  assert.doesNotMatch(countries, /export function isCountryId/)
+  assert.doesNotMatch(countries, /export function languageLabel/)
+})

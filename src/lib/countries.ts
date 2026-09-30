@@ -57,11 +57,6 @@ const legacySlugs: Record<string, string> = {
   angola: "AO",
 }
 
-export function isCountryId(value: string | null | undefined): value is string {
-  if (!value) return false
-  return byCode.has(value.toUpperCase()) || value.toLowerCase() in legacySlugs
-}
-
 export function canonicalCountry(value: string | null | undefined): string | undefined {
   if (!value) return undefined
   const legacy = legacySlugs[value.toLowerCase()]
@@ -106,9 +101,5 @@ function getCountryCurrencyName(code: string): string | undefined {
     if (match) return match.name
   }
   return undefined
-}
-
-export function languageLabel(code: string, fallback: string): string {
-  return fallback || code
 }
 
