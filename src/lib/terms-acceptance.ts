@@ -57,10 +57,10 @@ export async function recordTermsAcceptance(
   try {
     const status = await getTermsStatus(userId)
     if (status.tableMissing) {
-      return { ok: true, alreadyCurrent: true }
+      return { ok: false, reason: "Legal acceptance records are temporarily unavailable." }
     }
     if (status.current && context === "signup") {
-      return { ok: true, alreadyCurrent: true }
+      return { ok: false, reason: "Legal acceptance records are temporarily unavailable." }
     }
     const { error } = await boardDb().from("terms_acceptances").insert({
       id: crypto.randomUUID(),
@@ -76,7 +76,9 @@ export async function recordTermsAcceptance(
       locale: meta.locale?.slice(0, 16) || null,
     })
     if (error) {
-      if (isMissingRelationError(error)) return { ok: true, alreadyCurrent: true }
+      if (isMissingRelationError(error)) {
+        return { ok: false, reason: "Legal acceptance records are temporarily unavailable." }
+      }
       return { ok: false, reason: "Could not record Terms acceptance." }
     }
     return { ok: true }
