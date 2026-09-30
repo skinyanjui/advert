@@ -68,6 +68,10 @@ export type Listing = {
   sponsored?: boolean
   /** Admin locked sponsored disclosure; seller cannot untick. */
   sponsoredLocked?: boolean
+  /** Seller attested that a housing/job listing does not unlawfully discriminate. */
+  fairAccessAttested?: boolean
+  /** Version of the fair-access attestation applied when the listing was submitted. */
+  fairAccessAttestationVersion?: string
   badge?: ListingBadge
   meta?: string
   description: string
