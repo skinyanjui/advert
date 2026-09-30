@@ -62,8 +62,13 @@ export function privacyStatusLabel(value: PrivacyRequestStatus): string {
   return value.charAt(0).toUpperCase() + value.slice(1)
 }
 
-export function privacyDueAt(from = new Date()): string {
+export function privacyDueAt(
+  jurisdiction: PrivacyJurisdiction,
+  requestType: PrivacyRequestType,
+  from = new Date(),
+): string {
   const due = new Date(from)
-  due.setUTCDate(due.getUTCDate() + PRIVACY_INTERNAL_TARGET_DAYS)
+  const days = jurisdiction === "california" && requestType === "opt_out" ? 15 : PRIVACY_INTERNAL_TARGET_DAYS
+  due.setUTCDate(due.getUTCDate() + days)
   return due.toISOString()
 }
