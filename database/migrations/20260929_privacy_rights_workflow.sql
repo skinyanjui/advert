@@ -63,6 +63,10 @@ create table if not exists public.privacy_requests (
   received_at timestamptz not null default now(),
   due_at timestamptz not null,
   verified_at timestamptz,
+  verification_method text check (
+    verification_method is null or verification_method in ('authenticated_account', 'manual', 'authorized_agent')
+  ),
+  acknowledgment_sent_at timestamptz,
   completed_at timestamptz,
   updated_at timestamptz not null default now(),
   resolution text check (resolution is null or char_length(resolution) <= 2500),
