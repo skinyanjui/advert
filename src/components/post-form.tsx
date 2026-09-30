@@ -311,9 +311,9 @@ function AdForm({ existing }: { existing: Listing | null }) {
       contactPhone,
       sponsored: sponsoredLocked || sponsored || undefined,
       sponsoredLocked: sponsoredLocked || undefined,
-      fairAccessAttested: requiresFairAccessAttestation(nextCategory) ? fairAccessAttested : undefined,
+      fairAccessAttested: requiresFairAccessAttestation(nextCategory, subcategory?.id) ? fairAccessAttested : undefined,
       fairAccessAttestationVersion:
-        requiresFairAccessAttestation(nextCategory) && fairAccessAttested
+        requiresFairAccessAttestation(nextCategory, subcategory?.id) && fairAccessAttested
           ? FAIR_ACCESS_ATTESTATION_VERSION
           : undefined,
       mine: true,
@@ -528,9 +528,9 @@ function AdForm({ existing }: { existing: Listing | null }) {
       sold: existing?.sold,
       sponsored: sponsoredLocked || sponsored || undefined,
       sponsoredLocked: sponsoredLocked || undefined,
-      fairAccessAttested: requiresFairAccessAttestation(category) ? fairAccessAttested : undefined,
+      fairAccessAttested: requiresFairAccessAttestation(category, subcategory?.id) ? fairAccessAttested : undefined,
       fairAccessAttestationVersion:
-        requiresFairAccessAttestation(category) && fairAccessAttested
+        requiresFairAccessAttestation(category, subcategory?.id) && fairAccessAttested
           ? FAIR_ACCESS_ATTESTATION_VERSION
           : undefined,
     }
@@ -859,7 +859,7 @@ function AdForm({ existing }: { existing: Listing | null }) {
                   </div>
                 ))}
               </div>
-              {requiresFairAccessAttestation(category) ? (
+              {requiresFairAccessAttestation(category, subcategory?.id) ? (
                 <div
                   className={cn(
                     "rounded-xl border px-3 py-3 text-sm",
