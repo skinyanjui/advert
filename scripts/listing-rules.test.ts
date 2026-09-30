@@ -71,7 +71,7 @@ test("housing and job ads require fair-access attestation", () => {
   const property = listingFieldErrors({
     ...base,
     category: "property",
-    subcategoryId: "rentals",
+    subcategoryId: "rent",
     details: {},
     fairAccessAttested: false,
   })
