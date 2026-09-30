@@ -25,6 +25,7 @@ export const complianceFacts = {
   sellsPersonalInformation: false,
   crossContextBehavioralAdvertising: false,
   significantDecisionAdmt: false,
+  safetyModerationAutomation: true,
   gpcRecognized: true,
   privacyRightsWorkflow: true,
   dataExport: true,
@@ -135,6 +136,76 @@ export function complianceItems(): ComplianceItem[] {
         "Confirm registration/controller obligations with the Kenya ODPC, Nigeria NDPC, South Africa Information Regulator, and Ghana DPC where applicable.",
         "Appoint/register an information officer or DPO where legally required.",
         "Document country-specific cross-border transfer safeguards and breach procedures before relying on them.",
+      ],
+    },
+    {
+      id: "dsa",
+      law: "EU Digital Services Act (DSA)",
+      scope: "Conditional on providing covered intermediary/online-platform services to recipients in the EU; marketplace-specific duties depend on the service and trader/consumer contracting model.",
+      state: "conditional",
+      implemented: [
+        "A simple listing report mechanism, moderation records, seller contact fields, sponsored labels, and admin review exist.",
+        "Temporary report-threshold hiding is disclosed and can be reversed by moderator review.",
+      ],
+      triggers: [
+        "Offering covered platform services to EU recipients.",
+        "Allowing EU consumers to conclude distance contracts with traders can trigger trader-traceability obligations.",
+        "EU hosting/platform moderation can require notices of action, reasons, complaint/redress processes, and transparency reporting.",
+      ],
+      operatorActions: [
+        "Before an EU launch, perform a DSA classification and small/micro-enterprise applicability review.",
+        "If marketplace trader-traceability rules apply, add the legally required trader identity/verification fields before permitting EU trader offers; do not collect those documents speculatively for non-EU users.",
+        "Add DSA-specific notice-and-action, statement-of-reasons, complaint/appeal, and transparency reporting workflows if in scope.",
+      ],
+    },
+    {
+      id: "eprivacy",
+      law: "EU ePrivacy / cookie and device-storage rules",
+      scope: "Conditional on EU terminal-device storage/access and national implementation; strictly necessary storage can be treated differently from nonessential tracking.",
+      state: "conditional",
+      implemented: [
+        "The current app uses authentication/session storage and user-requested preferences and does not run third-party advertising pixels.",
+        "Privacy disclosures describe cookies/local storage and the current no-targeted-advertising posture.",
+      ],
+      triggers: [
+        "Adding advertising, behavioral analytics, fingerprinting, or other nonessential terminal storage/access.",
+      ],
+      operatorActions: [
+        "Before adding nonessential cookies or SDK storage, implement a purpose-specific consent/preference layer and prevent those technologies from loading before the required choice.",
+        "Maintain a current cookie/storage inventory and durations.",
+      ],
+    },
+    {
+      id: "accessibility",
+      law: "U.S. ADA web accessibility and related accessibility duties",
+      scope: "Applicability depends on the operating entity and public-accommodation/public-entity facts; accessibility is also a product-quality requirement.",
+      state: "conditional",
+      implemented: [
+        "Core controls use semantic labels, keyboard-capable component primitives, visible focus states, and text alternatives where implemented.",
+      ],
+      triggers: [
+        "Operating as a covered public accommodation or public entity, and any jurisdiction-specific accessibility requirement.",
+      ],
+      operatorActions: [
+        "Run recurring keyboard, screen-reader, zoom/reflow, contrast, form-error, and WCAG-based testing; screenshot review alone is not sufficient.",
+        "Provide an accessible method to request assistance and remediate reported barriers.",
+      ],
+    },
+    {
+      id: "advertising",
+      law: "FTC advertising, endorsement, and native-ad disclosure rules",
+      scope: "Applies when listings or content are paid, sponsored, endorsed, or otherwise commercial in a way that could affect how consumers evaluate them.",
+      state: "implemented",
+      implemented: [
+        "Posting supports a Sponsored / paid promotion designation and sponsored listings receive an explicit visible label.",
+        "Undisclosed promotion is a report reason and moderators can mark a listing sponsored.",
+      ],
+      triggers: [
+        "Paid placement, affiliate relationships, endorsements/testimonials, creator promotions, or platform-sold advertising.",
+      ],
+      operatorActions: [
+        "Keep commercial disclosures clear, prominent, proximate, and in the language of the surrounding content.",
+        "Before adding ranking boosts or paid recommendation products, disclose the commercial nature and ranking effect clearly.",
       ],
     },
     {
