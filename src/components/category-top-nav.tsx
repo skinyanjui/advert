@@ -5,6 +5,8 @@ import { Suspense, useEffect, useMemo, useRef } from "react"
 import { usePathname, useSearchParams } from "next/navigation"
 
 import { CategoryNav } from "@/components/category-nav"
+import { LanguageCurrencyFields } from "@/components/language-currency-fields"
+import { ThemeChoices } from "@/components/theme-choices"
 import { SiteFooter } from "@/components/site-footer"
 import { Button } from "@/components/ui/button"
 import {
@@ -77,8 +79,21 @@ function CategorySidebarHeader() {
 }
 
 function CategorySidebarFooter() {
-  const { setOpenMobile } = useSidebar()
-  return <SiteFooter onNavigate={() => setOpenMobile(false)} />
+  const { isMobile, setOpenMobile } = useSidebar()
+  return (
+    <>
+      {isMobile ? (
+        <div className="space-y-2 border-t border-sidebar-border px-2 py-2">
+          <LanguageCurrencyFields layout="menu" idPrefix="mobile-pref" />
+          <div className="flex items-center justify-between gap-3 px-2 py-1.5">
+            <span className="text-xs font-medium text-sidebar-foreground">Appearance</span>
+            <ThemeChoices />
+          </div>
+        </div>
+      ) : null}
+      <SiteFooter onNavigate={() => setOpenMobile(false)} />
+    </>
+  )
 }
 
 /** Scrollable category list with top/bottom fade cues and a More categories chip. */

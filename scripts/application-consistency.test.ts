@@ -253,7 +253,7 @@ test("profile menu keeps high-value actions and routes support through Help", ()
   assert.match(menu, /href="\/saved"/)
   assert.doesNotMatch(menu, /href="\/terms"/)
   assert.doesNotMatch(menu, /href="\/privacy\/choices"/)
-  assert.doesNotMatch(menu, /ThemeChoices|LanguageCurrencyFields|nav\.notifications\b/)
+  assert.doesNotMatch(menu, /ThemeChoices|ThemeMenu|LanguageCurrencyFields|nav\.notifications\b/)
 })
 
 
@@ -284,4 +284,15 @@ test("settings and workflow surfaces follow the marketplace hierarchy", () => {
   assert.match(privacy, /w-full space-y-5 px-3 py-8 md:px-4/)
   assert.match(card, /border border-border\/70 bg-card/)
   assert.match(card, /bg-muted\/25/)
+})
+
+
+test("global browsing preferences are available to guests without entering auth", () => {
+  const header = source("src/components/site-header.tsx")
+  const categories = source("src/components/category-top-nav.tsx")
+  const menu = source("src/components/profile-menu.tsx")
+  assert.match(header, /<ProfileMenu \/>[\s\S]*header-pref[\s\S]*<ThemeMenu \/>/)
+  assert.match(categories, /mobile-pref/)
+  assert.match(categories, /<ThemeChoices \/>/)
+  assert.doesNotMatch(menu, /ThemeMenu|ThemeChoices|LanguageCurrencyFields/)
 })

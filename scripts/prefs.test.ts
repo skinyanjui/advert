@@ -87,13 +87,17 @@ test("listing grids use 5 columns from xl (1280px) and keep 2 cols on small scre
   }
 })
 
-test("top navigation keeps only marketplace actions and delegates preferences to settings", () => {
+test("guest browsing preferences stay accessible outside authentication", () => {
   const header = readFileSync(new URL("../src/components/site-header.tsx", import.meta.url), "utf8")
+  const categories = readFileSync(new URL("../src/components/category-top-nav.tsx", import.meta.url), "utf8")
   const profile = readFileSync(new URL("../src/components/profile-menu.tsx", import.meta.url), "utf8")
   const account = readFileSync(new URL("../src/components/account-page.tsx", import.meta.url), "utf8")
   assert.match(header, /<ProfileMenu \/>/)
-  assert.doesNotMatch(header, /ProfileNotifications|ThemeMenu|recentMessageNotifications/)
-  assert.doesNotMatch(profile, /nav\.notifications\b|ThemeChoices|LanguageCurrencyFields/)
+  assert.match(header, /<LanguageCurrencyFields layout="menu" idPrefix="header-pref" \/>/)
+  assert.match(header, /<ThemeMenu \/>/)
+  assert.match(categories, /<LanguageCurrencyFields layout="menu" idPrefix="mobile-pref" \/>/)
+  assert.match(categories, /<ThemeChoices \/>/)
+  assert.doesNotMatch(profile, /ThemeChoices|ThemeMenu|LanguageCurrencyFields/)
   assert.match(profile, />Settings</)
   assert.match(account, /<CardTitle>Preferences<\/CardTitle>/)
   assert.match(account, /<ThemeChoices \/>/)
