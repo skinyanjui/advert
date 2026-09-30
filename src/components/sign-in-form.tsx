@@ -76,7 +76,7 @@ export function SignInForm({ nextHref }: { nextHref?: string } = {}) {
     } else if (errorParam === "device") {
       toast.error(t("auth.toast.linkWrongDevice"))
     }
-  }, [errorParam])
+  }, [errorParam, t])
 
   useEffect(() => {
     if (auth.signedIn) {
