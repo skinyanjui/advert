@@ -146,6 +146,22 @@ export default function TermsPage() {
       </section>
 
       <section className="mt-8 space-y-3">
+        <h2 className="text-base font-medium text-neutral-950">Housing and job advertisements</h2>
+        <p className="text-sm leading-6 text-neutral-700">
+          Housing and employment listings must follow applicable anti-discrimination law. Do not
+          publish a housing ad that states an unlawful preference, limitation, or discrimination
+          based on a protected characteristic. Do not publish a job ad that unlawfully prefers,
+          excludes, or discourages applicants based on a protected characteristic. Local law may
+          protect additional characteristics or impose additional advertising rules.
+        </p>
+        <p className="text-sm leading-6 text-neutral-700">
+          Property and Jobs listings require a fair-access attestation before publication. Users can
+          report discriminatory listings for moderator review. The attestation does not replace the
+          poster&apos;s responsibility to determine and follow the laws that apply to the listing.
+        </p>
+      </section>
+
+      <section className="mt-8 space-y-3">
         <h2 className="text-base font-medium text-neutral-950">4. Your content licence</h2>
         <p className="text-sm leading-6 text-neutral-700">
           You keep ownership of the text, photos, and other content you post. You give {site.name} a
