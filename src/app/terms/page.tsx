@@ -160,7 +160,12 @@ export default function TermsPage() {
         <p className="text-sm leading-6 text-neutral-700">
           We may hide, remove, or refuse listings, and suspend or end accounts, when we believe
           content or behaviour breaks these Terms, our listing rules, or the law, or harms other
-          users. We may also act on reports from the community.
+          users. We may also act on reports from the community. Multiple distinct pending reports
+          can automatically hide a listing temporarily before moderator review. A moderator can
+          dismiss reports and restore the listing, or take further action. This report-threshold
+          automation is a marketplace safety/moderation tool; the current service does not use it
+          to make credit, employment, housing, insurance, education, or other similarly significant
+          eligibility decisions about a person.
         </p>
       </section>
 
