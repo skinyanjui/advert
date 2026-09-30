@@ -127,6 +127,12 @@ export function AdminPrivacyPage({
                     Received {new Date(request.receivedAt).toLocaleString()} · Internal target {new Date(request.dueAt).toLocaleDateString()}
                   </p>
                   <p className="mt-1 text-xs text-neutral-400">
+                    Verification: {request.verificationMethod ?? "not verified"}
+                    {request.acknowledgmentSentAt
+                      ? ` · acknowledgment sent ${new Date(request.acknowledgmentSentAt).toLocaleString()}`
+                      : " · no acknowledgment email recorded"}
+                  </p>
+                  <p className="mt-1 text-xs text-neutral-400">
                     Verification: {request.verificationMethod ?? (request.status === "verification_required" ? "required" : "not recorded")}
                     {" · "}
                     Acknowledgment: {request.acknowledgmentSentAt ? new Date(request.acknowledgmentSentAt).toLocaleString() : "not sent / email provider unavailable"}
