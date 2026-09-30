@@ -357,6 +357,7 @@ export const en = {
   "privacyRequest.jurisdiction.colorado": "Colorado",
   "privacyRequest.jurisdiction.oregon": "Oregon",
   "privacyRequest.jurisdiction.texas": "Texas",
+  "privacyRequest.jurisdiction.indiana": "Indiana",
   "privacyRequest.jurisdiction.kenya": "Kenya",
   "privacyRequest.jurisdiction.nigeria": "Nigeria",
   "privacyRequest.jurisdiction.south_africa": "South Africa",
