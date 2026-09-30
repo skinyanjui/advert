@@ -7,8 +7,14 @@ const maxPrice = 999_999_999
 
 export const FAIR_ACCESS_ATTESTATION_VERSION = "2026-09-29-v1"
 
-export function requiresFairAccessAttestation(category: CategoryId | null | undefined): boolean {
-  return category === "property" || category === "jobs"
+const residentialPropertyTypes = new Set(["sale", "rent", "apartment", "room", "hostel"])
+
+export function requiresFairAccessAttestation(
+  category: CategoryId | null | undefined,
+  subcategoryId?: string | null,
+): boolean {
+  if (category === "jobs") return true
+  return category === "property" && !!subcategoryId && residentialPropertyTypes.has(subcategoryId)
 }
 
 /** Lightweight title/description refusals — not a full moderation system. */
@@ -76,7 +82,7 @@ export function listingFieldErrors(input: ListingFields): FieldErrors {
   if (input.description.trim().length < 20) {
     errors.description = "Write at least 20 characters. This is the paragraph on the listing."
   }
-  if (requiresFairAccessAttestation(input.category) && input.fairAccessAttested !== true) {
+  if (requiresFairAccessAttestation(input.category, input.subcategoryId) && input.fairAccessAttested !== true) {
     errors.fairAccess = "Confirm the fair-access rule for this housing or job listing."
   }
   if (input.city.trim().length < 2) errors.city = "Add the city."
@@ -156,8 +162,8 @@ function normalizeListing(listing: Listing): Listing {
     featured: undefined,
     sponsored: listing.sponsored === true || listing.sponsoredLocked === true ? true : undefined,
     sponsoredLocked: listing.sponsoredLocked === true ? true : undefined,
-    fairAccessAttested: requiresFairAccessAttestation(listing.category) ? true : undefined,
-    fairAccessAttestationVersion: requiresFairAccessAttestation(listing.category)
+    fairAccessAttested: requiresFairAccessAttestation(listing.category, listing.subcategory) ? true : undefined,
+    fairAccessAttestationVersion: requiresFairAccessAttestation(listing.category, listing.subcategory)
       ? FAIR_ACCESS_ATTESTATION_VERSION
       : undefined,
     sold: listing.sold === true ? true : undefined,
