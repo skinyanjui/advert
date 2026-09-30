@@ -317,7 +317,7 @@ export const fr: Messages = {
   "profile.pendingEmail": "Confirmation en attente pour {email}. Consultez cette boîte (et votre e-mail actuel si le changement sécurisé est activé).",
   "profile.signOutAll": "Se déconnecter de tous les appareils",
   "privacyRequest.title": "Demande de confidentialité",
-  "privacyRequest.intro": "Utilisez ce formulaire pour exercer les droits à la vie privée qui s’appliquent. Nous utilisons un objectif interne de réponse de 30 jours ; le délai légal peut varier selon la juridiction ou la demande.",
+  "privacyRequest.intro": "Utilisez ce formulaire pour exercer les droits à la vie privée qui s’appliquent. Nous utilisons un objectif interne de 28 jours pour la plupart des demandes et de 15 jours pour les demandes californiennes d’opposition ou de limitation ; le délai légal peut varier selon la juridiction ou la demande.",
   "privacyRequest.sensitiveWarning": "N’entrez pas de mot de passe, numéro d’identité officiel, information bancaire, donnée médicale ou document sensible dans ce formulaire. Si une vérification est nécessaire, nous utiliserons une étape séparée.",
   "privacyRequest.detailsTitle": "Détails de la demande",
   "privacyRequest.detailsBody": "Choisissez le lieu et le droit correspondant le mieux. Le choix Autre / incertain n’empêche pas l’examen.",
