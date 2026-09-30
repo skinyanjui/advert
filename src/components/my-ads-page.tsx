@@ -211,11 +211,16 @@ export function MyAdsPage() {
 
   return (
     <div className="mx-auto w-full max-w-[1720px] px-4 py-3 md:px-6">
-      <div className="mb-3 flex items-center justify-between gap-2">
+      <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
         <h1 className="text-2xl font-semibold tracking-tight">{t("myAds.title")}</h1>
-        <Button asChild size="sm" className="h-8 rounded-lg px-3 text-xs">
-          <Link href={postHref}>{t("myAds.postAd")}</Link>
-        </Button>
+        <div className="flex flex-wrap gap-2">
+          <Button asChild size="sm" variant="outline" className="h-8 rounded-lg px-3 text-xs">
+            <Link href="/account/moderation">Moderation decisions</Link>
+          </Button>
+          <Button asChild size="sm" className="h-8 rounded-lg px-3 text-xs">
+            <Link href={postHref}>{t("myAds.postAd")}</Link>
+          </Button>
+        </div>
       </div>
 
       <div className="overflow-hidden rounded-xl border border-neutral-200 bg-white">
