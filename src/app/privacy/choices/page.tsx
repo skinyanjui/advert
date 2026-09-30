@@ -45,10 +45,27 @@ export default async function PrivacyChoicesPage() {
           .
         </p>
         <p className="text-sm leading-6 text-neutral-700">
-          If you cannot access an account or need to make another privacy request, contact us. We may
-          need to verify your identity before disclosing or changing account data.
+          If you cannot access an account or need to make another privacy request, use the Privacy
+          request form. Public and authorized-agent requests may require identity or authority
+          verification before personal data is disclosed or changed. Do not upload identity
+          documents into the request description.
         </p>
       </section>
+
+      <div className="mt-6 flex flex-wrap gap-2">
+        <Link
+          href="/privacy/request"
+          className="inline-flex h-10 items-center justify-center rounded-full bg-neutral-950 px-4 text-sm font-medium text-white"
+        >
+          Submit privacy request
+        </Link>
+        <Link
+          href="/account"
+          className="inline-flex h-10 items-center justify-center rounded-full border border-neutral-200 bg-white px-4 text-sm font-medium text-neutral-950"
+        >
+          Account privacy controls
+        </Link>
+      </div>
 
       <section className="mt-8 space-y-3">
         <h2 className="text-base font-medium text-neutral-950">California requests</h2>
@@ -57,6 +74,25 @@ export default async function PrivacyChoicesPage() {
           know, access, delete, and correct personal information; to opt out of sale or sharing; to
           limit certain uses of sensitive personal information; and to receive equal service when
           exercising those rights.
+        </p>
+      </section>
+
+      <section className="mt-8 space-y-3">
+        <h2 className="text-base font-medium text-neutral-950">Other U.S. state requests</h2>
+        <p className="text-sm leading-6 text-neutral-700">
+          Where applicable, residents covered by laws such as Colorado, Oregon, or Texas privacy
+          laws may have rights to access, correct, delete, obtain a portable copy, and opt out of
+          covered sale, targeted advertising, or certain profiling. The request form includes these
+          choices and records the jurisdiction for review.
+        </p>
+      </section>
+
+      <section className="mt-8 space-y-3">
+        <h2 className="text-base font-medium text-neutral-950">African privacy requests</h2>
+        <p className="text-sm leading-6 text-neutral-700">
+          The request form also supports rights requests under privacy laws that may apply in Kenya,
+          Nigeria, South Africa, Ghana, and other jurisdictions. Available rights and response rules
+          depend on the applicable law and the circumstances of the request.
         </p>
       </section>
 
