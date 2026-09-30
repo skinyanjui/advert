@@ -444,6 +444,7 @@ export const en = {
   "terms.reacceptTitle": "Complete account access",
   "terms.reacceptBody": "Review version {terms} / {privacy} (effective {date}) and complete both confirmations before protected account features become available. Public browsing remains available.",
   "terms.reacceptRead": "Review",
+  "terms.unavailable": "Account features are temporarily unavailable because legal acceptance records cannot be verified. Public browsing remains available after signing out.",
   "terms.accept": "Accept",
   "terms.pleaseWait": "Please wait…",
   "terms.signOut": "Sign out",
