@@ -27,6 +27,7 @@ create table if not exists public.privacy_requests (
       'colorado',
       'oregon',
       'texas',
+      'indiana',
       'kenya',
       'nigeria',
       'south_africa',
@@ -72,6 +73,27 @@ create table if not exists public.privacy_requests (
   resolution text check (resolution is null or char_length(resolution) <= 2500),
   last_updated_by uuid references auth.users (id) on delete set null
 );
+
+alter table public.privacy_requests
+  drop constraint if exists privacy_requests_jurisdiction_check;
+
+alter table public.privacy_requests
+  add constraint privacy_requests_jurisdiction_check
+  check (
+    jurisdiction in (
+      'eu_eea',
+      'california',
+      'colorado',
+      'oregon',
+      'texas',
+      'indiana',
+      'kenya',
+      'nigeria',
+      'south_africa',
+      'ghana',
+      'other'
+    )
+  );
 
 create index if not exists privacy_requests_user_received
   on public.privacy_requests (user_id, received_at desc);
