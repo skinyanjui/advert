@@ -57,13 +57,16 @@ export function SignInForm({ nextHref }: { nextHref?: string } = {}) {
   const [sent, setSent] = useState(false)
   const [busy, setBusy] = useState(false)
   const [cooldown, setCooldown] = useState(0)
+  const [ageConfirmed, setAgeConfirmed] = useState(false)
   const [agreedToTerms, setAgreedToTerms] = useState(false)
   const errorParam = searchParams.get("error")
 
   useEffect(() => {
     // Read after mount to avoid SSR/client hydration mismatch (localStorage).
     /* eslint-disable react-hooks/set-state-in-effect -- intentional client-only restore */
-    setAgreedToTerms(hasTermsIntent())
+    const restored = hasTermsIntent()
+    setAgeConfirmed(restored)
+    setAgreedToTerms(restored)
     /* eslint-enable react-hooks/set-state-in-effect */
   }, [])
 
@@ -105,18 +108,36 @@ export function SignInForm({ nextHref }: { nextHref?: string } = {}) {
     setCooldown(RESEND_COOLDOWN_SECONDS)
   }
 
-  function onAgreeChange(checked: boolean) {
-    setAgreedToTerms(checked)
-    if (checked) rememberTermsIntent()
+  function syncLegalIntent(nextAge: boolean, nextTerms: boolean) {
+    if (nextAge && nextTerms) rememberTermsIntent()
     else clearTermsIntent()
   }
 
-  async function sendEmailLink() {
+  function onAgeChange(checked: boolean) {
+    setAgeConfirmed(checked)
+    syncLegalIntent(checked, agreedToTerms)
+  }
+
+  function onAgreeChange(checked: boolean) {
+    setAgreedToTerms(checked)
+    syncLegalIntent(ageConfirmed, checked)
+  }
+
+  function requireLegalIntent(): boolean {
+    if (!ageConfirmed) {
+      toast.error(t("auth.mustConfirmAge"))
+      return false
+    }
     if (!agreedToTerms) {
       toast.error(t("auth.mustAgree"))
-      return
+      return false
     }
     rememberTermsIntent()
+    return true
+  }
+
+  async function sendEmailLink() {
+    if (!requireLegalIntent()) return
     setBusy(true)
     const result = await auth.sendEmailCode(email, next)
     setBusy(false)
@@ -130,11 +151,7 @@ export function SignInForm({ nextHref }: { nextHref?: string } = {}) {
   }
 
   async function sendPhoneCode() {
-    if (!agreedToTerms) {
-      toast.error(t("auth.mustAgree"))
-      return
-    }
-    rememberTermsIntent()
+    if (!requireLegalIntent()) return
     setBusy(true)
     const result = await auth.sendPhoneCode(phone)
     setBusy(false)
@@ -175,11 +192,7 @@ export function SignInForm({ nextHref }: { nextHref?: string } = {}) {
     }
 
     if (passwordMode === "sign-up") {
-      if (!agreedToTerms) {
-        toast.error(t("auth.mustAgree"))
-        return
-      }
-      rememberTermsIntent()
+      if (!requireLegalIntent()) return
       const reason = passwordError(password) ?? passwordsMatchError(password, confirmPassword)
       if (reason) {
         toast.error(reason)
@@ -215,11 +228,7 @@ export function SignInForm({ nextHref }: { nextHref?: string } = {}) {
   }
 
   async function continueWithGoogle() {
-    if (!agreedToTerms) {
-      toast.error(t("auth.mustAgree"))
-      return
-    }
-    rememberTermsIntent()
+    if (!requireLegalIntent()) return
     setBusy(true)
     const result = await auth.signInWithGoogle(next)
     setBusy(false)
@@ -234,6 +243,7 @@ export function SignInForm({ nextHref }: { nextHref?: string } = {}) {
     (channel === "email" && method === "link") ||
     (channel === "email" && method === "password" && passwordMode === "sign-up")
   const needsTermsForAction = showTermsCheckbox
+  const legalReady = ageConfirmed && agreedToTerms
   const showCurrencySetup =
     auth.googleEnabled ||
     (channel === "email" && method === "link" && !sent) ||
@@ -277,24 +287,36 @@ export function SignInForm({ nextHref }: { nextHref?: string } = {}) {
       ) : null}
 
       {showTermsCheckbox ? (
-        <label className="flex items-start gap-2 rounded-xl border border-neutral-200 bg-white px-3 py-2.5 text-sm text-neutral-700">
-          <input
-            type="checkbox"
-            className="mt-0.5 size-4 shrink-0 rounded border-neutral-300"
-            checked={agreedToTerms}
-            onChange={(event) => onAgreeChange(event.target.checked)}
-          />
-          <span>
-            {t("auth.agreeAccountPrefix")}{" "}
-            <Link href="/terms" className="underline underline-offset-2">
-              {t("auth.terms")}
-            </Link>{" "}
-            {t("auth.agreeTermsAnd")}{" "}
-            <Link href="/privacy" className="underline underline-offset-2">
-              {t("auth.privacyPolicy")}
-            </Link>
-          </span>
-        </label>
+        <div className="space-y-2">
+          <label className="flex items-start gap-2 rounded-xl border border-neutral-200 bg-white px-3 py-2.5 text-sm text-neutral-700">
+            <input
+              type="checkbox"
+              className="mt-0.5 size-4 shrink-0 rounded border-neutral-300"
+              checked={ageConfirmed}
+              onChange={(event) => onAgeChange(event.target.checked)}
+            />
+            <span>{t("auth.ageConfirm")}</span>
+          </label>
+          <label className="flex items-start gap-2 rounded-xl border border-neutral-200 bg-white px-3 py-2.5 text-sm text-neutral-700">
+            <input
+              type="checkbox"
+              className="mt-0.5 size-4 shrink-0 rounded border-neutral-300"
+              checked={agreedToTerms}
+              onChange={(event) => onAgreeChange(event.target.checked)}
+            />
+            <span>
+              {t("auth.legalAgreementPrefix")}{" "}
+              <Link href="/terms" className="underline underline-offset-2">
+                {t("auth.terms")}
+              </Link>{" "}
+              {t("auth.legalAgreementPrivacy")}{" "}
+              <Link href="/privacy" className="underline underline-offset-2">
+                {t("auth.privacyPolicy")}
+              </Link>
+              .
+            </span>
+          </label>
+        </div>
       ) : null}
 
       {auth.googleEnabled ? (
@@ -302,7 +324,7 @@ export function SignInForm({ nextHref }: { nextHref?: string } = {}) {
           type="button"
           variant="outline"
           className="h-10 w-full"
-          disabled={busy || !agreedToTerms}
+          disabled={busy || !legalReady}
           onClick={() => void continueWithGoogle()}
         >
           {t("auth.continueGoogle")}
@@ -455,7 +477,7 @@ export function SignInForm({ nextHref }: { nextHref?: string } = {}) {
               ) : (
                 <Button
                   type="submit"
-                  disabled={busy || (!sent && !agreedToTerms)}
+                  disabled={busy || (!sent && !legalReady)}
                   className="h-10 w-full"
                 >
                   {busy
@@ -472,7 +494,7 @@ export function SignInForm({ nextHref }: { nextHref?: string } = {}) {
                   <Button
                     type="button"
                     variant="ghost"
-                    disabled={busy || cooldown > 0 || !agreedToTerms}
+                    disabled={busy || cooldown > 0 || !legalReady}
                     onClick={() => void (channel === "email" ? sendEmailLink() : sendPhoneCode())}
                   >
                     {cooldown > 0
@@ -579,7 +601,7 @@ export function SignInForm({ nextHref }: { nextHref?: string } = {}) {
                 disabled={
                   busy ||
                   (passwordMode === "forgot" && cooldown > 0) ||
-                  (passwordMode === "sign-up" && !agreedToTerms)
+                  (passwordMode === "sign-up" && !legalReady)
                 }
                 className="h-10 w-full"
               >
@@ -613,7 +635,7 @@ export function SignInForm({ nextHref }: { nextHref?: string } = {}) {
           </form>
         </Card>
       )}
-      {needsTermsForAction && !agreedToTerms ? (
+      {needsTermsForAction && !legalReady ? (
         <p className="text-xs text-neutral-500">
           {t("auth.termsHelp")}
         </p>
