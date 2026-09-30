@@ -234,6 +234,27 @@ export function complianceItems(): ComplianceItem[] {
       ],
     },
     {
+      id: "fair_access_ads",
+      law: "U.S. Fair Housing Act and federal equal-employment advertising laws",
+      scope: "Applies according to the type of housing/employment advertisement, the poster's legal status, statutory coverage, exemptions, and other applicable federal/state/local law.",
+      state: "implemented",
+      implemented: [
+        "Property and Jobs posting flows show category-specific anti-discrimination disclosures.",
+        "Property and Jobs submissions require a versioned fair-access attestation that is stored with the listing payload and revalidated by the server.",
+        "Users can report a listing specifically for discriminatory housing or employment content, and moderators can review it through the existing reversible moderation/redress workflow.",
+        "The product does not attempt to infer protected characteristics or automatically decide legality from keywords.",
+      ],
+      triggers: [
+        "Housing offered for sale or rental and employment/recruitment advertising.",
+        "Expansion into ad targeting, recommendation, or delivery systems that could selectively exclude protected groups.",
+        "State or local protected-class and advertising rules that exceed federal baselines.",
+      ],
+      operatorActions: [
+        "Keep the fair-access disclosure and protected-trait guidance synchronized with applicable jurisdictions.",
+        "Before adding demographic targeting or optimization for housing/jobs, perform a dedicated discrimination and automated-ad-delivery review.",
+      ],
+    },
+    {
       id: "inform",
       law: "U.S. INFORM Consumers Act",
       scope: "Conditional on marketplace/seller transaction thresholds and covered online-marketplace status.",
