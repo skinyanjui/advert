@@ -8,6 +8,7 @@ import { useEffect, useRef, useState } from "react"
 import { toast } from "sonner"
 
 import { ListingCard } from "@/components/listing-card"
+import { listingGridClassName } from "@/lib/listing-grid"
 import { usePrefs } from "@/components/prefs-provider"
 import { ListingPrice } from "@/components/listing-price"
 import { WhatsAppConsentAction } from "@/components/whatsapp-consent-action"
@@ -463,7 +464,7 @@ export function ListingDetail({ id }: { id: string }) {
                       </Button>
                     ) : null}
                     {phoneOpen ? (
-                      <Button variant="outline" className="h-9 rounded-full" onClick={revealAndCall}>
+                      <Button variant="outline" className="h-9 rounded-full" aria-label={t("listing.callPhone", { phone: listing.phone })} onClick={revealAndCall}>
                         <Phone className="size-4" />
                         {phoneVisible ? listing.phone : t("listing.call")}
                       </Button>
@@ -562,7 +563,7 @@ export function ListingDetail({ id }: { id: string }) {
       {related.length > 0 ? (
         <section className="mt-10">
           <h2 className="text-sm font-medium text-foreground">{t("listing.similar")}</h2>
-          <div className="mt-3 grid grid-cols-2 gap-3 md:grid-cols-4">
+          <div className={cn(listingGridClassName, "mt-3")}>
             {related.map((item) => (
               <ListingCard key={item.id} listing={item} preserve={keptSearch(searchParams, item.subcategory)} />
             ))}
@@ -594,7 +595,7 @@ export function ListingDetail({ id }: { id: string }) {
           <div className="mx-auto mt-2 flex max-w-[1100px] justify-end gap-2">
             {whatsappOpen ? <WhatsAppConsentAction listingId={listing.id} sellerName={listing.sellerName} listingTitle={listing.title} href={whatsappHref(listing.phone, listing.title)} ariaLabel={t("listing.whatsapp")} className="inline-flex h-9 items-center justify-center gap-2 rounded-full border border-border bg-background px-3 text-sm font-medium"><WhatsAppIcon className="size-4" />{t("listing.whatsapp")}</WhatsAppConsentAction> : null}
             {textOpen ? <Button variant="outline" className="h-9 rounded-full" asChild><a href={smsHref(listing.phone, listing.title)} onClick={() => trackListingContactEvent(listing.id, "sms_click")}><MessageSquareText className="size-4" />{t("listing.text")}</a></Button> : null}
-            {phoneOpen ? <Button variant="outline" className="h-9 rounded-full" onClick={revealAndCall}><Phone className="size-4" />{t("listing.call")}</Button> : null}
+            {phoneOpen ? <Button variant="outline" className="h-9 rounded-full" aria-label={t("listing.callPhone", { phone: listing.phone })} onClick={revealAndCall}><Phone className="size-4" />{t("listing.call")}</Button> : null}
           </div>
         ) : null}
       </div>
