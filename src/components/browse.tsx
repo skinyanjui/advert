@@ -116,7 +116,7 @@ export function Browse() {
             {closestFirst ? <span className="text-xs text-neutral-400">Nearby first</span> : null}
           </div>
         ) : null}
-        <div className="sticky top-16 z-40 -mx-4 mb-2 flex items-center justify-end border-b border-neutral-200/80 bg-background px-4 py-1 shadow-sm md:top-[72px] md:-mx-6 md:px-6">
+        <div className="sticky top-14 z-40 -mx-4 mb-2 flex items-center justify-end bg-background/95 px-4 py-1 backdrop-blur md:top-16 md:-mx-6 md:px-6">
           <Select
             value={query.sort}
             onValueChange={(value) => {
@@ -125,10 +125,11 @@ export function Browse() {
           >
             <SelectTrigger
               size="sm"
-              className="h-7 gap-1.5 rounded-full border-neutral-200 bg-white px-2.5 font-medium text-neutral-800 shadow-none"
+              className="h-8 gap-1.5 rounded-full border-input bg-background px-2.5 text-[13px] font-medium text-foreground shadow-none hover:bg-muted/50"
               aria-label="Sort listings"
             >
-              <ArrowUpDown className="size-3.5 text-neutral-400" aria-hidden="true" />
+              <ArrowUpDown className="size-3.5 text-muted-foreground" aria-hidden="true" />
+              <span className="hidden text-muted-foreground sm:inline">Sort:</span>
               <SelectValue />
             </SelectTrigger>
             <SelectContent align="end" className="z-[60] min-w-44">

@@ -166,3 +166,16 @@ test("sidebar geometry follows the compact header without a vertical gap", () =>
   assert.match(categories, /md:top-16/)
   assert.ok(categories.includes("md:h-[calc(100svh-4rem)]"))
 })
+
+
+test("listing sort control follows compact header geometry and avoids stacked toolbar chrome", () => {
+  const browse = readFileSync(new URL("../src/components/browse.tsx", import.meta.url), "utf8")
+  assert.match(browse, /sticky top-14/)
+  assert.match(browse, /md:top-16/)
+  assert.match(browse, /bg-background\/95/)
+  assert.match(browse, /backdrop-blur/)
+  assert.match(browse, /<span className="hidden text-muted-foreground sm:inline">Sort:<\/span>/)
+  assert.match(browse, /h-8 gap-1\.5 rounded-full border-input/)
+  assert.doesNotMatch(browse, /border-b border-neutral-200\/80/)
+  assert.doesNotMatch(browse, /shadow-sm md:top-\[72px\]/)
+})
