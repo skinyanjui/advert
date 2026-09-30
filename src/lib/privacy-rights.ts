@@ -38,7 +38,7 @@ export const privacyRequestStatuses = [
 ] as const
 export type PrivacyRequestStatus = (typeof privacyRequestStatuses)[number]
 
-export const PRIVACY_INTERNAL_TARGET_DAYS = 30
+export const PRIVACY_INTERNAL_TARGET_DAYS = 28
 
 export function isPrivacyJurisdiction(value: string): value is PrivacyJurisdiction {
   return privacyJurisdictions.some((item) => item.id === value)
@@ -68,7 +68,10 @@ export function privacyDueAt(
   from = new Date(),
 ): string {
   const due = new Date(from)
-  const days = jurisdiction === "california" && requestType === "opt_out" ? 15 : PRIVACY_INTERNAL_TARGET_DAYS
+  const fastCaliforniaRequest =
+    jurisdiction === "california" &&
+    (requestType === "opt_out" || requestType === "limit_sensitive")
+  const days = fastCaliforniaRequest ? 15 : PRIVACY_INTERNAL_TARGET_DAYS
   due.setUTCDate(due.getUTCDate() + days)
   return due.toISOString()
 }
