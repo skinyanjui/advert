@@ -141,3 +141,27 @@ test("listing detail follow-up removes residual layout placeholders and chrome",
   assert.match(detail, /border-t border-border pt-3/)
   assert.doesNotMatch(detail, /bg-neutral-200|bg-neutral-100/)
 })
+
+
+test("stale navigation utilities and starter assets stay removed", () => {
+  const browse = source("src/components/browse.tsx")
+  const countries = source("src/lib/countries.ts")
+
+  assert.doesNotMatch(browse, /categoryName/)
+  assert.doesNotMatch(browse, /const place = query\.country/)
+  assert.doesNotMatch(countries, /formatLocalTime/)
+
+  for (const path of [
+    "../src/components/nav-icon-link.tsx",
+    "../src/components/ui/scroll-area.tsx",
+    "../src/lib/use-client-time.ts",
+    "../public/file.svg",
+    "../public/globe.svg",
+    "../public/next.svg",
+    "../public/vercel.svg",
+    "../public/window.svg",
+    "../assets/cf65a445-3137-4124-aed3-919df71da402.png",
+  ]) {
+    assert.equal(existsSync(new URL(path, import.meta.url)), false)
+  }
+})

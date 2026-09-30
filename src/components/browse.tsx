@@ -15,10 +15,7 @@ import { useHomePlace } from "@/lib/home-place"
 import { resolvePlace } from "@/lib/cities"
 import { useMarketplace } from "@/lib/marketplace"
 import { countryName, fold, getCountry } from "@/lib/countries"
-import {
-  categoryName,
-  type Listing,
-} from "@/lib/types"
+import { type Listing } from "@/lib/types"
 import { findSubcategory } from "@/lib/posting"
 import { boardSearch, useListingQuery } from "@/lib/use-listing-query"
 
@@ -70,11 +67,6 @@ export function Browse() {
   const cityLabel = query.city
     ? (cityOptions.find((city) => fold(city.name) === fold(query.city ?? ""))?.name ?? query.city)
     : undefined
-  const place = query.country
-    ? cityLabel
-      ? `${cityLabel}, ${countryName(query.country)}`
-      : countryName(query.country)
-    : "All Africa"
   const preserve = boardSearch(query)
   return (
     <div className="mx-auto w-full max-w-[1720px]">

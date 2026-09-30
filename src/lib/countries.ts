@@ -112,16 +112,3 @@ export function languageLabel(code: string, fallback: string): string {
   return fallback || code
 }
 
-export function formatLocalTime(timeZone: string, date = new Date()): string {
-  try {
-    return new Intl.DateTimeFormat("en", {
-      timeZone,
-      weekday: "short",
-      hour: "numeric",
-      minute: "2-digit",
-      timeZoneName: "short",
-    }).format(date)
-  } catch {
-    return timeZone
-  }
-}
