@@ -1,8 +1,9 @@
 "use client"
 
-import { Monitor, Moon, Sun } from "lucide-react"
+import { Check, Monitor, Moon, Sun } from "lucide-react"
 import { useLayoutEffect, useSyncExternalStore, type ReactNode } from "react"
 
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
 import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group"
 import { isThemeChoice, themeChoices, themeLabel, themeStorageKey, type ThemeChoice } from "@/lib/theme"
 
@@ -78,6 +79,55 @@ export function ThemeSync() {
   return null
 }
 
+
+export function ThemeMenu() {
+  const choice = useThemeChoice()
+  const resolved = useResolvedTheme()
+
+  return (
+    <Popover>
+      <PopoverTrigger asChild>
+        <button
+          type="button"
+          aria-label="Appearance"
+          title="Appearance"
+          className="flex size-9 items-center justify-center rounded-full text-foreground outline-none transition-colors hover:bg-muted focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+        >
+          {resolved === "dark" ? <Moon className="size-4" aria-hidden="true" /> : <Sun className="size-4" aria-hidden="true" />}
+        </button>
+      </PopoverTrigger>
+      <PopoverContent
+        align="end"
+        sideOffset={8}
+        collisionPadding={12}
+        aria-label="Appearance"
+        className="w-36 gap-0 rounded-xl p-1.5 shadow-lg"
+      >
+        <div role="menu" aria-label="Appearance">
+          {themeChoices.map((option) => (
+            <button
+              key={option}
+              type="button"
+              role="menuitemradio"
+              aria-checked={choice === option}
+              onClick={() => writeTheme(option)}
+              className="flex min-h-9 w-full items-center gap-2.5 rounded-lg px-2.5 text-left text-sm text-foreground outline-none transition-colors hover:bg-muted focus-visible:bg-muted focus-visible:ring-2 focus-visible:ring-ring"
+            >
+              <span className="flex size-4 items-center justify-center" aria-hidden="true">
+                <ThemeIcon choice={option} />
+              </span>
+              <span className="flex-1">{themeLabel(option)}</span>
+              <span className="flex size-4 items-center justify-center">
+                {choice === option ? <Check className="size-4" aria-hidden="true" /> : null}
+              </span>
+            </button>
+          ))}
+        </div>
+      </PopoverContent>
+    </Popover>
+  )
+}
+
 export function ThemeChoices({ className }: { className?: string }) {
   const choice = useThemeChoice()
   return (
@@ -111,11 +161,11 @@ export function ThemeChoices({ className }: { className?: string }) {
 function ThemeIcon({ choice }: { choice: ThemeChoice }) {
   switch (choice) {
     case "light":
-      return <Sun />
+      return <Sun className="size-4" />
     case "dark":
-      return <Moon />
+      return <Moon className="size-4" />
     case "system":
-      return <Monitor />
+      return <Monitor className="size-4" />
     default: {
       const unreachable: never = choice
       return unreachable as ReactNode
