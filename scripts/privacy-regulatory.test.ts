@@ -18,9 +18,10 @@ test("privacy draft covers GDPR and California rights without claiming sale or s
   assert.match(privacy, /International transfers/)
 })
 
-test("privacy choices page recognizes GPC and remains public", () => {
+test("privacy choices page recognizes GPC and discloses DNT", () => {
   const choices = source("src/app/privacy/choices/page.tsx")
   assert.match(choices, /requestHeaders\.get\("sec-gpc"\) === "1"/)
+  assert.match(choices, /requestHeaders\.get\("dnt"\) === "1"/)
   assert.match(choices, /does not currently sell personal information/)
   assert.match(choices, /Access, correct, download, or delete/)
 })
@@ -51,6 +52,8 @@ test("onboarding and terms set an adult-only account boundary", () => {
   const en = source("src/lib/i18n/messages/en.ts")
   const terms = source("src/app/terms/page.tsx")
   assert.match(en, /I confirm I am at least 18 years old/)
+  assert.match(en, /I agree to the/)
+  assert.match(en, /acknowledge that I have read the/)
   assert.match(terms, /You must be at least 18 years old/)
   assert.match(terms, /not directed[\s\S]*children under 13/)
 })
