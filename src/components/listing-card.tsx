@@ -50,7 +50,7 @@ export function ListingCard({
           fill
           sizes="(max-width: 640px) 50vw, (max-width: 1024px) 33vw, (max-width: 1280px) 25vw, 20vw"
           unoptimized={listing.image.startsWith("data:")}
-          className="object-cover transition duration-300 group-hover:scale-[1.03]"
+          className="object-cover"
         />
         {listing.badge === "featured" ? (
           <span className="absolute top-2 left-2 rounded-full bg-neutral-950 px-2 py-0.5 text-[10px] font-medium text-white">
@@ -126,7 +126,7 @@ export function ListingCard({
             }
             toggleSaved(listing.id)
           }}
-          className="absolute top-2 right-2 z-20 flex size-7 items-center justify-center rounded-full bg-white/95 text-neutral-700 shadow-sm transition hover:scale-105"
+          className="absolute top-2 right-2 z-20 flex size-7 items-center justify-center rounded-full bg-background/90 text-muted-foreground ring-1 ring-border/70 backdrop-blur transition-colors hover:text-foreground"
         >
           <Heart className={cn("size-4", saved && "fill-rose-500 text-rose-500")} />
         </button>

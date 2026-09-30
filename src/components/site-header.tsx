@@ -28,7 +28,7 @@ const summaryClass =
 
 export function SiteHeader() {
   return (
-    <header className="sticky top-0 z-50 border-b border-border bg-background">
+    <header className="sticky top-0 z-50 border-b border-border/70 bg-background">
       <TopNav />
     </header>
   )
@@ -273,7 +273,7 @@ function CountryMenu({ label, query }: { label: string; query: ListingQuery }) {
   return (
     <HeaderMenu
       label={t("nav.country", { label })}
-      summaryClassName="h-8 px-2 sm:max-w-44 sm:px-2.5 lg:max-w-40"
+      summaryClassName="h-8 border-transparent bg-transparent px-2 shadow-none hover:bg-muted sm:max-w-44 sm:px-2.5 lg:max-w-40"
       panelClassName="w-64"
       onOpen={() => setLocationQuery("")}
       summary={
@@ -568,7 +568,7 @@ function SearchField({ value, onChange }: { value: string; onChange: (value: str
         }}
         placeholder={t("nav.searchPlaceholder")}
         aria-label={t("nav.searchListings")}
-        className="h-8 rounded-full border-input bg-background pr-3 pl-9 text-[13px] shadow-none focus-visible:border-ring focus-visible:bg-background focus-visible:ring-ring/30"
+        className="h-8 rounded-lg border-border/70 bg-muted/35 pr-3 pl-9 text-[13px] shadow-none focus-visible:border-ring focus-visible:bg-background focus-visible:ring-ring/30"
       />
     </div>
   )
@@ -651,11 +651,11 @@ export function HeaderFallback() {
   const ProfileIcon = profile.icon
   return (
     <header className="sticky top-0 z-40 border-b border-border bg-background">
-      <div className="mx-auto flex h-14 max-w-[1720px] items-center gap-1 px-2 md:h-16 md:gap-3 md:px-5 xl:gap-6 xl:px-8">
+      <div className="grid h-14 w-full grid-cols-[auto_minmax(0,1fr)] items-center gap-2 px-3 md:h-16 md:grid-cols-[15.5rem_minmax(0,1fr)_auto] md:gap-0 md:px-0">
         <Logo iconOnly className="xl:hidden" />
         <Logo className="hidden xl:flex" />
-        <div className="min-w-0 flex-1 px-2 md:mx-auto md:max-w-[620px] md:px-0">
-          <div className="h-11 rounded-full bg-neutral-100" />
+        <div className="min-w-0 md:px-4">
+          <div className="h-8 rounded-lg bg-muted/50" />
         </div>
         <nav aria-label={profile.label} className="fixed inset-x-3 bottom-[calc(env(safe-area-inset-bottom)+0.5rem)] z-50 mx-auto flex max-w-md items-center justify-around rounded-2xl border border-border bg-background p-1.5 shadow-lg md:static md:ml-auto md:max-w-none md:gap-2 md:rounded-none md:border-0 md:bg-transparent md:p-0 md:shadow-none lg:gap-3">
           <Link

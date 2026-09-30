@@ -4,7 +4,7 @@ export const metadata: Metadata = { title: "Sources" }
 
 export default function CreditsPage() {
   return (
-    <div className="mx-auto w-full max-w-2xl px-4 py-10 md:px-6">
+    <div className="w-full px-3 py-8 md:px-4">
       <h1 className="text-2xl font-semibold tracking-tight">Sources</h1>
       <p className="mt-2 text-sm text-neutral-500">
         Photo and data attribution for this board — not prepaid listing credits.

@@ -122,7 +122,7 @@ export function AdminComplianceIncidentsPage({
   }
 
   return (
-    <div className="mx-auto w-full max-w-5xl px-4 py-8 md:px-6">
+    <div className="w-full px-3 py-8 md:px-4">
       <header>
         <h1 className="text-2xl font-semibold tracking-tight">Compliance incidents</h1>
         <p className="mt-1 max-w-3xl text-sm leading-6 text-neutral-500">

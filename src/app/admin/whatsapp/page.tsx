@@ -22,7 +22,7 @@ export default async function Page() {
   if (!userId || !email) redirect(signInHref("/admin/whatsapp"))
   if (!isAdminEmail(email)) {
     return (
-      <div className="mx-auto max-w-4xl px-4 py-8 md:px-6">
+      <div className="w-full px-3 py-8 md:px-4">
         <h1 className="text-2xl font-semibold tracking-tight">WhatsApp health</h1>
         <p className="mt-2 text-sm text-neutral-500">This account is not on the admin allowlist.</p>
       </div>
@@ -35,7 +35,7 @@ export default async function Page() {
   ])
 
   return (
-    <main className="mx-auto w-full max-w-5xl px-4 py-8 md:px-6">
+    <main className="w-full px-3 py-8 md:px-4">
       <div className="flex flex-wrap items-start justify-between gap-3">
         <div>
           <p className="text-xs font-medium tracking-wide text-neutral-500 uppercase">Admin</p>

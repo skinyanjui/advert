@@ -14,7 +14,7 @@ export default async function PrivacyChoicesPage() {
   const contactHref = siteSupportMailto()
 
   return (
-    <div className="mx-auto w-full max-w-2xl px-4 py-10 md:px-6">
+    <div className="w-full px-3 py-8 md:px-4">
       <h1 className="text-2xl font-semibold tracking-tight">Privacy choices</h1>
       <p className="mt-3 text-sm leading-6 text-neutral-700">
         {site.name} does not currently sell personal information or share it for cross-context

@@ -57,7 +57,7 @@ export function AdminModerationAppealsPage({
   }
 
   return (
-    <div className="mx-auto w-full max-w-5xl px-4 py-8 md:px-6">
+    <div className="w-full px-3 py-8 md:px-4">
       <div className="flex flex-wrap items-end justify-between gap-3">
         <div>
           <h1 className="text-2xl font-semibold tracking-tight">Moderation appeals</h1>

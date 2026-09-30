@@ -586,7 +586,7 @@ function AdForm({ existing }: { existing: Listing | null }) {
 
   if (needsSignIn && !showForm) {
     return (
-      <div className="mx-auto w-full max-w-3xl px-4 py-8 md:px-6">
+      <div className="w-full px-3 py-8 md:px-4">
         <EmptyPanel
           title="Sign in to post an ad"
           body="Drafts you start on this device are saved and restored after you sign in."
@@ -609,7 +609,7 @@ function AdForm({ existing }: { existing: Listing | null }) {
   }
 
   return (
-    <div className="mx-auto grid w-full max-w-[1100px] items-start gap-8 px-4 pt-6 pb-24 md:px-6 md:py-8 lg:grid-cols-[minmax(0,1fr)_300px]">
+    <div className="grid w-full items-start gap-6 px-3 pt-6 pb-24 md:px-4 md:py-8 lg:grid-cols-[minmax(0,1fr)_320px]">
       <div>
         <h1 className="text-2xl font-semibold tracking-tight">{existing ? "Edit your ad" : "Post an ad"}</h1>
         {summaryLine ? <p className="mt-1 text-sm text-neutral-500">{summaryLine}</p> : null}

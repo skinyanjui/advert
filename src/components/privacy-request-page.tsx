@@ -129,7 +129,7 @@ export function PrivacyRequestPage() {
   }
 
   return (
-    <div className="mx-auto w-full max-w-2xl space-y-5 px-4 py-10 md:px-6">
+    <div className="w-full space-y-5 px-3 py-8 md:px-4">
       <header>
         <h1 className="text-2xl font-semibold tracking-tight">{t("privacyRequest.title")}</h1>
         <p className="mt-2 text-sm leading-6 text-neutral-600">

@@ -55,7 +55,7 @@ export function ProfileMenu({ notifications }: { notifications: ReactNode }) {
         <button
           type="button"
           aria-label={label}
-          className="relative flex size-8 items-center justify-center rounded-full border border-input bg-background text-foreground outline-none transition-colors hover:bg-muted focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+          className="relative flex size-8 items-center justify-center rounded-full border border-transparent bg-transparent text-foreground outline-none transition-colors hover:bg-muted focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
         >
           <UserRound className="size-4" aria-hidden="true" />
           <NavBadge count={badgeCount} />

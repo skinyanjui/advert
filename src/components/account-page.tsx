@@ -60,7 +60,7 @@ export function AccountPage() {
   const isAdmin = auth.signedIn && admin
 
   return (
-    <div className="mx-auto w-full max-w-3xl space-y-4 px-4 py-6 md:px-6">
+    <div className="w-full space-y-4 px-3 py-6 md:px-4">
       <header>
         <h1 className="text-2xl font-semibold tracking-tight">{t("profile.title")}</h1>
         {auth.ready ? (
@@ -465,6 +465,7 @@ function SignedInProfile({
       </Card>
       <Card>
         <CardHeader>
+          <CardTitle>Profile</CardTitle>
           <CardDescription>{t("profile.displayHint")}</CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">

@@ -77,7 +77,7 @@ export function AdminReportsClient({
   }
 
   return (
-    <div className="mx-auto max-w-3xl px-4 py-8 md:px-6">
+    <div className="w-full px-3 py-8 md:px-4">
       <h1 className="text-2xl font-semibold tracking-tight">Reports</h1>
       <p className="mt-1 text-sm text-neutral-500">
         Pending listing reports. Restrictions require a written reason that can be shown to the affected seller. “Remove” preserves the listing in a reversible hidden state for redress.

@@ -31,7 +31,7 @@ export default async function Page() {
 
   if (!isAdminEmail(email)) {
     return (
-      <div className="mx-auto max-w-3xl px-4 py-8 md:px-6">
+      <div className="w-full px-3 py-8 md:px-4">
         <h1 className="text-2xl font-semibold tracking-tight">Compliance</h1>
         <p className="mt-2 text-sm text-neutral-500">This account is not on the admin allowlist.</p>
       </div>
@@ -42,7 +42,7 @@ export default async function Page() {
   const items = complianceItems()
 
   return (
-    <div className="mx-auto w-full max-w-5xl px-4 py-8 md:px-6">
+    <div className="w-full px-3 py-8 md:px-4">
       <h1 className="text-2xl font-semibold tracking-tight">Compliance</h1>
       <div className="mt-3 flex flex-wrap gap-2">
         <Link href="/admin/privacy" className="inline-flex h-9 items-center rounded-full border border-neutral-200 bg-white px-3 text-sm font-medium">
