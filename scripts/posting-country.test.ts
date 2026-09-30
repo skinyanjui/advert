@@ -52,6 +52,7 @@ test("post form and readPostingPlace no longer hardcode KE fallback", () => {
   assert.match(form, /href="\/account"/)
   assert.doesNotMatch(form, /urlCountry \?\? "KE"/)
   assert.doesNotMatch(form, /existing\.country\) \?\? "KE"/)
+  assert.doesNotMatch(form, /africanCurrencyForCountry\([^)]*\) \?\? "KES"/)
 
   const place = readFileSync(new URL("../src/lib/active-place.ts", import.meta.url), "utf8")
   assert.doesNotMatch(place, /return \{ country: "KE"/)

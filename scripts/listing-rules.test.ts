@@ -72,6 +72,22 @@ test("acceptListing normalizes sold and trims fields", () => {
 })
 
 
+test("acceptListing keeps direct contact opt-in when flags are omitted", () => {
+  const result = acceptListing({
+    ...base,
+    id: "ad-private-contact",
+    hoursAgo: 0,
+    image: "/listings/sedan.jpg",
+    condition: "Used",
+    sellerName: "Seller",
+    sellerSince: "2026",
+  } as Listing)
+  assert.equal(result.ok, true)
+  if (!result.ok) return
+  assert.equal(result.listing.contactWhatsApp, false)
+  assert.equal(result.listing.contactPhone, false)
+})
+
 test("residential housing and job ads require fair-access attestation", () => {
   const property = listingFieldErrors({
     ...base,

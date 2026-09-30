@@ -78,8 +78,8 @@ test("public seller overlay select never includes phone", () => {
 
 test("new listing contact is privacy-preserving by default", () => {
   const form = readFileSync(new URL("../src/components/post-form.tsx", import.meta.url), "utf8")
-  assert.match(form, /existing \? existing\.contactWhatsApp !== false : false/)
-  assert.match(form, /existing \? existing\.contactPhone !== false : false/)
+  assert.match(form, /existing\?\.contactWhatsApp === true/)
+  assert.match(form, /existing\?\.contactPhone === true/)
   assert.match(form, /required=\{contactWhatsApp \|\| contactPhone\}/)
   assert.match(form, /Off by default/)
   assert.match(form, /If both options are off, we do not require a listing phone number/)

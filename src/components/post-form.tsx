@@ -110,14 +110,14 @@ function AdForm({ existing }: { existing: Listing | null }) {
   const [details, setDetails] = useState<Record<string, string>>({ ...(existing?.details ?? {}) })
   const [country, setCountry] = useState(startingCountry)
   const [currency, setCurrency] = useState(
-    existing?.currency ?? africanCurrencyForCountry(startingCountry) ?? "KES",
+    existing?.currency ?? africanCurrencyForCountry(startingCountry) ?? "",
   )
   const [city, setCity] = useState(startingCity)
   const [place, setPlace] = useState<ChosenPlace | null>(placeFromListing(existing))
   const [description, setDescription] = useState(existing?.description ?? "")
   const [phone, setPhone] = useState(existing?.phone ?? "")
-  const [contactWhatsApp, setContactWhatsApp] = useState(existing ? existing.contactWhatsApp !== false : false)
-  const [contactPhone, setContactPhone] = useState(existing ? existing.contactPhone !== false : false)
+  const [contactWhatsApp, setContactWhatsApp] = useState(existing?.contactWhatsApp === true)
+  const [contactPhone, setContactPhone] = useState(existing?.contactPhone === true)
   const [sponsored, setSponsored] = useState(existing?.sponsored === true)
   const [fairAccessAttested, setFairAccessAttested] = useState(existing?.fairAccessAttested === true)
   const sponsoredLocked = existing?.sponsoredLocked === true
@@ -143,7 +143,7 @@ function AdForm({ existing }: { existing: Listing | null }) {
     /* eslint-disable react-hooks/set-state-in-effect -- hydrate saved place once on the client */
     setCountry(nextCountry)
     setCity(saved.city)
-    setCurrency(africanCurrencyForCountry(nextCountry) ?? "KES")
+    setCurrency(africanCurrencyForCountry(nextCountry) ?? "")
     setPlace(locatedPlace(null, nextCountry, saved.city))
     /* eslint-enable react-hooks/set-state-in-effect */
   }, [existing, urlCountry])
@@ -168,8 +168,8 @@ function AdForm({ existing }: { existing: Listing | null }) {
       setCity(draft.city)
       setDescription(draft.description)
       setPhone(draft.phone)
-      setContactWhatsApp(draft.contactWhatsApp !== false)
-      setContactPhone(draft.contactPhone !== false)
+      setContactWhatsApp(draft.contactWhatsApp === true)
+      setContactPhone(draft.contactPhone === true)
       setPhotos(draft.photos)
       setSponsored(draft.sponsored === true)
       setFairAccessAttested(draft.fairAccessAttested === true)
@@ -822,7 +822,7 @@ function AdForm({ existing }: { existing: Listing | null }) {
                 </div>
                 {!country ? (
                   <p className="rounded-xl border border-amber-200 bg-amber-50 px-3 py-2 text-sm text-amber-950">
-                    Choose a country for this ad, or{" "}
+                    Choose a country first for this ad, or{" "}
                     <Link href="/account" className="font-medium underline underline-offset-2 hover:text-amber-900">
                       set your country on Profile
                     </Link>.
@@ -836,7 +836,7 @@ function AdForm({ existing }: { existing: Listing | null }) {
                     setCountry(code)
                     setCity("")
                     setPlace(null)
-                    setCurrency(africanCurrencyForCountry(code) ?? "KES")
+                    setCurrency(africanCurrencyForCountry(code) ?? "")
                     setErrors((current) => ({ ...current, city: undefined, currency: undefined, form: undefined }))
                   }}
                   onCityChange={(value) => {
@@ -980,7 +980,7 @@ function AdForm({ existing }: { existing: Listing | null }) {
                 <div className="flex items-center justify-between gap-3 rounded-xl border border-border px-3 py-3">
                   <div>
                     <p className="text-sm font-medium">Marketplace messages</p>
-                    <p className="text-xs text-muted-foreground">Always available without exposing your phone number.</p>
+                    <p className="text-xs text-muted-foreground">Marketplace messages work without sharing a phone number.</p>
                   </div>
                   <span className="text-xs font-medium text-foreground">On</span>
                 </div>
@@ -1004,7 +1004,7 @@ function AdForm({ existing }: { existing: Listing | null }) {
                   id="listing-phone"
                   value={phone}
                   countryCode={country}
-                  required
+                  required={contactWhatsApp || contactPhone}
                   error={errors.phone}
                   hint={plan.safety}
                   onChange={(value) => {
@@ -1014,7 +1014,7 @@ function AdForm({ existing }: { existing: Listing | null }) {
                 />
               ) : (
                 <p className="text-xs leading-5 text-muted-foreground">
-                  Your phone number stays private. Buyers can contact you through marketplace messages.
+                  Off by default. If both options are off, we do not require a listing phone number. Buyers can contact you through marketplace messages.
                 </p>
               )}
               <label className="flex items-start gap-2 text-sm text-neutral-700">
