@@ -73,7 +73,10 @@ export default async function Page() {
           <Fact label="Significant-decision ADMT" value={yesNo(complianceFacts.significantDecisionAdmt)} />
           <Fact label="Safety moderation automation" value={yesNo(complianceFacts.safetyModerationAutomation)} />
           <Fact label="GPC recognized" value={yesNo(complianceFacts.gpcRecognized)} />
+          <Fact label="DNT disclosure current" value={yesNo(complianceFacts.dntDisclosed)} />
           <Fact label="Privacy rights workflow" value={yesNo(complianceFacts.privacyRightsWorkflow)} />
+          <Fact label="Structured illegal-content notice" value={yesNo(complianceFacts.structuredIllegalContentNotice)} />
+          <Fact label="Moderation redress / appeals" value={yesNo(complianceFacts.moderationRedress)} />
         </dl>
       </section>
 
