@@ -73,6 +73,11 @@ export async function POST(request: Request) {
       owner?.kind === "auth" &&
       !actingAsAgent &&
       Boolean(accountEmail)
+    const choiceRequestWithoutVerification =
+      !actingAsAgent &&
+      (requestType === "opt_out" || requestType === "limit_sensitive")
+    const verificationRequired =
+      !authenticatedSelf && !choiceRequestWithoutVerification
 
     const result = await createPrivacyRequest({
       userId: owner?.kind === "auth" ? owner.id : null,
@@ -84,6 +89,7 @@ export async function POST(request: Request) {
       details,
       locale,
       verified: authenticatedSelf,
+      verificationRequired,
     })
     if (!result.ok) return fail(result.reason, 429)
 
