@@ -10,6 +10,7 @@ export const dynamic = "force-dynamic"
 export default async function PrivacyChoicesPage() {
   const requestHeaders = await headers()
   const gpc = requestHeaders.get("sec-gpc") === "1"
+  const dnt = requestHeaders.get("dnt") === "1"
   const contactHref = siteSupportMailto()
 
   return (
@@ -31,6 +32,16 @@ export default async function PrivacyChoicesPage() {
         <p className="text-sm leading-6 text-neutral-700">
           Because the current service does not sell or share personal information for cross-context
           behavioral advertising, there is no additional sale/share opt-out state to save today.
+        </p>
+      </section>
+
+      <section className="mt-8 space-y-3">
+        <h2 className="text-base font-medium text-neutral-950">Do Not Track</h2>
+        <p className="text-sm leading-6 text-neutral-700">
+          {dnt
+            ? "A browser Do Not Track (DNT) signal was detected on this request."
+            : "No browser Do Not Track (DNT) signal was detected on this request."}
+          {" "}The current application does not use third-party behavioral advertising or track activity across unrelated websites for advertising. Because DNT does not create a separate app preference in the current product, we disclose the signal and current tracking practice here rather than claiming a special DNT mode.
         </p>
       </section>
 
@@ -118,7 +129,11 @@ export default async function PrivacyChoicesPage() {
       </section>
 
       <p className="mt-10 text-sm text-neutral-500">
-        Read the full{" "}
+        Submit a{" "}
+        <Link href="/privacy/request" className="underline underline-offset-2">
+          privacy request
+        </Link>
+        {" "}or read the full{" "}
         <Link href="/privacy" className="underline underline-offset-2">
           Privacy Policy
         </Link>
