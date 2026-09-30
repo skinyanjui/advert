@@ -15,6 +15,7 @@ export function SiteFooter({ onNavigate }: { onNavigate?: () => void }) {
         <nav className="flex flex-wrap items-center gap-0.5" aria-label="Site">
           <Link href="/terms" onClick={onNavigate} className={footerLinkClass}>Terms</Link>
           <Link href="/privacy" onClick={onNavigate} className={footerLinkClass}>Privacy</Link>
+          <Link href="/help" onClick={onNavigate} className={footerLinkClass}>Help</Link>
           <Link href="/contact" onClick={onNavigate} className={footerLinkClass}>Contact us</Link>
         </nav>
       </div>

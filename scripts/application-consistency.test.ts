@@ -222,10 +222,15 @@ test("footer routes people to a useful contact hub instead of sources", () => {
   const mobileLegal = source("src/components/mobile-legal-links.tsx")
   const nav = source("src/lib/nav.ts")
 
+  assert.match(footer, /href="\/help"/)
+  assert.match(footer, />Help</)
   assert.match(footer, /href="\/contact"/)
   assert.match(footer, />Contact us</)
   assert.doesNotMatch(footer, /credits|Sources/)
+  assert.match(mobileLegal, /href="\/help"/)
   assert.match(mobileLegal, /href="\/contact"/)
+  assert.match(nav, /href: "\/help"/)
+  assert.match(nav, /label: "Help"/)
   assert.match(nav, /href: "\/contact"/)
   assert.match(nav, /label: "Contact us"/)
   assert.match(contact, /Account & general help/)
@@ -235,4 +240,17 @@ test("footer routes people to a useful contact hub instead of sources", () => {
   assert.match(contact, /\/privacy\/choices/)
   assert.match(contact, /Report on the listing/)
   assert.doesNotMatch(contact, /government ID numbers.*banking information.*medical records.*form/i)
+})
+
+
+test("profile menu keeps high-value actions and routes support through Help", () => {
+  const menu = source("src/components/profile-menu.tsx")
+  assert.match(menu, /href="\/help"/)
+  assert.match(menu, />Help</)
+  assert.match(menu, /href="\/account"/)
+  assert.match(menu, /href="\/my-ads"/)
+  assert.match(menu, /href="\/messages"/)
+  assert.match(menu, /href="\/saved"/)
+  assert.doesNotMatch(menu, /href="\/terms"/)
+  assert.doesNotMatch(menu, /href="\/privacy\/choices"/)
 })

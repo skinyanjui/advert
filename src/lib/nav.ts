@@ -9,7 +9,7 @@ import {
   UserRound,
 } from "lucide-react"
 
-export type NavItemId = "home" | "post" | "messages" | "saved" | "my-ads" | "profile" | "credits"
+export type NavItemId = "home" | "post" | "messages" | "saved" | "my-ads" | "profile" | "help" | "credits"
 
 export type NavItem = {
   id: NavItemId
@@ -62,6 +62,13 @@ export const navItems: NavItem[] = [
     label: "Profile",
     shortLabel: "Profile",
     icon: UserRound,
+  },
+  {
+    id: "help",
+    href: "/help",
+    label: "Help",
+    shortLabel: "Help",
+    icon: Headphones,
   },
   {
     id: "credits",

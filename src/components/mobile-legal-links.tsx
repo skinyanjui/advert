@@ -12,6 +12,10 @@ export function MobileLegalLinks() {
         Privacy
       </Link>
       <span aria-hidden="true"> · </span>
+      <Link href="/help" className="underline underline-offset-2 hover:text-neutral-800">
+        Help
+      </Link>
+      <span aria-hidden="true"> · </span>
       <Link href="/contact" className="underline underline-offset-2 hover:text-neutral-800">
         Contact us
       </Link>
