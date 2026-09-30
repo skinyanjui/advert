@@ -9,6 +9,7 @@ import { Logo } from "@/components/logo"
 import { CategoryTopNav } from "@/components/category-top-nav"
 import { PostLink, usePostAdHref } from "@/components/post-link"
 import { ProfileMenu } from "@/components/profile-menu"
+import { ThemeMenu } from "@/components/theme-choices"
 import { usePrefs } from "@/components/prefs-provider"
 import { Button, buttonVariants } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -37,7 +38,7 @@ export function SiteHeader() {
   const postHref = usePostAdHref()
   return (
     <header className="sticky top-0 z-50">
-      <div className="border-b border-neutral-200/80 bg-white">
+      <div className="border-b border-border bg-background">
         <div className="mx-auto flex h-16 max-w-[1720px] items-center gap-1 px-2 md:relative md:h-[72px] md:gap-3 md:px-5 xl:gap-6 xl:px-8">
           <Logo iconOnly className="xl:hidden" />
           <Logo className="hidden xl:flex" />
@@ -73,6 +74,9 @@ export function SiteHeader() {
                   <span className="hidden xl:inline">{t("nav.postShort")}</span>
                 </Link>
               </Button>
+              <div className="hidden md:block">
+                <ThemeMenu />
+              </div>
               <ProfileMenu notifications={<ProfileNotifications />} />
             </nav>
           </div>
@@ -462,7 +466,7 @@ function HeaderMenu({
         role={panelRole}
         aria-label={label}
         className={cn(
-          "absolute top-full right-0 z-[80] mt-1.5 max-h-[min(24rem,calc(100dvh-5rem))] max-w-[calc(100vw-1rem)] overflow-y-auto rounded-lg bg-white p-1 text-sm shadow-md ring-1 ring-neutral-200",
+          "absolute top-full right-0 z-[80] mt-1.5 max-h-[min(24rem,calc(100dvh-5rem))] max-w-[calc(100vw-1rem)] overflow-y-auto rounded-lg bg-popover p-1 text-sm text-popover-foreground shadow-md ring-1 ring-border",
           panelClassName,
         )}
       >
@@ -605,7 +609,7 @@ export function HeaderFallback() {
   const HomeIcon = home.icon
   const ProfileIcon = profile.icon
   return (
-    <header className="sticky top-0 z-40 border-b border-neutral-200/80 bg-white">
+    <header className="sticky top-0 z-40 border-b border-border bg-background">
       <div className="mx-auto flex h-16 max-w-[1720px] items-center gap-1 px-2 md:h-[72px] md:gap-3 md:px-5 xl:gap-6 xl:px-8">
         <Logo iconOnly className="xl:hidden" />
         <Logo className="hidden xl:flex" />
