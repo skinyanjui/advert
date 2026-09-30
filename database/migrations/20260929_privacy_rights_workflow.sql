@@ -82,6 +82,10 @@ create index if not exists privacy_requests_status_due
 create index if not exists privacy_requests_email_received
   on public.privacy_requests (lower(request_email), received_at desc);
 
+create index if not exists privacy_requests_last_updated_by_idx
+  on public.privacy_requests (last_updated_by)
+  where last_updated_by is not null;
+
 create table if not exists public.privacy_request_events (
   id uuid primary key,
   request_id uuid not null references public.privacy_requests (id) on delete cascade,
@@ -103,6 +107,10 @@ create table if not exists public.privacy_request_events (
 
 create index if not exists privacy_request_events_request_created
   on public.privacy_request_events (request_id, created_at);
+
+create index if not exists privacy_request_events_actor_idx
+  on public.privacy_request_events (actor_user_id)
+  where actor_user_id is not null;
 
 alter table public.privacy_requests enable row level security;
 alter table public.privacy_request_events enable row level security;
@@ -139,6 +147,10 @@ create table if not exists public.compliance_incidents (
 create index if not exists compliance_incidents_status_discovered
   on public.compliance_incidents (status, discovered_at desc);
 
+create index if not exists compliance_incidents_owner_idx
+  on public.compliance_incidents (owner_user_id)
+  where owner_user_id is not null;
+
 create table if not exists public.compliance_incident_events (
   id uuid primary key,
   incident_id uuid not null references public.compliance_incidents (id) on delete cascade,
@@ -161,6 +173,10 @@ create table if not exists public.compliance_incident_events (
 
 create index if not exists compliance_incident_events_incident_created
   on public.compliance_incident_events (incident_id, created_at);
+
+create index if not exists compliance_incident_events_actor_idx
+  on public.compliance_incident_events (actor_user_id)
+  where actor_user_id is not null;
 
 alter table public.compliance_incidents enable row level security;
 alter table public.compliance_incident_events enable row level security;
