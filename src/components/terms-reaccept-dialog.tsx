@@ -34,6 +34,8 @@ export function TermsReacceptDialog() {
   const { t } = usePrefs()
   const [open, setOpen] = useState(false)
   const [busy, setBusy] = useState(false)
+  const [ageConfirmed, setAgeConfirmed] = useState(false)
+  const [agreedToTerms, setAgreedToTerms] = useState(false)
 
   const refresh = useCallback(async () => {
     if (!auth.ready || !auth.signedIn || !auth.configured) {
@@ -50,7 +52,14 @@ export function TermsReacceptDialog() {
         startTransition(() => setOpen(false))
         return
       }
-      startTransition(() => setOpen(payload.current === false))
+      startTransition(() => {
+        const nextOpen = payload.current === false
+        setOpen(nextOpen)
+        if (nextOpen) {
+          setAgeConfirmed(false)
+          setAgreedToTerms(false)
+        }
+      })
     } catch {
       // status check is best-effort
     }
@@ -79,13 +88,29 @@ export function TermsReacceptDialog() {
   }, [refresh])
 
   async function accept() {
+    if (!ageConfirmed) {
+      toast.error(t("auth.mustConfirmAge"))
+      return
+    }
+    if (!agreedToTerms) {
+      toast.error(t("auth.mustAgree"))
+      return
+    }
     setBusy(true)
     rememberTermsIntent()
     try {
       const response = await fetch("/api/terms", {
         method: "POST",
         headers: { "content-type": "application/json" },
-        body: JSON.stringify({ context: "reaccept" }),
+        body: JSON.stringify({
+          context: "reaccept",
+          ageAttested: true,
+          privacyAcknowledged: true,
+          locale:
+            document.documentElement.lang?.trim() ||
+            navigator.language?.trim() ||
+            null,
+        }),
       })
       const payload = (await response.json()) as TermsPayload
       if (!response.ok) {
@@ -134,11 +159,41 @@ export function TermsReacceptDialog() {
           </Link>
           .
         </p>
+        <div className="space-y-2">
+          <label className="flex items-start gap-2 rounded-xl border border-neutral-200 px-3 py-2.5 text-sm text-neutral-700">
+            <input
+              type="checkbox"
+              className="mt-0.5 size-4 shrink-0 rounded border-neutral-300"
+              checked={ageConfirmed}
+              onChange={(event) => setAgeConfirmed(event.target.checked)}
+            />
+            <span>{t("auth.ageConfirm")}</span>
+          </label>
+          <label className="flex items-start gap-2 rounded-xl border border-neutral-200 px-3 py-2.5 text-sm text-neutral-700">
+            <input
+              type="checkbox"
+              className="mt-0.5 size-4 shrink-0 rounded border-neutral-300"
+              checked={agreedToTerms}
+              onChange={(event) => setAgreedToTerms(event.target.checked)}
+            />
+            <span>
+              {t("auth.legalAgreementPrefix")}{" "}
+              <Link href="/terms" className="underline underline-offset-2">
+                {t("auth.terms")}
+              </Link>{" "}
+              {t("auth.legalAgreementPrivacy")}{" "}
+              <Link href="/privacy" className="underline underline-offset-2">
+                {t("auth.privacyPolicy")}
+              </Link>
+              .
+            </span>
+          </label>
+        </div>
         <DialogFooter>
           <Button variant="outline" disabled={busy} onClick={() => void signOut()}>
             {t("terms.signOut")}
           </Button>
-          <Button disabled={busy} onClick={() => void accept()}>
+          <Button disabled={busy || !ageConfirmed || !agreedToTerms} onClick={() => void accept()}>
             {busy ? t("terms.pleaseWait") : t("terms.accept")}
           </Button>
         </DialogFooter>
