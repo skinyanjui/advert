@@ -31,7 +31,7 @@ export type TermsStatus = {
   privacyVersion: string
   acceptedTermsVersion: string | null
   acceptedPrivacyVersion: string | null
-  /** True when the acceptances table is missing — gate is a no-op. */
+  /** True when the acceptance store is unavailable; protected features fail closed. */
   tableMissing: boolean
 }
 
