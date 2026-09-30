@@ -137,6 +137,18 @@ with `Authorization: Bearer <CRON_SECRET>`. Optional `RESEND_API_KEY` and
 `RESEND_FROM_EMAIL` send reminder email to signed-in sellers; without Resend the
 route still advances reminder markers as a no-op send.
 
+## Privacy and regulatory controls
+
+- Account creation is intended for adults 18+; the onboarding acceptance text records acceptance of the current Terms/Privacy version containing that age rule.
+- Signed-in users can download a machine-readable JSON export of their account data from Profile, correct profile information, and delete their account.
+- Account deletion now removes account-linked listings, saves, conversations, reports submitted by the user, authenticated contact-intent events, and WhatsApp consent records from active application data.
+- `/privacy/choices` exposes the current sale/share position and detects the `Sec-GPC: 1` Global Privacy Control signal. The current application does not sell personal information or share it for cross-context behavioral advertising.
+- The Privacy draft documents GDPR legal bases and rights, California CCPA/CPRA rights and notice-at-collection categories, international transfers, security/data minimization, and current processors.
+- The Terms draft documents adult eligibility, U.S. INFORM Consumers Act readiness, CAN-SPAM/TCPA boundaries, FTC consumer-protection expectations, and a DMCA section 512 checklist placeholder.
+- Set `NEXT_PUBLIC_SUPPORT_EMAIL` to a real monitored public support/privacy address before relying on privacy-rights contact language in production.
+- If the operator intends to rely on DMCA section 512 safe harbor, register and maintain a designated DMCA agent with the U.S. Copyright Office and publish the required agent contact details before claiming that protection.
+- These legal pages remain drafts pending licensed counsel review; applicability depends on the operator, users, geography, revenue/volume thresholds, and actual data/marketing practices.
+
 ## Marketplace contact and compliance notes
 
 - Listing phone numbers are normalized server-side using the listing country before they are stored.

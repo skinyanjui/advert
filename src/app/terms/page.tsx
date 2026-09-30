@@ -41,6 +41,64 @@ export default function TermsPage() {
       </section>
 
       <section className="mt-8 space-y-3">
+        <h2 className="text-base font-medium text-neutral-950">Age eligibility</h2>
+        <p className="text-sm leading-6 text-neutral-700">
+          You must be at least 18 years old to create or use an account. The service is not directed
+          to children under 13. This age boundary is also intended to avoid knowingly collecting
+          children&apos;s personal information in circumstances covered by the Children&apos;s Online Privacy
+          Protection Act (COPPA). If we learn that an account was created in violation of this rule,
+          we may suspend or delete it and remove associated personal data as appropriate.
+        </p>
+      </section>
+
+      <section className="mt-8 space-y-3">
+        <h2 className="text-base font-medium text-neutral-950">U.S. marketplace transparency</h2>
+        <p className="text-sm leading-6 text-neutral-700">
+          The current service is a classifieds marketplace and does not process buyer payments.
+          If future payment or transaction features bring the service or a seller within the scope of
+          the federal INFORM Consumers Act, we may be required to collect and verify specified
+          high-volume seller information, require periodic certification, disclose specified seller
+          information, suspend sellers who do not provide required information, and maintain a
+          mechanism for reporting suspicious marketplace activity. We will not collect bank or tax
+          identifiers merely for future readiness before they are actually required.
+        </p>
+      </section>
+
+      <section className="mt-8 space-y-3">
+        <h2 className="text-base font-medium text-neutral-950">Commercial email and automated calls or texts</h2>
+        <p className="text-sm leading-6 text-neutral-700">
+          Account and security communications are treated as transactional. If we send commercial
+          marketing email, we will follow applicable CAN-SPAM Act requirements, including required
+          sender information and a working opt-out process. Creating an account or providing a phone
+          number does not authorize automated marketing calls
+          or robotexts. Separate consent will be used where the Telephone Consumer Protection Act or
+          other applicable law requires it.
+        </p>
+      </section>
+
+      <section className="mt-8 space-y-3">
+        <h2 className="text-base font-medium text-neutral-950">Consumer protection and data security</h2>
+        <p className="text-sm leading-6 text-neutral-700">
+          Do not use the service for deceptive, unfair, fraudulent, or misleading conduct. We aim to
+          keep our privacy and security statements accurate and to use reasonable safeguards and
+          data-minimization practices consistent with applicable consumer-protection law, including
+          Section 5 of the Federal Trade Commission Act where it applies.
+        </p>
+      </section>
+
+      <section className="mt-8 space-y-3">
+        <h2 className="text-base font-medium text-neutral-950">Copyright and DMCA notices</h2>
+        <p className="text-sm leading-6 text-neutral-700">
+          Do not upload content that infringes another person&apos;s copyright. If the operator intends
+          to rely on the U.S. Digital Millennium Copyright Act section 512 safe harbor for hosted user
+          content, it must register and maintain a designated DMCA agent with the U.S. Copyright
+          Office, publish the agent&apos;s required contact information, and operate a compliant
+          notice-and-takedown and counter-notice process.{" "}
+          <strong>[DMCA AGENT DETAILS — register and add before relying on the safe harbor]</strong>
+        </p>
+      </section>
+
+      <section className="mt-8 space-y-3">
         <h2 className="text-base font-medium text-neutral-950">1. The platform is not a party to sales</h2>
         <p className="text-sm leading-6 text-neutral-700">
           {site.name} helps people list and find goods and services. We are not the buyer or the

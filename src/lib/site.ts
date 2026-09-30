@@ -1,7 +1,7 @@
 export const site = {
   name: "africa classifieds",
   tagline: "Buy and sell across Africa. Cars, houses, jobs, electronics, and everything in between.",
-  supportEmail: undefined as string | undefined,
+  supportEmail: process.env.NEXT_PUBLIC_SUPPORT_EMAIL?.trim() || undefined,
   foundedYear: 2024,
 } as const
 

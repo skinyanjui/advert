@@ -169,6 +169,7 @@ function SignedInProfile({
   const [deleteOpen, setDeleteOpen] = useState(false)
   const [deleteConfirm, setDeleteConfirm] = useState("")
   const [deleting, setDeleting] = useState(false)
+  const [downloadingData, setDownloadingData] = useState(false)
   const [newEmail, setNewEmail] = useState("")
   const [savingEmail, setSavingEmail] = useState(false)
   const [newPassword, setNewPassword] = useState("")
@@ -305,6 +306,35 @@ function SignedInProfile({
       toast.error(t("profile.toast.contactError"))
     } finally {
       setSavingContact(false)
+    }
+  }
+
+  async function downloadPrivacyData() {
+    if (downloadingData) return
+    setDownloadingData(true)
+    try {
+      const response = await fetch("/api/privacy/export", { cache: "no-store" })
+      if (!response.ok) {
+        const payload = (await response.json().catch(() => ({}))) as { reason?: string }
+        toast.error(payload.reason ?? t("profile.downloadError"))
+        return
+      }
+      const blob = await response.blob()
+      const disposition = response.headers.get("content-disposition") ?? ""
+      const match = /filename="([^"]+)"/i.exec(disposition)
+      const filename = match?.[1] ?? "account-data.json"
+      const url = URL.createObjectURL(blob)
+      const anchor = document.createElement("a")
+      anchor.href = url
+      anchor.download = filename
+      document.body.appendChild(anchor)
+      anchor.click()
+      anchor.remove()
+      URL.revokeObjectURL(url)
+    } catch {
+      toast.error(t("profile.downloadError"))
+    } finally {
+      setDownloadingData(false)
     }
   }
 
@@ -669,6 +699,22 @@ function SignedInProfile({
           >
             {savingPassword ? <Loader2 className="animate-spin" /> : null}
             {savingPassword ? "Saving…" : needsPasswordReauth ? "Confirm and save" : "Save password"}
+          </Button>
+        </CardFooter>
+      </Card>
+
+      <Card>
+        <CardHeader>
+          <CardTitle>{t("profile.privacyTitle")}</CardTitle>
+          <CardDescription>{t("profile.privacyBody")}</CardDescription>
+        </CardHeader>
+        <CardFooter className="flex-wrap gap-2">
+          <Button type="button" variant="outline" disabled={downloadingData} onClick={() => void downloadPrivacyData()}>
+            {downloadingData ? <Loader2 className="animate-spin" /> : null}
+            {downloadingData ? t("profile.downloadingData") : t("profile.downloadData")}
+          </Button>
+          <Button type="button" variant="ghost" asChild>
+            <Link href="/privacy/choices">{t("profile.privacyChoices")}</Link>
           </Button>
         </CardFooter>
       </Card>

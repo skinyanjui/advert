@@ -72,6 +72,131 @@ export default function PrivacyPage() {
       </section>
 
       <section className="mt-8 space-y-3">
+        <h2 className="text-base font-medium text-neutral-950">Controller and privacy contact</h2>
+        <p className="text-sm leading-6 text-neutral-700">
+          For data-protection purposes, the operator of {site.name} is the controller of the personal
+          data described in this policy. <strong>[OPERATOR LEGAL NAME AND BUSINESS ADDRESS — lawyer to complete]</strong>.
+          The support contact below is also the privacy contact. If an EU representative or data
+          protection officer is legally required, their contact details must be added here before relying on this draft.
+        </p>
+      </section>
+
+      <section className="mt-8 space-y-3">
+        <h2 className="text-base font-medium text-neutral-950">Why we use data and GDPR legal bases</h2>
+        <ul className="list-disc space-y-1 pl-5 text-sm leading-6 text-neutral-700">
+          <li><strong>Contract:</strong> to create and secure accounts, publish and manage listings, save listings, provide Messenger, and deliver requested account features.</li>
+          <li><strong>Legitimate interests:</strong> to prevent fraud and abuse, moderate listings, secure the service, diagnose failures, and use minimal first-party contact-intent analytics. We balance those interests against user rights.</li>
+          <li><strong>Consent:</strong> where we ask for a specific optional permission, such as scoped WhatsApp contact consent. Consent can be withdrawn for future processing where applicable.</li>
+          <li><strong>Legal obligation and legal claims:</strong> to keep or disclose records when law requires it and to establish, exercise, or defend legal claims.</li>
+        </ul>
+      </section>
+
+      <section className="mt-8 space-y-3">
+        <h2 className="text-base font-medium text-neutral-950">California notice at collection</h2>
+        <p className="text-sm leading-6 text-neutral-700">
+          Depending on how you use the service, we collect identifiers and account information;
+          profile and contact information; listing and commercial activity; messages and other
+          user-provided content; device/session and acceptance records; coarse or listing location
+          information; moderation and report information; and first-party interaction events.
+          Sources include you, your browser/device, other users when they communicate or report
+          activity, and service providers that return operational or policy events.
+        </p>
+        <p className="text-sm leading-6 text-neutral-700">
+          We use these categories to provide the marketplace, authenticate users, enable user-to-user
+          communications, moderate and secure the service, troubleshoot, maintain legal records, and
+          provide support. We disclose information to service providers such as Supabase, Vercel, and
+          Resend as needed to perform those functions, and to services such as WhatsApp when a user
+          chooses an off-platform contact action.
+        </p>
+      </section>
+
+      <section id="sale-share" className="mt-8 space-y-3">
+        <h2 className="text-base font-medium text-neutral-950">Sale, sharing, targeted advertising, and GPC</h2>
+        <p className="text-sm leading-6 text-neutral-700">
+          The current application does not sell personal information and does not share personal
+          information for cross-context behavioral advertising. It does not currently run third-party
+          advertising pixels or behavioral-ad tracking. If those practices change, we will update this
+          notice and provide required choices before relying on the new practice.
+        </p>
+        <p className="text-sm leading-6 text-neutral-700">
+          We recognize a browser Global Privacy Control signal as an opt-out signal where applicable.
+          See{" "}
+          <Link href="/privacy/choices" className="underline underline-offset-2">
+            Privacy choices
+          </Link>
+          {" "}for the current status and account privacy controls.
+        </p>
+      </section>
+
+      <section className="mt-8 space-y-3">
+        <h2 className="text-base font-medium text-neutral-950">Your GDPR rights</h2>
+        <p className="text-sm leading-6 text-neutral-700">
+          Where the GDPR applies, you may have rights to be informed, access your personal data,
+          correct inaccurate data, request erasure, restrict processing, receive portable data, and
+          object to certain processing. You may also complain to the competent data-protection
+          supervisory authority. Where processing is based on consent, you may withdraw that consent
+          for future processing without affecting earlier lawful processing.
+        </p>
+        <p className="text-sm leading-6 text-neutral-700">
+          Signed-in members can correct profile information, download a JSON copy of account data,
+          and delete their account from Profile. Other requests can be sent to the privacy contact.
+        </p>
+      </section>
+
+      <section className="mt-8 space-y-3">
+        <h2 className="text-base font-medium text-neutral-950">California privacy rights</h2>
+        <p className="text-sm leading-6 text-neutral-700">
+          Where the CCPA, as amended by the CPRA, applies to us, California residents may have rights
+          to know/access, delete, and correct personal information; opt out of sale or sharing; limit
+          certain uses or disclosures of sensitive personal information; and receive non-discriminatory
+          service for exercising those rights. We currently do not sell or share personal information
+          for cross-context behavioral advertising.
+        </p>
+      </section>
+
+      <section className="mt-8 space-y-3">
+        <h2 className="text-base font-medium text-neutral-950">Children and age</h2>
+        <p className="text-sm leading-6 text-neutral-700">
+          Accounts are intended for people age 18 or older. The service is not directed to children
+          under 13, and we do not knowingly seek personal information from children under 13. If we
+          learn that an account was created in violation of this age rule, we may suspend or delete it
+          and remove associated personal data as appropriate.
+        </p>
+      </section>
+
+      <section className="mt-8 space-y-3">
+        <h2 className="text-base font-medium text-neutral-950">Email and text communications</h2>
+        <p className="text-sm leading-6 text-neutral-700">
+          Current platform email is intended for account, security, and other transactional purposes.
+          If we add marketing email, it must include the disclosures and opt-out mechanisms required
+          by applicable law. Creating an account, providing a phone number, or enabling seller contact
+          does not by itself consent to automated marketing calls or texts. Any platform-originated
+          marketing calls or robotexts that require consent will use a separate consent flow.
+        </p>
+      </section>
+
+      <section className="mt-8 space-y-3">
+        <h2 className="text-base font-medium text-neutral-950">International transfers</h2>
+        <p className="text-sm leading-6 text-neutral-700">
+          Service providers may process data in countries other than the country where you live. Where
+          GDPR transfer rules apply, we will rely on an available lawful transfer mechanism and
+          appropriate safeguards, such as an adequacy decision or contractual safeguards, as applicable.
+          This draft does not claim participation in any certification program unless separately verified.
+        </p>
+      </section>
+
+      <section className="mt-8 space-y-3">
+        <h2 className="text-base font-medium text-neutral-950">Security and data minimization</h2>
+        <p className="text-sm leading-6 text-neutral-700">
+          We use role-based access controls, server-side authorization, restricted database access,
+          and data minimization measures designed to protect account information. No system can be
+          guaranteed completely secure. We review what data the service collects and avoid collecting
+          sensitive identifiers such as government IDs, tax IDs, or bank details unless a future legal
+          or product requirement makes them necessary.
+        </p>
+      </section>
+
+      <section className="mt-8 space-y-3">
         <h2 className="text-base font-medium text-neutral-950">Processors</h2>
         <p className="text-sm leading-6 text-neutral-700">
           We use <strong>Supabase</strong> (database, auth, and storage) and <strong>Vercel</strong>{" "}
@@ -84,10 +209,7 @@ export default function PrivacyPage() {
       <section className="mt-8 space-y-3">
         <h2 className="text-base font-medium text-neutral-950">Retention</h2>
         <p className="text-sm leading-6 text-neutral-700">
-          We keep account, listing, message, report, contact-intent, WhatsApp consent, and business-platform enforcement records while your account is active and for
-          a reasonable period afterward for safety, dispute, and legal reasons, then delete or
-          anonymise them when they are no longer needed. Terms and Privacy acceptance records are
-          deleted with your account.
+          We keep account, listing, message, report, contact-intent, WhatsApp consent, and business-platform enforcement records only for as long as reasonably needed for the purposes described above, account operation, safety, disputes, security, or legal obligations. Account deletion removes account-linked listings, saves, conversations, submitted reports, authenticated contact-intent events, and WhatsApp consent records from the active application data, subject to narrow legal or safety exceptions. Terms and Privacy acceptance records are linked to the authentication account and are deleted with it. Backup and service-provider copies may persist for a limited period under provider retention processes.
         </p>
       </section>
 
