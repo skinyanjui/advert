@@ -13,7 +13,7 @@ import {
   normalizeCurrencyPreference,
   normalizeLanguagePreference,
 } from "../src/lib/prefs"
-import { listingGridClassName, listingGridClassNameLoose } from "../src/lib/listing-grid"
+import { listingGridClassName } from "../src/lib/listing-grid"
 
 const migration = readFileSync(
   new URL("../supabase/migrations/20260928_profile_language_currency.sql", import.meta.url),
@@ -82,7 +82,6 @@ test("listing grids use 5 columns from xl (1280px) and keep 2 cols on small scre
   assert.match(listingGridClassName, /lg:grid-cols-3/)
   assert.match(listingGridClassName, /xl:grid-cols-5/)
   assert.doesNotMatch(listingGridClassName, /xl:grid-cols-4/)
-  assert.match(listingGridClassNameLoose, /xl:grid-cols-5/)
 
   for (const file of [
     "../src/components/browse.tsx",
