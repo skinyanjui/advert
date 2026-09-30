@@ -48,3 +48,32 @@ For database or platform-enforcement changes:
 - Update fixtures and tests for both old failure modes and the new contract.
 - Run the complete quality gate.
 - Merge the complete change as one reviewed pull request. Prefer squash merging when the branch contains incremental implementation commits.
+
+
+## Law-to-product rule
+
+Treat a legal, privacy, consumer-protection, communications, moderation, or platform-policy requirement as a product contract, not a documentation-only change.
+
+For every requirement that applies now or is deliberately implemented for readiness, trace it through the affected layers:
+
+```text
+law / policy trigger
+→ customer disclosure
+→ explicit user intent or choice
+→ UI state and accessibility
+→ RBAC / API enforcement
+→ database evidence and audit history
+→ export / correction / deletion semantics
+→ admin operations and deadlines
+→ regression tests
+```
+
+- Do not claim compliance merely because a legal page mentions a law. The product behavior and stored evidence must match the statement.
+- Separate legally distinct user intentions. For example, age attestation, acceptance of Terms, acknowledgment of a Privacy Policy, and channel-specific marketing consent must not be silently bundled into one generic consent.
+- Do not collect sensitive identifiers speculatively for a law that is not yet triggered. Add collection only when the applicable product/business facts require it.
+- When a requirement is conditional on geography, scale, transaction volume, advertising, profiling, or another product fact, encode that fact in the compliance registry and re-evaluate before enabling the triggering feature.
+- Keep privacy-rights, moderation-redress, and incident-response records behind server-side RBAC. Public/client keys must not receive direct table access.
+- If a database migration is required, apply and verify it before merging application code that depends on the new schema.
+- Keep privacy exports, account deletion, retention statements, and admin workflows synchronized with every new personal-data table.
+- Preserve a reasoned audit trail for material moderation, privacy-rights, and incident-response decisions without exposing reporter or counterpart private data.
+- Add tests that fail when a disclosure, API contract, database field, rights flow, or operator control drifts out of sync.
