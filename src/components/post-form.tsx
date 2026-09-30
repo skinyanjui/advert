@@ -1,13 +1,15 @@
 "use client"
 
 import type { User } from "@supabase/supabase-js"
-import { Check, ChevronLeft, ChevronRight, ImagePlus } from "lucide-react"
+import { Check } from "lucide-react"
 import Link from "next/link"
 import { useRouter, useSearchParams } from "next/navigation"
-import { useEffect, useLayoutEffect, useMemo, useRef, useState, type DragEvent, type ReactNode } from "react"
+import { useEffect, useLayoutEffect, useMemo, useRef, useState, type ReactNode } from "react"
 import { toast } from "sonner"
 
-import { CityField, type ChosenPlace } from "@/components/city-field"
+import type { ChosenPlace } from "@/components/city-field"
+import { PostingLocationFields } from "@/components/posting/location-fields"
+import { PostPhotoGallery } from "@/components/posting/photo-gallery"
 import { ContactPhoneField } from "@/components/contact-phone-field"
 import { EmptyPanel } from "@/components/empty-panel"
 import { FormField } from "@/components/form-field"
@@ -29,13 +31,10 @@ import {
   canonicalCountry,
   countryName,
   currencyLabel,
-  fold,
   getCountry,
-  moreCountries,
-  primaryCountries,
-  type CountryRecord,
 } from "@/lib/countries"
 import { formatPrice } from "@/lib/format"
+import { boardCurrencyCodes } from "@/lib/fx"
 import {
   FAIR_ACCESS_ATTESTATION_VERSION,
   listingFieldErrors,
@@ -43,7 +42,7 @@ import {
   type FieldErrors as RuleErrors,
 } from "@/lib/listing-rules"
 import { useMarketplace } from "@/lib/marketplace"
-import { listingImages, maxListingPhotos, photoFileError, withCoverImage } from "@/lib/photos"
+import { listingImages, maxListingPhotos, photoFileError, prepareListingPhoto, withCoverImage } from "@/lib/photos"
 import { clearPostDraft, readPostDraft, writePostDraft } from "@/lib/post-draft"
 import type { BoardProfile } from "@/lib/profile"
 import { siteTitle } from "@/lib/site"
@@ -58,10 +57,11 @@ import {
   type PricePeriodId,
   type Subcategory,
 } from "@/lib/posting"
+import { descriptionGuidance, suggestListingTitle } from "@/lib/posting-value"
 import { categoryName, isCategoryId, type CategoryId, type Listing } from "@/lib/types"
 import { cn } from "@/lib/utils"
 
-const steps = ["Category", "Type", "Details", "Contact"] as const
+const steps = ["Listing", "Details", "Review"] as const
 
 type FieldErrors = RuleErrors
 
@@ -99,7 +99,7 @@ function AdForm({ existing }: { existing: Listing | null }) {
   const auth = useAuth()
   const { t } = usePrefs()
 
-  const [step, setStep] = useState(seeded ? 2 : startingCategory ? 1 : 0)
+  const [step, setStep] = useState(seeded ? 1 : 0)
   const [category, setCategory] = useState<CategoryId | null>(startingCategory)
   const [subcategoryId, setSubcategoryId] = useState<string | null>(seeded?.id ?? null)
   const [title, setTitle] = useState(existing?.title ?? "")
@@ -110,7 +110,7 @@ function AdForm({ existing }: { existing: Listing | null }) {
   const [details, setDetails] = useState<Record<string, string>>({ ...(existing?.details ?? {}) })
   const [country, setCountry] = useState(startingCountry)
   const [currency, setCurrency] = useState(
-    existing?.currency ?? getCountry(startingCountry)?.currencies[0]?.code ?? "USD",
+    existing?.currency ?? africanCurrencyForCountry(startingCountry) ?? "KES",
   )
   const [city, setCity] = useState(startingCity)
   const [place, setPlace] = useState<ChosenPlace | null>(placeFromListing(existing))
@@ -143,7 +143,7 @@ function AdForm({ existing }: { existing: Listing | null }) {
     /* eslint-disable react-hooks/set-state-in-effect -- hydrate saved place once on the client */
     setCountry(nextCountry)
     setCity(saved.city)
-    setCurrency(getCountry(nextCountry)?.currencies[0]?.code ?? "USD")
+    setCurrency(africanCurrencyForCountry(nextCountry) ?? "KES")
     setPlace(locatedPlace(null, nextCountry, saved.city))
     /* eslint-enable react-hooks/set-state-in-effect */
   }, [existing, urlCountry])
@@ -215,7 +215,6 @@ function AdForm({ existing }: { existing: Listing | null }) {
   const subcategory = category ? findSubcategory(category, subcategoryId ?? undefined) : undefined
   const activePeriod = subcategory?.periods.includes(period) ? period : (subcategory?.periods[0] ?? period)
   const suffix = subcategory?.priceSuffix ?? pricePeriod(activePeriod).suffix
-  const callingCode = getCountry(country)?.callingCode
   const currencies = currencyChoices(country, currency)
 
   useEffect(() => {
@@ -304,9 +303,9 @@ function AdForm({ existing }: { existing: Listing | null }) {
       badge: nextCategory === "jobs" ? "jobs" : undefined,
       description,
       condition: details.condition || subcategory?.name || "Listed",
-      sellerName: existing?.sellerName ?? "Amina K.",
+      sellerName: existing?.sellerName ?? "Your seller profile",
       sellerSince: existing?.sellerSince ?? sellerSinceFromUser(auth.user),
-      phone: phone || callingCode || "+000",
+      phone: phone || "",
       contactWhatsApp,
       contactPhone,
       sponsored: sponsoredLocked || sponsored || undefined,
@@ -332,7 +331,6 @@ function AdForm({ existing }: { existing: Listing | null }) {
     photos,
     description,
     phone,
-    callingCode,
     contactWhatsApp,
     contactPhone,
     sponsored,
@@ -350,7 +348,6 @@ function AdForm({ existing }: { existing: Listing | null }) {
     }
     setCategory(id)
     setErrors({})
-    moveTo(1)
   }
 
   function chooseSubcategory(next: Subcategory) {
@@ -360,7 +357,7 @@ function AdForm({ existing }: { existing: Listing | null }) {
     }
     setSubcategoryId(next.id)
     setErrors({})
-    moveTo(2)
+    moveTo(1)
   }
 
   function setDetail(id: string, value: string) {
@@ -368,25 +365,32 @@ function AdForm({ existing }: { existing: Listing | null }) {
     setErrors((current) => ({ ...current, [id]: undefined }))
   }
 
-  function onFile(file: File | undefined) {
-    if (!file) return
-    const reason = photoFileError(file)
-    if (reason) {
-      setErrors((current) => ({ ...current, image: reason }))
-      return
-    }
-    if (photos.length >= maxListingPhotos) {
+  async function onFiles(files: File[]) {
+    if (files.length === 0) return
+    const available = Math.max(0, maxListingPhotos - photos.length)
+    if (available === 0) {
       setErrors((current) => ({ ...current, image: `You can add up to ${maxListingPhotos} photos.` }))
       return
     }
-    const reader = new FileReader()
-    reader.onload = () => {
-      if (typeof reader.result === "string") {
-        setPhotos((current) => [...current, reader.result as string].slice(0, maxListingPhotos))
-        setErrors((current) => ({ ...current, image: undefined }))
+
+    const accepted: File[] = []
+    for (const file of files.slice(0, available)) {
+      const reason = photoFileError(file)
+      if (reason) {
+        setErrors((current) => ({ ...current, image: reason }))
+        continue
       }
+      accepted.push(file)
     }
-    reader.readAsDataURL(file)
+    if (accepted.length === 0) return
+
+    try {
+      const optimized = await Promise.all(accepted.map((file) => prepareListingPhoto(file)))
+      setPhotos((current) => [...current, ...optimized].slice(0, maxListingPhotos))
+      setErrors((current) => ({ ...current, image: undefined }))
+    } catch {
+      setErrors((current) => ({ ...current, image: "We could not prepare that photo. Try another image." }))
+    }
   }
 
   function currentErrors(): FieldErrors {
@@ -411,22 +415,19 @@ function AdForm({ existing }: { existing: Listing | null }) {
   function detailErrors(): FieldErrors {
     if (!subcategory || !plan) return { form: "Choose a type first." }
     const next = currentErrors()
-    delete next.city
     delete next.phone
     return next
   }
 
   function contactErrors(): FieldErrors {
     const next = currentErrors()
-    return { city: next.city, phone: next.phone }
+    return { phone: next.phone }
   }
 
   function reachable(index: number): boolean {
     if (index <= 0) return true
-    if (!category) return false
+    if (!category || !subcategory) return false
     if (index === 1) return true
-    if (!subcategory) return false
-    if (index === 2) return true
     return !Object.values(detailErrors()).some(Boolean)
   }
 
@@ -458,37 +459,34 @@ function AdForm({ existing }: { existing: Listing | null }) {
         showErrors({ form: "Choose a category." })
         return
       }
-      moveTo(1)
-      return
-    }
-    if (step === 1) {
       if (!subcategory) {
         showErrors({ form: "Choose a type." })
         return
       }
-      moveTo(2)
+      moveTo(1)
       return
     }
-    if (step === 2) {
+    if (step === 1) {
       const next = detailErrors()
       if (Object.values(next).some(Boolean)) {
         showErrors(next)
         return
       }
       setErrors({})
-      moveTo(3)
+      moveTo(2)
     }
   }
 
   async function submit() {
     if (!plan || !category || !subcategory) {
-      setStep(category ? 1 : 0)
+      setStep(0)
       return
     }
     const next = { ...detailErrors(), ...contactErrors() }
     if (Object.values(next).some(Boolean)) {
       const detailsInvalid = Object.values(detailErrors()).some(Boolean)
-      if (detailsInvalid) setStep(2)
+      if (detailsInvalid) setStep(1)
+      else setStep(2)
       showErrors(next)
       return
     }
@@ -666,7 +664,7 @@ function AdForm({ existing }: { existing: Listing | null }) {
           onSubmit={(event) => {
             event.preventDefault()
             if (submitting) return
-            if (step < 3) goNext()
+            if (step < 2) goNext()
             else void submit()
           }}
         >
@@ -708,16 +706,13 @@ function AdForm({ existing }: { existing: Listing | null }) {
                   )
                 })}
               </div>
-            </div>
-          ) : null}
-
-          {step === 1 && plan && category ? (
-            <div className="grid gap-3">
-              <div>
-                <h2 className="text-base font-medium">{categoryName(category)}</h2>
-                <p className="text-sm text-neutral-500">{plan.prompt}</p>
-              </div>
-              <div aria-label={plan.prompt} className="grid gap-2">
+              {plan && category ? (
+                <div className="mt-4 grid gap-3 border-t border-border pt-4">
+                  <div>
+                    <h2 className="text-base font-medium">{categoryName(category)}</h2>
+                    <p className="text-sm text-muted-foreground">{plan.prompt}</p>
+                  </div>
+                  <div aria-label={plan.prompt} className="grid gap-2">
               {plan.subcategories.map((item) => {
                 const selected = subcategoryId === item.id
                 return (
@@ -749,20 +744,22 @@ function AdForm({ existing }: { existing: Listing | null }) {
                   </button>
                 )
               })}
-              </div>
+                  </div>
+                </div>
+              ) : null}
             </div>
           ) : null}
 
-          {step === 2 && plan && subcategory ? (
+          {step === 1 && plan && subcategory ? (
             <section className="grid gap-5 rounded-2xl border bg-white p-4 sm:p-5">
               <div>
                 <h2 className="text-base font-medium">{plan.detailHeading}</h2>
                 <p className="mt-1 text-sm text-neutral-500">{plan.intro}</p>
               </div>
-              <PhotoGallery
+              <PostPhotoGallery
                 photos={photos}
                 invalid={Boolean(errors.image)}
-                onFile={onFile}
+                onFiles={(files) => void onFiles(files)}
                 onRemove={(index) => setPhotos((current) => current.filter((_, i) => i !== index))}
                 onMove={(from, to) =>
                   setPhotos((current) => {
@@ -785,7 +782,7 @@ function AdForm({ existing }: { existing: Listing | null }) {
                 }
               />
               <p className="-mt-3 text-xs text-neutral-500">
-                {plan.photoHint} Up to {maxListingPhotos} photos. The first photo is the cover. Photos are optional.
+                {plan.photoHint} Up to {maxListingPhotos} photos. Phone photos are optimized and metadata is removed before saving. The first photo is the cover.
               </p>
               {errors.image ? (
                 <span data-field-error className="-mt-3 text-xs text-destructive">
@@ -804,6 +801,52 @@ function AdForm({ existing }: { existing: Listing | null }) {
                   className="h-10 bg-white"
                 />
               </Field>
+              {suggestListingTitle({ category, subcategory, details, city }) &&
+              suggestListingTitle({ category, subcategory, details, city }) !== title.trim() ? (
+                <button
+                  type="button"
+                  className="-mt-3 w-fit text-left text-xs font-medium text-muted-foreground underline underline-offset-4 hover:text-foreground"
+                  onClick={() => {
+                    setTitle(suggestListingTitle({ category, subcategory, details, city }))
+                    setErrors((current) => ({ ...current, title: undefined }))
+                  }}
+                >
+                  Use suggested title: {suggestListingTitle({ category, subcategory, details, city })}
+                </button>
+              ) : null}
+
+              <div className="grid gap-3">
+                <div>
+                  <h3 className="text-sm font-medium">Where is it?</h3>
+                  <p className="text-xs text-muted-foreground">Location improves discovery and sets the local transaction context.</p>
+                </div>
+                {!country ? (
+                  <p className="rounded-xl border border-amber-200 bg-amber-50 px-3 py-2 text-sm text-amber-950">
+                    Choose a country for this ad, or{" "}
+                    <Link href="/account" className="font-medium underline underline-offset-2 hover:text-amber-900">
+                      set your country on Profile
+                    </Link>.
+                  </p>
+                ) : null}
+                <PostingLocationFields
+                  country={country}
+                  city={city}
+                  cityError={errors.city}
+                  onCountryChange={(code) => {
+                    setCountry(code)
+                    setCity("")
+                    setPlace(null)
+                    setCurrency(africanCurrencyForCountry(code) ?? "KES")
+                    setErrors((current) => ({ ...current, city: undefined, currency: undefined, form: undefined }))
+                  }}
+                  onCityChange={(value) => {
+                    setCity(value)
+                    setErrors((current) => ({ ...current, city: undefined }))
+                  }}
+                  onPlace={setPlace}
+                />
+              </div>
+
               <div className="grid gap-5 sm:grid-cols-2">
                 <Field label={`${subcategory.priceLabel} (${currency})`} required error={errors.price}>
                   <Input
@@ -893,6 +936,14 @@ function AdForm({ existing }: { existing: Listing | null }) {
                 </div>
               ) : null}
 
+              <div className="rounded-xl bg-muted/40 px-3 py-3">
+                <p className="text-xs font-medium text-foreground">Useful details to include</p>
+                <ul className="mt-1.5 grid gap-1 text-xs leading-5 text-muted-foreground">
+                  {descriptionGuidance(category, subcategory).map((item) => (
+                    <li key={item}>• {item}</li>
+                  ))}
+                </ul>
+              </div>
               <Field
                 label={plan.descriptionLabel}
                 required
@@ -914,7 +965,7 @@ function AdForm({ existing }: { existing: Listing | null }) {
             </section>
           ) : null}
 
-          {step === 3 && plan ? (
+          {step === 2 && plan ? (
             <section className="grid gap-5 rounded-2xl border bg-white p-4 sm:p-5">
               <div>
                 <h2 className="text-base font-medium">Where can people reach you?</h2>
@@ -925,59 +976,47 @@ function AdForm({ existing }: { existing: Listing | null }) {
                 <p className="mt-0.5 text-sm text-neutral-700">{Number(price) > 0 ? formatPrice(preview) : "Add a price"}</p>
                 {choiceLine ? <p className="mt-0.5 truncate text-xs text-neutral-500">{choiceLine}</p> : null}
               </div>
-              {!country ? (
-                <p className="rounded-xl border border-amber-200 bg-amber-50 px-3 py-2 text-sm text-amber-950">
-                  Choose a country for this ad, or{" "}
-                  <Link
-                    href="/account"
-                    className="font-medium underline underline-offset-2 hover:text-amber-900"
-                  >
-                    set your country on Profile
-                  </Link>
-                  .
-                </p>
-              ) : null}
-              <div className="grid grid-cols-2 gap-3">
-                <Field label="Country" required>
-                  <CountryField
-                    country={country}
-                    onChange={(code) => {
-                      setCountry(code)
-                      setCity("")
-                      setPlace(null)
-                      setCurrency(getCountry(code)?.currencies[0]?.code ?? "USD")
-                      setErrors((current) => ({ ...current, city: undefined, currency: undefined, form: undefined }))
-                    }}
-                  />
-                </Field>
-                <Field label="City" required error={errors.city}>
-                  {country ? (
-                    <CityField
-                      country={country}
-                      city={city}
-                      onCityChange={(value) => {
-                        setCity(value)
-                        setErrors((current) => ({ ...current, city: undefined }))
-                      }}
-                      onPlace={setPlace}
-                    />
-                  ) : (
-                    <Input disabled placeholder="Choose a country first" aria-disabled="true" className="h-10 bg-white" />
-                  )}
-                </Field>
+              <div className="grid gap-2">
+                <div className="flex items-center justify-between gap-3 rounded-xl border border-border px-3 py-3">
+                  <div>
+                    <p className="text-sm font-medium">Marketplace messages</p>
+                    <p className="text-xs text-muted-foreground">Always available without exposing your phone number.</p>
+                  </div>
+                  <span className="text-xs font-medium text-foreground">On</span>
+                </div>
+                <label className="flex items-center justify-between gap-3 rounded-xl border border-border px-3 py-3 text-sm">
+                  <span>
+                    <span className="block font-medium">WhatsApp</span>
+                    <span className="block text-xs text-muted-foreground">Share your number only for listing replies.</span>
+                  </span>
+                  <input type="checkbox" className="size-4 rounded border-neutral-300" checked={contactWhatsApp} onChange={(event) => setContactWhatsApp(event.target.checked)} />
+                </label>
+                <label className="flex items-center justify-between gap-3 rounded-xl border border-border px-3 py-3 text-sm">
+                  <span>
+                    <span className="block font-medium">Phone calls</span>
+                    <span className="block text-xs text-muted-foreground">Let buyers call about this listing.</span>
+                  </span>
+                  <input type="checkbox" className="size-4 rounded border-neutral-300" checked={contactPhone} onChange={(event) => setContactPhone(event.target.checked)} />
+                </label>
               </div>
-              <ContactPhoneField
-                id="listing-phone"
-                value={phone}
-                countryCode={country}
-                required={contactWhatsApp || contactPhone}
-                error={errors.phone}
-                hint={contactWhatsApp || contactPhone ? plan.safety : "Optional. Marketplace messages work without sharing a phone number."}
-                onChange={(value) => {
-                  setPhone(value)
-                  setErrors((current) => ({ ...current, phone: undefined }))
-                }}
-              />
+              {contactWhatsApp || contactPhone ? (
+                <ContactPhoneField
+                  id="listing-phone"
+                  value={phone}
+                  countryCode={country}
+                  required
+                  error={errors.phone}
+                  hint={plan.safety}
+                  onChange={(value) => {
+                    setPhone(value)
+                    setErrors((current) => ({ ...current, phone: undefined }))
+                  }}
+                />
+              ) : (
+                <p className="text-xs leading-5 text-muted-foreground">
+                  Your phone number stays private. Buyers can contact you through marketplace messages.
+                </p>
+              )}
               <label className="flex items-start gap-2 text-sm text-neutral-700">
                 <input
                   type="checkbox"
@@ -998,35 +1037,6 @@ function AdForm({ existing }: { existing: Listing | null }) {
                   </span>
                 </span>
               </label>
-              <div className="grid gap-2">
-                <div>
-                  <p className="text-xs font-medium text-neutral-700">Direct contact</p>
-                  <p className="mt-0.5 text-xs leading-5 text-neutral-500">Off by default. Turn on only the ways you want buyers to contact you outside marketplace messages.</p>
-                </div>
-                <label className="flex items-center gap-2 text-sm text-neutral-700">
-                  <input
-                    type="checkbox"
-                    className="size-4 rounded border-neutral-300"
-                    checked={contactWhatsApp}
-                    onChange={(event) => setContactWhatsApp(event.target.checked)}
-                  />
-                  WhatsApp
-                </label>
-                <label className="flex items-center gap-2 text-sm text-neutral-700">
-                  <input
-                    type="checkbox"
-                    className="size-4 rounded border-neutral-300"
-                    checked={contactPhone}
-                    onChange={(event) => setContactPhone(event.target.checked)}
-                  />
-                  Phone calls
-                </label>
-                <p className="text-xs leading-5 text-neutral-500">
-                  Buyers can always use marketplace messages. If both options are off, we do not require a listing phone number. If you enable one, the number is used only for the direct contact options you choose.
-                  If you use WhatsApp for a business, make sure your seller/profile name clearly identifies that business. Buyers must consent
-                  before we open WhatsApp, and that consent is limited to replies about the listing—not unrelated marketing.
-                </p>
-              </div>
               <div className="rounded-xl bg-neutral-50 px-3 py-2.5 text-xs leading-5 text-neutral-600">
                 By publishing, you confirm the listing information is accurate and may be shown publicly. Do not put passwords, payment-card details, government ID numbers, medical information, or other unnecessary sensitive personal data in the title, description, photos, or custom fields. See our <Link href="/privacy" className="font-medium underline underline-offset-2">Privacy Policy</Link>.
               </div>
@@ -1050,7 +1060,7 @@ function AdForm({ existing }: { existing: Listing | null }) {
                 Back
               </Button>
             )}
-            {step < 3 ? (
+            {step < 2 ? (
               <Button
                 type="submit"
                 className="h-10 rounded-full bg-neutral-950 px-5 text-white hover:bg-neutral-800"
@@ -1075,116 +1085,6 @@ function AdForm({ existing }: { existing: Listing | null }) {
           <p className="mb-2 text-xs font-medium tracking-wide text-neutral-500 uppercase">Preview</p>
           <ListingCard listing={preview} linked={false} saveable={false} />
         </aside>
-      ) : null}
-    </div>
-  )
-}
-
-function PhotoGallery({
-  photos,
-  invalid,
-  onFile,
-  onRemove,
-  onMove,
-  onCover,
-}: {
-  photos: string[]
-  invalid: boolean
-  onFile: (file: File | undefined) => void
-  onRemove: (index: number) => void
-  onMove: (from: number, to: number) => void
-  onCover: (index: number) => void
-}) {
-  const inputRef = useRef<HTMLInputElement>(null)
-  const [drag, setDrag] = useState(false)
-
-  function take(event: DragEvent<HTMLDivElement>) {
-    event.preventDefault()
-    setDrag(false)
-    onFile(event.dataTransfer.files?.[0])
-  }
-
-  return (
-    <div className="grid gap-3">
-      {photos.length > 0 ? (
-        <ul className="grid grid-cols-2 gap-2 sm:grid-cols-3">
-          {photos.map((photo, index) => (
-            <li key={`${index}-${photo.slice(0, 32)}`} className="relative overflow-hidden rounded-xl border border-neutral-200 bg-neutral-100">
-              {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img src={photo} alt="" className="aspect-[4/3] w-full object-cover" />
-              {index === 0 ? (
-                <span className="absolute top-2 left-2 rounded-full bg-neutral-950 px-2 py-0.5 text-[10px] font-medium text-white">
-                  Cover
-                </span>
-              ) : null}
-              <div className="absolute inset-x-0 bottom-0 flex flex-wrap gap-1 bg-gradient-to-t from-black/60 to-transparent p-2">
-                {index > 0 ? (
-                  <Button type="button" size="sm" variant="secondary" className="h-7 rounded-full bg-white px-2 text-xs" onClick={() => onCover(index)}>
-                    Cover
-                  </Button>
-                ) : null}
-                <Button
-                  type="button"
-                  size="sm"
-                  variant="secondary"
-                  className="h-7 rounded-full bg-white px-2 text-xs"
-                  disabled={index === 0}
-                  onClick={() => onMove(index, index - 1)}
-                >
-                  <ChevronLeft className="size-3.5" />
-                </Button>
-                <Button
-                  type="button"
-                  size="sm"
-                  variant="secondary"
-                  className="h-7 rounded-full bg-white px-2 text-xs"
-                  disabled={index === photos.length - 1}
-                  onClick={() => onMove(index, index + 1)}
-                >
-                  <ChevronRight className="size-3.5" />
-                </Button>
-                <Button type="button" size="sm" variant="secondary" className="h-7 rounded-full bg-white px-2 text-xs" onClick={() => onRemove(index)}>
-                  Remove
-                </Button>
-              </div>
-            </li>
-          ))}
-        </ul>
-      ) : null}
-      {photos.length < maxListingPhotos ? (
-        <div
-          className={cn(
-            "overflow-hidden rounded-2xl border border-dashed bg-neutral-50",
-            drag ? "border-neutral-950 bg-white" : "border-neutral-300",
-            invalid && "border-destructive",
-          )}
-          onDragOver={(event) => {
-            event.preventDefault()
-            setDrag(true)
-          }}
-          onDragLeave={() => setDrag(false)}
-          onDrop={take}
-        >
-          <input
-            ref={inputRef}
-            type="file"
-            accept="image/jpeg,image/png,image/webp"
-            tabIndex={-1}
-            className="sr-only"
-            onChange={(event) => {
-              onFile(event.target.files?.[0])
-              event.target.value = ""
-            }}
-          />
-          <button
-            type="button"
-            onClick={() => inputRef.current?.click()}
-            className="flex h-36 w-full flex-col items-center justify-center gap-2 text-sm text-neutral-600"
-          >
-            <ImagePlus className="size-5" />
-            {photos.length === 0 ? "Add a photo" : "Add another photo"}
-          </button>
-        </div>
       ) : null}
     </div>
   )
@@ -1223,117 +1123,6 @@ function ChoiceRow({
       ))}
     </ToggleGroup>
   )
-}
-
-function CountryField({ country, onChange }: { country: string; onChange: (code: string) => void }) {
-  const inputRef = useRef<HTMLInputElement>(null)
-  const [query, setQuery] = useState("")
-  const [open, setOpen] = useState(false)
-  const needle = fold(query)
-  const featured = filterCountries(primaryCountries(), needle)
-  const rest = filterCountries(moreCountries(), needle)
-  const matches = [...featured, ...rest]
-  const display = country ? countryName(country) : ""
-
-  function pick(code: string) {
-    onChange(code)
-    setQuery("")
-    setOpen(false)
-    inputRef.current?.blur()
-  }
-
-  return (
-    <div className="relative">
-      <Input
-        ref={inputRef}
-        value={open ? query : display}
-        role="combobox"
-        aria-expanded={open}
-        aria-controls="post-country-list"
-        aria-autocomplete="list"
-        placeholder="Choose country"
-        className="h-10 bg-white"
-        onClick={() => setOpen(true)}
-        onFocus={() => {
-          setQuery("")
-          setOpen(true)
-        }}
-        onChange={(event) => {
-          setQuery(event.target.value)
-          setOpen(true)
-        }}
-        onBlur={() => {
-          window.setTimeout(() => setOpen(false), 150)
-        }}
-        onKeyDown={(event) => {
-          if (event.key === "Escape") {
-            setOpen(false)
-            return
-          }
-          if (event.key !== "Enter" || !open) return
-          event.preventDefault()
-          const exact = matches.find(
-            (item) => fold(item.name) === needle || item.code.toLowerCase() === query.trim().toLowerCase(),
-          )
-          const next = exact ?? (matches.length === 1 ? matches[0] : undefined)
-          if (next) pick(next.code)
-        }}
-      />
-      {open ? (
-        <ul
-          id="post-country-list"
-          role="listbox"
-          className="absolute z-30 mt-1 max-h-56 w-full overflow-auto rounded-xl border bg-white p-1 shadow-md"
-        >
-          {matches.length === 0 ? (
-            <li className="px-2 py-2 text-sm text-neutral-500">No country matches</li>
-          ) : (
-            <>
-              {featured.map((item) => (
-                <CountryOption key={item.code} item={item} selected={item.code === country} onPick={pick} />
-              ))}
-              {featured.length > 0 && rest.length > 0 ? <li className="my-1 border-t border-neutral-100" /> : null}
-              {rest.map((item) => (
-                <CountryOption key={item.code} item={item} selected={item.code === country} onPick={pick} />
-              ))}
-            </>
-          )}
-        </ul>
-      ) : null}
-    </div>
-  )
-}
-
-function CountryOption({
-  item,
-  selected,
-  onPick,
-}: {
-  item: CountryRecord
-  selected: boolean
-  onPick: (code: string) => void
-}) {
-  return (
-    <li role="option" aria-selected={selected}>
-      <button
-        type="button"
-        className={cn(
-          "flex w-full items-center justify-between gap-3 rounded-lg px-2 py-1.5 text-left text-sm hover:bg-neutral-100",
-          selected && "font-medium",
-        )}
-        onMouseDown={(event) => event.preventDefault()}
-        onClick={() => onPick(item.code)}
-      >
-        <span className="truncate">{item.name}</span>
-        {selected ? <Check className="size-3.5 shrink-0" /> : null}
-      </button>
-    </li>
-  )
-}
-
-function filterCountries(list: CountryRecord[], needle: string): CountryRecord[] {
-  if (!needle) return list
-  return list.filter((item) => fold(item.name).includes(needle) || item.code.toLowerCase() === needle)
 }
 
 function DetailControl({
@@ -1378,10 +1167,14 @@ function DetailControl({
 }
 
 function currencyChoices(countryCode: string, extra?: string): string[] {
-  const local = getCountry(countryCode)?.currencies.map((item) => item.code) ?? []
-  const codes = local.includes("USD") ? local : [...local, "USD"]
-  if (extra && !codes.includes(extra)) return [extra, ...codes]
-  return codes
+  const african = new Set(boardCurrencyCodes())
+  const local = (getCountry(countryCode)?.currencies.map((item) => item.code) ?? []).filter((code) => african.has(code))
+  if (extra && african.has(extra) && !local.includes(extra)) return [extra, ...local]
+  return local
+}
+
+function africanCurrencyForCountry(countryCode: string): string | undefined {
+  return currencyChoices(countryCode)[0]
 }
 
 function placeFromListing(listing: Listing | null): ChosenPlace | null {

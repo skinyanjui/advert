@@ -27,4 +27,5 @@ test("withCoverImage caps at six and sets cover", () => {
 test("normalizeListingPhotos and file checks", () => {
   assert.deepEqual(normalizeListingPhotos(undefined, "/listings/a.jpg"), ["/listings/a.jpg"])
   assert.equal(photoFileError(new File([""], "x.txt", { type: "text/plain" })), "Choose a JPEG, PNG, or WebP photo.")
+  assert.equal(photoFileError(new File([new Uint8Array(12_000_001)], "large.jpg", { type: "image/jpeg" })), "Use a photo under 12MB.")
 })

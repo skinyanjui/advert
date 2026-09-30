@@ -2,9 +2,11 @@ import type { CategoryId } from "@/lib/types"
 import type { PricePeriodId } from "@/lib/posting"
 
 const DRAFT_KEY = "advert:post-draft:v1"
+const FLOW_VERSION = 2 as const
 export const DRAFT_MAX_AGE_MS = 7 * 24 * 60 * 60 * 1000
 
 export type PostDraft = {
+  flowVersion?: 2
   step: number
   category: CategoryId | null
   subcategoryId: string | null
@@ -40,23 +42,25 @@ export function readPostDraft(now = Date.now()): PostDraft | null {
       clearPostDraft()
       return null
     }
-    return parsed
+    const legacyStep = parsed.step
+    const step = parsed.flowVersion === FLOW_VERSION ? legacyStep : legacyStep >= 3 ? 2 : legacyStep >= 2 ? 1 : 0
+    return { ...parsed, flowVersion: FLOW_VERSION, step }
   } catch {
     return null
   }
 }
 
-export function writePostDraft(draft: Omit<PostDraft, "savedAt">): WritePostDraftResult {
+export function writePostDraft(draft: Omit<PostDraft, "savedAt" | "flowVersion">): WritePostDraftResult {
   if (typeof window === "undefined") return { ok: false }
   const savedAt = Date.now()
   try {
-    const payload: PostDraft = { ...draft, savedAt }
+    const payload: PostDraft = { ...draft, flowVersion: FLOW_VERSION, savedAt }
     window.localStorage.setItem(DRAFT_KEY, JSON.stringify(payload))
     return { ok: true }
   } catch {
     if (draft.photos.length === 0) return { ok: false }
     try {
-      const withoutPhotos: PostDraft = { ...draft, photos: [], savedAt }
+      const withoutPhotos: PostDraft = { ...draft, photos: [], flowVersion: FLOW_VERSION, savedAt }
       window.localStorage.setItem(DRAFT_KEY, JSON.stringify(withoutPhotos))
       return { ok: true, omittedPhotos: true }
     } catch {

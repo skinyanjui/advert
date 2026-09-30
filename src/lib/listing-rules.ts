@@ -1,5 +1,6 @@
 import { contactPhoneError, normalizeContactPhone } from "@/lib/contact-phone"
 import { getCountry } from "@/lib/countries"
+import { boardCurrencyCodes } from "@/lib/fx"
 import { findSubcategory, isPricePeriodId, pricePeriod } from "@/lib/posting"
 import type { CategoryId, Listing } from "@/lib/types"
 
@@ -42,8 +43,8 @@ export type ListingFields = {
 export type FieldErrors = Partial<Record<string, string>>
 
 export function allowedCurrencies(country: string): string[] {
-  const local = getCountry(country)?.currencies.map((item) => item.code) ?? []
-  return local.includes("USD") ? local : [...local, "USD"]
+  const african = new Set(boardCurrencyCodes())
+  return (getCountry(country)?.currencies.map((item) => item.code) ?? []).filter((code) => african.has(code))
 }
 
 export function listingFieldErrors(input: ListingFields): FieldErrors {
@@ -106,7 +107,7 @@ export function acceptListing(listing: Listing): { ok: true; listing: Listing } 
   const errors = listingFieldErrors({
     title: listing.title,
     price: listing.price,
-    currency: listing.currency ?? "USD",
+    currency: listing.currency ?? allowedCurrencies(listing.country)[0] ?? "KES",
     priceSuffix: listing.priceSuffix,
     category: listing.category,
     subcategoryId: listing.subcategory ?? null,
@@ -150,7 +151,7 @@ function normalizeListing(listing: Listing): Listing {
     ...listing,
     title: listing.title.trim().slice(0, 80),
     price: Math.round(listing.price),
-    currency: listing.currency ?? "USD",
+    currency: listing.currency ?? allowedCurrencies(listing.country)[0] ?? "KES",
     description: listing.description.trim().slice(0, 2000),
     city: listing.city.trim().slice(0, 80),
     phone:

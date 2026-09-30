@@ -28,6 +28,11 @@ test("listingFieldErrors rejects a short title and weak phone", () => {
   assert.equal(errors.phone, "Add a phone number people can use.")
 })
 
+test("listingFieldErrors keeps listing currencies African and country-aware", () => {
+  const errors = listingFieldErrors({ ...base, currency: "USD" })
+  assert.match(errors.currency ?? "", /currency for this country/i)
+})
+
 test("listingFieldErrors rejects prohibited wording", () => {
   const errors = listingFieldErrors({
     ...base,
