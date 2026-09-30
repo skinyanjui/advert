@@ -2,6 +2,7 @@ export const reportReasons = [
   { id: "spam", label: "Spam or advertising" },
   { id: "scam", label: "Scam or fraud" },
   { id: "prohibited", label: "Prohibited item or service" },
+  { id: "illegal_content", label: "Illegal content or illegal product/service" },
   { id: "wrong_category", label: "Wrong category" },
   { id: "offensive", label: "Offensive or abusive" },
   { id: "undisclosed_promo", label: "Undisclosed paid promotion" },
@@ -32,4 +33,19 @@ export function reportAutoHideThreshold(): number {
   const parsed = raw ? Number.parseInt(raw, 10) : Number.NaN
   if (Number.isFinite(parsed) && parsed >= 1 && parsed <= 50) return parsed
   return 3
+}
+
+
+export function illegalContentNoticeError(input: {
+  legalBasis: string
+  jurisdiction: string
+  goodFaith: boolean
+}): string | undefined {
+  const basis = input.legalBasis.trim()
+  const jurisdiction = input.jurisdiction.trim()
+  if (basis.length < 10) return "Explain why you believe the listing is illegal."
+  if (basis.length > 1500) return "Keep the legal explanation under 1,500 characters."
+  if (jurisdiction.length > 120) return "Keep the jurisdiction under 120 characters."
+  if (!input.goodFaith) return "Confirm that the illegal-content notice is submitted in good faith."
+  return undefined
 }
