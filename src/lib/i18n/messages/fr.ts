@@ -489,6 +489,8 @@ export const fr: Messages = {
   "report.reason.offensive": "Offensant ou abusif",
   "report.reason.undisclosed_promo": "Promotion payée non déclarée",
   "report.reason.other": "Autre chose",
+  "legal.languageNoticeTitle": "Langue des documents juridiques",
+  "legal.languageNoticeBody": "Les projets juridiques complets sont actuellement disponibles uniquement en anglais. Les traductions juridiques française et swahilie attendent la validation d’un conseil juridique. Le formulaire de droits à la vie privée est disponible dans la langue sélectionnée de l’application.",
   "terms.reacceptTitle": "Terminer l’accès au compte",
   "terms.reacceptBody": "Consultez la version {terms} / {privacy} (en vigueur le {date}) et complétez les deux confirmations avant d’utiliser les fonctions protégées. La consultation publique reste disponible.",
   "terms.reacceptRead": "Consultez",
