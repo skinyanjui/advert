@@ -138,8 +138,8 @@ test("top nav is composed from responsive component boundaries with deliberate b
   assert.match(header, /border-input bg-background/)
   assert.match(theme, /border border-input bg-background/)
   assert.match(categories, /border border-input bg-background md:hidden/)
-  assert.match(css, /--border: oklch\(0\.84 0 0\)/)
-  assert.match(css, /--input: oklch\(0\.78 0 0\)/)
+  assert.match(css, /--border: oklch\(0\.885 0 0\)/)
+  assert.match(css, /--input: oklch\(0\.86 0 0\)/)
 })
 
 
@@ -156,4 +156,13 @@ test("top navigation uses a compact visual scale without shrinking interaction s
   assert.match(profile, /relative flex size-8/)
   assert.match(theme, /flex size-8 items-center/)
   assert.match(categories, /size-8 shrink-0 rounded-full/)
+})
+
+
+test("sidebar geometry follows the compact header without a vertical gap", () => {
+  const categories = readFileSync(new URL("../src/components/category-top-nav.tsx", import.meta.url), "utf8")
+  assert.match(categories, /sticky top-14/)
+  assert.match(categories, /h-\\[calc\\(100svh-3\\.5rem\\)\\]/)
+  assert.match(categories, /md:top-16/)
+  assert.match(categories, /md:h-\\[calc\\(100svh-4rem\\)\\]/)
 })

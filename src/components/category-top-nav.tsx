@@ -43,7 +43,7 @@ export function CategorySidebar() {
       className={
         isMobile
           ? undefined
-          : "sticky top-16 z-40 h-[calc(100svh-4rem)] border-r border-sidebar-border md:top-[72px] md:h-[calc(100svh-72px)]"
+          : "sticky top-14 z-40 h-[calc(100svh-3.5rem)] border-r border-sidebar-border md:top-16 md:h-[calc(100svh-4rem)]"
       }
     >
       <CategorySidebarHeader />
