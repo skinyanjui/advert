@@ -8,6 +8,9 @@ const TERMS_INTENT_TTL_MS = 60 * 60 * 1000
 type TermsIntent = {
   termsVersion: string
   privacyVersion: string
+  ageAttested: boolean
+  privacyAcknowledged: boolean
+  locale: string | null
   savedAt: number
 }
 
@@ -23,6 +26,8 @@ function readIntent(): TermsIntent | null {
     if (
       typeof parsed.termsVersion !== "string" ||
       typeof parsed.privacyVersion !== "string" ||
+      parsed.ageAttested !== true ||
+      parsed.privacyAcknowledged !== true ||
       typeof parsed.savedAt !== "number"
     ) {
       return null
@@ -34,6 +39,9 @@ function readIntent(): TermsIntent | null {
     return {
       termsVersion: parsed.termsVersion,
       privacyVersion: parsed.privacyVersion,
+      ageAttested: true,
+      privacyAcknowledged: true,
+      locale: typeof parsed.locale === "string" ? parsed.locale.slice(0, 16) : null,
       savedAt: parsed.savedAt,
     }
   } catch {
@@ -43,9 +51,16 @@ function readIntent(): TermsIntent | null {
 
 export function rememberTermsIntent(): void {
   if (typeof window === "undefined") return
+  const locale =
+    document.documentElement.lang?.trim() ||
+    navigator.language?.trim() ||
+    null
   const intent: TermsIntent = {
     termsVersion: TERMS_VERSION,
     privacyVersion: PRIVACY_VERSION,
+    ageAttested: true,
+    privacyAcknowledged: true,
+    locale: locale ? locale.slice(0, 16) : null,
     savedAt: Date.now(),
   }
   try {
@@ -58,7 +73,12 @@ export function rememberTermsIntent(): void {
 export function hasTermsIntent(): boolean {
   const intent = readIntent()
   if (!intent) return false
-  return intent.termsVersion === TERMS_VERSION && intent.privacyVersion === PRIVACY_VERSION
+  return (
+    intent.termsVersion === TERMS_VERSION &&
+    intent.privacyVersion === PRIVACY_VERSION &&
+    intent.ageAttested === true &&
+    intent.privacyAcknowledged === true
+  )
 }
 
 export function clearTermsIntent(): void {
@@ -79,12 +99,18 @@ export function notifyTermsAccepted(): void {
 export async function recordPendingTermsAcceptance(
   context: "signup" | "reaccept" = "signup",
 ): Promise<boolean> {
-  if (!hasTermsIntent() && context === "signup") return false
+  const intent = readIntent()
+  if ((!intent || !hasTermsIntent()) && context === "signup") return false
   try {
     const response = await fetch("/api/terms", {
       method: "POST",
       headers: { "content-type": "application/json" },
-      body: JSON.stringify({ context }),
+      body: JSON.stringify({
+        context,
+        ageAttested: intent?.ageAttested ?? true,
+        privacyAcknowledged: intent?.privacyAcknowledged ?? true,
+        locale: intent?.locale ?? null,
+      }),
     })
     if (response.ok) {
       clearTermsIntent()
