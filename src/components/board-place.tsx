@@ -102,7 +102,7 @@ export function BoardCitySearch({
         aria-expanded={open && (suggestions.length > 0 || query.length >= 2)}
         aria-controls="board-city-list"
         role="combobox"
-        className="h-8 rounded-full bg-white pr-8 text-xs"
+        className="h-8 rounded-full border-input bg-background pr-8 text-xs shadow-none"
       />
       {city && !open ? (
         <button
@@ -116,12 +116,12 @@ export function BoardCitySearch({
         </button>
       ) : null}
       {open && suggestions.length > 0 ? (
-        <ul id="board-city-list" role="listbox" className="absolute z-30 mt-1 max-h-56 w-full overflow-auto rounded-lg border bg-white p-1 shadow-md">
+        <ul id="board-city-list" role="listbox" className="absolute z-30 mt-1 max-h-56 w-full overflow-auto rounded-lg border border-border bg-popover p-1 text-popover-foreground shadow-md">
           {suggestions.map((place) => (
             <li key={`${place.source ?? "geonames"}-${place.name}-${place.lat}`} role="option" aria-selected={fold(place.name) === fold(city ?? "")}>
               <button
                 type="button"
-                className="flex w-full items-center justify-between gap-3 rounded-md px-2 py-1.5 text-left text-sm hover:bg-neutral-100"
+                className="flex w-full items-center justify-between gap-3 rounded-md px-2 py-1.5 text-left text-sm hover:bg-muted"
                 onMouseDown={(event) => event.preventDefault()}
                 onClick={() => pick(place.name)}
               >
@@ -133,7 +133,7 @@ export function BoardCitySearch({
         </ul>
       ) : null}
       {open && query.length >= 2 && suggestions.length === 0 ? (
-        <p className="absolute z-30 mt-1 w-full rounded-lg border bg-white px-3 py-2 text-sm text-neutral-500 shadow-md">
+        <p className="absolute z-30 mt-1 w-full rounded-lg border border-border bg-popover px-3 py-2 text-sm text-muted-foreground shadow-md">
           No cities match
         </p>
       ) : null}

@@ -7,6 +7,7 @@ import { ListingThumb } from "@/components/inbox/listing-thumb"
 import { usePrefs } from "@/components/prefs-provider"
 import { NavBadge } from "@/components/nav-badge"
 import { Input } from "@/components/ui/input"
+import { formatPrice } from "@/lib/format"
 import type { MessageThread } from "@/lib/messages"
 import { formatMessageWhen } from "@/lib/relative-time"
 import type { Listing } from "@/lib/types"
@@ -69,7 +70,11 @@ export function ConversationList({
         </ul>
       ) : (
         <p className="px-5 py-12 text-center text-sm text-neutral-500">
-          {filter === "unread" ? t("inbox.emptyUnread") : t("inbox.emptySearch", { query: search.trim() })}
+          {filter === "unread"
+            ? t("inbox.emptyUnread")
+            : search.trim()
+              ? t("inbox.emptySearch", { query: search.trim() })
+              : t("inbox.emptyBody")}
         </p>
       )}
     </aside>
@@ -93,6 +98,8 @@ function ConversationRow({ thread, listing, active }: { thread: MessageThread; l
             <span className="shrink-0 text-[11px] text-neutral-500">{formatMessageWhen(thread.latestAt)}</span>
           </span>
           <span className="mt-0.5 flex min-w-0 items-center gap-1.5 text-xs text-neutral-600">
+            {listing ? <span className="shrink-0 font-medium text-neutral-900">{formatPrice(listing)}</span> : null}
+            {listing ? <span aria-hidden="true">·</span> : null}
             <span className="truncate">{thread.viewerIsSeller ? t("inbox.buyer") : t("inbox.seller")}: {thread.peerName}</span>
             {thread.unread ? (
               <NavBadge

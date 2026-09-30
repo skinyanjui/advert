@@ -78,12 +78,11 @@ function Collection({
   return (
     <div className="mx-auto w-full max-w-[1720px] px-4 py-8 md:px-6">
       <h1 className="text-2xl font-semibold tracking-tight">{title}</h1>
-      <p className="mt-1 text-sm text-neutral-500">{description}</p>
       {banner}
       {cards.length === 0 ? (
-        <EmptyPanel title={emptyTitle} body={emptyBody} actionHref={actionHref} actionLabel={actionLabel} />
+        <EmptyPanel title={emptyTitle} body={emptyBody || description} actionHref={actionHref} actionLabel={actionLabel} />
       ) : (
-        <div className={`mt-6 ${listingGridClassName}`}>
+        <div className={`mt-4 ${listingGridClassName}`}>
           {cards.map((listing) => (
             <ListingCard key={listing.id} listing={listing} />
           ))}

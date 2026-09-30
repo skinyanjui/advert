@@ -214,9 +214,11 @@ export function MyAdsPage() {
       <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
         <h1 className="text-2xl font-semibold tracking-tight">{t("myAds.title")}</h1>
         <div className="flex flex-wrap gap-2">
-          <Button asChild size="sm" variant="outline" className="h-8 rounded-lg px-3 text-xs">
-            <Link href="/account/moderation">Moderation decisions</Link>
-          </Button>
+          {mine.some((listing) => listing.hidden) ? (
+            <Button asChild size="sm" variant="outline" className="h-8 rounded-lg px-3 text-xs">
+              <Link href="/account/moderation">Moderation decisions</Link>
+            </Button>
+          ) : null}
           <Button asChild size="sm" className="h-8 rounded-lg px-3 text-xs">
             <Link href={postHref}>{t("myAds.postAd")}</Link>
           </Button>
@@ -224,18 +226,27 @@ export function MyAdsPage() {
       </div>
 
       <div className="overflow-hidden rounded-xl border border-neutral-200 bg-white">
-          <div className="space-y-3 border-b border-neutral-200 p-4">
-            <StatusFilterChips filter={filter} counts={counts} onChange={setFilter} />
-          </div>
+          {mine.length > 0 ? (
+            <div className="space-y-3 border-b border-neutral-200 p-4">
+              <StatusFilterChips filter={filter} counts={counts} onChange={setFilter} />
+            </div>
+          ) : null}
 
           {visible.length === 0 ? (
-            <p className="px-5 py-12 text-center text-sm text-neutral-500">
-              {mine.length === 0
-                ? t("myAds.emptyNone")
-                : filter === "all"
+            mine.length === 0 ? (
+              <EmptyPanel
+                title={t("myAds.emptyNone")}
+                actionHref={postHref}
+                actionLabel={t("myAds.postAd")}
+                className="m-4 mt-4"
+              />
+            ) : (
+              <p className="px-5 py-12 text-center text-sm text-muted-foreground">
+                {filter === "all"
                   ? t("myAds.emptyFilter")
                   : t("myAds.emptyStatus", { status: listingStatusLabel(filter).toLowerCase() })}
-            </p>
+              </p>
+            )
           ) : (
             <ul className="min-w-0 divide-y divide-neutral-100">
               {visible.map((listing) => (

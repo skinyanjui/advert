@@ -651,13 +651,13 @@ export function HeaderFallback() {
   const ProfileIcon = profile.icon
   return (
     <header className="sticky top-0 z-40 border-b border-border bg-background">
-      <div className="mx-auto flex h-16 max-w-[1720px] items-center gap-1 px-2 md:h-[72px] md:gap-3 md:px-5 xl:gap-6 xl:px-8">
+      <div className="mx-auto flex h-14 max-w-[1720px] items-center gap-1 px-2 md:h-16 md:gap-3 md:px-5 xl:gap-6 xl:px-8">
         <Logo iconOnly className="xl:hidden" />
         <Logo className="hidden xl:flex" />
-        <div className="min-w-0 flex-1 px-2 md:mx-auto md:max-w-[680px] md:px-0">
+        <div className="min-w-0 flex-1 px-2 md:mx-auto md:max-w-[620px] md:px-0">
           <div className="h-11 rounded-full bg-neutral-100" />
         </div>
-        <nav aria-label={profile.label} className="fixed inset-x-3 bottom-[calc(env(safe-area-inset-bottom)+0.75rem)] z-50 mx-auto flex max-w-lg items-center justify-around rounded-3xl border border-neutral-200 bg-white p-2 shadow-lg md:static md:ml-auto md:max-w-none md:gap-2 md:rounded-none md:border-0 md:bg-transparent md:p-0 md:shadow-none lg:gap-3">
+        <nav aria-label={profile.label} className="fixed inset-x-3 bottom-[calc(env(safe-area-inset-bottom)+0.5rem)] z-50 mx-auto flex max-w-md items-center justify-around rounded-2xl border border-border bg-background p-1.5 shadow-lg md:static md:ml-auto md:max-w-none md:gap-2 md:rounded-none md:border-0 md:bg-transparent md:p-0 md:shadow-none lg:gap-3">
           <Link
             href={home.href}
             aria-label={home.label}

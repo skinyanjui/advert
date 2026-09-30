@@ -8,9 +8,7 @@ import { useRouter } from "next/navigation"
 import { ListingPrice } from "@/components/listing-price"
 import { useAuth } from "@/lib/auth"
 import { signInHref } from "@/lib/auth-redirect"
-import { seedListings } from "@/lib/catalog"
-import { WhatsAppConsentAction } from "@/components/whatsapp-consent-action"
-import { countryCodeOf, formatDistance, formatPlace, whatsappHref } from "@/lib/format"
+import { countryCodeOf, formatDistance, formatPlace } from "@/lib/format"
 import { isListingExpired } from "@/lib/expiry"
 import { useMarketplace } from "@/lib/marketplace"
 import {
@@ -21,8 +19,6 @@ import {
 } from "@/lib/relative-time"
 import type { Listing } from "@/lib/types"
 import { cn } from "@/lib/utils"
-
-const sampleIds = new Set(seedListings.map((item) => item.id))
 
 export function ListingCard({
   listing,
@@ -40,21 +36,10 @@ export function ListingCard({
   const { isSaved, toggleSaved } = useMarketplace()
   const auth = useAuth()
   const router = useRouter()
-  const isSample = sampleIds.has(listing.id)
   const saved = isSaved(listing.id)
   const placeFull = formatPlace(listing)
   const countryCode = countryCodeOf(listing)
   const away = distanceKm === undefined ? undefined : formatDistance(distanceKm)
-  const whatsappAvailable =
-    linked &&
-    auth.signedIn &&
-    !isSample &&
-    listing.contactWhatsApp !== false &&
-    !listing.mine &&
-    !listing.sold &&
-    !listing.hidden &&
-    !isListingExpired(listing.expiresAt) &&
-    Boolean(listing.phone.trim())
   const listingHref = preserve ? `/listings/${listing.id}?${preserve}` : `/listings/${listing.id}`
   const body = (
     <>
@@ -93,29 +78,24 @@ export function ListingCard({
             Jobs
           </span>
         ) : null}
-        {away ? (
-          <span className="absolute bottom-2 left-2 rounded-full bg-white/95 px-2 py-0.5 text-[10px] font-medium text-neutral-800">
-            {away}
-          </span>
-        ) : null}
       </div>
       <div className="grid min-h-[4.75rem] grid-rows-[minmax(1.25rem,auto)_1rem_0.875rem_1.125rem] gap-y-0.5 px-2 pt-2 pb-2 xl:px-2">
-        <p className="min-w-0 text-sm leading-5 font-semibold tracking-tight text-neutral-950">
+        <p className="min-w-0 text-sm leading-5 font-semibold tracking-tight text-foreground">
           <ListingPrice listing={listing} />
         </p>
-        <h3 className="truncate text-[13px] leading-4 text-neutral-800 xl:text-[12px]">{listing.title}</h3>
+        <h3 className="truncate text-[13px] leading-4 text-foreground/85 xl:text-[12px]">{listing.title}</h3>
         <p
-          className="flex min-w-0 items-center gap-1 text-[11px] leading-3.5 text-neutral-600"
+          className="flex min-w-0 items-center gap-1 text-[11px] leading-3.5 text-muted-foreground"
           title={placeFull}
           aria-label={placeFull}
         >
           <MapPin className="size-3 shrink-0" aria-hidden="true" />
           <span className="flex min-w-0 items-baseline">
             <span className="min-w-0 truncate">{listing.city}</span>
-            <span className="shrink-0">, {countryCode}</span>
+            <span className="shrink-0">, {countryCode}{away ? ` · ${away}` : ""}</span>
           </span>
         </p>
-        <div className="flex items-center pr-9 text-[11px] leading-none text-neutral-500">
+        <div className="flex items-center pr-9 text-[11px] leading-none text-muted-foreground">
           <PostedLabel listing={listing} />
         </div>
       </div>
@@ -123,7 +103,7 @@ export function ListingCard({
   )
 
   return (
-    <article className="group relative flex h-full flex-col overflow-hidden rounded-xl border border-neutral-200/80 bg-white transition-shadow hover:shadow-md">
+    <article className="group relative flex h-full flex-col overflow-hidden rounded-xl border border-border bg-background transition-colors hover:border-foreground/20">
       <div className="flex h-full flex-col">{body}</div>
       {linked ? (
         <Link
@@ -133,18 +113,6 @@ export function ListingCard({
         >
           <span className="sr-only">View listing</span>
         </Link>
-      ) : null}
-      {whatsappAvailable ? (
-        <WhatsAppConsentAction
-          listingId={listing.id}
-          sellerName={listing.sellerName}
-          listingTitle={listing.title}
-          href={whatsappHref(listing.phone, listing.title, listing.id)}
-          ariaLabel={`Chat with seller about ${listing.title} on WhatsApp`}
-          className="absolute right-2 bottom-2 z-20 inline-flex size-7 items-center justify-center rounded-full border border-neutral-200 bg-white text-[#25D366] shadow-sm transition hover:border-[#25D366]/40 hover:bg-[#25D366]/5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-neutral-950"
-        >
-          <WhatsAppIcon className="size-3.5" />
-        </WhatsAppConsentAction>
       ) : null}
       {saveable ? (
         <button
@@ -184,13 +152,5 @@ function PostedLabel({ listing }: { listing: Listing }) {
     >
       {label}
     </time>
-  )
-}
-
-function WhatsAppIcon({ className }: { className?: string }) {
-  return (
-    <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true" className={className}>
-      <path d="M12.04 2C6.58 2 2.15 6.37 2.15 11.75c0 1.92.52 3.78 1.51 5.42L2 22l4.99-1.6a10.1 10.1 0 0 0 5.05 1.34h.01c5.46 0 9.89-4.37 9.89-9.75S17.5 2 12.04 2zm5.76 13.84c-.24.67-1.4 1.24-1.93 1.32-.49.07-1.12.1-1.81-.11-.42-.13-.95-.27-1.64-.53-2.89-1.09-4.77-3.64-4.92-3.81-.14-.17-1.18-1.57-1.18-3 0-1.42.74-2.12 1-2.41.27-.29.58-.36.78-.36h.56c.18 0 .42-.07.66.5.24.58.82 2 .89 2.15.07.14.12.31.02.5-.1.2-.14.32-.28.5-.14.17-.3.38-.42.51-.14.14-.28.29-.12.56.17.28.74 1.22 1.59 1.98 1.1.97 2.02 1.27 2.3 1.41.29.14.45.12.62-.07.17-.2.71-.83.9-1.11.19-.29.38-.24.64-.14.27.1 1.7.8 1.99.95.29.14.49.22.56.34.07.12.07.7-.17 1.37z" />
-    </svg>
   )
 }

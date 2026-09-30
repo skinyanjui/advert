@@ -138,11 +138,11 @@ function EmptyResults({
   const postHref = postAdHref(country ? { country, city } : null, { category, type })
 
   return (
-    <div className="rounded-2xl border border-dashed border-neutral-300 bg-white px-6 py-16 text-center">
+    <div className="rounded-xl border border-border bg-background px-6 py-12 text-center">
       <h2 className="text-lg font-semibold tracking-tight">
         {typeName ? `No ${typeName.toLowerCase()} listings${place ? ` in ${place}` : ""}` : place ? `No listings in ${place}` : "No listings match"}
       </h2>
-      <p className="mx-auto mt-2 max-w-sm text-sm text-neutral-500">
+      <p className="mx-auto mt-2 max-w-sm text-sm text-muted-foreground">
         {city
           ? "Nothing is listed in this city yet. Post an ad, or look through the other cities."
           : "Nothing in this country and category fits that search. Clear the filters or try a broader word like “toyota” or “rent”."}

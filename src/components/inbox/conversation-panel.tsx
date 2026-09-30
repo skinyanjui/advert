@@ -35,7 +35,7 @@ export function ConversationPanel({
               <ArrowLeft aria-hidden="true" />
             </Button>
             <div className="min-w-0 flex-1">
-              <p className="text-[11px] font-medium tracking-wide text-neutral-500 uppercase">{thread.viewerIsSeller ? t("inbox.seller") : t("inbox.buyer")} · {t("inbox.title")}</p>
+              <p className="text-[11px] font-medium tracking-wide text-neutral-500 uppercase">{thread.viewerIsSeller ? t("inbox.buyer") : t("inbox.seller")} · {t("inbox.title")}</p>
               <p className="truncate text-sm font-semibold text-neutral-950">{thread.peerName}</p>
             </div>
           </div>

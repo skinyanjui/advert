@@ -420,9 +420,8 @@ export function ListingDetail({ id }: { id: string }) {
                   <Heart className={cn("size-4", saved && "fill-rose-500 text-rose-500")} />
                   {saved ? t("listing.saved") : t("listing.saveShort")}
                 </Button>
-                <Button variant="outline" className="rounded-full" onClick={share}>
-                  <Share2 />
-                  {t("listing.share")}
+                <Button variant="ghost" size="icon" className="rounded-full text-muted-foreground" aria-label={t("listing.share")} title={t("listing.share")} onClick={share}>
+                  <Share2 className="size-4" />
                 </Button>
               </div>
             </div>
@@ -472,7 +471,7 @@ export function ListingDetail({ id }: { id: string }) {
         </div>
         <aside
           id="listing-contact"
-          className="h-fit rounded-2xl border border-neutral-200 bg-white p-4 lg:sticky lg:top-[145px]"
+          className="h-fit rounded-2xl border border-border bg-background p-4 lg:sticky lg:top-20"
         >
           <>
           <div className="flex items-center gap-3">
@@ -490,43 +489,19 @@ export function ListingDetail({ id }: { id: string }) {
           <div className="mt-4 grid gap-2">
             {listing.mine ? (
               <>
-                <Button className="h-10 rounded-full" asChild>
-                  <Link href={`/post?edit=${listing.id}`}>{t("common.edit")}</Link>
-                </Button>
-                <Button variant="outline" className="h-10 rounded-full" disabled={busy} onClick={() => void onSold()}>
-                  {status === "sold" ? t("listing.markAvailable") : t("listing.markSold")}
-                </Button>
-                {status === "active" || status === "paused" ? (
-                  <Button variant="outline" className="h-10 rounded-full" disabled={busy} onClick={() => void onPause()}>
-                    {status === "paused" ? t("listing.resumeAd") : t("listing.pauseAd")}
-                  </Button>
-                ) : null}
-                {status !== "sold" || expired ? (
-                  <Button variant="outline" className="h-10 rounded-full" disabled={busy} onClick={() => void onRenew()}>
-                    {t("listing.renewAd")}
-                  </Button>
-                ) : null}
-                <Button variant="outline" className="h-10 rounded-full" disabled={busy} onClick={() => setConfirmRemove(true)}>
-                  {t("listing.removeAd")}
-                </Button>
-                {listing.hidden ? (
-                  <Button variant="outline" className="h-10 rounded-full" asChild>
-                    <Link href="/account/moderation">Review moderation decision</Link>
-                  </Button>
-                ) : null}
-                {threadCount > 0 ? (
-                  <Button variant="outline" className="h-10 rounded-full" asChild>
-                    <Link href={`/messages?listing=${listing.id}`}>
-                      {unreadHere > 0
-                        ? t("listing.yourMessagesUnread", { count: unreadHere })
-                        : threadCount === 1
-                          ? t("listing.messagesCount", { count: 1 })
-                          : t("listing.messagesCountMany", { count: threadCount })}
-                    </Link>
-                  </Button>
-                ) : null}
-              </>
-            ) : status !== "active" ? (
+                <Button className="h-10 rounded-full" asChild><Link href={`/post?edit=${listing.id}`}>{t("common.edit")}</Link></Button>
+                {threadCount > 0 ? <Button variant="outline" className="h-10 rounded-full" asChild><Link href={`/messages?listing=${listing.id}`}>{unreadHere > 0 ? t("listing.yourMessagesUnread", { count: unreadHere }) : threadCount === 1 ? t("listing.messagesCount", { count: 1 }) : t("listing.messagesCountMany", { count: threadCount })}</Link></Button> : null}
+                <details className="group rounded-xl border border-border">
+                  <summary className="cursor-pointer list-none px-3 py-2.5 text-sm font-medium text-muted-foreground hover:text-foreground">Manage listing</summary>
+                  <div className="grid gap-1 border-t border-border p-2">
+                    <Button variant="ghost" className="h-9 justify-start rounded-lg" disabled={busy} onClick={() => void onSold()}>{status === "sold" ? t("listing.markAvailable") : t("listing.markSold")}</Button>
+                    {status === "active" || status === "paused" ? <Button variant="ghost" className="h-9 justify-start rounded-lg" disabled={busy} onClick={() => void onPause()}>{status === "paused" ? t("listing.resumeAd") : t("listing.pauseAd")}</Button> : null}
+                    {status !== "sold" || expired ? <Button variant="ghost" className="h-9 justify-start rounded-lg" disabled={busy} onClick={() => void onRenew()}>{t("listing.renewAd")}</Button> : null}
+                    {listing.hidden ? <Button variant="ghost" className="h-9 justify-start rounded-lg" asChild><Link href="/account/moderation">Review moderation decision</Link></Button> : null}
+                    <Button variant="ghost" className="h-9 justify-start rounded-lg text-destructive" disabled={busy} onClick={() => setConfirmRemove(true)}>{t("listing.removeAd")}</Button>
+                  </div>
+                </details>
+              </>            ) : status !== "active" ? (
               <p className="rounded-xl bg-neutral-50 px-3 py-3 text-sm text-neutral-600">
                 {status === "expired"
                   ? t("listing.contactClosedExpired")

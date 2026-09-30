@@ -26,7 +26,7 @@ export function EmptyPanel({
   return (
     <div
       className={cn(
-        "mt-8 rounded-2xl border border-dashed border-neutral-300 bg-white px-6 py-16 text-center",
+        "mt-8 rounded-xl border border-border bg-background px-6 py-12 text-center",
         className,
       )}
     >
@@ -38,7 +38,7 @@ export function EmptyPanel({
       >
         {title}
       </Heading>
-      {body ? <p className="mx-auto mt-2 max-w-sm text-sm text-neutral-500">{body}</p> : null}
+      {body ? <p className="mx-auto mt-2 max-w-sm text-sm text-muted-foreground">{body}</p> : null}
       {children}
       {actionHref && actionLabel ? (
         <Button asChild className="mt-5 rounded-full">
