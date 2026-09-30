@@ -23,3 +23,4 @@ export function isTermsAcceptanceContext(value: string): value is TermsAcceptanc
 
 /** Returned with HTTP 428 when the user must accept updated Terms. */
 export const TERMS_OUTDATED_MESSAGE = "Accept the updated Terms to continue."
+export const LEGAL_ACCEPTANCE_UNAVAILABLE_MESSAGE = "Account access is temporarily unavailable while legal acceptance records are unavailable."
