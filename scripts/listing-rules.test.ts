@@ -65,3 +65,24 @@ test("acceptListing normalizes sold and trims fields", () => {
   assert.equal(result.listing.sold, true)
   assert.equal(result.listing.city, "Nairobi")
 })
+
+
+test("housing and job ads require fair-access attestation", () => {
+  const property = listingFieldErrors({
+    ...base,
+    category: "property",
+    subcategoryId: "rentals",
+    details: {},
+    fairAccessAttested: false,
+  })
+  assert.match(property.fairAccess ?? "", /fair-access/i)
+
+  const jobs = listingFieldErrors({
+    ...base,
+    category: "jobs",
+    subcategoryId: "full-time",
+    details: {},
+    fairAccessAttested: false,
+  })
+  assert.match(jobs.fairAccess ?? "", /fair-access/i)
+})
