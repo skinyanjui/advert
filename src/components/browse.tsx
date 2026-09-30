@@ -1,6 +1,5 @@
 "use client"
 
-import { ArrowUpDown } from "lucide-react"
 import Link from "next/link"
 import { useMemo } from "react"
 
@@ -8,13 +7,6 @@ import { BoardCitySearch } from "@/components/board-place"
 import { ListingCard } from "@/components/listing-card"
 import { Button } from "@/components/ui/button"
 import { listingGridClassName } from "@/lib/listing-grid"
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select"
 import { postAdHref } from "@/lib/active-place"
 import { matchesQuery, sortListings } from "@/lib/board"
 import { distanceKm, listingPoint } from "@/lib/distance"
@@ -25,8 +17,6 @@ import { useMarketplace } from "@/lib/marketplace"
 import { countryName, fold, getCountry } from "@/lib/countries"
 import {
   categoryName,
-  isSortId,
-  sorts,
   type Listing,
 } from "@/lib/types"
 import { findSubcategory } from "@/lib/posting"
@@ -86,63 +76,11 @@ export function Browse() {
       : countryName(query.country)
     : "All Africa"
   const preserve = boardSearch(query)
-  const closestFirst =
-    query.sort === "relevant" &&
-    !query.q &&
-    !!origin &&
-    !!home &&
-    (!query.country || query.country === home.country) &&
-    (!home.city || !query.city || fold(query.city) !== fold(home.city))
   const narrowed = Boolean(query.q || query.category || query.type || query.country || query.city)
-  const resultSummary = narrowed
-    ? query.q
-      ? `${visible.length} ${visible.length === 1 ? "result" : "results"} for “${query.q}”`
-      : query.city
-        ? `${visible.length} ${visible.length === 1 ? "listing" : "listings"} in ${place}`
-        : typeName
-          ? `${typeName} · ${visible.length} ${visible.length === 1 ? "listing" : "listings"}`
-          : query.category
-            ? `${categoryName(query.category)} · ${visible.length} ${visible.length === 1 ? "listing" : "listings"}${query.country ? ` in ${place}` : ""}`
-            : query.country
-              ? `${visible.length} ${visible.length === 1 ? "listing" : "listings"} in ${place}`
-              : undefined
     : undefined
   return (
     <div className="mx-auto w-full max-w-[1720px]">
       <section className="min-w-0 px-4 pt-0 pb-16 md:px-6">
-        <div className="sticky top-14 z-40 mb-3 flex min-h-10 items-center gap-3 bg-background/95 py-1 backdrop-blur md:top-16">
-          <div className="min-w-0 flex-1">
-            {resultSummary ? (
-              <div className="hidden min-w-0 items-baseline gap-2 md:flex">
-                <p className="truncate text-sm text-muted-foreground">{resultSummary}</p>
-                {closestFirst ? <span className="shrink-0 text-xs text-muted-foreground/70">Nearby first</span> : null}
-              </div>
-            ) : null}
-          </div>
-          <Select
-            value={query.sort}
-            onValueChange={(value) => {
-              if (isSortId(value)) update({ sort: value })
-            }}
-          >
-            <SelectTrigger
-              size="sm"
-              className="h-8 gap-1.5 rounded-full border-input bg-background px-2.5 text-[13px] font-medium text-foreground shadow-none hover:bg-muted/50"
-              aria-label="Sort listings"
-            >
-              <ArrowUpDown className="size-3.5 text-muted-foreground" aria-hidden="true" />
-              <span className="hidden text-muted-foreground sm:inline">Sort:</span>
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent align="end" className="z-[60] min-w-44">
-              {sorts.map((sort) => (
-                <SelectItem key={sort.id} value={sort.id} description={sort.hint}>
-                  {sort.name}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-        </div>
         {query.country ? (
           <div className="mb-4 flex flex-col gap-2 sm:flex-row sm:items-center">
             <BoardCitySearch
