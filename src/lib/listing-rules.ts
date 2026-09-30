@@ -5,6 +5,12 @@ import type { CategoryId, Listing } from "@/lib/types"
 
 const maxPrice = 999_999_999
 
+export const FAIR_ACCESS_ATTESTATION_VERSION = "2026-09-29-v1"
+
+export function requiresFairAccessAttestation(category: CategoryId | null | undefined): boolean {
+  return category === "property" || category === "jobs"
+}
+
 /** Lightweight title/description refusals — not a full moderation system. */
 const prohibited = /\b(cocaine|heroin|fentanyl|methamphetamine|ak-?47|grenade|human trafficking|child porn)\b/i
 
@@ -22,6 +28,7 @@ export type ListingFields = {
   phone: string
   contactWhatsApp?: boolean
   contactPhone?: boolean
+  fairAccessAttested?: boolean
 }
 
 export type FieldErrors = Partial<Record<string, string>>
@@ -69,6 +76,9 @@ export function listingFieldErrors(input: ListingFields): FieldErrors {
   if (input.description.trim().length < 20) {
     errors.description = "Write at least 20 characters. This is the paragraph on the listing."
   }
+  if (requiresFairAccessAttestation(input.category) && input.fairAccessAttested !== true) {
+    errors.fairAccess = "Confirm the fair-access rule for this housing or job listing."
+  }
   if (input.city.trim().length < 2) errors.city = "Add the city."
   const directContactEnabled = input.contactWhatsApp !== false || input.contactPhone !== false
   const phoneReason = contactPhoneError(input.phone, { required: directContactEnabled, countryCode: input.country })
@@ -97,6 +107,7 @@ export function acceptListing(listing: Listing): { ok: true; listing: Listing } 
     phone: listing.phone,
     contactWhatsApp: listing.contactWhatsApp,
     contactPhone: listing.contactPhone,
+    fairAccessAttested: listing.fairAccessAttested,
   })
   const reason = Object.values(errors).find((value) => value)
   if (reason) return { ok: false, reason }
@@ -145,6 +156,10 @@ function normalizeListing(listing: Listing): Listing {
     featured: undefined,
     sponsored: listing.sponsored === true || listing.sponsoredLocked === true ? true : undefined,
     sponsoredLocked: listing.sponsoredLocked === true ? true : undefined,
+    fairAccessAttested: requiresFairAccessAttestation(listing.category) ? true : undefined,
+    fairAccessAttestationVersion: requiresFairAccessAttestation(listing.category)
+      ? FAIR_ACCESS_ATTESTATION_VERSION
+      : undefined,
     sold: listing.sold === true ? true : undefined,
     mine: true,
   }
