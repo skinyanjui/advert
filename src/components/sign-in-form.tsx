@@ -6,23 +6,14 @@ import { useEffect, useState } from "react"
 import { toast } from "sonner"
 
 import { EmptyPanel } from "@/components/empty-panel"
-import { FormField } from "@/components/form-field"
+import { LanguageCurrencyFields } from "@/components/language-currency-fields"
 import { usePrefs } from "@/components/prefs-provider"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select"
 import { useAuth } from "@/lib/auth"
 import { DEFAULT_AUTH_NEXT, safeAuthNext } from "@/lib/auth-redirect"
-import { boardCurrencyOptions } from "@/lib/fx"
 import { useMarketplace } from "@/lib/marketplace"
-import { isCurrencyPreference, type CurrencyPreference } from "@/lib/prefs"
 import {
   passwordError,
   passwordStrength,
@@ -42,8 +33,7 @@ export function SignInForm({ nextHref }: { nextHref?: string } = {}) {
   const router = useRouter()
   const searchParams = useSearchParams()
   const { reloadBoard } = useMarketplace()
-  const { currency, setCurrency, t } = usePrefs()
-  const currencies = boardCurrencyOptions()
+  const { t } = usePrefs()
   const next = safeAuthNext(nextHref ?? searchParams.get("next"), DEFAULT_AUTH_NEXT)
 
   const [channel, setChannel] = useState<Channel>("email")
@@ -244,7 +234,7 @@ export function SignInForm({ nextHref }: { nextHref?: string } = {}) {
     (channel === "email" && method === "password" && passwordMode === "sign-up")
   const needsTermsForAction = showTermsCheckbox
   const legalReady = ageConfirmed && agreedToTerms
-  const showCurrencySetup =
+  const showPreferenceSetup =
     auth.googleEnabled ||
     (channel === "email" && method === "link" && !sent) ||
     (channel === "email" && method === "password" && passwordMode === "sign-up")
@@ -258,31 +248,9 @@ export function SignInForm({ nextHref }: { nextHref?: string } = {}) {
         </p>
       </header>
 
-      {showCurrencySetup ? (
+      {showPreferenceSetup ? (
         <div className="rounded-xl border border-neutral-200 bg-white px-3 py-3">
-          <FormField
-            label={t("prefs.currency")}
-            htmlFor="onboarding-currency"
-            hint={t("prefs.currencyHint")}
-          >
-            <Select
-              value={currency}
-              onValueChange={(value) => {
-                if (isCurrencyPreference(value)) setCurrency(value as CurrencyPreference)
-              }}
-            >
-              <SelectTrigger id="onboarding-currency" className="h-10 w-full">
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent className="z-[90] max-h-72">
-                {currencies.map((item) => (
-                  <SelectItem key={item.code} value={item.code}>
-                    {item.label}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </FormField>
+          <LanguageCurrencyFields idPrefix="onboarding" />
         </div>
       ) : null}
 
