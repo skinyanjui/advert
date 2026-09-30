@@ -91,7 +91,7 @@ export function ThemeMenu() {
           type="button"
           aria-label="Appearance"
           title="Appearance"
-          className="flex size-8 items-center justify-center rounded-full border border-input bg-background text-foreground outline-none transition-colors hover:bg-muted focus-visible:border-ring focus-visible:ring-2 focus-visible:ring-ring/40 focus-visible:ring-offset-2"
+          className="flex size-8 items-center justify-center rounded-full border border-transparent bg-transparent text-foreground outline-none transition-colors hover:bg-muted focus-visible:ring-2 focus-visible:ring-ring/40 focus-visible:ring-offset-2"
         >
           {resolved === "dark" ? <Moon className="size-4" aria-hidden="true" /> : <Sun className="size-4" aria-hidden="true" />}
         </button>
@@ -101,7 +101,7 @@ export function ThemeMenu() {
         sideOffset={8}
         collisionPadding={12}
         aria-label="Appearance"
-        className="w-36 gap-0 rounded-xl p-1.5 shadow-lg"
+        className="w-fit min-w-32 gap-0 rounded-xl p-1.5 shadow-lg"
       >
         <div role="menu" aria-label="Appearance">
           {themeChoices.map((option) => (
