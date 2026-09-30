@@ -21,7 +21,6 @@ import { useAuth } from "@/lib/auth"
 import {
   privacyJurisdictions,
   privacyRequestTypes,
-  privacyStatusLabel,
   type PrivacyJurisdiction,
   type PrivacyRequestStatus,
   type PrivacyRequestType,
@@ -134,8 +133,7 @@ export function PrivacyRequestPage() {
       <header>
         <h1 className="text-2xl font-semibold tracking-tight">{t("privacyRequest.title")}</h1>
         <p className="mt-2 text-sm leading-6 text-neutral-600">
-          Use this form to exercise privacy rights that apply to you. We use a 30-day internal response target;
-          a legal deadline may differ by jurisdiction or request.
+          {t("privacyRequest.intro")}
         </p>
       </header>
 
@@ -254,7 +252,7 @@ export function PrivacyRequestPage() {
           </CardHeader>
           <CardContent className="space-y-1 text-sm">
             <p><span className="text-neutral-500">{t("privacyRequest.trackingId")}:</span> <code>{submitted.id}</code></p>
-            <p><span className="text-neutral-500">{t("privacyRequest.status")}:</span> {privacyStatusLabel(submitted.status)}</p>
+            <p><span className="text-neutral-500">{t("privacyRequest.status")}:</span> {t(`privacyRequest.status.${submitted.status}`)}</p>
             <p><span className="text-neutral-500">{t("privacyRequest.internalTarget")}:</span> {new Date(submitted.dueAt).toLocaleDateString()}</p>
           </CardContent>
         </Card>
@@ -273,7 +271,7 @@ export function PrivacyRequestPage() {
                       {t(`privacyRequest.jurisdiction.${request.jurisdiction}`)} · {new Date(request.receivedAt).toLocaleDateString()}
                     </p>
                   </div>
-                  <span className="rounded-full bg-neutral-100 px-2 py-1 text-xs">{privacyStatusLabel(request.status)}</span>
+                  <span className="rounded-full bg-neutral-100 px-2 py-1 text-xs">{t(`privacyRequest.status.${request.status}`)}</span>
                 </div>
                 {request.resolution ? <p className="mt-2 text-neutral-600">{request.resolution}</p> : null}
                 {request.status === "denied" ? (

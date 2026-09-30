@@ -100,16 +100,16 @@ export async function recordPendingTermsAcceptance(
   context: "signup" | "reaccept" = "signup",
 ): Promise<boolean> {
   const intent = readIntent()
-  if ((!intent || !hasTermsIntent()) && context === "signup") return false
+  if (!intent || !hasTermsIntent()) return false
   try {
     const response = await fetch("/api/terms", {
       method: "POST",
       headers: { "content-type": "application/json" },
       body: JSON.stringify({
         context,
-        ageAttested: intent?.ageAttested ?? true,
-        privacyAcknowledged: intent?.privacyAcknowledged ?? true,
-        locale: intent?.locale ?? null,
+        ageAttested: intent.ageAttested,
+        privacyAcknowledged: intent.privacyAcknowledged,
+        locale: intent.locale,
       }),
     })
     if (response.ok) {

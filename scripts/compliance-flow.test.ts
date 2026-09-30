@@ -1,5 +1,5 @@
 import assert from "node:assert/strict"
-import { readFileSync } from "node:fs"
+import { existsSync, readFileSync } from "node:fs"
 import { test } from "node:test"
 
 import { privacyDueAt } from "../src/lib/privacy-rights"
@@ -13,6 +13,8 @@ test("legal acceptance stores separate age and privacy evidence", () => {
   const route = source("src/app/api/terms/route.ts")
   const acceptance = source("src/lib/terms-acceptance.ts")
   const gate = source("src/lib/terms-gate.ts")
+  const client = source("src/lib/terms-client.ts")
+  const reaccept = source("src/components/terms-reaccept-dialog.tsx")
   const migration = source("database/migrations/20260929_privacy_rights_workflow.sql")
 
   assert.match(signIn, /ageConfirmed/)
@@ -26,6 +28,13 @@ test("legal acceptance stores separate age and privacy evidence", () => {
   assert.match(acceptance, /LEGAL_DISCLOSURE_VERSION/)
   assert.match(gate, /data\.age_attested === true/)
   assert.match(gate, /data\.privacy_acknowledged === true/)
+  assert.match(gate, /tableMissing\) return fail\(LEGAL_ACCEPTANCE_UNAVAILABLE_MESSAGE, 503\)/)
+  assert.match(client, /if \(!intent \|\| !hasTermsIntent\(\)\) return false/)
+  assert.doesNotMatch(client, /ageAttested: intent\?\.ageAttested \?\? true/)
+  assert.doesNotMatch(client, /privacyAcknowledged: intent\?\.privacyAcknowledged \?\? true/)
+  assert.match(reaccept, /pathname === "\/terms"/)
+  assert.match(reaccept, /pathname\.startsWith\("\/privacy\/"\)/)
+  assert.match(reaccept, /pathname === "\/account"/)
   assert.match(migration, /age_attested boolean not null default false/)
   assert.match(migration, /privacy_acknowledged boolean not null default false/)
 })
@@ -44,18 +53,23 @@ test("privacy requests have a tracked server-only lifecycle", () => {
   assert.match(migration, /revoke all on table public\.privacy_requests, public\.privacy_request_events from anon, authenticated/)
   assert.match(route, /actingAsAgent/)
   assert.match(route, /verificationRequired/)
+  assert.match(route, /requestType === "opt_out"/)
+  assert.match(route, /requestType === "limit_sensitive"/)
+  assert.match(route, /choiceRequestWithoutVerification/)
   assert.match(admin, /updatePrivacyRequest/)
   assert.match(page, /privacyRequest\.sensitiveWarning/)
   const en = source("src/lib/i18n/messages/en.ts")
   assert.match(en, /Do not enter passwords, government ID numbers, bank information, medical information/)
 })
 
-test("privacy target is stricter for California opt-out requests", () => {
+test("privacy target is stricter for California opt-out and limit requests", () => {
   const base = new Date("2026-09-29T12:00:00.000Z")
-  const ca = new Date(privacyDueAt("california", "opt_out", base))
+  const caOptOut = new Date(privacyDueAt("california", "opt_out", base))
+  const caLimit = new Date(privacyDueAt("california", "limit_sensitive", base))
   const general = new Date(privacyDueAt("eu_eea", "access", base))
-  assert.equal((ca.getTime() - base.getTime()) / 86_400_000, 15)
-  assert.equal((general.getTime() - base.getTime()) / 86_400_000, 30)
+  assert.equal((caOptOut.getTime() - base.getTime()) / 86_400_000, 21)
+  assert.equal((caLimit.getTime() - base.getTime()) / 86_400_000, 21)
+  assert.equal((general.getTime() - base.getTime()) / 86_400_000, 28)
 })
 
 test("illegal-content notices capture structured facts without exposing reporter identity", () => {
@@ -148,4 +162,24 @@ test("privacy export includes compliance records tied to the account", () => {
   assert.match(helper, /privacyRequests/)
   assert.match(helper, /moderationDecisions/)
   assert.match(helper, /moderationAppeals/)
+})
+
+
+test("compliance incidents use one canonical admin route and component", () => {
+  assert.equal(
+    existsSync(new URL("../src/app/admin/compliance/incidents/page.tsx", import.meta.url)),
+    false,
+  )
+  assert.equal(
+    existsSync(new URL("../src/app/api/admin/compliance/incidents/route.ts", import.meta.url)),
+    false,
+  )
+  assert.equal(
+    existsSync(new URL("../src/components/admin-compliance-incidents.tsx", import.meta.url)),
+    false,
+  )
+  const compliance = source("src/app/admin/compliance/page.tsx")
+  const account = source("src/components/account-page.tsx")
+  assert.match(compliance, /href="\/admin\/incidents"/)
+  assert.match(account, /href="\/admin\/incidents"/)
 })
