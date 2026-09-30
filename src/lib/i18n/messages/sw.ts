@@ -443,6 +443,7 @@ export const sw: Messages = {
   "terms.reacceptTitle": "Masharti na Faragha yaliyosasishwa",
   "terms.reacceptBody": "Kagua toleo {terms} / {privacy} (linatumika {date}) na ukamilishe uthibitisho wote wawili kabla ya kutumia vipengele vinavyolindwa. Kuvinjari kwa umma bado kunapatikana.",
   "terms.reacceptRead": "Soma",
+  "terms.unavailable": "Vipengele vya akaunti havipatikani kwa muda kwa sababu rekodi za kukubali haziwezi kuthibitishwa. Kuvinjari kwa umma bado kunapatikana baada ya kutoka.",
   "terms.accept": "Kubali",
   "terms.pleaseWait": "Tafadhali subiri…",
   "terms.signOut": "Toka",
