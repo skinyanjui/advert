@@ -2,7 +2,7 @@ import type { LucideIcon } from "lucide-react"
 import {
   Bookmark,
   Home,
-  Info,
+  Headphones,
   MessageCircle,
   Plus,
   Tag,
@@ -65,10 +65,10 @@ export const navItems: NavItem[] = [
   },
   {
     id: "credits",
-    href: "/credits",
-    label: "Sources",
-    shortLabel: "Sources",
-    icon: Info,
+    href: "/contact",
+    label: "Contact us",
+    shortLabel: "Contact",
+    icon: Headphones,
   },
 ]
 
