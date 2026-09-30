@@ -443,6 +443,7 @@ export const fr: Messages = {
   "terms.reacceptTitle": "Terminer l’accès au compte",
   "terms.reacceptBody": "Consultez la version {terms} / {privacy} (en vigueur le {date}) et complétez les deux confirmations avant d’utiliser les fonctions protégées. La consultation publique reste disponible.",
   "terms.reacceptRead": "Consultez",
+  "terms.unavailable": "Les fonctions du compte sont temporairement indisponibles car les enregistrements d’acceptation ne peuvent pas être vérifiés. La consultation publique reste disponible après déconnexion.",
   "terms.accept": "Accepter",
   "terms.pleaseWait": "Veuillez patienter…",
   "terms.signOut": "Se déconnecter",
