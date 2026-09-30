@@ -13,6 +13,7 @@ test("legal acceptance stores separate age and privacy evidence", () => {
   const route = source("src/app/api/terms/route.ts")
   const acceptance = source("src/lib/terms-acceptance.ts")
   const gate = source("src/lib/terms-gate.ts")
+  const client = source("src/lib/terms-client.ts")
   const migration = source("database/migrations/20260929_privacy_rights_workflow.sql")
 
   assert.match(signIn, /ageConfirmed/)
@@ -26,6 +27,10 @@ test("legal acceptance stores separate age and privacy evidence", () => {
   assert.match(acceptance, /LEGAL_DISCLOSURE_VERSION/)
   assert.match(gate, /data\.age_attested === true/)
   assert.match(gate, /data\.privacy_acknowledged === true/)
+  assert.match(gate, /tableMissing\) return fail\(LEGAL_ACCEPTANCE_UNAVAILABLE_MESSAGE, 503\)/)
+  assert.match(client, /if \(!intent \|\| !hasTermsIntent\(\)\) return false/)
+  assert.doesNotMatch(client, /ageAttested: intent\?\.ageAttested \?\? true/)
+  assert.doesNotMatch(client, /privacyAcknowledged: intent\?\.privacyAcknowledged \?\? true/)
   assert.match(migration, /age_attested boolean not null default false/)
   assert.match(migration, /privacy_acknowledged boolean not null default false/)
 })
