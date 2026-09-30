@@ -1,4 +1,5 @@
 import type { Metadata } from "next"
+import Link from "next/link"
 import { redirect } from "next/navigation"
 
 import { isAdminEmail } from "@/lib/admin"
@@ -47,6 +48,18 @@ export default async function Page() {
         Operational law-to-product registry. “Implemented” means the named product control exists; it does not mean a regulator or lawyer has certified legal compliance. Conditional duties must be re-evaluated when product facts or scale change.
       </p>
 
+      <div className="mt-5 flex flex-wrap gap-2">
+        <Link href="/admin/privacy" className="inline-flex h-9 items-center rounded-full border border-neutral-200 bg-white px-3 text-sm font-medium">
+          Privacy requests
+        </Link>
+        <Link href="/admin/compliance/incidents" className="inline-flex h-9 items-center rounded-full border border-neutral-200 bg-white px-3 text-sm font-medium">
+          Compliance incidents
+        </Link>
+        <Link href="/admin/reports" className="inline-flex h-9 items-center rounded-full border border-neutral-200 bg-white px-3 text-sm font-medium">
+          Listing reports
+        </Link>
+      </div>
+
       <section className="mt-6 rounded-2xl border border-neutral-200 bg-white p-4">
         <h2 className="font-medium text-neutral-950">Current product facts</h2>
         <dl className="mt-3 grid gap-x-6 gap-y-2 text-sm sm:grid-cols-2">
@@ -75,6 +88,8 @@ export default async function Page() {
           <Fact label="EU representative" value={config.euRepresentative ? "Configured" : "Not configured / may not be required"} />
           <Fact label="DPO contact" value={config.dpoContact ? "Configured" : "Not configured / may not be required"} />
           <Fact label="Supabase leaked-password protection" value="Operator action: audit reported disabled" />
+          <Fact label="Counsel-approved French legal documents" value="Missing" />
+          <Fact label="Counsel-approved Swahili legal documents" value="Missing" />
         </dl>
       </section>
 
