@@ -7,6 +7,7 @@ import { acceptListing } from "@/lib/listing-rules"
 import { messageError, type BoardMessage } from "@/lib/messages"
 import { cleanListing, parseBoardState, type BoardState } from "@/lib/board-payload"
 import {
+  illegalContentNoticeError,
   isReportReasonId,
   reportAutoHideThreshold,
   reportNoteError,
@@ -956,6 +957,9 @@ export type BoardReport = {
   reporterId: string
   reason: ReportReasonId
   note: string | null
+  legalBasis: string | null
+  jurisdiction: string | null
+  goodFaith: boolean
   status: "pending" | "dismissed" | "actioned"
   createdAt: string
   listingHidden: boolean
@@ -968,6 +972,9 @@ export async function createReport(
   listingId: string,
   reason: string,
   note: string,
+  legalBasis = "",
+  jurisdiction = "",
+  goodFaith = false,
 ): Promise<Result<{ pendingCount: number; autoHidden: boolean }>> {
   if (!listingIdPattern.test(listingId) || seedIds.has(listingId)) {
     return { ok: false, reason: "Sample listings cannot be reported." }
@@ -975,6 +982,10 @@ export async function createReport(
   if (!isReportReasonId(reason)) return { ok: false, reason: "Choose a reason for the report." }
   const noteReason = reportNoteError(note)
   if (noteReason) return { ok: false, reason: noteReason }
+  if (reason === "illegal_content") {
+    const illegalReason = illegalContentNoticeError({ legalBasis, jurisdiction, goodFaith })
+    if (illegalReason) return { ok: false, reason: illegalReason }
+  }
 
   const db = boardDb()
   const hourAgo = new Date(Date.now() - 60 * 60 * 1000).toISOString()
@@ -1009,6 +1020,9 @@ export async function createReport(
     reporter_id: reporterId,
     reason,
     note: note.trim() || null,
+    legal_basis: reason === "illegal_content" ? legalBasis.trim() : null,
+    jurisdiction: reason === "illegal_content" ? jurisdiction.trim() || null : null,
+    good_faith: reason === "illegal_content" ? goodFaith : false,
     status: "pending",
   })
   if (insertError) {
@@ -1044,7 +1058,7 @@ export async function listPendingReports(): Promise<BoardReport[]> {
   const db = boardDb()
   const { data: reports, error } = await db
     .from("board_reports")
-    .select("id,listing_id,reporter_id,reason,note,status,created_at")
+    .select("id,listing_id,reporter_id,reason,note,legal_basis,jurisdiction,good_faith,status,created_at")
     .eq("status", "pending")
     .order("created_at", { ascending: false })
     .limit(200)
@@ -1070,6 +1084,9 @@ export async function listPendingReports(): Promise<BoardReport[]> {
         reporterId: row.reporter_id as string,
         reason: row.reason as ReportReasonId,
         note: typeof row.note === "string" ? row.note : null,
+        legalBasis: typeof row.legal_basis === "string" ? row.legal_basis : null,
+        jurisdiction: typeof row.jurisdiction === "string" ? row.jurisdiction : null,
+        goodFaith: row.good_faith === true,
         status: "pending",
         createdAt: row.created_at as string,
         listingHidden: Boolean(listing?.hidden_at),
