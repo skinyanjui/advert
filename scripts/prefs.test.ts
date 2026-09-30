@@ -124,3 +124,20 @@ test("desktop header exposes an accessible light dark system theme menu", () => 
   const themeIndex = header.indexOf("<ThemeMenu")
   assert.ok(profileIndex >= 0 && themeIndex > profileIndex, "theme control stays to the right of auth/profile")
 })
+
+
+test("top nav is composed from responsive component boundaries with deliberate borders", () => {
+  const header = readFileSync(new URL("../src/components/site-header.tsx", import.meta.url), "utf8")
+  const theme = readFileSync(new URL("../src/components/theme-choices.tsx", import.meta.url), "utf8")
+  const categories = readFileSync(new URL("../src/components/category-top-nav.tsx", import.meta.url), "utf8")
+  const css = readFileSync(new URL("../src/app/globals.css", import.meta.url), "utf8")
+  for (const name of ["TopNav", "TopNavBrand", "TopNavDiscovery", "TopNavSearch", "TopNavCategories", "TopNavActions", "TopNavHome", "TopNavPost"]) {
+    assert.match(header, new RegExp("function " + name + "\\\("))
+  }
+  assert.match(header, /bottom-\[calc\(env\(safe-area-inset-bottom\)\+0\.5rem\)\]/)
+  assert.match(header, /border-input bg-background/)
+  assert.match(theme, /border border-input bg-background/)
+  assert.match(categories, /border border-input bg-background md:hidden/)
+  assert.match(css, /--border: oklch\(0\.84 0 0\)/)
+  assert.match(css, /--input: oklch\(0\.78 0 0\)/)
+})
