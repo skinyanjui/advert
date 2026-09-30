@@ -119,6 +119,19 @@ export default function PrivacyPage() {
         </p>
       </section>
 
+      <section className="mt-8 space-y-3">
+        <h2 className="text-base font-medium text-neutral-950">California online tracking / Do Not Track</h2>
+        <p className="text-sm leading-6 text-neutral-700">
+          The current application does not use third-party behavioral advertising pixels or collect
+          personal information about your activity over time across unrelated websites for targeted
+          advertising. Browser Do Not Track (DNT) signals do not create a separate app preference
+          because the current product does not perform that cross-site behavioral advertising
+          activity. We separately recognize Global Privacy Control where applicable. Third parties
+          may receive information when needed to provide the service or when you intentionally open
+          an off-platform service such as WhatsApp.
+        </p>
+      </section>
+
       <section id="sale-share" className="mt-8 space-y-3">
         <h2 className="text-base font-medium text-neutral-950">Sale, sharing, targeted advertising, and GPC</h2>
         <p className="text-sm leading-6 text-neutral-700">
