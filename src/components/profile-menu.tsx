@@ -64,7 +64,7 @@ export function ProfileMenu() {
         sideOffset={8}
         collisionPadding={12}
         aria-label={t("nav.profile")}
-        className="w-[min(23rem,calc(100vw-1.5rem))] max-h-[var(--radix-popover-content-available-height)] gap-0 overflow-y-auto rounded-2xl p-1.5 shadow-lg"
+        className="w-72 max-w-[calc(100vw-1.5rem)] max-h-[var(--radix-popover-content-available-height)] gap-0 overflow-y-auto rounded-xl p-1.5 shadow-lg"
       >
         <div className="px-3 pt-3 pb-2">
           <p className="truncate text-sm font-semibold text-foreground">
