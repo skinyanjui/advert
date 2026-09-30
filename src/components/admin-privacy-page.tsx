@@ -124,6 +124,11 @@ export function AdminPrivacyPage({
                   <p className="mt-2 text-xs text-neutral-400">
                     Received {new Date(request.receivedAt).toLocaleString()} · Internal target {new Date(request.dueAt).toLocaleDateString()}
                   </p>
+                  <p className="mt-1 text-xs text-neutral-400">
+                    Verification: {request.verificationMethod ?? (request.status === "verification_required" ? "required" : "not recorded")}
+                    {" · "}
+                    Acknowledgment: {request.acknowledgmentSentAt ? new Date(request.acknowledgmentSentAt).toLocaleString() : "not sent / email provider unavailable"}
+                  </p>
                   <p className="mt-1 break-all text-xs text-neutral-400">ID {request.id}</p>
                 </div>
               </div>
