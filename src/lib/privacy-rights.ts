@@ -62,16 +62,31 @@ export function privacyStatusLabel(value: PrivacyRequestStatus): string {
   return value.charAt(0).toUpperCase() + value.slice(1)
 }
 
+function addUtcBusinessDays(from: Date, businessDays: number): Date {
+  const due = new Date(from)
+  let added = 0
+  while (added < businessDays) {
+    due.setUTCDate(due.getUTCDate() + 1)
+    const day = due.getUTCDay()
+    if (day !== 0 && day !== 6) added += 1
+  }
+  return due
+}
+
 export function privacyDueAt(
   jurisdiction: PrivacyJurisdiction,
   requestType: PrivacyRequestType,
   from = new Date(),
 ): string {
-  const due = new Date(from)
   const fastCaliforniaRequest =
     jurisdiction === "california" &&
     (requestType === "opt_out" || requestType === "limit_sensitive")
-  const days = fastCaliforniaRequest ? 15 : PRIVACY_INTERNAL_TARGET_DAYS
-  due.setUTCDate(due.getUTCDate() + days)
+
+  if (fastCaliforniaRequest) {
+    return addUtcBusinessDays(from, 15).toISOString()
+  }
+
+  const due = new Date(from)
+  due.setUTCDate(due.getUTCDate() + PRIVACY_INTERNAL_TARGET_DAYS)
   return due.toISOString()
 }
