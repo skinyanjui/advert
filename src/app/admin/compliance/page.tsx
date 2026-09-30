@@ -63,7 +63,7 @@ export default async function Page() {
         <Link href="/admin/privacy" className="inline-flex h-9 items-center rounded-full border border-neutral-200 bg-white px-3 text-sm font-medium">
           Privacy requests
         </Link>
-        <Link href="/admin/compliance/incidents" className="inline-flex h-9 items-center rounded-full border border-neutral-200 bg-white px-3 text-sm font-medium">
+        <Link href="/admin/incidents" className="inline-flex h-9 items-center rounded-full border border-neutral-200 bg-white px-3 text-sm font-medium">
           Compliance incidents
         </Link>
         <Link href="/admin/reports" className="inline-flex h-9 items-center rounded-full border border-neutral-200 bg-white px-3 text-sm font-medium">
