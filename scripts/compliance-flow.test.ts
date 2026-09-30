@@ -50,12 +50,14 @@ test("privacy requests have a tracked server-only lifecycle", () => {
   assert.match(en, /Do not enter passwords, government ID numbers, bank information, medical information/)
 })
 
-test("privacy target is stricter for California opt-out requests", () => {
+test("privacy target is stricter for California opt-out and limit requests", () => {
   const base = new Date("2026-09-29T12:00:00.000Z")
-  const ca = new Date(privacyDueAt("california", "opt_out", base))
+  const caOptOut = new Date(privacyDueAt("california", "opt_out", base))
+  const caLimit = new Date(privacyDueAt("california", "limit_sensitive", base))
   const general = new Date(privacyDueAt("eu_eea", "access", base))
-  assert.equal((ca.getTime() - base.getTime()) / 86_400_000, 15)
-  assert.equal((general.getTime() - base.getTime()) / 86_400_000, 30)
+  assert.equal((caOptOut.getTime() - base.getTime()) / 86_400_000, 15)
+  assert.equal((caLimit.getTime() - base.getTime()) / 86_400_000, 15)
+  assert.equal((general.getTime() - base.getTime()) / 86_400_000, 28)
 })
 
 test("illegal-content notices capture structured facts without exposing reporter identity", () => {
