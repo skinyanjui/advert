@@ -122,7 +122,7 @@ export function complianceItems(): ComplianceItem[] {
     },
     {
       id: "us_states",
-      law: "Colorado, Oregon, Texas and other U.S. state privacy laws",
+      law: "Colorado, Oregon, Texas, Indiana and other U.S. state privacy laws",
       scope: "Conditional on each state law's thresholds, exemptions, residents, and processing activities.",
       state: "conditional",
       implemented: [
