@@ -14,6 +14,8 @@ test("legal acceptance stores separate age and privacy evidence", () => {
   const acceptance = source("src/lib/terms-acceptance.ts")
   const gate = source("src/lib/terms-gate.ts")
   const migration = source("database/migrations/20260929_privacy_rights_workflow.sql")
+  const client = source("src/lib/terms-client.ts")
+  const reaccept = source("src/components/terms-reaccept-dialog.tsx")
 
   assert.match(signIn, /ageConfirmed/)
   assert.match(signIn, /agreedToTerms/)
@@ -28,6 +30,10 @@ test("legal acceptance stores separate age and privacy evidence", () => {
   assert.match(gate, /data\.privacy_acknowledged === true/)
   assert.match(migration, /age_attested boolean not null default false/)
   assert.match(migration, /privacy_acknowledged boolean not null default false/)
+  assert.doesNotMatch(client, /ageAttested: intent\?\.ageAttested \?\? true/)
+  assert.doesNotMatch(client, /privacyAcknowledged: intent\?\.privacyAcknowledged \?\? true/)
+  assert.match(reaccept, /pathname\.startsWith\("\/privacy\/"\)/)
+  assert.match(reaccept, /pathname === "\/account"/)
 })
 
 test("privacy requests have a tracked server-only lifecycle", () => {
@@ -53,9 +59,12 @@ test("privacy requests have a tracked server-only lifecycle", () => {
 test("privacy target is stricter for California opt-out requests", () => {
   const base = new Date("2026-09-29T12:00:00.000Z")
   const ca = new Date(privacyDueAt("california", "opt_out", base))
+  const caLimit = new Date(privacyDueAt("california", "limit_sensitive", base))
   const general = new Date(privacyDueAt("eu_eea", "access", base))
-  assert.equal((ca.getTime() - base.getTime()) / 86_400_000, 15)
-  assert.equal((general.getTime() - base.getTime()) / 86_400_000, 30)
+  // Sep 29, 2026 is Tuesday; 15 business days lands Oct 20.
+  assert.equal((ca.getTime() - base.getTime()) / 86_400_000, 21)
+  assert.equal((caLimit.getTime() - base.getTime()) / 86_400_000, 21)
+  assert.equal((general.getTime() - base.getTime()) / 86_400_000, 28)
 })
 
 test("illegal-content notices capture structured facts without exposing reporter identity", () => {
@@ -115,6 +124,7 @@ test("compliance registry covers current and conditional law-to-product controls
     "eprivacy",
     "accessibility",
     "advertising",
+    "fair_access_ads",
     "inform",
     "communications",
     "coppa",
@@ -148,4 +158,40 @@ test("privacy export includes compliance records tied to the account", () => {
   assert.match(helper, /privacyRequests/)
   assert.match(helper, /moderationDecisions/)
   assert.match(helper, /moderationAppeals/)
+})
+
+
+test("housing and job listings require versioned fair-access evidence", () => {
+  const rules = source("src/lib/listing-rules.ts")
+  const post = source("src/components/post-form.tsx")
+  const types = source("src/lib/types.ts")
+  const reports = source("src/lib/reports.ts")
+  const migration = source("database/migrations/20260929_discrimination_listing_reports.sql")
+
+  assert.match(rules, /category === "property" \|\| category === "jobs"/)
+  assert.match(rules, /errors\.fairAccess/)
+  assert.match(post, /post\.fairAccessHousing/)
+  assert.match(post, /post\.fairAccessJobs/)
+  assert.match(post, /FAIR_ACCESS_ATTESTATION_VERSION/)
+  assert.match(types, /fairAccessAttested/)
+  assert.match(types, /fairAccessAttestationVersion/)
+  assert.match(reports, /id: "discrimination"/)
+  assert.match(migration, /'discrimination'/)
+})
+
+test("privacy jurisdictions include Indiana in code and migration", () => {
+  const rights = source("src/lib/privacy-rights.ts")
+  const migration = source("database/migrations/20260929_privacy_rights_workflow.sql")
+  const en = source("src/lib/i18n/messages/en.ts")
+  assert.match(rights, /id: "indiana"/)
+  assert.match(migration, /'indiana'/)
+  assert.match(en, /privacyRequest\.jurisdiction\.indiana/)
+})
+
+test("anonymous privacy request email cannot trigger automatic acknowledgment", () => {
+  const service = source("src/lib/privacy-requests.ts")
+  const route = source("src/app/api/privacy/requests/route.ts")
+  assert.match(service, /const emailResult = input\.verified/)
+  assert.match(route, /choiceRequestWithoutVerification/)
+  assert.match(route, /requestType === "limit_sensitive"/)
 })
