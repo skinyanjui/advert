@@ -125,6 +125,9 @@ export function AccountPage() {
             <Button asChild variant="outline">
               <Link href="/admin/compliance">{t("profile.complianceAdmin")}</Link>
             </Button>
+            <Button asChild variant="outline">
+              <Link href="/admin/moderation-appeals">Moderation appeals</Link>
+            </Button>
           </CardContent>
         </Card>
       ) : null}
@@ -724,6 +727,9 @@ function SignedInProfile({
           </Button>
           <Button type="button" variant="ghost" asChild>
             <Link href="/privacy/request">{t("profile.privacyRequest")}</Link>
+          </Button>
+          <Button type="button" variant="ghost" asChild>
+            <Link href="/account/moderation">Moderation decisions</Link>
           </Button>
         </CardFooter>
       </Card>
