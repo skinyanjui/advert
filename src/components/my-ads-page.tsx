@@ -188,7 +188,7 @@ export function MyAdsPage() {
 
   if (!auth.ready || !ready) {
     return (
-      <div className="mx-auto w-full max-w-[1720px] px-4 py-6 md:px-6">
+      <div className="w-full px-3 py-6 md:px-4">
         <p className="text-sm text-neutral-500">{t("myAds.loading")}</p>
       </div>
     )
@@ -196,7 +196,7 @@ export function MyAdsPage() {
 
   if (!auth.signedIn) {
     return (
-      <div className="mx-auto w-full max-w-[1720px] px-4 py-8 md:px-6">
+      <div className="w-full px-3 py-8 md:px-4">
         <EmptyPanel
           title={t("myAds.signInTitle")}
           body={t("myAds.signInBody")}
@@ -210,7 +210,7 @@ export function MyAdsPage() {
   }
 
   return (
-    <div className="mx-auto w-full max-w-[1720px] px-4 py-3 md:px-6">
+    <div className="w-full px-3 py-3 md:px-4">
       <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
         <h1 className="text-2xl font-semibold tracking-tight">{t("myAds.title")}</h1>
         <div className="flex flex-wrap gap-2">

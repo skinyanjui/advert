@@ -69,8 +69,8 @@ export function Browse() {
     : undefined
   const preserve = boardSearch(query)
   return (
-    <div className="mx-auto w-full max-w-[1720px]">
-      <section className="min-w-0 px-4 pt-0 pb-16 md:px-6">
+    <div className="w-full">
+      <section className="min-w-0 px-3 pt-0 pb-16 md:px-4">
         {query.country ? (
           <div className="mb-3 max-w-sm">
             <BoardCitySearch

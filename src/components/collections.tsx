@@ -26,7 +26,7 @@ export function SavedPage() {
 
   if (!auth.signedIn) {
     return (
-      <div className="mx-auto w-full max-w-[1720px] px-4 py-8 md:px-6">
+      <div className="w-full px-3 py-8 md:px-4">
         <EmptyPanel
           title={t("saved.signInTitle")}
           body={t("saved.signInBody")}
@@ -76,7 +76,7 @@ function Collection({
     .filter((listing): listing is NonNullable<typeof listing> => !!listing)
 
   return (
-    <div className="mx-auto w-full max-w-[1720px] px-4 py-8 md:px-6">
+    <div className="w-full px-3 py-8 md:px-4">
       <h1 className="text-2xl font-semibold tracking-tight">{title}</h1>
       {banner}
       {cards.length === 0 ? (
@@ -94,7 +94,7 @@ function Collection({
 
 function PageSkeleton({ title }: { title: string }) {
   return (
-    <div className="mx-auto w-full max-w-[1720px] px-4 py-8 md:px-6">
+    <div className="w-full px-3 py-8 md:px-4">
       <h1 className="text-2xl font-semibold tracking-tight">{title}</h1>
       <div className={`mt-6 ${listingGridClassName}`}>
         {Array.from({ length: 4 }, (_, index) => (

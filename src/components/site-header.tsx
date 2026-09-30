@@ -41,7 +41,7 @@ function TopNav() {
   const locationLabel = query.country ? countryName(query.country) : t("nav.allAfrica")
 
   return (
-    <div className="mx-auto flex h-14 max-w-[1720px] items-center gap-1 px-2 sm:gap-1.5 md:relative md:h-16 md:gap-2 md:px-4 xl:gap-3 xl:px-6">
+    <div className="flex h-14 w-full items-center gap-1 px-3 sm:gap-1.5 md:relative md:h-16 md:gap-2 md:px-4 xl:gap-3">
       <TopNavBrand />
       <TopNavDiscovery search={query.q} onSearchChange={(value) => update({ q: value })} />
       <TopNavActions pathname={pathname} locationLabel={locationLabel} query={query} />

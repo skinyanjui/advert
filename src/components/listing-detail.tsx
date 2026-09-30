@@ -300,7 +300,7 @@ export function ListingDetail({ id }: { id: string }) {
   }
 
   return (
-    <div className="mx-auto w-full max-w-[1720px] px-4 pt-6 pb-24 md:px-6 md:py-8 lg:pb-8">
+    <div className="w-full px-3 pt-4 pb-24 md:px-4 md:py-6 lg:pb-8">
       <div className="mx-auto w-full max-w-[1100px]">
       <Link
         href={backHref}
@@ -841,7 +841,7 @@ function MissingListing() {
 
 function DetailSkeleton() {
   return (
-    <div className="mx-auto w-full max-w-[1720px] px-4 py-8 md:px-6">
+    <div className="w-full px-3 py-6 md:px-4">
       <div className="h-4 w-28 rounded bg-muted" />
       <div className="mt-4 aspect-[16/10] rounded-xl bg-muted" />
       <div className="mt-5 h-7 w-48 rounded bg-muted" />

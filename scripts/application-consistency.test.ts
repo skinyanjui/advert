@@ -172,3 +172,24 @@ test("country helpers expose only live marketplace utilities", () => {
   assert.doesNotMatch(countries, /export function isCountryId/)
   assert.doesNotMatch(countries, /export function languageLabel/)
 })
+
+
+test("primary marketplace surfaces share one full-width spacing system", () => {
+  const header = source("src/components/site-header.tsx")
+  const browse = source("src/components/browse.tsx")
+  const fallback = source("src/components/board-shell.tsx")
+  const collections = source("src/components/collections.tsx")
+  const messages = source("src/components/messages-page.tsx")
+  const myAds = source("src/components/my-ads-page.tsx")
+
+  assert.match(header, /flex h-14 w-full/)
+  assert.match(header, /px-3/)
+  assert.match(browse, /<div className="w-full">/)
+  assert.match(browse, /px-3 pt-0 pb-16 md:px-4/)
+  assert.match(fallback, /w-full px-3 py-4 md:px-4/)
+  for (const page of [collections, messages, myAds]) {
+    assert.doesNotMatch(page, /max-w-\[1720px\]/)
+    assert.match(page, /w-full px-3/)
+    assert.match(page, /md:px-4/)
+  }
+})

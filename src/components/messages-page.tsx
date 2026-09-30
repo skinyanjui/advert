@@ -59,7 +59,7 @@ export function MessagesPage() {
 
   if (auth.ready && auth.configured && !auth.signedIn) {
     return (
-      <div className="mx-auto w-full max-w-[1720px] px-4 py-6 md:px-6">
+      <div className="w-full px-3 py-6 md:px-4">
         <p className="text-sm text-neutral-500">{t("messages.signIn")}</p>
       </div>
     )
@@ -67,7 +67,7 @@ export function MessagesPage() {
 
   if (!ready) {
     return (
-      <div className="mx-auto w-full max-w-[1720px] px-4 py-6 md:px-6">
+      <div className="w-full px-3 py-6 md:px-4">
         <p className="text-sm text-neutral-500">{t("messages.loading")}</p>
       </div>
     )
@@ -93,7 +93,7 @@ export function MessagesPage() {
   }
 
   return (
-    <div className="mx-auto w-full max-w-[1720px] px-4 py-3 md:px-6">
+    <div className="w-full px-3 py-3 md:px-4">
       <h1 className="sr-only">{t("messages.title")}</h1>
       {missing ? (
         <p className="mb-3 rounded-lg border border-neutral-200 bg-white px-3 py-2 text-sm text-neutral-600">{t("messages.missing")}</p>
