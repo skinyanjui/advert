@@ -35,5 +35,5 @@ export default async function Page() {
     loadError = true
   }
 
-  return <AdminPrivacyPage initialRequests={requests} loadError={loadError} />
+  return <AdminPrivacyPage initialRequests={requests} loadError={loadError} now={new Date().toISOString()} />
 }
