@@ -2,7 +2,12 @@ import "server-only"
 
 import { fail } from "@/lib/api"
 import { boardDb } from "@/lib/board-db"
-import { PRIVACY_VERSION, TERMS_OUTDATED_MESSAGE, TERMS_VERSION } from "@/lib/legal"
+import {
+  LEGAL_DISCLOSURE_VERSION,
+  PRIVACY_VERSION,
+  TERMS_OUTDATED_MESSAGE,
+  TERMS_VERSION,
+} from "@/lib/legal"
 import type { NextResponse } from "next/server"
 
 export { TERMS_OUTDATED_MESSAGE }
@@ -41,7 +46,7 @@ export async function getTermsStatus(userId: string): Promise<TermsStatus> {
   try {
     const { data, error } = await boardDb()
       .from("terms_acceptances")
-      .select("terms_version,privacy_version,accepted_at")
+      .select("terms_version,privacy_version,age_attested,privacy_acknowledged,disclosure_version,accepted_at")
       .eq("user_id", userId)
       .order("accepted_at", { ascending: false })
       .limit(1)
@@ -56,7 +61,11 @@ export async function getTermsStatus(userId: string): Promise<TermsStatus> {
     const acceptedTermsVersion = typeof data.terms_version === "string" ? data.terms_version : null
     const acceptedPrivacyVersion = typeof data.privacy_version === "string" ? data.privacy_version : null
     const current =
-      acceptedTermsVersion === TERMS_VERSION && acceptedPrivacyVersion === PRIVACY_VERSION
+      acceptedTermsVersion === TERMS_VERSION &&
+      acceptedPrivacyVersion === PRIVACY_VERSION &&
+      data.age_attested === true &&
+      data.privacy_acknowledged === true &&
+      data.disclosure_version === LEGAL_DISCLOSURE_VERSION
     return {
       ...base,
       current,
