@@ -58,11 +58,22 @@ test("normalizeProfileUpdate accepts language and currency patches", () => {
   assert.equal(bad.ok, false)
 })
 
-test("account onboarding captures a concrete default display currency", () => {
+test("language and currency stay on the same row on every shared preference surface", () => {
+  const fields = readFileSync(
+    new URL("../src/components/language-currency-fields.tsx", import.meta.url),
+    "utf8",
+  )
   const signIn = readFileSync(new URL("../src/components/sign-in-form.tsx", import.meta.url), "utf8")
-  assert.match(signIn, /label=\{t\("prefs\.currency"\)\}/)
-  assert.match(signIn, /onboarding-currency/)
-  assert.match(signIn, /setCurrency/)
+  const account = readFileSync(new URL("../src/components/account-page.tsx", import.meta.url), "utf8")
+  const profileMenu = readFileSync(new URL("../src/components/profile-menu.tsx", import.meta.url), "utf8")
+
+  assert.match(fields, /grid grid-cols-2/)
+  assert.doesNotMatch(fields, /sm:grid-cols-2/)
+  assert.doesNotMatch(fields, /space-y-2 px-2 py-1\.5/)
+  assert.match(signIn, /<LanguageCurrencyFields idPrefix="onboarding" \/>/)
+  assert.match(account, /<LanguageCurrencyFields \/>/)
+  assert.match(profileMenu, /<LanguageCurrencyFields layout="menu" idPrefix="profile-menu" \/>/)
+  assert.doesNotMatch(signIn, /onboarding-currency/)
   assert.doesNotMatch(signIn, /Listing currency/)
 })
 
