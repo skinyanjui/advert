@@ -28,7 +28,10 @@ test("registration discloses protected features and requires legal acceptance", 
   assert.match(signIn, /t\("auth\.accountAccessBody"\)/)
   assert.match(signIn, /t\("auth\.mustAgree"\)/)
   assert.match(en, /saving, Messenger, direct seller contact, posting, reporting, profile data/)
-  assert.match(en, /Agree to the Terms and Privacy Policy to continue\./)
+  assert.match(en, /Agree to the Terms and acknowledge the Privacy Policy to continue\./)
+  assert.match(en, /Confirm that you are at least 18 years old to continue\./)
+  assert.match(signIn, /ageConfirmed/)
+  assert.match(signIn, /agreedToTerms/)
   assert.match(signIn, /channel === "phone"/)
 })
 

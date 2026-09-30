@@ -40,7 +40,7 @@ Supported flows:
 
 Paste the HTML under `supabase/templates/` into Supabase Dashboard → Authentication → Email Templates (Confirm signup, Magic Link, Reset password, Change email). Prefer `token_hash` links over Management API calls. Site URL and redirect allow lists must include `/auth/confirm` and `/auth/callback` for production, previews, and localhost.
 
-Protected account routes (`/saved`, `/my-ads`, `/messages`, `/admin/reports`) redirect unsigned visitors to `/sign-in?next=…`. Profile keeps its public language/currency settings visible but protects private account data and mutations.
+Protected account routes such as `/saved`, `/my-ads`, `/messages`, and `/account/moderation` redirect unsigned visitors to `/sign-in?next=…`. Administrative routes including `/admin/reports`, `/admin/privacy`, `/admin/moderation-appeals`, `/admin/incidents`, and `/admin/compliance` additionally require the admin permission. Profile keeps its public language/currency settings visible but protects private account data and mutations.
 
 ## Board database migrations
 
@@ -62,6 +62,9 @@ Apply in order on the board Supabase project (SQL editor), after `database/board
 14. `database/migrations/20260929_whatsapp_consents.sql` — scoped buyer WhatsApp consent records; no phone numbers or message contents
 15. `database/migrations/20260929_whatsapp_platform_enforcement.sql` — WABA policy-warning/restriction state and event history
 16. `database/migrations/20260929_contact_sms.sql` — adds SMS/text contact intent to the contact-event allow-list
+17. `database/migrations/20260929_privacy_rights_workflow.sql` — age/privacy acceptance evidence, privacy-rights cases and audit events, compliance incident records
+18. `database/migrations/20260929_moderation_redress.sql` — moderation statement-of-reasons evidence and seller appeal records
+19. `database/migrations/20260929_illegal_content_notice.sql` — structured illegal-content notice fields and report reason
 
 After the lock migration, anyone with only the publishable key must not be able to read `board_listings` (including phones).
 
@@ -139,15 +142,22 @@ route still advances reminder markers as a no-op send.
 
 ## Privacy and regulatory controls
 
-- Account creation is intended for adults 18+; the onboarding acceptance text records acceptance of the current Terms/Privacy version containing that age rule.
-- Signed-in users can download a machine-readable JSON export of their account data from Profile, correct profile information, and delete their account.
-- Account deletion now removes account-linked listings, saves, conversations, reports submitted by the user, authenticated contact-intent events, and WhatsApp consent records from active application data.
-- `/privacy/choices` exposes the current sale/share position and detects the `Sec-GPC: 1` Global Privacy Control signal. The current application does not sell personal information or share it for cross-context behavioral advertising.
-- The Privacy draft documents GDPR legal bases and rights, California CCPA/CPRA rights and notice-at-collection categories, international transfers, security/data minimization, and current processors.
-- The Terms draft documents adult eligibility, U.S. INFORM Consumers Act readiness, CAN-SPAM/TCPA boundaries, FTC consumer-protection expectations, and a DMCA section 512 checklist placeholder.
-- Set `NEXT_PUBLIC_SUPPORT_EMAIL` to a real monitored public support/privacy address before relying on privacy-rights contact language in production.
-- If the operator intends to rely on DMCA section 512 safe harbor, register and maintain a designated DMCA agent with the U.S. Copyright Office and publish the required agent contact details before claiming that protection.
-- These legal pages remain drafts pending licensed counsel review; applicability depends on the operator, users, geography, revenue/volume thresholds, and actual data/marketing practices.
+- Account creation uses two separate confirmations: an 18+ age attestation and a Terms acceptance / Privacy Policy acknowledgment. The server stores the current document versions, disclosure version, locale, timestamp, IP/user-agent evidence, age attestation, and privacy acknowledgment in the append-only legal acceptance log.
+- Protected APIs require the current legal evidence before returning protected data or performing account mutations. A legal-version bump therefore creates an account-access reacceptance boundary rather than interrupting an unrelated feature at the moment of use.
+- Signed-in users can correct profile information, download a machine-readable JSON export, delete their account, submit privacy-rights requests, review their privacy-request history, and review/appeal moderation restrictions.
+- `/privacy/request` accepts access, portability, correction, deletion, restriction, objection, opt-out, sensitive-data limitation, consent-withdrawal, and appeal requests. It records jurisdiction, verification state, internal target date, status, resolution, and audit events. Authorized-agent requests are supported without accepting identity documents in the free-text field.
+- California sale/share opt-out cases use a 15-day internal target; other privacy cases use a stricter 30-day internal operating target. These are internal service targets rather than a claim that every jurisdiction has the same statutory deadline.
+- `/privacy/choices` exposes the current no-sale/share/no-targeted-advertising position, detects `Sec-GPC: 1`, and discloses the current response to browser DNT signals. The current app does not run third-party behavioral-advertising pixels.
+- Listing reports include a structured illegal-content notice option. It stores the reporter's legal/factual explanation, optional jurisdiction, and good-faith attestation for moderator review without exposing reporter identity to the seller.
+- Restrictive moderator actions require a reason. Moderator “remove” is a reversible hidden state, not a destructive delete. Affected sellers can see the reason and policy basis and submit an in-product appeal for six months; administrators can uphold or reverse the decision with a reasoned resolution.
+- Admin operations include `/admin/privacy` for rights requests, `/admin/moderation-appeals` for seller redress, `/admin/incidents` for security/privacy incident records and notification assessments, and `/admin/compliance` for the law-to-product control registry.
+- The compliance registry covers current or conditional requirements for GDPR, CCPA/CPRA, CalOPPA, other U.S. state privacy laws, Kenya/Nigeria/South Africa/Ghana privacy regimes, DSA, ePrivacy, accessibility, FTC advertising/endorsement rules, INFORM, CAN-SPAM/TCPA, COPPA, FTC Act Section 5, and DMCA §512. Conditional entries identify the product/business facts that would trigger additional implementation.
+- Account deletion removes account-linked active application data according to the deletion service; privacy exports include the user's legal acceptance evidence, privacy cases, moderation decisions, appeals, reports, direct-contact events, WhatsApp consent, messages sent, saves, listings, and profile information without exposing counterpart private records.
+- All privacy-case, moderation-redress, and compliance-incident tables are server-only: RLS is enabled and direct `anon`/`authenticated` table grants are revoked. API-level RBAC is the access boundary.
+- Set `NEXT_PUBLIC_SUPPORT_EMAIL`, `LEGAL_OPERATOR_NAME`, and `LEGAL_OPERATOR_ADDRESS` before final legal approval. Configure an EU representative or DPO only when the applicable facts require one.
+- If the operator intends to rely on DMCA §512 safe harbor, register and maintain a designated DMCA agent with the U.S. Copyright Office and configure the public agent details before claiming that protection.
+- Supabase currently reports leaked-password protection as disabled; enable that Auth control in the Supabase project before treating the password-security checklist as complete.
+- The legal pages remain drafts pending licensed counsel review. Applicability still depends on the operating entity, geography, scale, transaction model, advertising/marketing practices, profiling, and actual processor/transfer arrangements.
 
 ## Marketplace contact and compliance notes
 

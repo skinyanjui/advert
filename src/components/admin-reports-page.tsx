@@ -6,6 +6,7 @@ import { toast } from "sonner"
 
 import { EmptyPanel } from "@/components/empty-panel"
 import { Button } from "@/components/ui/button"
+import { Textarea } from "@/components/ui/textarea"
 import { reportReasonLabel, reportReasons, type ReportReasonId } from "@/lib/reports"
 
 type AdminReport = {
@@ -14,6 +15,9 @@ type AdminReport = {
   listingTitle: string
   reason: ReportReasonId
   note: string | null
+  legalBasis: string | null
+  jurisdiction: string | null
+  goodFaith: boolean
   createdAt: string
   listingHidden: boolean
 }
@@ -30,6 +34,7 @@ export function AdminReportsClient({
   const [reports, setReports] = useState(initialReports)
   const [busyId, setBusyId] = useState<string | null>(null)
   const [reasonFilter, setReasonFilter] = useState<"" | ReportReasonId>("")
+  const [decisionReasons, setDecisionReasons] = useState<Record<string, string>>({})
 
   const visible = useMemo(
     () => (reasonFilter ? reports.filter((report) => report.reason === reasonFilter) : reports),
@@ -42,7 +47,11 @@ export function AdminReportsClient({
       const response = await fetch("/api/admin/reports", {
         method: "PATCH",
         headers: { "content-type": "application/json" },
-        body: JSON.stringify({ reportId, action }),
+        body: JSON.stringify({
+          reportId,
+          action,
+          decisionReason: decisionReasons[reportId]?.trim() || null,
+        }),
       })
       const payload = (await response.json()) as { reason?: string; reports?: AdminReport[] }
       if (!response.ok) {
@@ -50,6 +59,7 @@ export function AdminReportsClient({
         return
       }
       setReports(Array.isArray(payload.reports) ? payload.reports : [])
+      setDecisionReasons((current) => ({ ...current, [reportId]: "" }))
       const label =
         action === "dismiss"
           ? "Report dismissed"
@@ -70,7 +80,7 @@ export function AdminReportsClient({
     <div className="mx-auto max-w-3xl px-4 py-8 md:px-6">
       <h1 className="text-2xl font-semibold tracking-tight">Reports</h1>
       <p className="mt-1 text-sm text-neutral-500">
-        Pending listing reports. Dismiss clears a report; hide or remove acts on the ad.
+        Pending listing reports. Restrictions require a written reason that can be shown to the affected seller. “Remove” preserves the listing in a reversible hidden state for redress.
       </p>
       <div className="mt-4">
         <label className="text-xs font-medium text-neutral-600" htmlFor="report-reason-filter">
@@ -116,10 +126,34 @@ export function AdminReportsClient({
                   </Link>
                   <p className="mt-1 text-sm text-neutral-600">{reportReasonLabel(report.reason)}</p>
                   {report.note ? <p className="mt-1 text-sm text-neutral-500">{report.note}</p> : null}
+                  {report.reason === "illegal_content" ? (
+                    <div className="mt-2 rounded-lg bg-neutral-50 px-3 py-2 text-sm text-neutral-700">
+                      <p className="font-medium text-neutral-900">Illegal-content notice</p>
+                      {report.jurisdiction ? <p className="mt-1">Jurisdiction: {report.jurisdiction}</p> : null}
+                      <p className="mt-1">{report.legalBasis ?? "No legal explanation recorded."}</p>
+                      <p className="mt-1 text-xs text-neutral-500">
+                        Good-faith attestation: {report.goodFaith ? "confirmed" : "not confirmed"}
+                      </p>
+                    </div>
+                  ) : null}
                   <p className="mt-2 text-xs text-neutral-400">
                     {new Date(report.createdAt).toLocaleString()}
                     {report.listingHidden ? " · currently hidden" : ""}
                   </p>
+                </div>
+                <div className="mt-3 grid w-full gap-2">
+                  <label className="text-xs font-medium text-neutral-600" htmlFor={`moderation-reason-${report.id}`}>
+                    Reason shown to the listing owner
+                  </label>
+                  <Textarea
+                    id={`moderation-reason-${report.id}`}
+                    value={decisionReasons[report.id] ?? ""}
+                    maxLength={1500}
+                    onChange={(event) =>
+                      setDecisionReasons((current) => ({ ...current, [report.id]: event.target.value }))
+                    }
+                    placeholder="State the rule or legal/safety issue and the facts supporting the restriction. Do not include reporter identity."
+                  />
                 </div>
                 <div className="flex flex-wrap gap-2">
                   <Button
@@ -143,7 +177,7 @@ export function AdminReportsClient({
                   <Button
                     variant="outline"
                     className="rounded-full"
-                    disabled={busyId === report.id}
+                    disabled={busyId === report.id || !(decisionReasons[report.id]?.trim())}
                     onClick={() => void act(report.id, "hide")}
                   >
                     Hide ad
@@ -151,7 +185,7 @@ export function AdminReportsClient({
                   <Button
                     variant="destructive"
                     className="rounded-full"
-                    disabled={busyId === report.id}
+                    disabled={busyId === report.id || !(decisionReasons[report.id]?.trim())}
                     onClick={() => void act(report.id, "remove")}
                   >
                     Remove ad

@@ -30,6 +30,9 @@ export async function exportPrivacyData(userId: string, email?: string | null) {
     contactEvents,
     whatsappConsents,
     termsAcceptances,
+    privacyRequests,
+    moderationDecisions,
+    moderationAppeals,
   ] = await Promise.all([
     getProfile(userId, email),
     db
@@ -57,7 +60,7 @@ export async function exportPrivacyData(userId: string, email?: string | null) {
       .order("sent_at", { ascending: true }),
     db
       .from("board_reports")
-      .select("id,listing_id,reason,note,status,created_at,reviewed_at")
+      .select("id,listing_id,reason,note,legal_basis,jurisdiction,good_faith,status,created_at,reviewed_at")
       .eq("reporter_id", userId)
       .order("created_at", { ascending: false }),
     db
@@ -73,9 +76,24 @@ export async function exportPrivacyData(userId: string, email?: string | null) {
       .order("consented_at", { ascending: false }),
     db
       .from("terms_acceptances")
-      .select("terms_version,privacy_version,accepted_at,ip,user_agent,context")
+      .select("terms_version,privacy_version,age_attested,privacy_acknowledged,disclosure_version,locale,accepted_at,ip,user_agent,context")
       .eq("user_id", userId)
       .order("accepted_at", { ascending: false }),
+    db
+      .from("privacy_requests")
+      .select("id,jurisdiction,request_type,status,received_at,due_at,verified_at,verification_method,acknowledgment_sent_at,completed_at,resolution")
+      .eq("user_id", userId)
+      .order("received_at", { ascending: false }),
+    db
+      .from("moderation_actions")
+      .select("id,listing_id,listing_title,action,restriction_type,decision_reason,policy_basis,automated,created_at,notified_at,appeal_until")
+      .eq("subject_user_id", userId)
+      .order("created_at", { ascending: false }),
+    db
+      .from("moderation_appeals")
+      .select("id,moderation_action_id,reason,status,submitted_at,reviewed_at,resolution")
+      .eq("appellant_user_id", userId)
+      .order("submitted_at", { ascending: false }),
   ])
 
   for (const result of [
@@ -88,6 +106,9 @@ export async function exportPrivacyData(userId: string, email?: string | null) {
     contactEvents,
     whatsappConsents,
     termsAcceptances,
+    privacyRequests,
+    moderationDecisions,
+    moderationAppeals,
   ]) {
     check(result.error)
   }
@@ -140,6 +161,25 @@ export async function exportPrivacyData(userId: string, email?: string | null) {
     contactEvents: contactEvents.data ?? [],
     whatsappConsentsGiven: whatsappConsents.data ?? [],
     legalAcceptances: termsAcceptances.data ?? [],
+    privacyRequests: privacyRequests.data ?? [],
+    moderationDecisions: moderationDecisions.data ?? [],
+    moderationAppeals: moderationAppeals.data ?? [],
+    currentProcessingFacts: {
+      sellsPersonalInformation: false,
+      crossContextBehavioralAdvertising: false,
+      thirdPartyAdvertisingPixels: false,
+      marketingEmail: false,
+      marketingRobotexts: false,
+      significantDecisionAdmt: false,
+      structuredIllegalContentNotices: true,
+      moderationAppeals: true,
+    },
+    serviceProvidersAndHandoffs: [
+      "Supabase — authentication, database, and storage",
+      "Vercel — hosting and delivery",
+      "Resend — transactional email when configured",
+      "WhatsApp / Meta — only when a user chooses an off-platform WhatsApp contact action or where the Business Platform is enabled",
+    ],
     note:
       "This export contains account data and messages you sent. Other users' private account identifiers and message contents are not included.",
   }

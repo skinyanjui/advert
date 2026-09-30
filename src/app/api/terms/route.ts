@@ -33,14 +33,25 @@ export async function POST(request: Request) {
     return fail("Sign in to accept the Terms.", 401)
   }
   try {
-    const body = (await request.json().catch(() => ({}))) as { context?: unknown }
+    const body = (await request.json().catch(() => ({}))) as {
+      context?: unknown
+      ageAttested?: unknown
+      privacyAcknowledged?: unknown
+      locale?: unknown
+    }
     const contextRaw = typeof body.context === "string" ? body.context : "signup"
     if (!isTermsAcceptanceContext(contextRaw)) {
       return fail("Choose signup or reaccept.")
     }
+    const ageAttested = body.ageAttested === true
+    const privacyAcknowledged = body.privacyAcknowledged === true
+    const locale = typeof body.locale === "string" ? body.locale.slice(0, 16) : null
     const result = await recordTermsAcceptance(owner.id, contextRaw, {
       ip: clientIp(request),
       userAgent: clientUserAgent(request),
+      ageAttested,
+      privacyAcknowledged,
+      locale,
     })
     if (!result.ok) return fail("Could not record Terms acceptance.")
     const status = await getTermsStatus(owner.id)

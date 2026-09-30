@@ -7,9 +7,11 @@ import { acceptListing } from "@/lib/listing-rules"
 import { messageError, type BoardMessage } from "@/lib/messages"
 import { cleanListing, parseBoardState, type BoardState } from "@/lib/board-payload"
 import {
+  illegalContentNoticeError,
   isReportReasonId,
   reportAutoHideThreshold,
   reportNoteError,
+  reportReasonLabel,
   type ReportReasonId,
 } from "@/lib/reports"
 import { expiresAtFrom, expiryNoticeDays, isListingExpired } from "@/lib/expiry"
@@ -955,6 +957,9 @@ export type BoardReport = {
   reporterId: string
   reason: ReportReasonId
   note: string | null
+  legalBasis: string | null
+  jurisdiction: string | null
+  goodFaith: boolean
   status: "pending" | "dismissed" | "actioned"
   createdAt: string
   listingHidden: boolean
@@ -967,6 +972,9 @@ export async function createReport(
   listingId: string,
   reason: string,
   note: string,
+  legalBasis = "",
+  jurisdiction = "",
+  goodFaith = false,
 ): Promise<Result<{ pendingCount: number; autoHidden: boolean }>> {
   if (!listingIdPattern.test(listingId) || seedIds.has(listingId)) {
     return { ok: false, reason: "Sample listings cannot be reported." }
@@ -974,6 +982,10 @@ export async function createReport(
   if (!isReportReasonId(reason)) return { ok: false, reason: "Choose a reason for the report." }
   const noteReason = reportNoteError(note)
   if (noteReason) return { ok: false, reason: noteReason }
+  if (reason === "illegal_content") {
+    const illegalReason = illegalContentNoticeError({ legalBasis, jurisdiction, goodFaith })
+    if (illegalReason) return { ok: false, reason: illegalReason }
+  }
 
   const db = boardDb()
   const hourAgo = new Date(Date.now() - 60 * 60 * 1000).toISOString()
@@ -1008,6 +1020,9 @@ export async function createReport(
     reporter_id: reporterId,
     reason,
     note: note.trim() || null,
+    legal_basis: reason === "illegal_content" ? legalBasis.trim() : null,
+    jurisdiction: reason === "illegal_content" ? jurisdiction.trim() || null : null,
+    good_faith: reason === "illegal_content" ? goodFaith : false,
     status: "pending",
   })
   if (insertError) {
@@ -1043,7 +1058,7 @@ export async function listPendingReports(): Promise<BoardReport[]> {
   const db = boardDb()
   const { data: reports, error } = await db
     .from("board_reports")
-    .select("id,listing_id,reporter_id,reason,note,status,created_at")
+    .select("id,listing_id,reporter_id,reason,note,legal_basis,jurisdiction,good_faith,status,created_at")
     .eq("status", "pending")
     .order("created_at", { ascending: false })
     .limit(200)
@@ -1069,6 +1084,9 @@ export async function listPendingReports(): Promise<BoardReport[]> {
         reporterId: row.reporter_id as string,
         reason: row.reason as ReportReasonId,
         note: typeof row.note === "string" ? row.note : null,
+        legalBasis: typeof row.legal_basis === "string" ? row.legal_basis : null,
+        jurisdiction: typeof row.jurisdiction === "string" ? row.jurisdiction : null,
+        goodFaith: row.good_faith === true,
         status: "pending",
         createdAt: row.created_at as string,
         listingHidden: Boolean(listing?.hidden_at),
@@ -1125,11 +1143,15 @@ export async function dismissReport(adminId: string, reportId: string): Promise<
   return { ok: true, value: true }
 }
 
-export async function hideListingForReport(adminId: string, reportId: string): Promise<Result<true>> {
+export async function hideListingForReport(
+  adminId: string,
+  reportId: string,
+  decisionReason?: string | null,
+): Promise<Result<true>> {
   const db = boardDb()
   const { data: report, error } = await db
     .from("board_reports")
-    .select("id,listing_id,status")
+    .select("id,listing_id,status,reason,note")
     .eq("id", reportId)
     .maybeSingle()
   check(error)
@@ -1137,6 +1159,19 @@ export async function hideListingForReport(adminId: string, reportId: string): P
   if (report.status !== "pending") return { ok: false, reason: "That report was already reviewed." }
 
   const listingId = report.listing_id as string
+  const { data: listingRow, error: listingError } = await db
+    .from("board_listings")
+    .select("owner_id,payload")
+    .eq("id", listingId)
+    .maybeSingle()
+  check(listingError)
+  const listing = listingRow ? cleanListing(listingRow.payload) : undefined
+  const reason =
+    decisionReason?.trim().slice(0, 1500) ||
+    (isReportReasonId(report.reason as string)
+      ? `Moderator review found: ${reportReasonLabel(report.reason as ReportReasonId)}.`
+      : "Moderator review found that the listing violated marketplace rules.")
+
   const { error: hideError } = await db
     .from("board_listings")
     .update({ hidden_at: new Date().toISOString(), hidden_reason: "admin" })
@@ -1159,16 +1194,25 @@ export async function hideListingForReport(adminId: string, reportId: string): P
     listingId,
     adminId,
     action: "hide",
+    subjectUserId: listingRow?.owner_id ?? null,
+    listingTitle: listing?.title ?? "(listing)",
+    restrictionType: "visibility_restricted",
+    decisionReason: reason,
+    policyBasis: "Terms of use and listing rules",
   })
 
   return { ok: true, value: true }
 }
 
-export async function removeListingForReport(adminId: string, reportId: string): Promise<Result<true>> {
+export async function removeListingForReport(
+  adminId: string,
+  reportId: string,
+  decisionReason?: string | null,
+): Promise<Result<true>> {
   const db = boardDb()
   const { data: report, error } = await db
     .from("board_reports")
-    .select("id,listing_id,status")
+    .select("id,listing_id,status,reason,note")
     .eq("id", reportId)
     .maybeSingle()
   check(error)
@@ -1178,10 +1222,16 @@ export async function removeListingForReport(adminId: string, reportId: string):
   const listingId = report.listing_id as string
   const { data: row, error: readError } = await db
     .from("board_listings")
-    .select("payload")
+    .select("owner_id,payload")
     .eq("id", listingId)
     .maybeSingle()
   check(readError)
+  const listing = row ? cleanListing(row.payload) : undefined
+  const reason =
+    decisionReason?.trim().slice(0, 1500) ||
+    (isReportReasonId(report.reason as string)
+      ? `Moderator review found: ${reportReasonLabel(report.reason as ReportReasonId)}.`
+      : "Moderator review found that the listing violated marketplace rules.")
 
   const { error: markError } = await db
     .from("board_reports")
@@ -1195,14 +1245,11 @@ export async function removeListingForReport(adminId: string, reportId: string):
   check(markError)
 
   if (row) {
-    const { error: deleteError } = await db.from("board_listings").delete().eq("id", listingId)
-    check(deleteError)
-    const { error: saveError } = await db.from("board_saves").delete().eq("listing_id", listingId)
-    check(saveError)
-    const old = cleanListing(row.payload)
-    if (old) {
-      for (const url of listingPhotoList(old)) await removePhoto(url)
-    }
+    const { error: removeError } = await db
+      .from("board_listings")
+      .update({ hidden_at: new Date().toISOString(), hidden_reason: "admin" })
+      .eq("id", listingId)
+    check(removeError)
   }
 
   await logModerationAction({
@@ -1210,6 +1257,11 @@ export async function removeListingForReport(adminId: string, reportId: string):
     listingId,
     adminId,
     action: "remove",
+    subjectUserId: row?.owner_id ?? null,
+    listingTitle: listing?.title ?? "(listing)",
+    restrictionType: "content_removed",
+    decisionReason: reason,
+    policyBasis: "Terms of use and listing rules",
   })
 
   return { ok: true, value: true }
@@ -1221,6 +1273,11 @@ async function logModerationAction(input: {
   adminId: string
   action: string
   note?: string | null
+  subjectUserId?: string | null
+  listingTitle?: string | null
+  restrictionType?: "visibility_restricted" | "content_removed" | "sponsored_label" | "no_restriction" | null
+  decisionReason?: string | null
+  policyBasis?: string | null
 }): Promise<void> {
   try {
     const { error } = await boardDb().from("moderation_actions").insert({
@@ -1230,6 +1287,12 @@ async function logModerationAction(input: {
       admin_id: input.adminId,
       action: input.action,
       note: input.note ?? null,
+      subject_user_id: input.subjectUserId ?? null,
+      listing_title: input.listingTitle ?? null,
+      restriction_type: input.restrictionType ?? null,
+      decision_reason: input.decisionReason ?? null,
+      policy_basis: input.policyBasis ?? null,
+      automated: false,
     })
     if (error) {
       console.error("moderation_actions insert failed", error)

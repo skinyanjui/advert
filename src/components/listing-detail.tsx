@@ -20,6 +20,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog"
+import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import {
   Select,
@@ -75,6 +76,9 @@ export function ListingDetail({ id }: { id: string }) {
   const [reportOpen, setReportOpen] = useState(false)
   const [reportReason, setReportReason] = useState("")
   const [reportNote, setReportNote] = useState("")
+  const [reportLegalBasis, setReportLegalBasis] = useState("")
+  const [reportJurisdiction, setReportJurisdiction] = useState("")
+  const [reportGoodFaith, setReportGoodFaith] = useState(false)
   const [reportBusy, setReportBusy] = useState(false)
   const [busy, setBusy] = useState(false)
   const [confirmRemove, setConfirmRemove] = useState(false)
@@ -255,9 +259,12 @@ export function ListingDetail({ id }: { id: string }) {
           listingId: ad.id,
           reason: reportReason,
           note: reportNote,
+          legalBasis: reportReason === "illegal_content" ? reportLegalBasis : null,
+          jurisdiction: reportReason === "illegal_content" ? reportJurisdiction : null,
+          goodFaith: reportReason === "illegal_content" ? reportGoodFaith : false,
         }),
       })
-      const payload = (await response.json()) as { reason?: string }
+      const payload = (await response.json()) as { reason?: string; autoHidden?: boolean }
       if (!response.ok) {
         toast.error(payload.reason ?? t("report.toast.error"))
         return
@@ -265,7 +272,10 @@ export function ListingDetail({ id }: { id: string }) {
       setReportOpen(false)
       setReportReason("")
       setReportNote("")
-      toast.success(t("report.toast.sent"))
+      setReportLegalBasis("")
+      setReportJurisdiction("")
+      setReportGoodFaith(false)
+      toast.success(payload.autoHidden ? t("report.toast.autoHidden") : t("report.toast.sent"))
     } catch {
       toast.error(t("report.toast.error"))
     } finally {
@@ -499,6 +509,11 @@ export function ListingDetail({ id }: { id: string }) {
                 <Button variant="outline" className="h-10 rounded-full" disabled={busy} onClick={() => setConfirmRemove(true)}>
                   {t("listing.removeAd")}
                 </Button>
+                {listing.hidden ? (
+                  <Button variant="outline" className="h-10 rounded-full" asChild>
+                    <Link href="/account/moderation">Review moderation decision</Link>
+                  </Button>
+                ) : null}
                 {threadCount > 0 ? (
                   <Button variant="outline" className="h-10 rounded-full" asChild>
                     <Link href={`/messages?listing=${listing.id}`}>
@@ -753,6 +768,44 @@ export function ListingDetail({ id }: { id: string }) {
                 </SelectContent>
               </Select>
             </div>
+            <p className="rounded-lg bg-neutral-50 px-3 py-2 text-xs leading-5 text-neutral-600">
+              {t("report.automationHint")}
+            </p>
+            {reportReason === "illegal_content" ? (
+              <div className="grid gap-3 rounded-xl border border-neutral-200 p-3">
+                <p className="text-xs leading-5 text-neutral-600">{t("report.illegalHint")}</p>
+                <div className="grid gap-1.5">
+                  <Label htmlFor="report-jurisdiction">{t("report.jurisdictionLabel")}</Label>
+                  <Input
+                    id="report-jurisdiction"
+                    value={reportJurisdiction}
+                    maxLength={120}
+                    onChange={(event) => setReportJurisdiction(event.target.value)}
+                    placeholder={t("report.jurisdictionPlaceholder")}
+                  />
+                </div>
+                <div className="grid gap-1.5">
+                  <Label htmlFor="report-legal-basis">{t("report.legalBasisLabel")}</Label>
+                  <Textarea
+                    id="report-legal-basis"
+                    value={reportLegalBasis}
+                    maxLength={1500}
+                    onChange={(event) => setReportLegalBasis(event.target.value)}
+                    placeholder={t("report.legalBasisPlaceholder")}
+                    rows={4}
+                  />
+                </div>
+                <label className="flex items-start gap-2 text-sm text-neutral-700">
+                  <input
+                    type="checkbox"
+                    className="mt-0.5 size-4 shrink-0"
+                    checked={reportGoodFaith}
+                    onChange={(event) => setReportGoodFaith(event.target.checked)}
+                  />
+                  <span>{t("report.goodFaith")}</span>
+                </label>
+              </div>
+            ) : null}
             <div className="grid gap-1.5">
               <Label htmlFor="report-note">{t("report.noteLabel")}</Label>
               <Textarea
@@ -768,7 +821,15 @@ export function ListingDetail({ id }: { id: string }) {
             <Button variant="outline" onClick={() => setReportOpen(false)}>
               {t("common.cancel")}
             </Button>
-            <Button disabled={reportBusy || !reportReason} onClick={() => void submitReport()}>
+            <Button
+              disabled={
+                reportBusy ||
+                !reportReason ||
+                (reportReason === "illegal_content" &&
+                  (reportLegalBasis.trim().length < 10 || !reportGoodFaith))
+              }
+              onClick={() => void submitReport()}
+            >
               {reportBusy ? t("report.sending") : t("report.send")}
             </Button>
           </DialogFooter>

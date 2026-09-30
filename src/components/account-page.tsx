@@ -115,9 +115,21 @@ export function AccountPage() {
 
       {isAdmin ? (
         <Card size="sm">
-          <CardContent className="pt-(--card-spacing)">
+          <CardContent className="flex flex-wrap gap-2 pt-(--card-spacing)">
             <Button asChild variant="outline">
               <Link href="/admin/reports">{t("profile.reports")}</Link>
+            </Button>
+            <Button asChild variant="outline">
+              <Link href="/admin/privacy">{t("profile.privacyRequestsAdmin")}</Link>
+            </Button>
+            <Button asChild variant="outline">
+              <Link href="/admin/compliance">{t("profile.complianceAdmin")}</Link>
+            </Button>
+            <Button asChild variant="outline">
+              <Link href="/admin/moderation-appeals">Moderation appeals</Link>
+            </Button>
+            <Button asChild variant="outline">
+              <Link href="/admin/incidents">Compliance incidents</Link>
             </Button>
           </CardContent>
         </Card>
@@ -716,6 +728,12 @@ function SignedInProfile({
           <Button type="button" variant="ghost" asChild>
             <Link href="/privacy/choices">{t("profile.privacyChoices")}</Link>
           </Button>
+          <Button type="button" variant="ghost" asChild>
+            <Link href="/privacy/request">{t("profile.privacyRequest")}</Link>
+          </Button>
+          <Button type="button" variant="ghost" asChild>
+            <Link href="/account/moderation">Moderation decisions</Link>
+          </Button>
         </CardFooter>
       </Card>
 
@@ -744,7 +762,7 @@ function SignedInProfile({
           <DialogHeader>
             <DialogTitle>Delete account?</DialogTitle>
             <DialogDescription>
-              Your ads, saved items, and conversations will be removed. Type DELETE to confirm.
+              Your account, ads, saved items, conversations, submitted reports, authenticated contact events, and account-linked WhatsApp consent records will be removed from active application data. Narrow privacy-request case records may be retained when reasonably needed to document request handling or satisfy legal obligations. Provider backups may persist for their limited backup-retention period. Type DELETE to confirm.
             </DialogDescription>
           </DialogHeader>
           <div className="grid gap-2">

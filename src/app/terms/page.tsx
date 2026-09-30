@@ -7,12 +7,15 @@ import {
   PROHIBITED_ITEM_SUMMARY,
   TERMS_VERSION,
 } from "@/lib/legal"
+import { dmcaAgentConfiguration, legalOperatorIdentity } from "@/lib/legal-config"
 import { SUPPORT_CONTACT_PLACEHOLDER, site, siteSupportMailto } from "@/lib/site"
 
 export const metadata: Metadata = { title: "Terms of use" }
 
 export default function TermsPage() {
   const contactHref = siteSupportMailto()
+  const operator = legalOperatorIdentity()
+  const dmca = dmcaAgentConfiguration()
   return (
     <div className="mx-auto w-full max-w-2xl px-4 py-10 md:px-6">
       <div
@@ -94,7 +97,14 @@ export default function TermsPage() {
           content, it must register and maintain a designated DMCA agent with the U.S. Copyright
           Office, publish the agent&apos;s required contact information, and operate a compliant
           notice-and-takedown and counter-notice process.{" "}
-          <strong>[DMCA AGENT DETAILS — register and add before relying on the safe harbor]</strong>
+          {dmca.registered && dmca.contactComplete ? (
+            <strong>
+              Designated agent: {dmca.name} · {dmca.email} · {dmca.address}
+              {dmca.phone ? <> · {dmca.phone}</> : null}
+            </strong>
+          ) : (
+            <strong>[DMCA AGENT DETAILS — register and configure before relying on the safe harbor]</strong>
+          )}
         </p>
       </section>
 
@@ -150,7 +160,12 @@ export default function TermsPage() {
         <p className="text-sm leading-6 text-neutral-700">
           We may hide, remove, or refuse listings, and suspend or end accounts, when we believe
           content or behaviour breaks these Terms, our listing rules, or the law, or harms other
-          users. We may also act on reports from the community.
+          users. We may also act on reports from the community. Multiple distinct pending reports
+          can automatically hide a listing temporarily before moderator review. A moderator can
+          dismiss reports and restore the listing, or take further action. This report-threshold
+          automation is a marketplace safety/moderation tool; the current service does not use it
+          to make credit, employment, housing, insurance, education, or other similarly significant
+          eligibility decisions about a person.
         </p>
       </section>
 
@@ -231,6 +246,17 @@ export default function TermsPage() {
           and, when acceptance is required, present it at account creation or the next account-access boundary before protected features become available. We may also
           notify you by email or an in-product notice. Continued use after you accept means you agree
           to the updated versions.
+        </p>
+      </section>
+
+      <section className="mt-8 space-y-3">
+        <h2 className="text-base font-medium text-neutral-950">Operator identity</h2>
+        <p className="text-sm leading-6 text-neutral-700">
+          {operator.complete ? (
+            <>{operator.name} · {operator.address}</>
+          ) : (
+            <strong>[OPERATOR LEGAL NAME AND BUSINESS ADDRESS — configure before final legal approval]</strong>
+          )}
         </p>
       </section>
 

@@ -2,6 +2,7 @@ import "server-only"
 
 import { boardDb } from "@/lib/board-db"
 import {
+  LEGAL_DISCLOSURE_VERSION,
   PRIVACY_VERSION,
   TERMS_VERSION,
   isTermsAcceptanceContext,
@@ -36,15 +37,27 @@ export function clientUserAgent(request: Request): string | null {
 export async function recordTermsAcceptance(
   userId: string,
   context: TermsAcceptanceContext,
-  meta: { ip: string | null; userAgent: string | null },
+  meta: {
+    ip: string | null
+    userAgent: string | null
+    ageAttested: boolean
+    privacyAcknowledged: boolean
+    locale: string | null
+  },
 ): Promise<{ ok: true; alreadyCurrent?: boolean } | { ok: false; reason: string }> {
   if (!isTermsAcceptanceContext(context)) {
     return { ok: false, reason: "Choose a valid acceptance context." }
   }
+  if (meta.ageAttested !== true) {
+    return { ok: false, reason: "Confirm that you meet the account age requirement." }
+  }
+  if (meta.privacyAcknowledged !== true) {
+    return { ok: false, reason: "Acknowledge the Privacy Policy to continue." }
+  }
   try {
     const status = await getTermsStatus(userId)
     if (status.tableMissing) {
-      return { ok: true, alreadyCurrent: true }
+      return { ok: false, reason: "Legal acceptance records are temporarily unavailable." }
     }
     if (status.current && context === "signup") {
       return { ok: true, alreadyCurrent: true }
@@ -57,15 +70,21 @@ export async function recordTermsAcceptance(
       ip: meta.ip,
       user_agent: meta.userAgent,
       context,
+      age_attested: true,
+      privacy_acknowledged: true,
+      disclosure_version: LEGAL_DISCLOSURE_VERSION,
+      locale: meta.locale?.slice(0, 16) || null,
     })
     if (error) {
-      if (isMissingRelationError(error)) return { ok: true, alreadyCurrent: true }
+      if (isMissingRelationError(error)) {
+        return { ok: false, reason: "Legal acceptance records are temporarily unavailable." }
+      }
       return { ok: false, reason: "Could not record Terms acceptance." }
     }
     return { ok: true }
   } catch (error) {
     if (isMissingRelationError(error as { code?: string; message?: string })) {
-      return { ok: true, alreadyCurrent: true }
+      return { ok: false, reason: "Legal acceptance records are temporarily unavailable." }
     }
     return { ok: false, reason: "Could not record Terms acceptance." }
   }

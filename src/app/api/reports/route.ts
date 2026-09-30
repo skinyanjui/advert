@@ -17,11 +17,25 @@ export async function POST(request: Request) {
       listingId?: unknown
       reason?: unknown
       note?: unknown
+      legalBasis?: unknown
+      jurisdiction?: unknown
+      goodFaith?: unknown
     }
     const listingId = typeof body.listingId === "string" ? body.listingId : ""
     const reason = typeof body.reason === "string" ? body.reason : ""
     const note = typeof body.note === "string" ? body.note : ""
-    const result = await createReport(owner.id, listingId, reason, note)
+    const legalBasis = typeof body.legalBasis === "string" ? body.legalBasis : ""
+    const jurisdiction = typeof body.jurisdiction === "string" ? body.jurisdiction : ""
+    const goodFaith = body.goodFaith === true
+    const result = await createReport(
+      owner.id,
+      listingId,
+      reason,
+      note,
+      legalBasis,
+      jurisdiction,
+      goodFaith,
+    )
     if (!result.ok) return fail(result.reason)
     return ok({
       pendingCount: result.value.pendingCount,

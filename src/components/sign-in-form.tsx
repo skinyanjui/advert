@@ -7,22 +7,14 @@ import { toast } from "sonner"
 
 import { EmptyPanel } from "@/components/empty-panel"
 import { FormField } from "@/components/form-field"
+import { LanguageCurrencyFields } from "@/components/language-currency-fields"
 import { usePrefs } from "@/components/prefs-provider"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select"
 import { useAuth } from "@/lib/auth"
 import { DEFAULT_AUTH_NEXT, safeAuthNext } from "@/lib/auth-redirect"
-import { boardCurrencyOptions } from "@/lib/fx"
 import { useMarketplace } from "@/lib/marketplace"
-import { isCurrencyPreference, type CurrencyPreference } from "@/lib/prefs"
 import {
   passwordError,
   passwordStrength,
@@ -42,8 +34,7 @@ export function SignInForm({ nextHref }: { nextHref?: string } = {}) {
   const router = useRouter()
   const searchParams = useSearchParams()
   const { reloadBoard } = useMarketplace()
-  const { currency, setCurrency, t } = usePrefs()
-  const currencies = boardCurrencyOptions()
+  const { t } = usePrefs()
   const next = safeAuthNext(nextHref ?? searchParams.get("next"), DEFAULT_AUTH_NEXT)
 
   const [channel, setChannel] = useState<Channel>("email")
@@ -57,13 +48,16 @@ export function SignInForm({ nextHref }: { nextHref?: string } = {}) {
   const [sent, setSent] = useState(false)
   const [busy, setBusy] = useState(false)
   const [cooldown, setCooldown] = useState(0)
+  const [ageConfirmed, setAgeConfirmed] = useState(false)
   const [agreedToTerms, setAgreedToTerms] = useState(false)
   const errorParam = searchParams.get("error")
 
   useEffect(() => {
     // Read after mount to avoid SSR/client hydration mismatch (localStorage).
     /* eslint-disable react-hooks/set-state-in-effect -- intentional client-only restore */
-    setAgreedToTerms(hasTermsIntent())
+    const restored = hasTermsIntent()
+    setAgeConfirmed(restored)
+    setAgreedToTerms(restored)
     /* eslint-enable react-hooks/set-state-in-effect */
   }, [])
 
@@ -73,7 +67,7 @@ export function SignInForm({ nextHref }: { nextHref?: string } = {}) {
     } else if (errorParam === "device") {
       toast.error(t("auth.toast.linkWrongDevice"))
     }
-  }, [errorParam])
+  }, [errorParam, t])
 
   useEffect(() => {
     if (auth.signedIn) {
@@ -105,18 +99,36 @@ export function SignInForm({ nextHref }: { nextHref?: string } = {}) {
     setCooldown(RESEND_COOLDOWN_SECONDS)
   }
 
-  function onAgreeChange(checked: boolean) {
-    setAgreedToTerms(checked)
-    if (checked) rememberTermsIntent()
+  function syncLegalIntent(nextAge: boolean, nextTerms: boolean) {
+    if (nextAge && nextTerms) rememberTermsIntent()
     else clearTermsIntent()
   }
 
-  async function sendEmailLink() {
+  function onAgeChange(checked: boolean) {
+    setAgeConfirmed(checked)
+    syncLegalIntent(checked, agreedToTerms)
+  }
+
+  function onAgreeChange(checked: boolean) {
+    setAgreedToTerms(checked)
+    syncLegalIntent(ageConfirmed, checked)
+  }
+
+  function requireLegalIntent(): boolean {
+    if (!ageConfirmed) {
+      toast.error(t("auth.mustConfirmAge"))
+      return false
+    }
     if (!agreedToTerms) {
       toast.error(t("auth.mustAgree"))
-      return
+      return false
     }
     rememberTermsIntent()
+    return true
+  }
+
+  async function sendEmailLink() {
+    if (!requireLegalIntent()) return
     setBusy(true)
     const result = await auth.sendEmailCode(email, next)
     setBusy(false)
@@ -130,11 +142,7 @@ export function SignInForm({ nextHref }: { nextHref?: string } = {}) {
   }
 
   async function sendPhoneCode() {
-    if (!agreedToTerms) {
-      toast.error(t("auth.mustAgree"))
-      return
-    }
-    rememberTermsIntent()
+    if (!requireLegalIntent()) return
     setBusy(true)
     const result = await auth.sendPhoneCode(phone)
     setBusy(false)
@@ -175,11 +183,7 @@ export function SignInForm({ nextHref }: { nextHref?: string } = {}) {
     }
 
     if (passwordMode === "sign-up") {
-      if (!agreedToTerms) {
-        toast.error(t("auth.mustAgree"))
-        return
-      }
-      rememberTermsIntent()
+      if (!requireLegalIntent()) return
       const reason = passwordError(password) ?? passwordsMatchError(password, confirmPassword)
       if (reason) {
         toast.error(reason)
@@ -215,11 +219,7 @@ export function SignInForm({ nextHref }: { nextHref?: string } = {}) {
   }
 
   async function continueWithGoogle() {
-    if (!agreedToTerms) {
-      toast.error(t("auth.mustAgree"))
-      return
-    }
-    rememberTermsIntent()
+    if (!requireLegalIntent()) return
     setBusy(true)
     const result = await auth.signInWithGoogle(next)
     setBusy(false)
@@ -234,7 +234,8 @@ export function SignInForm({ nextHref }: { nextHref?: string } = {}) {
     (channel === "email" && method === "link") ||
     (channel === "email" && method === "password" && passwordMode === "sign-up")
   const needsTermsForAction = showTermsCheckbox
-  const showCurrencySetup =
+  const legalReady = ageConfirmed && agreedToTerms
+  const showPreferenceSetup =
     auth.googleEnabled ||
     (channel === "email" && method === "link" && !sent) ||
     (channel === "email" && method === "password" && passwordMode === "sign-up")
@@ -248,53 +249,43 @@ export function SignInForm({ nextHref }: { nextHref?: string } = {}) {
         </p>
       </header>
 
-      {showCurrencySetup ? (
+      {showPreferenceSetup ? (
         <div className="rounded-xl border border-neutral-200 bg-white px-3 py-3">
-          <FormField
-            label={t("prefs.currency")}
-            htmlFor="onboarding-currency"
-            hint={t("prefs.currencyHint")}
-          >
-            <Select
-              value={currency}
-              onValueChange={(value) => {
-                if (isCurrencyPreference(value)) setCurrency(value as CurrencyPreference)
-              }}
-            >
-              <SelectTrigger id="onboarding-currency" className="h-10 w-full">
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent className="z-[90] max-h-72">
-                {currencies.map((item) => (
-                  <SelectItem key={item.code} value={item.code}>
-                    {item.label}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </FormField>
+          <LanguageCurrencyFields idPrefix="onboarding" />
         </div>
       ) : null}
 
       {showTermsCheckbox ? (
-        <label className="flex items-start gap-2 rounded-xl border border-neutral-200 bg-white px-3 py-2.5 text-sm text-neutral-700">
-          <input
-            type="checkbox"
-            className="mt-0.5 size-4 shrink-0 rounded border-neutral-300"
-            checked={agreedToTerms}
-            onChange={(event) => onAgreeChange(event.target.checked)}
-          />
-          <span>
-            {t("auth.agreeAccountPrefix")}{" "}
-            <Link href="/terms" className="underline underline-offset-2">
-              {t("auth.terms")}
-            </Link>{" "}
-            {t("auth.agreeTermsAnd")}{" "}
-            <Link href="/privacy" className="underline underline-offset-2">
-              {t("auth.privacyPolicy")}
-            </Link>
-          </span>
-        </label>
+        <div className="space-y-2">
+          <label className="flex items-start gap-2 rounded-xl border border-neutral-200 bg-white px-3 py-2.5 text-sm text-neutral-700">
+            <input
+              type="checkbox"
+              className="mt-0.5 size-4 shrink-0 rounded border-neutral-300"
+              checked={ageConfirmed}
+              onChange={(event) => onAgeChange(event.target.checked)}
+            />
+            <span>{t("auth.ageConfirm")}</span>
+          </label>
+          <label className="flex items-start gap-2 rounded-xl border border-neutral-200 bg-white px-3 py-2.5 text-sm text-neutral-700">
+            <input
+              type="checkbox"
+              className="mt-0.5 size-4 shrink-0 rounded border-neutral-300"
+              checked={agreedToTerms}
+              onChange={(event) => onAgreeChange(event.target.checked)}
+            />
+            <span>
+              {t("auth.legalAgreementPrefix")}{" "}
+              <Link href="/terms" className="underline underline-offset-2">
+                {t("auth.terms")}
+              </Link>{" "}
+              {t("auth.legalAgreementPrivacy")}{" "}
+              <Link href="/privacy" className="underline underline-offset-2">
+                {t("auth.privacyPolicy")}
+              </Link>
+              .
+            </span>
+          </label>
+        </div>
       ) : null}
 
       {auth.googleEnabled ? (
@@ -302,7 +293,7 @@ export function SignInForm({ nextHref }: { nextHref?: string } = {}) {
           type="button"
           variant="outline"
           className="h-10 w-full"
-          disabled={busy || !agreedToTerms}
+          disabled={busy || !legalReady}
           onClick={() => void continueWithGoogle()}
         >
           {t("auth.continueGoogle")}
@@ -455,7 +446,7 @@ export function SignInForm({ nextHref }: { nextHref?: string } = {}) {
               ) : (
                 <Button
                   type="submit"
-                  disabled={busy || (!sent && !agreedToTerms)}
+                  disabled={busy || (!sent && !legalReady)}
                   className="h-10 w-full"
                 >
                   {busy
@@ -472,7 +463,7 @@ export function SignInForm({ nextHref }: { nextHref?: string } = {}) {
                   <Button
                     type="button"
                     variant="ghost"
-                    disabled={busy || cooldown > 0 || !agreedToTerms}
+                    disabled={busy || cooldown > 0 || !legalReady}
                     onClick={() => void (channel === "email" ? sendEmailLink() : sendPhoneCode())}
                   >
                     {cooldown > 0
@@ -579,7 +570,7 @@ export function SignInForm({ nextHref }: { nextHref?: string } = {}) {
                 disabled={
                   busy ||
                   (passwordMode === "forgot" && cooldown > 0) ||
-                  (passwordMode === "sign-up" && !agreedToTerms)
+                  (passwordMode === "sign-up" && !legalReady)
                 }
                 className="h-10 w-full"
               >
@@ -613,7 +604,7 @@ export function SignInForm({ nextHref }: { nextHref?: string } = {}) {
           </form>
         </Card>
       )}
-      {needsTermsForAction && !agreedToTerms ? (
+      {needsTermsForAction && !legalReady ? (
         <p className="text-xs text-neutral-500">
           {t("auth.termsHelp")}
         </p>
