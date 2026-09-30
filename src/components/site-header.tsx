@@ -41,7 +41,7 @@ function TopNav() {
   const locationLabel = query.country ? countryName(query.country) : t("nav.allAfrica")
 
   return (
-    <div className="mx-auto flex h-16 max-w-[1720px] items-center gap-1.5 px-2 sm:gap-2 md:relative md:h-[72px] md:gap-3 md:px-5 xl:gap-5 xl:px-8">
+    <div className="mx-auto flex h-14 max-w-[1720px] items-center gap-1 px-2 sm:gap-1.5 md:relative md:h-16 md:gap-2 md:px-4 xl:gap-3 xl:px-6">
       <TopNavBrand />
       <TopNavDiscovery search={query.q} onSearchChange={(value) => update({ q: value })} />
       <TopNavActions pathname={pathname} locationLabel={locationLabel} query={query} />
@@ -60,7 +60,7 @@ function TopNavBrand() {
 
 function TopNavDiscovery({ search, onSearchChange }: { search: string; onSearchChange: (value: string) => void }) {
   return (
-    <div className="relative mx-auto flex min-w-0 flex-1 items-center gap-1.5 md:max-w-[680px] md:gap-2">
+    <div className="relative mx-auto flex min-w-0 flex-1 items-center gap-1.5 md:max-w-[620px] md:gap-1.5">
       <TopNavSearch value={search} onChange={onSearchChange} />
       <TopNavCategories />
     </div>
@@ -86,8 +86,8 @@ function TopNavCategories() {
 function TopNavActions({ pathname, locationLabel, query }: { pathname: string; locationLabel: string; query: ListingQuery }) {
   const { t } = usePrefs()
   return (
-    <div className="fixed inset-x-2 bottom-[calc(env(safe-area-inset-bottom)+0.5rem)] z-50 mx-auto flex max-w-lg items-center rounded-3xl border border-border bg-background/95 p-2 shadow-lg backdrop-blur md:static md:inset-auto md:ml-auto md:max-w-none md:shrink-0 md:rounded-none md:border-0 md:bg-transparent md:p-0 md:shadow-none md:backdrop-blur-none">
-      <nav aria-label={t("nav.navigation")} className="flex w-full items-center justify-between gap-1.5 md:justify-end md:gap-2 lg:gap-2.5">
+    <div className="fixed inset-x-2 bottom-[calc(env(safe-area-inset-bottom)+0.5rem)] z-50 mx-auto flex max-w-md items-center rounded-2xl border border-border bg-background/95 p-1.5 shadow-lg backdrop-blur md:static md:inset-auto md:ml-auto md:max-w-none md:shrink-0 md:rounded-none md:border-0 md:bg-transparent md:p-0 md:shadow-none md:backdrop-blur-none">
+      <nav aria-label={t("nav.navigation")} className="flex w-full items-center justify-between gap-1 md:justify-end md:gap-1.5 lg:gap-2">
         <TopNavHome pathname={pathname} />
         <CountryMenu label={locationLabel} query={query} />
         <TopNavPost />
@@ -103,7 +103,7 @@ function TopNavHome({ pathname }: { pathname: string }) {
   const home = navItem("home")
   const Icon = home.icon
   return (
-    <Button asChild variant="outline" size="icon-lg" className="rounded-full md:hidden">
+    <Button asChild variant="outline" size="icon" className="rounded-full md:hidden">
       <Link href={home.href} aria-label={t("nav.home")} aria-current={pathname === "/" ? "page" : undefined}>
         <Icon />
         <span className="sr-only">{t("nav.home")}</span>
@@ -118,7 +118,7 @@ function TopNavPost() {
   const Icon = post.icon
   const href = usePostAdHref()
   return (
-    <Button asChild className="h-9 rounded-full border border-primary bg-primary px-2.5 text-primary-foreground hover:bg-primary/80 sm:h-10 sm:px-3 xl:px-4">
+    <Button asChild className="h-8 rounded-full border border-primary bg-primary px-2 text-xs text-primary-foreground hover:bg-primary/80 sm:px-2.5 xl:px-3">
       <Link href={href} aria-label={t("nav.postShort")}>
         <Icon />
         <span className="hidden xl:inline">{t("nav.postShort")}</span>
@@ -273,7 +273,7 @@ function CountryMenu({ label, query }: { label: string; query: ListingQuery }) {
   return (
     <HeaderMenu
       label={t("nav.country", { label })}
-      summaryClassName="h-10 px-2.5 sm:max-w-48 sm:px-3 lg:max-w-44"
+      summaryClassName="h-8 px-2 sm:max-w-44 sm:px-2.5 lg:max-w-40"
       panelClassName="w-64"
       onOpen={() => setLocationQuery("")}
       summary={
@@ -554,7 +554,7 @@ function SearchField({ value, onChange }: { value: string; onChange: (value: str
 
   return (
     <div className="relative">
-      <Search className="pointer-events-none absolute top-1/2 left-3.5 size-4 -translate-y-1/2 text-neutral-400" />
+      <Search className="pointer-events-none absolute top-1/2 left-3 size-3.5 -translate-y-1/2 text-neutral-400" />
       <Input
         value={focused ? draft : value}
         onFocus={() => {
@@ -568,7 +568,7 @@ function SearchField({ value, onChange }: { value: string; onChange: (value: str
         }}
         placeholder={t("nav.searchPlaceholder")}
         aria-label={t("nav.searchListings")}
-        className="h-10 rounded-full border-input bg-background pr-3 pl-10 text-sm shadow-none sm:h-11 sm:pr-4 focus-visible:border-ring focus-visible:bg-background focus-visible:ring-ring/30"
+        className="h-9 rounded-full border-input bg-background pr-3 pl-9 text-[13px] shadow-none sm:h-9 focus-visible:border-ring focus-visible:bg-background focus-visible:ring-ring/30"
       />
     </div>
   )
