@@ -162,7 +162,7 @@ test("top navigation uses a compact visual scale without shrinking interaction s
 test("sidebar geometry follows the compact header without a vertical gap", () => {
   const categories = readFileSync(new URL("../src/components/category-top-nav.tsx", import.meta.url), "utf8")
   assert.match(categories, /sticky top-14/)
-  assert.match(categories, /h-\\[calc\\(100svh-3\\.5rem\\)\\]/)
+  assert.ok(categories.includes("h-[calc(100svh-3.5rem)]"))
   assert.match(categories, /md:top-16/)
-  assert.match(categories, /md:h-\\[calc\\(100svh-4rem\\)\\]/)
+  assert.ok(categories.includes("md:h-[calc(100svh-4rem)]"))
 })
