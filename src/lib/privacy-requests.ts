@@ -1,6 +1,8 @@
 import "server-only"
 
 import { boardDb } from "@/lib/board-db"
+import { sendEmail } from "@/lib/email"
+import { site } from "@/lib/site"
 import {
   privacyDueAt,
   type PrivacyJurisdiction,
@@ -34,6 +36,8 @@ export type PrivacyRequestRecord = {
   receivedAt: string
   dueAt: string
   verifiedAt: string | null
+  verificationMethod: "authenticated_account" | "manual" | "authorized_agent" | null
+  acknowledgmentSentAt: string | null
   completedAt: string | null
   updatedAt: string
   resolution: string | null
@@ -53,13 +57,15 @@ type PrivacyRequestRow = {
   received_at: string
   due_at: string
   verified_at: string | null
+  verification_method: "authenticated_account" | "manual" | "authorized_agent" | null
+  acknowledgment_sent_at: string | null
   completed_at: string | null
   updated_at: string
   resolution: string | null
 }
 
 const select =
-  "id,user_id,request_email,subject_email,acting_as_agent,jurisdiction,request_type,details,locale,status,received_at,due_at,verified_at,completed_at,updated_at,resolution"
+  "id,user_id,request_email,subject_email,acting_as_agent,jurisdiction,request_type,details,locale,status,received_at,due_at,verified_at,verification_method,acknowledgment_sent_at,completed_at,updated_at,resolution"
 
 function unpack(row: PrivacyRequestRow): PrivacyRequestRecord {
   return {
@@ -76,6 +82,8 @@ function unpack(row: PrivacyRequestRow): PrivacyRequestRecord {
     receivedAt: row.received_at,
     dueAt: row.due_at,
     verifiedAt: row.verified_at,
+    verificationMethod: row.verification_method,
+    acknowledgmentSentAt: row.acknowledgment_sent_at,
     completedAt: row.completed_at,
     updatedAt: row.updated_at,
     resolution: row.resolution,
@@ -118,6 +126,7 @@ export async function createPrivacyRequest(input: CreatePrivacyRequestInput) {
       received_at: now,
       due_at: privacyDueAt(new Date(now)),
       verified_at: input.verified ? now : null,
+      verification_method: input.verified ? "authenticated_account" : null,
       updated_at: now,
     })
     .select(select)
@@ -133,7 +142,52 @@ export async function createPrivacyRequest(input: CreatePrivacyRequestInput) {
   })
   check(eventError)
 
-  return { ok: true as const, value: unpack(data as PrivacyRequestRow) }
+  const created = unpack(data as PrivacyRequestRow)
+  const emailResult = await sendEmail({
+    to: input.requestEmail,
+    subject: `${site.name}: privacy request received`,
+    text: [
+      "We received your privacy request.",
+      "",
+      `Tracking ID: ${created.id}`,
+      `Request: ${created.requestType}`,
+      `Status: ${created.status}`,
+      `Received: ${created.receivedAt}`,
+      `Internal target date: ${created.dueAt.slice(0, 10)}`,
+      "",
+      created.status === "verification_required"
+        ? "Identity or authority verification is required before account data is disclosed or changed."
+        : "This request was submitted from a signed-in account and is marked account-verified.",
+      "",
+      "Do not reply with passwords, government ID numbers, bank information, medical records, or identity-document images.",
+    ].join("\n"),
+  })
+
+  if (emailResult.ok && emailResult.provider === "resend") {
+    const sentAt = new Date().toISOString()
+    const { data: acknowledged, error: acknowledgmentError } = await db
+      .from("privacy_requests")
+      .update({ acknowledgment_sent_at: sentAt, updated_at: sentAt })
+      .eq("id", id)
+      .select(select)
+      .single()
+    check(acknowledgmentError)
+    const { error: acknowledgmentEventError } = await db.from("privacy_request_events").insert({
+      id: crypto.randomUUID(),
+      request_id: id,
+      actor_user_id: input.userId,
+      event_type: "updated",
+      note: "Transactional privacy request acknowledgment sent.",
+    })
+    check(acknowledgmentEventError)
+    return { ok: true as const, value: unpack(acknowledged as PrivacyRequestRow) }
+  }
+
+  if (!emailResult.ok) {
+    console.error("Could not send privacy request acknowledgment", emailResult.reason)
+  }
+
+  return { ok: true as const, value: created }
 }
 
 export async function listPrivacyRequestsForUser(userId: string): Promise<PrivacyRequestRecord[]> {
@@ -174,6 +228,7 @@ export async function updatePrivacyRequest(
   if (action === "verify") {
     patch.status = "received"
     patch.verified_at = now
+    patch.verification_method = "manual"
     eventType = "verified"
   } else if (action === "start") {
     patch.status = "in_progress"
