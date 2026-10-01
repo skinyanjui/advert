@@ -30,10 +30,10 @@ const geistMono = Geist_Mono({
 })
 
 export const metadata: Metadata = {
-  metadataBase: new URL(site.url),
+  metadataBase: new URL(`https://${process.env.VERCEL_PROJECT_PRODUCTION_URL ?? "adverts-murex.vercel.app"}`),
   title: {
     default: site.name,
-    template: siteTitleTemplate,
+    template: siteTitleTemplate(),
   },
   description: site.tagline,
 }
