@@ -12,8 +12,11 @@ import { usePrefs } from "@/components/prefs-provider"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { useAuth } from "@/lib/auth"
 import { DEFAULT_AUTH_NEXT, safeAuthNext } from "@/lib/auth-redirect"
+import { countries } from "@/lib/countries"
+import { useHomePlace, writeHomePlace } from "@/lib/home-place"
 import { useMarketplace } from "@/lib/marketplace"
 import {
   passwordError,
@@ -35,6 +38,7 @@ export function SignInForm({ nextHref }: { nextHref?: string } = {}) {
   const searchParams = useSearchParams()
   const { reloadBoard } = useMarketplace()
   const { t } = usePrefs()
+  const homePlace = useHomePlace()
   const next = safeAuthNext(nextHref ?? searchParams.get("next"), DEFAULT_AUTH_NEXT)
 
   const [channel, setChannel] = useState<Channel>("email")
@@ -250,7 +254,28 @@ export function SignInForm({ nextHref }: { nextHref?: string } = {}) {
       </header>
 
       {showPreferenceSetup ? (
-        <div className="rounded-xl border border-neutral-200 bg-white px-3 py-3">
+        <div className="space-y-3 rounded-xl border border-neutral-200 bg-white px-3 py-3">
+          <FormField
+            label="Country"
+            htmlFor="onboarding-country"
+            hint="Used as the default location when you post an ad. You can change it later in Settings."
+          >
+            <Select
+              value={homePlace?.country}
+              onValueChange={(country) => writeHomePlace({ country })}
+            >
+              <SelectTrigger id="onboarding-country" className="w-full">
+                <SelectValue placeholder="Choose country" />
+              </SelectTrigger>
+              <SelectContent className="z-[90] max-h-72">
+                {countries.map((country) => (
+                  <SelectItem key={country.code} value={country.code}>
+                    {country.name}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </FormField>
           <LanguageCurrencyFields idPrefix="onboarding" />
         </div>
       ) : null}

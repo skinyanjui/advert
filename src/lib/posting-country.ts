@@ -2,7 +2,8 @@ import { canonicalCountry } from "@/lib/countries"
 
 /**
  * Resolve the country for a new post-an-ad form.
- * Priority: URL → saved board/home place → signed-in profile → none (seller must pick).
+ * Priority: explicit post URL → saved onboarding/settings default → signed-in profile → none.
+ * Temporary browsing location is a client-side fallback handled by the posting-place helpers.
  * Never invents a KE (or other) default.
  */
 export function resolvePostingCountry(input: {

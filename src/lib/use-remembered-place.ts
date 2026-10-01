@@ -18,3 +18,14 @@ export function useRememberedPlace(): ActivePlace | null {
   if (home) return home
   return null
 }
+
+
+/** Country and city for a new ad: saved default first, then temporary board selection. */
+export function usePostingPlace(): ActivePlace | null {
+  const active = useSyncExternalStore(subscribeActivePlace, readActivePlace, serverPlace)
+  const home = useHomePlace()
+  const everywhere = useBrowsingEverywhere()
+  if (home) return home
+  if (!everywhere && active) return active
+  return null
+}

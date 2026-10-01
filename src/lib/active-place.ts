@@ -57,14 +57,14 @@ export function subscribeActivePlace(listener: () => void) {
   }
 }
 
-/** The place a new ad should use: the board selection, otherwise the saved default. */
+/** The place a new ad should use: saved onboarding/settings default, then temporary board selection. */
 export function readPostingPlace(): { country: string; city: string } {
+  const home = typeof window === "undefined" ? null : readHomePlace()
+  if (home) return { country: home.country, city: home.city ?? "" }
   if (typeof window !== "undefined" && !isBrowsingEverywhere()) {
     const active = readActivePlace()
     if (active) return { country: active.country, city: active.city ?? "" }
   }
-  const home = typeof window === "undefined" ? null : readHomePlace()
-  if (home) return { country: home.country, city: home.city ?? "" }
   // No invented default — post form may then use profile country or require a pick.
   return { country: "", city: "" }
 }

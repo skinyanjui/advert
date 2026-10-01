@@ -22,6 +22,7 @@ import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group"
 import { readPostingPlace } from "@/lib/active-place"
 import { useAuth } from "@/lib/auth"
 import { signInHref } from "@/lib/auth-redirect"
+import { readHomePlace } from "@/lib/home-place"
 import { categoryImage } from "@/lib/catalog"
 import { categoryIcons } from "@/lib/categories"
 import { resolvePlace } from "@/lib/cities"
@@ -194,14 +195,19 @@ function AdForm({ existing }: { existing: Listing | null }) {
         appliedProfile.current = true
         const profile = payload.profile
         setPhone((current) => prefillListingPhone(current || null, profile.phone))
-        setCountry((current) =>
-          current
-            ? current
-            : resolvePostingCountry({
-                urlCountry,
-                profileCountry: profile.countryCode,
-              }),
-        )
+        const savedHome = readHomePlace()
+        const profileCountry = resolvePostingCountry({
+          urlCountry,
+          savedPlaceCountry: savedHome?.country,
+          profileCountry: profile.countryCode,
+        })
+        if (!urlCountry && !savedHome && profileCountry && !restoredDraft.current) {
+          const profileCity = profile.city?.trim() ?? ""
+          setCountry(profileCountry)
+          setCity(profileCity)
+          setCurrency(africanCurrencyForCountry(profileCountry) ?? "")
+          setPlace(locatedPlace(null, profileCountry, profileCity))
+        }
       } catch {
         // Prefill is optional; seller can still choose country and phone.
       }

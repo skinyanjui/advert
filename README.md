@@ -19,7 +19,7 @@ Open [http://localhost:3000](http://localhost:3000).
 - The country control in the top bar searches by country, capital, or ISO code.
 - A category sidebar (desktop) and category sheet (mobile)
 - Listing pages with inline Messenger, authenticated SMS/Text, Call and WhatsApp contact, and “Report this ad”
-- Post an ad with up to 6 photos (cover + gallery) or a category image; ads expire after 60 days and can be renewed
+- Post an ad with up to 6 photos (cover + gallery) or a category image; new ads default to the country saved during onboarding or in Settings, explicit location-specific Post links can override that default, and drafts/edits preserve their own location; ads expire after 60 days and can be renewed
 - Seller accounts: email OTP / magic link, optional password, Profile settings, and session claim so guest cookie posts move onto the account
 - My ads with active / paused / sold / expired actions
 - Messenger for real buyer–seller listing threads
@@ -142,7 +142,7 @@ route still advances reminder markers as a no-op send.
 
 ## Privacy and regulatory controls
 
-- Language and currency selectors stay side-by-side in one row on every shared preference surface, including onboarding, Profile, and the profile menu; the shared component owns this layout so mobile and desktop cannot drift.
+- Onboarding captures a country used as the saved posting/home default, while language and currency selectors stay side-by-side in one row on every shared preference surface. Profile/Settings country updates refresh that same local posting default. For a new ad, precedence is explicit post URL → saved onboarding/settings default → signed-in profile → temporary browsing location → no default.
 - Account creation uses two separate confirmations: an 18+ age attestation and a Terms acceptance / Privacy Policy acknowledgment. The server stores the current document versions, disclosure version, locale, timestamp, IP/user-agent evidence, age attestation, and privacy acknowledgment in the append-only legal acceptance log.
 - Protected APIs require the current legal evidence before returning protected data or performing account mutations. A legal-version bump therefore creates an account-access reacceptance boundary rather than interrupting an unrelated feature at the moment of use.
 - Signed-in users can correct profile information, download a machine-readable JSON export, delete their account, submit privacy-rights requests, review their privacy-request history, and review/appeal moderation restrictions.

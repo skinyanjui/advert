@@ -46,7 +46,7 @@ import {
   type ListingStatusFilter,
 } from "@/lib/listing-status"
 import { useMarketplace } from "@/lib/marketplace"
-import { useRememberedPlace } from "@/lib/use-remembered-place"
+import { usePostingPlace } from "@/lib/use-remembered-place"
 import type { Listing } from "@/lib/types"
 import { cn } from "@/lib/utils"
 
@@ -63,7 +63,7 @@ export function MyAdsPage() {
     useMarketplace()
   const mine = useMemo(() => listings.filter((listing) => listing.mine), [listings])
   const unreadByListing = useMemo(() => unreadByListingId(messages), [messages])
-  const postHref = postAdHref(useRememberedPlace())
+  const postHref = postAdHref(usePostingPlace())
   const [filter, setFilter] = useState<ListingStatusFilter>("all")
   const [pendingId, setPendingId] = useState<string | null>(null)
   const [busyId, setBusyId] = useState<string | null>(null)

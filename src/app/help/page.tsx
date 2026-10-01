@@ -9,7 +9,7 @@ export const metadata: Metadata = {
 
 const topics = [
   { title: "Buy safely", body: "Check the listing carefully, ask specific questions, inspect items before paying, and be cautious when someone pressures you to move off-platform.", icon: Search, href: "/help#buying" },
-  { title: "Sell & manage ads", body: "Post accurate details, respond to buyers, edit your ad, mark sold items sold, and review ads that need attention.", icon: Tag, href: "/my-ads" },
+  { title: "Sell & manage ads", body: "Post accurate details, use your saved country as the posting default, respond to buyers, edit your ad, and manage ads that need attention.", icon: Tag, href: "/my-ads" },
   { title: "Messages", body: "Keep marketplace conversations attached to the listing. Use Messenger to ask questions and keep useful context together.", icon: MessageCircle, href: "/messages" },
   { title: "Account access", body: "Sign in, update your profile and contact details, or review account preferences.", icon: UserRound, href: "/account" },
   { title: "Safety & scams", body: "Recognize suspicious payment requests, phishing, impersonation, unsafe meetups, and attempts to collect sensitive information.", icon: ShieldAlert, href: "/help#safety" },
@@ -17,6 +17,7 @@ const topics = [
 ] as const
 
 const sellerSteps = [
+  "A new ad uses the country saved during onboarding or in Settings. A location-specific Post link can override it for that ad, while drafts and edits keep their saved location.",
   "Use clear photos and describe faults or important conditions accurately.",
   "Keep unnecessary personal information out of the listing. Never post passwords, payment-card details, government IDs, or medical information.",
   "Marketplace messaging works without sharing a phone number. Enable phone or WhatsApp only when you want those contact methods.",
