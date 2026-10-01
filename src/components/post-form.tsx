@@ -61,7 +61,7 @@ import { descriptionGuidance, suggestListingTitle } from "@/lib/posting-value"
 import { categoryName, isCategoryId, type CategoryId, type Listing } from "@/lib/types"
 import { cn } from "@/lib/utils"
 
-const steps = ["Listing", "Details", "Review"] as const
+const steps = ["Category", "Type", "Details", "Review"] as const
 
 type FieldErrors = RuleErrors
 
@@ -99,7 +99,7 @@ function AdForm({ existing }: { existing: Listing | null }) {
   const auth = useAuth()
   const { t } = usePrefs()
 
-  const [step, setStep] = useState(seeded ? 1 : 0)
+  const [step, setStep] = useState(seeded ? 2 : startingCategory ? 1 : 0)
   const [category, setCategory] = useState<CategoryId | null>(startingCategory)
   const [subcategoryId, setSubcategoryId] = useState<string | null>(seeded?.id ?? null)
   const [title, setTitle] = useState(existing?.title ?? "")
@@ -348,6 +348,7 @@ function AdForm({ existing }: { existing: Listing | null }) {
     }
     setCategory(id)
     setErrors({})
+    moveTo(1)
   }
 
   function chooseSubcategory(next: Subcategory) {
@@ -357,7 +358,7 @@ function AdForm({ existing }: { existing: Listing | null }) {
     }
     setSubcategoryId(next.id)
     setErrors({})
-    moveTo(1)
+    moveTo(2)
   }
 
   function setDetail(id: string, value: string) {
@@ -426,8 +427,10 @@ function AdForm({ existing }: { existing: Listing | null }) {
 
   function reachable(index: number): boolean {
     if (index <= 0) return true
-    if (!category || !subcategory) return false
+    if (!category) return false
     if (index === 1) return true
+    if (!subcategory) return false
+    if (index === 2) return true
     return !Object.values(detailErrors()).some(Boolean)
   }
 
@@ -459,21 +462,25 @@ function AdForm({ existing }: { existing: Listing | null }) {
         showErrors({ form: "Choose a category." })
         return
       }
-      if (!subcategory) {
-        showErrors({ form: "Choose a type." })
-        return
-      }
       moveTo(1)
       return
     }
     if (step === 1) {
+      if (!subcategory) {
+        showErrors({ form: "Choose a type." })
+        return
+      }
+      moveTo(2)
+      return
+    }
+    if (step === 2) {
       const next = detailErrors()
       if (Object.values(next).some(Boolean)) {
         showErrors(next)
         return
       }
       setErrors({})
-      moveTo(2)
+      moveTo(3)
     }
   }
 
@@ -485,8 +492,8 @@ function AdForm({ existing }: { existing: Listing | null }) {
     const next = { ...detailErrors(), ...contactErrors() }
     if (Object.values(next).some(Boolean)) {
       const detailsInvalid = Object.values(detailErrors()).some(Boolean)
-      if (detailsInvalid) setStep(1)
-      else setStep(2)
+      if (detailsInvalid) setStep(2)
+      else setStep(3)
       showErrors(next)
       return
     }
@@ -625,7 +632,7 @@ function AdForm({ existing }: { existing: Listing | null }) {
           </p>
         ) : null}
 
-        <ol className="mt-6 grid grid-cols-3 gap-2" aria-label="Posting steps">
+        <ol className="mt-6 grid grid-cols-4 gap-2" aria-label="Posting steps">
           {steps.map((label, index) => {
             const current = index === step
             const open = index === step || reachable(index)
@@ -664,7 +671,7 @@ function AdForm({ existing }: { existing: Listing | null }) {
           onSubmit={(event) => {
             event.preventDefault()
             if (submitting) return
-            if (step < 2) goNext()
+            if (step < 3) goNext()
             else void submit()
           }}
         >
@@ -703,19 +710,22 @@ function AdForm({ existing }: { existing: Listing | null }) {
                       <span className="min-w-0 flex-1 leading-tight">{categoryName(item.id)}</span>
                       {selected ? <Check className="size-4 shrink-0" /> : null}
                     </button>
-                  )
+                    )
                 })}
               </div>
-              {plan && category ? (
-                <div className="mt-4 grid gap-3 border-t border-border pt-4">
-                  <div>
-                    <h2 className="text-base font-medium">{categoryName(category)}</h2>
-                    <p className="text-sm text-muted-foreground">{plan.prompt}</p>
-                  </div>
-                  <div aria-label={plan.prompt} className="grid gap-2">
-              {plan.subcategories.map((item) => {
-                const selected = subcategoryId === item.id
-                return (
+            </div>
+          ) : null}
+
+          {step === 1 && plan && category ? (
+            <section className="grid gap-3">
+              <div>
+                <h2 className="text-base font-medium">{categoryName(category)}</h2>
+                <p className="text-sm text-muted-foreground">{plan.prompt}</p>
+              </div>
+              <div aria-label={plan.prompt} className="grid gap-2">
+                {plan.subcategories.map((item) => {
+                  const selected = subcategoryId === item.id
+                  return (
                   <button
                     key={item.id}
                     type="button"
@@ -742,15 +752,13 @@ function AdForm({ existing }: { existing: Listing | null }) {
                       {selected ? <Check className="size-3" /> : null}
                     </span>
                   </button>
-                )
-              })}
-                  </div>
-                </div>
-              ) : null}
-            </div>
+                  )
+                })}
+              </div>
+            </section>
           ) : null}
 
-          {step === 1 && plan && subcategory ? (
+          {step === 2 && plan && subcategory ? (
             <section className="grid gap-5 rounded-2xl border bg-white p-4 sm:p-5">
               <div>
                 <h2 className="text-base font-medium">{plan.detailHeading}</h2>
@@ -965,7 +973,7 @@ function AdForm({ existing }: { existing: Listing | null }) {
             </section>
           ) : null}
 
-          {step === 2 && plan ? (
+          {step === 3 && plan ? (
             <section className="grid gap-5 rounded-2xl border bg-white p-4 sm:p-5">
               <div>
                 <h2 className="text-base font-medium">Where can people reach you?</h2>
@@ -1060,7 +1068,7 @@ function AdForm({ existing }: { existing: Listing | null }) {
                 Back
               </Button>
             )}
-            {step < 2 ? (
+            {step < 3 ? (
               <Button
                 type="submit"
                 className="h-10 rounded-full bg-neutral-950 px-5 text-white hover:bg-neutral-800"

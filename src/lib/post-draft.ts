@@ -2,11 +2,11 @@ import type { CategoryId } from "@/lib/types"
 import type { PricePeriodId } from "@/lib/posting"
 
 const DRAFT_KEY = "advert:post-draft:v1"
-const FLOW_VERSION = 2 as const
+const FLOW_VERSION = 3 as const
 export const DRAFT_MAX_AGE_MS = 7 * 24 * 60 * 60 * 1000
 
 export type PostDraft = {
-  flowVersion?: 2
+  flowVersion?: 2 | 3
   step: number
   category: CategoryId | null
   subcategoryId: string | null
@@ -43,7 +43,17 @@ export function readPostDraft(now = Date.now()): PostDraft | null {
       return null
     }
     const legacyStep = parsed.step
-    const step = parsed.flowVersion === FLOW_VERSION ? legacyStep : legacyStep >= 3 ? 2 : legacyStep >= 2 ? 1 : 0
+    // v2 combined category and type in step 0. Keep the user's selections while
+    // placing old drafts at the equivalent point in the new four-step flow.
+    const step = parsed.flowVersion === FLOW_VERSION
+      ? Math.min(3, Math.max(0, legacyStep))
+      : legacyStep >= 2
+        ? 3
+        : legacyStep >= 1 || parsed.subcategoryId
+          ? 2
+          : parsed.category
+            ? 1
+            : 0
     return { ...parsed, flowVersion: FLOW_VERSION, step }
   } catch {
     return null
