@@ -89,7 +89,7 @@ export function CityField({
           inputRef.current?.blur()
         }}
         placeholder={`City in ${countryName(country)}`}
-        className="h-10"
+        className="h-11 sm:h-10"
         aria-autocomplete="list"
         aria-expanded={open && suggestions.length > 0}
         role="combobox"
@@ -100,7 +100,7 @@ export function CityField({
             <li key={`${place.name}-${place.lat}`}>
               <button
                 type="button"
-                className="flex w-full items-center justify-between gap-3 rounded-md px-2 py-1.5 text-left text-sm hover:bg-neutral-100"
+                className="flex min-h-11 w-full items-center justify-between gap-3 rounded-md px-2 py-2 text-left text-sm hover:bg-neutral-100 focus-visible:outline-2 focus-visible:outline-offset-[-2px] focus-visible:outline-ring sm:min-h-0 sm:py-1.5"
                 onMouseDown={(event) => event.preventDefault()}
                 onClick={() => {
                   onCityChange(place.name)
