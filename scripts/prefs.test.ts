@@ -103,6 +103,7 @@ test("guest browsing preferences stay accessible outside authentication", () => 
   assert.doesNotMatch(profile, /ThemeChoices|ThemeMenu|LanguageCurrencyFields/)
   assert.match(profile, />Settings</)
   assert.match(account, /<CardTitle>Preferences<\/CardTitle>/)
+  assert.match(account, /id="preferences"/)
   assert.match(account, /<ThemeChoices \/>/)
 })
 
