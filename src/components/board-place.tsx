@@ -102,13 +102,13 @@ export function BoardCitySearch({
         aria-expanded={open && (suggestions.length > 0 || query.length >= 2)}
         aria-controls="board-city-list"
         role="combobox"
-        className="h-8 rounded-full border-input bg-background pr-8 text-xs shadow-none"
+        className="h-11 rounded-full border-input bg-background pr-11 text-base shadow-none sm:h-8 sm:pr-8 sm:text-xs"
       />
       {city && !open ? (
         <button
           type="button"
           aria-label="Clear city"
-          className="absolute top-1/2 right-2 -translate-y-1/2 px-1 text-sm text-neutral-400 hover:text-neutral-900"
+          className="absolute top-1/2 right-0 flex size-11 -translate-y-1/2 items-center justify-center rounded-full text-base text-muted-foreground transition-colors hover:text-foreground focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring sm:right-1 sm:size-8 sm:text-sm"
           onMouseDown={(event) => event.preventDefault()}
           onClick={() => onSelect(null)}
         >
@@ -121,12 +121,12 @@ export function BoardCitySearch({
             <li key={`${place.source ?? "geonames"}-${place.name}-${place.lat}`} role="option" aria-selected={fold(place.name) === fold(city ?? "")}>
               <button
                 type="button"
-                className="flex w-full items-center justify-between gap-3 rounded-md px-2 py-1.5 text-left text-sm hover:bg-muted"
+                className="flex min-h-11 w-full items-center justify-between gap-3 rounded-md px-2 py-2 text-left text-sm hover:bg-muted focus-visible:outline-2 focus-visible:outline-offset-[-2px] focus-visible:outline-ring sm:min-h-0 sm:py-1.5"
                 onMouseDown={(event) => event.preventDefault()}
                 onClick={() => pick(place.name)}
               >
                 <span className="truncate">{place.name}</span>
-                <span className="shrink-0 text-[11px] text-neutral-400">{placeLabel(place)}</span>
+                <span className="shrink-0 text-[11px] text-muted-foreground">{placeLabel(place)}</span>
               </button>
             </li>
           ))}
