@@ -39,7 +39,7 @@ export function PostingLocationFields({
         {country ? (
           <CityField country={country} city={city} onCityChange={onCityChange} onPlace={onPlace} />
         ) : (
-          <Input disabled placeholder="Choose a country first" aria-disabled="true" className="h-10 bg-background" />
+          <Input disabled placeholder="Choose a country first" aria-disabled="true" className="h-11 bg-background sm:h-10" />
         )}
       </FormField>
     </div>
@@ -73,7 +73,7 @@ function CountryField({ country, onChange }: { country: string; onChange: (code:
         aria-controls="post-country-list"
         aria-autocomplete="list"
         placeholder="Choose country"
-        className="h-10 bg-background"
+        className="h-11 bg-background sm:h-10"
         onClick={() => setOpen(true)}
         onFocus={() => {
           setQuery("")
@@ -120,7 +120,7 @@ function CountryOption({ item, selected, onPick }: { item: CountryRecord; select
     <li role="option" aria-selected={selected}>
       <button
         type="button"
-        className={cn("flex w-full items-center justify-between gap-3 rounded-lg px-2 py-2 text-left text-sm hover:bg-muted", selected && "font-medium")}
+        className={cn("flex min-h-11 w-full items-center justify-between gap-3 rounded-lg px-2 py-2 text-left text-sm hover:bg-muted focus-visible:outline-2 focus-visible:outline-offset-[-2px] focus-visible:outline-ring sm:min-h-0", selected && "font-medium")}
         onMouseDown={(event) => event.preventDefault()}
         onClick={() => onPick(item.code)}
       >

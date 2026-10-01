@@ -40,7 +40,7 @@ export function ContactPhoneField({
         aria-invalid={Boolean(error)}
         onChange={(event) => onChange(event.target.value)}
         placeholder={contactPhonePlaceholder(callingCode)}
-        className={className ?? "h-10 bg-white"}
+        className={className ?? "h-11 bg-white sm:h-10"}
       />
     </FormField>
   )
