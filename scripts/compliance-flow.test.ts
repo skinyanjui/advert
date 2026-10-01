@@ -152,7 +152,7 @@ test("compliance incidents are tracked in server-only RLS tables", () => {
   assert.match(migration, /create table if not exists public\.compliance_incidents/)
   assert.match(migration, /create table if not exists public\.compliance_incident_events/)
   assert.match(migration, /revoke all on table public\.compliance_incidents, public\.compliance_incident_events from anon, authenticated/)
-  assert.match(route, /canOwner\(owner, "admin"\)/)
+  assert.match(route, /canOwner\(owner, "compliance:manage"\)/)
   assert.match(page, /Regulator notification required/)
   assert.match(page, /User notification required/)
 })

@@ -102,7 +102,7 @@ test("marketplace surfaces prioritize listing value over duplicate controls", ()
   const header = source("src/components/site-header.tsx")
 
   assert.doesNotMatch(card, /WhatsAppConsentAction/)
-  assert.match(card, /countryCode.*away/)
+  assert.doesNotMatch(card, /distanceKm|formatDistance/)
   assert.ok(card.includes("border border-border/70 bg-card"))
   assert.match(detail, /Manage listing/)
   assert.match(detail, /lg:top-16/)
