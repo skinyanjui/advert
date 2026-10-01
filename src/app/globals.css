@@ -137,6 +137,28 @@
   header.sticky > div.grid {
     grid-template-columns: auto minmax(0, 1fr);
   }
+
+  /* Listing contact is a primary mobile task. Keep the inline composer easy to
+     reach above the persistent navigation and prevent iOS input zoom. */
+  #listing-contact {
+    scroll-margin-bottom: calc(env(safe-area-inset-bottom) + 10rem);
+  }
+
+  #listing-contact button,
+  #listing-contact a,
+  #listing-contact summary {
+    min-height: 44px;
+  }
+
+  #listing-contact textarea,
+  #listing-contact input,
+  #listing-contact select {
+    font-size: 16px;
+  }
+
+  #listing-message-composer {
+    scroll-margin-bottom: calc(env(safe-area-inset-bottom) + 10rem);
+  }
 }
 
 /* Legacy neutral utilities map into the same monochrome system while screens
