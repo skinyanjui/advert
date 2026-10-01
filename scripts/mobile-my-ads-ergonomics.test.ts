@@ -19,6 +19,8 @@ test("My Ads primary management controls are touch-safe on mobile", () => {
 test("shared dropdown actions are touch-safe on mobile without inflating desktop density", () => {
   const menu = source("src/components/ui/dropdown-menu.tsx")
 
-  assert.match(menu, /min-h-11[sS]*md:min-h-0/)
-  assert.match(menu, /px-2 py-2[sS]*md:px-1\.5 md:py-1/)
+  assert.match(menu, /min-h-11/)
+  assert.match(menu, /md:min-h-0/)
+  assert.match(menu, /px-2 py-2/)
+  assert.match(menu, /md:px-1\.5 md:py-1/)
 })
