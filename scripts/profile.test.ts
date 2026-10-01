@@ -127,3 +127,12 @@ test("deleteAccount auth failure returns a plain message and logs the raw error"
   assert.match(store, /We couldn't delete your account\. Please try again\./)
   assert.doesNotMatch(store, /reason: authError\.message/)
 })
+
+
+test("profile menu stays compact while preserving mobile touch ergonomics", () => {
+  const menu = readFileSync(new URL("../src/components/profile-menu.tsx", import.meta.url), "utf8")
+  assert.match(menu, /15\.5rem/)
+  assert.doesNotMatch(menu, /18rem/)
+  assert.match(menu, /rounded-lg p-1 shadow-md/)
+  assert.match(menu, /size-11[\s\S]*md:size-8/)
+})

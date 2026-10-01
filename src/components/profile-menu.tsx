@@ -66,9 +66,9 @@ export function ProfileMenu() {
         sideOffset={8}
         collisionPadding={12}
         aria-label={t("nav.profile")}
-        className="w-[min(18rem,calc(100vw-1.5rem))] max-h-[var(--radix-popover-content-available-height)] gap-0 overflow-y-auto rounded-xl p-1.5 shadow-lg"
+        className="w-[min(15.5rem,calc(100vw-1rem))] max-h-[var(--radix-popover-content-available-height)] gap-0 overflow-y-auto rounded-lg p-1 shadow-md"
       >
-        <div className="px-3 pt-3 pb-2">
+        <div className="px-2.5 pt-2.5 pb-2">
           <p className="text-sm font-semibold text-foreground">
             {auth.signedIn ? t("nav.signedIn") : t("nav.guestBrowser")}
           </p>
