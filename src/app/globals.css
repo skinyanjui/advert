@@ -125,12 +125,17 @@
   button:not(:disabled), summary, [role="radio"] { cursor: pointer; }
 }
 
-/* The persistent mobile tab bar owns primary navigation below md.
-   Hide the legacy floating action dock rendered inside the header. */
+/* The persistent mobile tab bar owns primary navigation.
+   Keep the top bar task-focused: brand, search, and the categories control. */
 @media (max-width: 767px) {
+  header.sticky > div.grid > div:nth-child(3),
   header.sticky > div.grid > div.fixed,
   header.sticky > div.grid > nav.fixed {
     display: none;
+  }
+
+  header.sticky > div.grid {
+    grid-template-columns: auto minmax(0, 1fr);
   }
 }
 
