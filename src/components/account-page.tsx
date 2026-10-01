@@ -55,7 +55,7 @@ export function AccountPage() {
         <div className="space-y-4">
           <Card size="sm">
             <CardHeader>
-              <CardTitle>{t("profile.languageCurrencyTitle")}</CardTitle>
+              <CardTitle>Preferences</CardTitle>
               <CardDescription>{t("prefs.sectionBody")}</CardDescription>
             </CardHeader>
             <CardContent><LanguageCurrencyFields /></CardContent>
