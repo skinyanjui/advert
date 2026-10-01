@@ -4,14 +4,14 @@ import Link from "next/link"
 import { Suspense, type ReactNode } from "react"
 
 import { postAdHref } from "@/lib/active-place"
-import { usePostingPlace } from "@/lib/use-remembered-place"
 
 /**
- * Global Post actions use the saved onboarding/settings location first.
- * Location-specific empty states can still pass an explicit country/city to /post.
+ * Global Post actions intentionally do not encode device-local location.
+ * The post form resolves the signed-in profile first. Location-specific actions
+ * can still use postAdHref(place, extra) directly.
  */
 export function usePostAdHref(extra?: { category?: string; type?: string }): string {
-  return postAdHref(usePostingPlace(), extra)
+  return postAdHref(null, extra)
 }
 
 export function PostLink({

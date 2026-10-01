@@ -4,7 +4,7 @@ import { test } from "node:test"
 
 import { resolvePostingCountry } from "../src/lib/posting-country"
 
-test("resolvePostingCountry prefers explicit URL, saved onboarding/settings default, then profile", () => {
+test("resolvePostingCountry prefers explicit URL, then signed-in profile, then device default", () => {
   assert.equal(
     resolvePostingCountry({
       urlCountry: "NG",
@@ -19,7 +19,7 @@ test("resolvePostingCountry prefers explicit URL, saved onboarding/settings defa
       savedPlaceCountry: "tz",
       profileCountry: "ZA",
     }),
-    "TZ",
+    "ZA",
   )
   assert.equal(
     resolvePostingCountry({
@@ -58,14 +58,15 @@ test("posting uses saved default before temporary browsing location", () => {
   assert.match(hook, /if \(home\) return home[\s\S]*if \(!everywhere && active\) return active/)
 
   const postLink = readFileSync(new URL("../src/components/post-link.tsx", import.meta.url), "utf8")
-  assert.match(postLink, /usePostingPlace/)
-  assert.doesNotMatch(postLink, /useSearchParams/)
+  assert.match(postLink, /postAdHref\(null, extra\)/)
+  assert.doesNotMatch(postLink, /usePostingPlace|useSearchParams/)
 })
 
 test("post form uses saved/profile country without an invented fallback", () => {
   const form = readFileSync(new URL("../src/components/post-form.tsx", import.meta.url), "utf8")
   assert.match(form, /resolvePostingCountry/)
   assert.match(form, /readHomePlace/)
+  assert.match(form, /Signed-in users wait for the server profile/)
   assert.match(form, /profile\.countryCode/)
   assert.match(form, /Choose a country first/)
   assert.match(form, /set your country on Profile/)

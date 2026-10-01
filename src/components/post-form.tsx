@@ -132,9 +132,10 @@ function AdForm({ existing }: { existing: Listing | null }) {
   const omittedPhotosToastShown = useRef(false)
 
   useLayoutEffect(() => {
-    // Client-only: apply saved board/home place after hydration (no invented KE default).
-    if (appliedPlace.current || existing || urlCountry || restoredDraft.current) return
+    // Anonymous users can use the device default. Signed-in users wait for the server profile.
+    if (appliedPlace.current || existing || urlCountry || restoredDraft.current || !auth.ready) return
     appliedPlace.current = true
+    if (auth.signedIn) return
     const saved = readPostingPlace()
     const nextCountry = resolvePostingCountry({
       urlCountry,
@@ -147,7 +148,7 @@ function AdForm({ existing }: { existing: Listing | null }) {
     setCurrency(africanCurrencyForCountry(nextCountry) ?? "")
     setPlace(locatedPlace(null, nextCountry, saved.city))
     /* eslint-enable react-hooks/set-state-in-effect */
-  }, [existing, urlCountry])
+  }, [auth.ready, auth.signedIn, existing, urlCountry])
 
   useEffect(() => {
     if (existing || restoredDraft.current) return
@@ -198,11 +199,12 @@ function AdForm({ existing }: { existing: Listing | null }) {
         const savedHome = readHomePlace()
         const profileCountry = resolvePostingCountry({
           urlCountry,
-          savedPlaceCountry: savedHome?.country,
           profileCountry: profile.countryCode,
+          savedPlaceCountry: savedHome?.country,
         })
-        if (!urlCountry && !savedHome && profileCountry && !restoredDraft.current) {
-          const profileCity = profile.city?.trim() ?? ""
+        if (!urlCountry && profileCountry && !restoredDraft.current) {
+          const profileIsSource = canonicalCountry(profile.countryCode) === profileCountry
+          const profileCity = profileIsSource ? (profile.city?.trim() ?? "") : (savedHome?.city ?? "")
           setCountry(profileCountry)
           setCity(profileCity)
           setCurrency(africanCurrencyForCountry(profileCountry) ?? "")

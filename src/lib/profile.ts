@@ -65,6 +65,7 @@ export function languageError(value: string | null | undefined): string | undefi
 
 export function currencyPreferenceError(value: string | null | undefined): string | undefined {
   if (value === null || value === undefined || value === "") return undefined
+  if (value === "listing") return undefined
   if (!/^[A-Z]{3}$/.test(value)) return "Choose a valid currency."
   if (!boardCurrencyCodes().includes(value)) return "Choose a currency used on the board."
   return undefined
@@ -143,7 +144,7 @@ export function normalizeProfileUpdate(input: ProfileUpdateInput): {
       currency = null
     } else {
       const raw = input.currency.trim()
-      const normalized = raw.toUpperCase()
+      const normalized = raw.toLowerCase() === "listing" ? "listing" : raw.toUpperCase()
       const reason = currencyPreferenceError(normalized)
       if (reason) return { ok: false, reason }
       currency = normalized

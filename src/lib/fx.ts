@@ -14,7 +14,10 @@ export function boardCurrencyCodes(): string[] {
 }
 
 export function boardCurrencyOptions(): { code: string; label: string }[] {
-  return boardCurrencyCodes().map((code) => ({ code, label: currencyLabel(code) }))
+  return [
+    { code: "listing", label: "Original listing currency" },
+    ...boardCurrencyCodes().map((code) => ({ code, label: currencyLabel(code) })),
+  ]
 }
 
 export type FxRates = {

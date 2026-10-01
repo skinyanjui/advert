@@ -14,12 +14,15 @@ import {
 
 import { useAuth } from "@/lib/auth"
 import { formatMoney, formatPrice } from "@/lib/format"
+import { readHomePlace, useHomePlace, writeHomePlace } from "@/lib/home-place"
 import { convertAmount, type FxRates } from "@/lib/fx"
 import { offeredLocales, translate, type MessageKey, type TranslateValues } from "@/lib/i18n"
 import { htmlLang, type Locale } from "@/lib/i18n/locales"
 import {
+  currencyPreferenceForCountry,
   currencyStorageKey,
   defaultCurrencyPreference,
+  isCurrencyPreference,
   languageStorageKey,
   normalizeCurrencyPreference,
   normalizeLanguagePreference,
@@ -36,9 +39,10 @@ function readLanguage(): Locale {
   return offeredLocales.includes(stored) ? stored : "en"
 }
 
-function readCurrency(): CurrencyPreference {
-  if (typeof window === "undefined") return defaultCurrencyPreference
-  return normalizeCurrencyPreference(localStorage.getItem(currencyStorageKey))
+function readCurrencyOverride(): CurrencyPreference | null {
+  if (typeof window === "undefined") return null
+  const raw = localStorage.getItem(currencyStorageKey)
+  return isCurrencyPreference(raw) ? raw : null
 }
 
 function subscribeLanguage(listener: () => void) {
@@ -75,12 +79,19 @@ export function writeCurrencyLocal(currency: CurrencyPreference) {
   window.dispatchEvent(new Event(currencyEvent))
 }
 
+export function clearCurrencyLocal() {
+  localStorage.removeItem(currencyStorageKey)
+  window.dispatchEvent(new Event(currencyEvent))
+}
+
 export function useLanguagePreference(): Locale {
   return useSyncExternalStore(subscribeLanguage, readLanguage, () => "en")
 }
 
 export function useCurrencyPreference(): CurrencyPreference {
-  return useSyncExternalStore(subscribeCurrency, readCurrency, () => defaultCurrencyPreference)
+  const home = useHomePlace()
+  const override = useSyncExternalStore(subscribeCurrency, readCurrencyOverride, () => null)
+  return override ?? currencyPreferenceForCountry(home?.country)
 }
 
 type PrefsContextValue = {
@@ -137,7 +148,12 @@ export function PrefsProvider({ children }: { children: ReactNode }) {
         if (!response.ok || cancelled) return
         const body = (await response.json()) as {
           ok?: boolean
-          profile?: { language?: string | null; currency?: string | null }
+          profile?: {
+            language?: string | null
+            currency?: string | null
+            countryCode?: string | null
+            city?: string | null
+          }
         }
         if (!body.ok || !body.profile) return
 
@@ -145,27 +161,57 @@ export function PrefsProvider({ children }: { children: ReactNode }) {
           ? normalizeLanguagePreference(body.profile.language)
           : null
         const profileCurrency = body.profile.currency
-          ? normalizeCurrencyPreference(body.profile.currency)
+          ? normalizeCurrencyPreference(body.profile.currency, body.profile.countryCode)
           : null
+        const localHome = readHomePlace()
+        const localCurrencyOverride = readCurrencyOverride()
 
-        // Signed-in profile is source of truth when it has a value.
+        // Signed-in profile is authoritative. Device values are only a cache/bootstrap.
+        if (body.profile.countryCode) {
+          writeHomePlace({
+            country: body.profile.countryCode,
+            ...(body.profile.city ? { city: body.profile.city } : {}),
+          })
+        }
         if (profileLanguage && offeredLocales.includes(profileLanguage)) {
           writeLanguageLocal(profileLanguage)
         }
         if (profileCurrency) {
           writeCurrencyLocal(profileCurrency)
+        } else if (!localCurrencyOverride) {
+          clearCurrencyLocal()
         }
 
-        // Push local prefs up when profile columns are still null.
-        const patch: { language?: string; currency?: string } = {}
+        // Bootstrap still-null server fields once from anonymous onboarding/device state.
+        const patch: {
+          language?: string
+          currency?: string
+          countryCode?: string
+          city?: string
+        } = {}
         if (!body.profile.language) patch.language = readLanguage()
-        if (!body.profile.currency) patch.currency = readCurrency()
+        if (!body.profile.currency && localCurrencyOverride) patch.currency = localCurrencyOverride
+        if (!body.profile.countryCode && localHome?.country) {
+          patch.countryCode = localHome.country
+          if (localHome.city) patch.city = localHome.city
+        }
         if (Object.keys(patch).length > 0) {
-          await fetch("/api/profile", {
+          const patched = await fetch("/api/profile", {
             method: "PATCH",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify(patch),
           })
+          if (patched.ok) {
+            const result = (await patched.json()) as {
+              profile?: { countryCode?: string | null; city?: string | null }
+            }
+            if (result.profile?.countryCode) {
+              writeHomePlace({
+                country: result.profile.countryCode,
+                ...(result.profile.city ? { city: result.profile.city } : {}),
+              })
+            }
+          }
         }
       } catch {
         /* ignore */
@@ -203,7 +249,7 @@ export function PrefsProvider({ children }: { children: ReactNode }) {
 
   const setCurrency = useCallback(
     (next: CurrencyPreference) => {
-      const value = normalizeCurrencyPreference(next)
+      const value = normalizeCurrencyPreference(next, readHomePlace()?.country)
       writeCurrencyLocal(value)
       void persistToProfile({ currency: value })
     },
@@ -214,7 +260,7 @@ export function PrefsProvider({ children }: { children: ReactNode }) {
     (listing: Pick<Listing, "price" | "priceSuffix" | "currency">) => {
       const original = formatPrice(listing)
       const listingCurrency = listing.currency ?? "USD"
-      if (currency === listingCurrency) {
+      if (currency === defaultCurrencyPreference || currency === listingCurrency) {
         return { primary: original, approximate: false }
       }
       if (!fx?.rates) return { primary: "—", approximate: false }

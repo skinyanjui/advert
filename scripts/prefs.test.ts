@@ -37,10 +37,11 @@ test("language and currency preference validation", () => {
   assert.equal(languageError("de"), "Choose a supported language.")
   assert.equal(currencyPreferenceError("USD"), "Choose a currency used on the board.")
   assert.equal(currencyPreferenceError("KES"), undefined)
+  assert.equal(currencyPreferenceError("listing"), undefined)
   assert.equal(currencyPreferenceError("CAD"), "Choose a currency used on the board.")
-  assert.equal(isCurrencyPreference("listing"), false)
-  assert.equal(defaultCurrencyPreference, "KES")
-  assert.equal(normalizeCurrencyPreference("kes"), defaultCurrencyPreference) // invalid casing path via isCurrencyPreference
+  assert.equal(isCurrencyPreference("listing"), true)
+  assert.equal(defaultCurrencyPreference, "listing")
+  assert.equal(normalizeCurrencyPreference("kes"), defaultCurrencyPreference)
   assert.equal(normalizeCurrencyPreference("KES"), "KES")
   assert.equal(normalizeLanguagePreference("fr"), "fr")
   assert.equal(normalizeLanguagePreference("de"), "en")
@@ -54,7 +55,7 @@ test("normalizeProfileUpdate accepts language and currency patches", () => {
     assert.equal(ok.value.currency, "KES")
   }
   const listing = normalizeProfileUpdate({ currency: "listing" })
-  assert.equal(listing.ok, false)
+  assert.equal(listing.ok, true)
   const bad = normalizeProfileUpdate({ language: "xx" })
   assert.equal(bad.ok, false)
 })
