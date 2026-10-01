@@ -17,9 +17,6 @@ export function AccountSettingsNav({ className }: { className?: string }) {
   const [activeHref, setActiveHref] = useState<(typeof items)[number]["href"]>("#profile")
 
   useEffect(() => {
-    const initial = items.find((item) => item.href === window.location.hash)
-    if (initial) setActiveHref(initial.href)
-
     const sections = items
       .map((item) => document.querySelector<HTMLElement>(item.href))
       .filter((section): section is HTMLElement => Boolean(section))
