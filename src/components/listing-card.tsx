@@ -39,7 +39,7 @@ export function ListingCard({ listing, linked = true, saveable = true, distanceK
       </div>
       {linked ? <Link href={listingHref} aria-label={`View ${listing.title}`} className="absolute inset-0 z-10 rounded-md outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"><span className="sr-only">View listing</span></Link> : null}
       {saveable ? (
-        <button type="button" aria-pressed={saved} aria-label={saved ? `Remove ${listing.title} from saved` : `Save ${listing.title}`} onClick={() => { if (auth.configured && !auth.signedIn) { router.push(signInHref(listingHref)); return } toggleSaved(listing.id) }} className="absolute top-1.5 right-1.5 z-20 flex size-8 items-center justify-center rounded-full bg-background/95 text-muted-foreground ring-1 ring-border/70 backdrop-blur-sm transition-colors hover:text-foreground sm:top-2 sm:right-2 sm:size-7">
+        <button type="button" aria-pressed={saved} aria-label={saved ? `Remove ${listing.title} from saved` : `Save ${listing.title}`} onClick={() => { if (auth.configured && !auth.signedIn) { router.push(signInHref(listingHref)); return } toggleSaved(listing.id) }} className="absolute top-1.5 right-1.5 z-20 flex size-8 items-center justify-center rounded-full bg-background/95 text-muted-foreground ring-1 ring-border/70 backdrop-blur-sm transition-colors after:absolute after:-inset-1.5 after:rounded-full after:content-[''] hover:text-foreground focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring sm:top-2 sm:right-2 sm:size-7 sm:after:inset-0">
           <Heart className={cn("size-3.5", saved && "fill-foreground text-foreground")} />
         </button>
       ) : null}
