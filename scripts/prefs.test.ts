@@ -133,7 +133,7 @@ test("browse removes duplicate city controls and keeps listings visually dominan
   assert.match(browse, /<BoardCitySearch/)
   assert.doesNotMatch(browse, /function CityPill/)
   assert.doesNotMatch(browse, /All cities<\//)
-  assert.match(browse, /mb-3 max-w-sm/)
+  assert.match(browse, /mb-2\.5 max-w-sm sm:mb-3/)
   assert.match(browse, /Search all cities/)
   assert.match(browse, /View all types/)
   assert.doesNotMatch(browse, /onClearCity/)
