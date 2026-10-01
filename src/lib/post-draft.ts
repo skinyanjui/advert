@@ -24,6 +24,7 @@ export type PostDraft = {
   country: string
   currency: string
   city: string
+  locationSource?: "default" | "chosen"
   locationDetail?: string
   locationPrecision?: "city" | "specific"
   latitude?: number
@@ -55,6 +56,7 @@ const draftSchema = z.object({
   country: z.string(),
   currency: z.string(),
   city: z.string(),
+  locationSource: z.enum(["default", "chosen"]).optional(),
   locationDetail: z.string().optional(),
   locationPrecision: z.enum(["city", "specific"]).optional(),
   latitude: z.unknown().optional(),
@@ -88,6 +90,12 @@ export function normalizePostDraft(value: unknown, now = Date.now()): PostDraft 
     ...parsed,
     flowVersion: FLOW_VERSION,
     step,
+    // Older drafts saved an automatic country without recording its origin.
+    // A pickup description or specific pin establishes a deliberate location;
+    // otherwise that draft should follow the member's current saved default.
+    locationSource: parsed.locationSource ?? (
+      parsed.locationDetail?.trim() || parsed.locationPrecision === "specific" ? "chosen" : "default"
+    ),
     latitude: hasPin ? parsed.latitude as number : undefined,
     longitude: hasPin ? parsed.longitude as number : undefined,
     timezone: hasPin ? zone! : undefined,

@@ -4,7 +4,7 @@ import type { User } from "@supabase/supabase-js"
 import { Check } from "lucide-react"
 import Link from "next/link"
 import { useRouter, useSearchParams } from "next/navigation"
-import { useEffect, useLayoutEffect, useMemo, useRef, useState, type ReactNode } from "react"
+import { useEffect, useMemo, useRef, useState, type ReactNode } from "react"
 import { toast } from "sonner"
 
 import type { ChosenPlace } from "@/components/city-field"
@@ -22,12 +22,11 @@ import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group"
 import { readPostingPlace } from "@/lib/active-place"
 import { useAuth } from "@/lib/auth"
 import { signInHref } from "@/lib/auth-redirect"
-import { readHomePlace } from "@/lib/home-place"
 import { categoryImage } from "@/lib/catalog"
 import { categoryIcons } from "@/lib/categories"
 import { resolvePlace } from "@/lib/cities"
 import { normalizeContactPhone, prefillListingPhone } from "@/lib/contact-phone"
-import { resolvePostingCountry } from "@/lib/posting-country"
+import { resolvePostingCountry, resolvePostingDraftLocation, type PostingDraftLocation } from "@/lib/posting-country"
 import {
   canonicalCountry,
   countryName,
@@ -72,7 +71,10 @@ export function PostForm() {
   const searchParams = useSearchParams()
   const { listings, ready } = useMarketplace()
   const editId = searchParams.get("edit")?.trim() ?? ""
-  if (!editId) return <AdForm existing={null} />
+  if (!editId) {
+    const context = ["country", "city", "category", "type"].map((key) => searchParams.get(key) ?? "")
+    return <AdForm key={JSON.stringify(context)} existing={null} />
+  }
   if (!ready) return <p className="px-4 py-8 text-sm text-neutral-500">Loading your ad…</p>
   const existing = listings.find((item) => item.id === editId && item.mine)
   if (!existing) return <MissingAd />
@@ -116,6 +118,7 @@ function AdForm({ existing }: { existing: Listing | null }) {
     existing?.currency ?? africanCurrencyForCountry(startingCountry) ?? "",
   )
   const [city, setCity] = useState(startingCity)
+  const [locationSource, setLocationSource] = useState<"default" | "chosen">(existing || urlCountry ? "chosen" : "default")
   const [locationDetail, setLocationDetail] = useState(existing?.locationDetail ?? "")
   const [locationPrecision, setLocationPrecision] = useState<"city" | "specific">(existing?.locationPrecision ?? "city")
   const [place, setPlace] = useState<ChosenPlace | null>(placeFromListing(existing))
@@ -130,102 +133,103 @@ function AdForm({ existing }: { existing: Listing | null }) {
   const [errors, setErrors] = useState<FieldErrors>({})
   const [submitting, setSubmitting] = useState(false)
   const [draftUnlocked, setDraftUnlocked] = useState(false)
-  const appliedPlace = useRef(false)
-  const appliedProfile = useRef(Boolean(existing))
+  const [defaultsReady, setDefaultsReady] = useState(Boolean(existing))
+  const locationTouched = useRef(false)
   const restoredDraft = useRef(false)
   const omittedPhotosToastShown = useRef(false)
 
-  useLayoutEffect(() => {
-    // Anonymous users can use the device default. Signed-in users wait for the server profile.
-    if (appliedPlace.current || existing || urlCountry || restoredDraft.current || !auth.ready) return
-    appliedPlace.current = true
-    if (auth.signedIn) return
-    const saved = readPostingPlace()
-    const nextCountry = resolvePostingCountry({
-      urlCountry,
-      savedPlaceCountry: saved.country,
-    })
-    if (!nextCountry) return
-    /* eslint-disable react-hooks/set-state-in-effect -- hydrate saved place once on the client */
-    setCountry(nextCountry)
-    setCity(saved.city)
-    setCurrency(africanCurrencyForCountry(nextCountry) ?? "")
-    setPlace(locatedPlace(null, nextCountry, saved.city))
-    /* eslint-enable react-hooks/set-state-in-effect */
-  }, [auth.ready, auth.signedIn, existing, urlCountry])
-
   useEffect(() => {
-    if (existing || restoredDraft.current) return
-    const draft = readPostDraft()
-    if (!draft) return
-    restoredDraft.current = true
-    // Defer so restore is not a synchronous setState-in-effect cascade.
-    const timer = window.setTimeout(() => {
-      setDraftUnlocked(true)
-      setStep(draft.step)
-      setCategory(draft.category)
-      setSubcategoryId(draft.subcategoryId)
-      setTitle(draft.title)
-      setPrice(draft.price)
-      setPeriod(draft.period)
-      setDetails(draft.details)
-      setCountry(draft.country)
-      setCurrency(draft.currency)
-      setCity(draft.city)
-      setLocationDetail(draft.locationDetail ?? "")
-      setLocationPrecision(draft.locationPrecision ?? "city")
-      setDescription(draft.description)
-      setPhone(draft.phone)
-      setContactWhatsApp(draft.contactWhatsApp === true)
-      setContactPhone(draft.contactPhone === true)
-      setPhotos(draft.photos)
-      setSponsored(draft.sponsored === true)
-      setFairAccessAttested(draft.fairAccessAttested === true)
-      setPlace(draft.latitude !== undefined && draft.longitude !== undefined && draft.timezone
-        ? { name: draft.city, lat: draft.latitude, lng: draft.longitude, timezone: draft.timezone }
-        : locatedPlace(null, draft.country, draft.city))
-      if (auth.signedIn) toast.success("Restored your draft")
-    }, 0)
-    return () => window.clearTimeout(timer)
-  }, [existing, auth.signedIn])
-
-  useEffect(() => {
-    if (existing || appliedProfile.current || !auth.ready) return
-    if (!auth.signedIn) {
-      appliedProfile.current = true
-      return
-    }
+    if (existing || !auth.ready) return
     let active = true
     void (async () => {
+      // Coordinate recovery and profile hydration so a saved automatic country
+      // cannot block Settings. Defer client state updates until after the effect.
+      await Promise.resolve()
+      if (!active) return
+      setDefaultsReady(false)
+      const draft = readPostDraft()
+      const applyLocation = (location: PostingDraftLocation) => {
+        setCountry(location.country)
+        setCity(location.city)
+        setCurrency(location.currency)
+        setLocationSource(location.locationSource)
+        setLocationDetail(location.locationDetail ?? "")
+        setLocationPrecision(location.locationPrecision ?? "city")
+        setPlace(location.latitude !== undefined && location.longitude !== undefined && location.timezone
+          ? { name: location.city, lat: location.latitude, lng: location.longitude, timezone: location.timezone }
+          : locatedPlace(null, location.country, location.city))
+      }
+      if (!restoredDraft.current) {
+        restoredDraft.current = true
+        if (draft) {
+          setDraftUnlocked(true)
+          setStep(draft.step)
+          setCategory(draft.category)
+          setSubcategoryId(draft.subcategoryId)
+          setTitle(draft.title)
+          setPrice(draft.price)
+          setPeriod(draft.period)
+          setDetails(draft.details)
+          setDescription(draft.description)
+          setPhone(draft.phone)
+          setContactWhatsApp(draft.contactWhatsApp === true)
+          setContactPhone(draft.contactPhone === true)
+          setPhotos(draft.photos)
+          setSponsored(draft.sponsored === true)
+          setFairAccessAttested(draft.fairAccessAttested === true)
+          if (auth.signedIn) toast.success("Restored your draft")
+        }
+        if (!locationTouched.current) {
+          const saved = auth.signedIn ? null : readPostingPlace()
+          const location = resolvePostingDraftLocation({
+            draft,
+            urlCountry,
+            urlCity: startingCity,
+            defaultCountry: saved?.country,
+            defaultCity: saved?.city,
+          })
+          applyLocation(location)
+          locationTouched.current = location.locationSource === "chosen"
+        }
+      }
+
+      // Anonymous users can use the device default. Signed-in users wait for the server profile.
+      let profile: BoardProfile | undefined
       try {
-        const response = await fetch("/api/profile", { cache: "no-store" })
-        const payload = (await response.json()) as { ok?: boolean; profile?: BoardProfile }
-        if (!active || !response.ok || !payload.profile) return
-        appliedProfile.current = true
-        const profile = payload.profile
-        setPhone((current) => prefillListingPhone(current || null, profile.phone))
-        const savedHome = readHomePlace()
-        const profileCountry = resolvePostingCountry({
-          urlCountry,
-          profileCountry: profile.countryCode,
-          savedPlaceCountry: savedHome?.country,
-        })
-        if (!urlCountry && profileCountry && !restoredDraft.current) {
-          const profileIsSource = canonicalCountry(profile.countryCode) === profileCountry
-          const profileCity = profileIsSource ? (profile.city?.trim() ?? "") : (savedHome?.city ?? "")
-          setCountry(profileCountry)
-          setCity(profileCity)
-          setCurrency(africanCurrencyForCountry(profileCountry) ?? "")
-          setPlace(locatedPlace(null, profileCountry, profileCity))
+        if (auth.signedIn) {
+          const response = await fetch("/api/profile", { cache: "no-store", signal: AbortSignal.timeout(5000) })
+          const payload = (await response.json()) as { ok?: boolean; profile?: BoardProfile }
+          if (response.ok && payload.ok && payload.profile) profile = payload.profile
         }
       } catch {
-        // Prefill is optional; seller can still choose country and phone.
+        // Cached Settings remain available when profile loading fails.
       }
+      if (!active) return
+      if (profile) setPhone((current) => prefillListingPhone(current || null, profile.phone))
+      if (!urlCountry && !locationTouched.current) {
+        const saved = readPostingPlace()
+        const profileCountry = resolvePostingCountry({
+          profileCountry: profile?.countryCode,
+          savedPlaceCountry: saved.country,
+        })
+        const profileIsSource = profile && canonicalCountry(profile.countryCode) === profileCountry
+        applyLocation(resolvePostingDraftLocation({
+          draft,
+          defaultCountry: profileCountry,
+          defaultCity: profileIsSource ? profile?.city?.trim() : saved.city,
+        }))
+      }
+      setDefaultsReady(true)
     })()
     return () => {
       active = false
     }
-  }, [existing, auth.ready, auth.signedIn, urlCountry])
+  }, [existing, auth.ready, auth.signedIn, auth.user?.id, urlCountry, startingCity])
+
+  function markLocationChosen() {
+    locationTouched.current = true
+    setLocationSource("chosen")
+  }
 
   const plan = category ? categoryPlan(category) : null
   const subcategory = category ? findSubcategory(category, subcategoryId ?? undefined) : undefined
@@ -234,7 +238,7 @@ function AdForm({ existing }: { existing: Listing | null }) {
   const currencies = currencyChoices(country, currency)
 
   useEffect(() => {
-    if (existing) return
+    if (existing || !defaultsReady) return
     if (!draftUnlocked && !auth.signedIn) return
     const hasContent =
       Boolean(category) ||
@@ -258,6 +262,7 @@ function AdForm({ existing }: { existing: Listing | null }) {
         country,
         currency,
         city,
+        locationSource,
         locationDetail,
         locationPrecision,
         latitude: place?.lat,
@@ -279,6 +284,7 @@ function AdForm({ existing }: { existing: Listing | null }) {
     return () => window.clearTimeout(timer)
   }, [
     existing,
+    defaultsReady,
     draftUnlocked,
     auth.signedIn,
     step,
@@ -291,6 +297,7 @@ function AdForm({ existing }: { existing: Listing | null }) {
     country,
     currency,
     city,
+    locationSource,
     locationDetail,
     locationPrecision,
     place,
@@ -585,6 +592,7 @@ function AdForm({ existing }: { existing: Listing | null }) {
         country,
         currency,
         city,
+        locationSource,
         locationDetail,
         locationPrecision,
         latitude: place?.lat,
@@ -882,6 +890,7 @@ function AdForm({ existing }: { existing: Listing | null }) {
                   cityError={errors.city}
                   locationDetailError={errors.locationDetail}
                   onCountryChange={(code) => {
+                    markLocationChosen()
                     setCountry(code)
                     setCity("")
                     setLocationDetail("")
@@ -891,19 +900,23 @@ function AdForm({ existing }: { existing: Listing | null }) {
                     setErrors((current) => ({ ...current, city: undefined, currency: undefined, form: undefined }))
                   }}
                   onCityChange={(value) => {
+                    markLocationChosen()
                     setCity(value)
                     setLocationPrecision("city")
                     setErrors((current) => ({ ...current, city: undefined }))
                   }}
                   onLocationDetailChange={(value) => {
+                    markLocationChosen()
                     setLocationDetail(value)
                     setErrors((current) => ({ ...current, locationDetail: undefined }))
                   }}
                   onPlace={(next) => {
+                    if (next) markLocationChosen()
                     setPlace(next)
                     if (next) setLocationPrecision("city")
                   }}
                   onCoordinates={(lat, lng) => {
+                    markLocationChosen()
                     setPlace((current) => ({
                       name: current?.name ?? city,
                       lat,

@@ -16,7 +16,7 @@ export const helpCopy: Record<Locale, HelpCopy> = {
     sections: [
       { id: "selling", title: "Post and manage an ad", steps: [
         "Post in four steps: Category → Type → Details → Review. Choosing a category opens Type immediately. Back keeps your answers.",
-        "A new ad uses your Settings or onboarding country and city. When signed in, the saved profile is the default on every device. A location-specific Post link overrides it for that ad. Drafts and edits keep their saved location.",
+        "A new ad uses your Settings or onboarding country and city. When signed in, the saved profile is the default on every device. A location-specific Post link overrides it for that ad. A draft's automatically filled location follows your current saved default; a location you choose and an existing ad's location are preserved.",
         "Choose a city and add a neighborhood, landmark, pickup point, or address. Towns outside the suggestions are accepted without a map pin.",
         `Add up to ${photos} JPEG, PNG, or WebP photos, up to 12 MB each before processing. Photos are resized and GPS metadata is removed before storage. The first photo is the cover.`,
         "Messenger is available without publishing a phone number. Enable phone contact for Call and Text, or enable WhatsApp, only when those methods are wanted.",
@@ -57,7 +57,7 @@ export const helpCopy: Record<Locale, HelpCopy> = {
     sections: [
       { id: "selling", title: "Publier et gérer une annonce", steps: [
         "Publiez en quatre étapes : Catégorie → Type → Détails → Vérification. Choisir une catégorie ouvre immédiatement Type. Retour conserve les réponses.",
-        "Une nouvelle annonce utilise le pays et la ville des paramètres ou de l’inscription. Connecté, le profil enregistré est la valeur par défaut sur chaque appareil. Un lien Publier lié à un lieu la remplace pour cette annonce. Les brouillons et modifications conservent leur lieu.",
+        "Une nouvelle annonce utilise le pays et la ville des paramètres ou de l’inscription. Connecté, le profil enregistré est la valeur par défaut sur chaque appareil. Un lien Publier lié à un lieu la remplace pour cette annonce. Le lieu rempli automatiquement dans un brouillon suit vos paramètres actuels ; le lieu que vous choisissez et celui d’une annonce existante sont conservés.",
         "Choisissez une ville et indiquez un quartier, un point de repère, un lieu de retrait ou une adresse. Les villes absentes des suggestions sont acceptées sans repère sur la carte.",
         `Ajoutez jusqu’à ${photos} photos JPEG, PNG ou WebP, de 12 Mo maximum avant traitement. Les images sont redimensionnées et les métadonnées GPS supprimées avant stockage. La première photo est la couverture.`,
         "Messenger fonctionne sans publier un numéro. Activez le contact téléphonique pour Appeler et SMS, ou WhatsApp, seulement si ces moyens sont souhaités.",
@@ -98,7 +98,7 @@ export const helpCopy: Record<Locale, HelpCopy> = {
     sections: [
       { id: "selling", title: "Chapisha na simamia tangazo", steps: [
         "Chapisha kwa hatua nne: Kategoria → Aina → Maelezo → Hakiki. Kuchagua kategoria hufungua Aina mara moja. Kurudi nyuma huhifadhi majibu.",
-        "Tangazo jipya hutumia nchi na mji ulioweka kwenye Mipangilio au wakati wa kujiunga. Ukiingia, wasifu uliohifadhiwa hutumika kwenye kila kifaa. Kiungo cha kutangaza eneo fulani hubadilisha eneo kwa tangazo hilo. Rasimu na mabadiliko huhifadhi eneo lao.",
+        "Tangazo jipya hutumia nchi na mji ulioweka kwenye Mipangilio au wakati wa kujiunga. Ukiingia, wasifu uliohifadhiwa hutumika kwenye kila kifaa. Kiungo cha kutangaza eneo fulani hubadilisha eneo kwa tangazo hilo. Eneo lililojazwa kiotomatiki kwenye rasimu hufuata chaguomsingi lako la sasa; eneo ulilochagua na eneo la tangazo lililopo huhifadhiwa.",
         "Chagua mji na ongeza mtaa, alama inayojulikana, mahali pa kuchukua bidhaa au anwani. Miji isiyo kwenye mapendekezo inakubaliwa bila alama ya ramani.",
         `Ongeza hadi picha ${photos} za JPEG, PNG au WebP, kila moja isizidi MB 12 kabla ya kuchakatwa. Picha hupunguzwa na taarifa za GPS huondolewa kabla ya kuhifadhiwa. Picha ya kwanza ni jalada.`,
         "Messenger hutumika bila kuchapisha nambari ya simu. Washa simu kwa kupigiwa na SMS, au WhatsApp, ikiwa unataka mawasiliano hayo.",

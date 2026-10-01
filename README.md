@@ -19,7 +19,7 @@ Open [http://localhost:3000](http://localhost:3000).
 - The country control in the top bar searches by country, capital, or ISO code.
 - A category sidebar (desktop) and category sheet (mobile)
 - Listing pages with inline Messenger, authenticated SMS/Text, Call and WhatsApp contact, and “Report this ad”
-- Post an ad with up to 6 photos (cover + gallery) or a category image; new ads default to the country saved during onboarding or in Settings, explicit location-specific Post links can override that default, and drafts/edits preserve their own location; ads expire after 60 days and can be renewed
+- Post an ad with up to 6 photos (cover + gallery) or a category image; new ads default to the country saved during onboarding or in Settings, explicit location-specific Post links can override that default, automatic draft locations follow the current default, and deliberately chosen draft/edit locations are preserved; ads expire after 60 days and can be renewed
 - Seller accounts: email OTP / magic link, optional password, Profile settings, and session claim so guest cookie posts move onto the account
 - My ads with active / paused / sold / expired actions
 - Messenger for real buyer–seller listing threads

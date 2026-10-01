@@ -15,7 +15,7 @@ The pasted build failure was already corrected on main before this audit.
 | --- | --- | --- |
 | 1 | Country-driven currency default | Existing implementation verified; regression coverage now checks Uganda/UGX, explicit overrides, one displayed price, and unavailable-rate fallback. `prefs.ts`, `price-display.ts`. |
 | 2 | Shared location model | Existing `location.ts`/`cities.ts` resolution retained. Unknown typed cities now produce no map point or buyer distance; a specific public pickup description is still displayed. `distance.ts`, listing detail. |
-| 3 | Server profile authority | Existing signed-in profile resolution and cross-device preference behavior verified. Malformed profile patches now return 400; location defaults do not override drafts or edits. |
+| 3 | Server profile authority | Signed-in profile resolution and cross-device preference behavior retained. Malformed profile patches return 400. Follow-up fixes automatic draft defaults blocking the current profile; deliberately chosen draft locations and edits are preserved. |
 | 4 | Persisted RBAC roles | Existing `board_user_roles` authority verified against the live database. Client grants remain revoked. Added an index for `assigned_by`. |
 | 5 | Capability permissions | Existing server and UI permissions verified for posting, messaging, direct contact, reporting, profile access, and administrative operations. |
 | 6 | Listing state machine | Existing active/paused/sold/expired transitions verified. Full edits now parse separately from sold/pause/renew actions. |
@@ -43,10 +43,10 @@ The pasted build failure was already corrected on main before this audit.
 | --- | --- |
 | Category → Type → Details → Review | Existing four-step flow verified. Category clicks advance immediately; Back preserves selections. Legacy draft steps migrate to the equivalent current step. |
 | Transport/logistics, Energy/power, Food/market goods, Industrial/commercial | Existing categories/subtypes and English/French/Swahili category keys verified. |
-| Settings/onboarding country defaults and country-aware browsing | Existing defaults verified; Uganda display-price behavior has dedicated regression coverage. |
+| Settings/onboarding country defaults and country-aware browsing | Fixed stale automatic draft countries (including Zimbabwe) overriding Settings. Draft location intent is persisted; explicit action context wins, selected draft locations are retained, and automatic defaults refresh country/city/currency together. Uganda display-price behavior has dedicated regression coverage. |
 | Distance only in listing details | Existing card removal verified. Details now require real known or explicitly supplied coordinates for distance/map display. |
-| Specific location during posting | Required neighborhood, landmark, pickup point, or address; a map pin is optional. Device-location failures offer typed-location recovery. Public disclosure is shown before using location. |
-| Draft recovery | Drafts save and restore latitude, longitude, time zone, precision, and pickup description. Malformed pins are discarded while valid draft content is preserved. |
+| Specific location during posting | Required neighborhood, landmark, pickup point, or address; a map pin is optional. Device-location failures offer typed-location recovery. Public disclosure is shown before using location. Same-origin geolocation requests are permitted by the document policy so client navigation to Post works; browser permission and the posting button's explicit action remain required. |
+| Draft recovery | Drafts save and restore latitude, longitude, time zone, precision, pickup description, and whether location was chosen or inherited. Legacy drafts with pickup descriptions/specific pins retain their location; unfinished legacy defaults refresh from current Settings. Malformed pins are discarded while valid draft content is preserved. |
 | Inline contact and Messenger | Existing inline composer retained. No messaging modal added. Sign-in, send failure, disabled status, and unread behavior remain covered by existing tests. |
 | Help documentation | Replaced the abbreviated help page with complete English/French/Swahili help for posting, prices, location, buying, account/privacy, and recovery. Updated README, source/license attribution, and public-location privacy disclosure. |
 | Privacy policy versioning | The new location disclosure has a new Privacy/disclosure version and effective date; existing accounts use the established reacceptance flow. Existing acceptance evidence is not rewritten. |
@@ -71,7 +71,7 @@ public policies. The missing foreign-key indexes found during the audit were add
 
 ## Code verification
 
-`npm run ci` passes lint, typecheck, all 216 tests, and the Next.js production build.
+`npm run ci` passes lint, typecheck, all 225 tests, and the Next.js production build.
 The test suite includes request/form compatibility, taxonomy identity, provenance,
 country defaults, single-price conversion, unknown towns, and saved-pin recovery.
 Targeted test-name filtering and compliance-document generation also pass.

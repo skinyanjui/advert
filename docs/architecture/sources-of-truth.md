@@ -10,6 +10,7 @@ Use one authoritative owner for each concept. Caches, snapshots, UI state, and c
 | Signed-in default country/city | `board_profiles.country_code/city` | localStorage mirrors the profile after sign-in |
 | Anonymous default country/city | localStorage home place | Temporary board selection |
 | Explicit posting location | `/post?country=&city=` action context | Profile/device fallback |
+| Draft posting location | Explicit action context, then a deliberately chosen draft location, then the current posting default | Draft `locationSource` distinguishes chosen locations from inherited defaults; legacy pickup descriptions/specific pins establish intent |
 | Display currency | Explicit profile/device override; otherwise country registry | `listing` means original listing currency |
 | Country/city/currency/language/time-zone reference data | Supabase reference tables | Versioned checked-in snapshots with manifest hashes |
 | Reference provenance | `reference_imports` + reference manifest | Snapshot hash |

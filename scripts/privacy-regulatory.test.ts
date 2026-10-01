@@ -1,10 +1,18 @@
 import assert from "node:assert/strict"
 import { readFileSync } from "node:fs"
 import { test } from "node:test"
+import nextConfig from "../next.config"
 
 function source(path: string): string {
   return readFileSync(new URL(`../${path}`, import.meta.url), "utf8")
 }
+
+test("the initial document permits same-origin posting location requests after client navigation", async () => {
+  const groups = await nextConfig.headers!()
+  const policy = groups.find((group) => group.source === "/(.*)")?.headers
+    .find((header) => header.key === "Permissions-Policy")?.value
+  assert.equal(policy, "camera=(), microphone=(), geolocation=(self)")
+})
 
 test("privacy draft covers GDPR and California rights without claiming sale or sharing", () => {
   const privacy = source("src/app/privacy/page.tsx")
