@@ -53,39 +53,39 @@ export function ListingCard({
           className="object-cover"
         />
         {listing.badge === "featured" ? (
-          <span className="absolute top-2 left-2 rounded-full bg-neutral-950 px-2 py-0.5 text-[10px] font-medium text-white">
+          <span className="absolute top-1.5 left-1.5 rounded-full bg-neutral-950 px-1.5 py-0.5 text-[9px] font-medium text-white sm:top-2 sm:left-2 sm:px-2 sm:text-[10px]">
             Featured
           </span>
         ) : null}
         {listing.sold ? (
-          <span className="absolute top-2 left-2 rounded-full bg-neutral-800 px-2 py-0.5 text-[10px] font-medium text-white">
+          <span className="absolute top-1.5 left-1.5 rounded-full bg-neutral-800 px-1.5 py-0.5 text-[9px] font-medium text-white sm:top-2 sm:left-2 sm:px-2 sm:text-[10px]">
             Sold
           </span>
         ) : listing.hidden ? (
-          <span className="absolute top-2 left-2 rounded-full bg-amber-700 px-2 py-0.5 text-[10px] font-medium text-white">
+          <span className="absolute top-1.5 left-1.5 rounded-full bg-amber-700 px-1.5 py-0.5 text-[9px] font-medium text-white sm:top-2 sm:left-2 sm:px-2 sm:text-[10px]">
             Hidden
           </span>
         ) : isListingExpired(listing.expiresAt) ? (
-          <span className="absolute top-2 left-2 rounded-full bg-neutral-600 px-2 py-0.5 text-[10px] font-medium text-white">
+          <span className="absolute top-1.5 left-1.5 rounded-full bg-neutral-600 px-1.5 py-0.5 text-[9px] font-medium text-white sm:top-2 sm:left-2 sm:px-2 sm:text-[10px]">
             Expired
           </span>
         ) : listing.sponsored ? (
-          <span className="absolute top-2 left-2 rounded-full bg-sky-700 px-2 py-0.5 text-[10px] font-medium text-white">
+          <span className="absolute top-1.5 left-1.5 rounded-full bg-sky-700 px-1.5 py-0.5 text-[9px] font-medium text-white sm:top-2 sm:left-2 sm:px-2 sm:text-[10px]">
             Sponsored
           </span>
         ) : listing.badge === "jobs" ? (
-          <span className="absolute top-2 left-2 rounded-full bg-emerald-500 px-2 py-0.5 text-[10px] font-medium text-white">
+          <span className="absolute top-1.5 left-1.5 rounded-full bg-emerald-500 px-1.5 py-0.5 text-[9px] font-medium text-white sm:top-2 sm:left-2 sm:px-2 sm:text-[10px]">
             Jobs
           </span>
         ) : null}
       </div>
-      <div className="px-3 py-2.5">
-        <p className="min-w-0 text-sm leading-5 font-semibold tracking-tight text-foreground">
+      <div className="px-2.5 py-2 sm:px-3 sm:py-2.5">
+        <p className="min-w-0 truncate text-[13px] leading-4 font-semibold tracking-tight text-foreground sm:text-sm sm:leading-5">
           <ListingPrice listing={listing} />
         </p>
-        <h3 className="mt-1 truncate text-[13px] leading-4 text-foreground/85">{listing.title}</h3>
+        <h3 className="mt-1 truncate text-xs leading-4 text-foreground/85 sm:text-[13px]">{listing.title}</h3>
         <p
-          className="mt-1.5 flex min-w-0 items-center gap-1 text-[11px] leading-3.5 text-muted-foreground"
+          className="mt-1 flex min-w-0 items-center gap-1 text-[10px] leading-3.5 text-muted-foreground sm:mt-1.5 sm:text-[11px]"
           title={placeFull}
           aria-label={placeFull}
         >
@@ -95,7 +95,7 @@ export function ListingCard({
             <span className="shrink-0">, {countryCode}{away ? ` · ${away}` : ""}</span>
           </span>
         </p>
-        <div className="mt-1 flex items-center pr-9 text-[11px] leading-none text-muted-foreground">
+        <div className="mt-1 flex items-center pr-7 text-[10px] leading-none text-muted-foreground sm:pr-9 sm:text-[11px]">
           <PostedLabel listing={listing} />
         </div>
       </div>
@@ -103,13 +103,13 @@ export function ListingCard({
   )
 
   return (
-    <article className="group relative flex h-full flex-col overflow-hidden rounded-xl border border-border/70 bg-card transition-colors hover:border-foreground/20">
+    <article className="group relative flex h-full flex-col overflow-hidden rounded-lg border border-border/70 bg-card transition-colors hover:border-foreground/20 sm:rounded-xl">
       <div className="flex h-full flex-col">{body}</div>
       {linked ? (
         <Link
           href={listingHref}
           aria-label={`View ${listing.title}`}
-          className="absolute inset-0 z-10 rounded-xl outline-none focus-visible:ring-2 focus-visible:ring-neutral-950 focus-visible:ring-offset-2"
+          className="absolute inset-0 z-10 rounded-lg outline-none focus-visible:ring-2 focus-visible:ring-neutral-950 focus-visible:ring-offset-2 sm:rounded-xl"
         >
           <span className="sr-only">View listing</span>
         </Link>
@@ -126,7 +126,7 @@ export function ListingCard({
             }
             toggleSaved(listing.id)
           }}
-          className="absolute top-2 right-2 z-20 flex size-7 items-center justify-center rounded-full bg-background/90 text-muted-foreground ring-1 ring-border/70 backdrop-blur transition-colors hover:text-foreground"
+          className="absolute top-1.5 right-1.5 z-20 flex size-8 items-center justify-center rounded-full bg-background/90 text-muted-foreground ring-1 ring-border/70 backdrop-blur transition-colors hover:text-foreground sm:top-2 sm:right-2 sm:size-7"
         >
           <Heart className={cn("size-4", saved && "fill-rose-500 text-rose-500")} />
         </button>
@@ -136,8 +136,6 @@ export function ListingCard({
 }
 
 function PostedLabel({ listing }: { listing: Listing }) {
-  // Prefer the stored hoursAgo for seed ads (no postedAt) so SSR/client match.
-  // When postedAt exists, recompute from now and suppress hydration warning on <time>.
   const hasPostedAt = Boolean(listing.postedAt)
   const hours = hasPostedAt ? hoursAgoOf(listing) : listing.hoursAgo
   const label = formatRelativePosted(hours)

@@ -70,9 +70,9 @@ export function Browse() {
   const preserve = boardSearch(query)
   return (
     <div className="w-full">
-      <section className="min-w-0 px-3 pt-3 pb-16 md:px-4">
+      <section className="min-w-0 px-2.5 pt-2.5 pb-24 sm:px-3 sm:pt-3 md:px-4 md:pb-16">
         {query.country ? (
-          <div className="mb-3 max-w-sm">
+          <div className="mb-2.5 max-w-sm sm:mb-3">
             <BoardCitySearch
               country={query.country}
               city={cityLabel}
@@ -130,7 +130,7 @@ function EmptyResults({
   const postHref = postAdHref(country ? { country, city } : null, { category, type })
 
   return (
-    <div className="rounded-xl border border-border bg-background px-6 py-12 text-center">
+    <div className="rounded-xl border border-border bg-background px-4 py-10 text-center sm:px-6 sm:py-12">
       <h2 className="text-lg font-semibold tracking-tight">
         {typeName ? `No ${typeName.toLowerCase()} listings${place ? ` in ${place}` : ""}` : place ? `No listings in ${place}` : "No listings match"}
       </h2>

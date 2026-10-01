@@ -40,9 +40,10 @@ function TopNav() {
   const locationLabel = query.country ? countryName(query.country) : t("nav.allAfrica")
 
   return (
-    <div className="grid h-14 w-full grid-cols-[auto_minmax(0,1fr)] items-center gap-2 px-3 md:h-16 md:grid-cols-[15.5rem_minmax(0,1fr)_auto] md:gap-0 md:px-0">
+    <div className="grid min-h-14 w-full grid-cols-[auto_minmax(0,1fr)_auto] items-center gap-2 px-3 py-2 md:h-16 md:grid-cols-[15.5rem_minmax(0,1fr)_auto] md:gap-0 md:px-0 md:py-0">
       <TopNavBrand />
       <TopNavDiscovery search={query.q} onSearchChange={(value) => update({ q: value })} />
+      <TopNavMobileUtilities />
       <TopNavActions pathname={pathname} locationLabel={locationLabel} query={query} />
     </div>
   )
@@ -82,15 +83,23 @@ function TopNavCategories() {
   )
 }
 
+function TopNavMobileUtilities() {
+  return (
+    <div className="flex shrink-0 items-center gap-0.5 md:hidden">
+      <ProfileMenu />
+    </div>
+  )
+}
+
 function TopNavActions({ pathname, locationLabel, query }: { pathname: string; locationLabel: string; query: ListingQuery }) {
   const { t } = usePrefs()
   return (
     <div className="fixed inset-x-2 bottom-[calc(env(safe-area-inset-bottom)+0.5rem)] z-50 mx-auto flex max-w-md items-center rounded-2xl border border-border bg-background/95 p-1.5 shadow-lg backdrop-blur md:static md:inset-auto md:ml-0 md:max-w-none md:shrink-0 md:rounded-none md:border-0 md:bg-transparent md:pr-4 md:pl-2 md:shadow-none md:backdrop-blur-none">
-      <nav aria-label={t("nav.navigation")} className="flex w-full items-center justify-between gap-1 md:justify-end md:gap-1.5 lg:gap-2">
+      <nav aria-label={t("nav.navigation")} className="flex w-full items-center justify-around gap-1 md:justify-end md:gap-1.5 lg:gap-2">
         <TopNavHome pathname={pathname} />
         <CountryMenu label={locationLabel} query={query} />
         <TopNavPost />
-        <ProfileMenu />
+        <div className="hidden md:block"><ProfileMenu /></div>
         <div className="hidden items-center gap-1 md:flex">
           <HeaderMenu
             label="Language and currency"
@@ -128,10 +137,10 @@ function TopNavPost() {
   const Icon = post.icon
   const href = usePostAdHref()
   return (
-    <Button asChild className="h-8 rounded-full border border-primary bg-primary px-2 text-xs text-primary-foreground hover:bg-primary/80 sm:px-2.5 xl:px-3">
+    <Button asChild className="h-10 rounded-full border border-primary bg-primary px-4 text-sm text-primary-foreground hover:bg-primary/80 md:h-8 md:px-2 md:text-xs sm:px-2.5 xl:px-3">
       <Link href={href} aria-label={t("nav.postShort")}>
         <Icon />
-        <span className="hidden xl:inline">{t("nav.postShort")}</span>
+        <span className="md:hidden xl:inline">{t("nav.postShort")}</span>
       </Link>
     </Button>
   )
@@ -163,7 +172,7 @@ function CountryMenu({ label, query }: { label: string; query: ListingQuery }) {
   return (
     <HeaderMenu
       label={t("nav.country", { label })}
-      summaryClassName="h-8 border-transparent bg-transparent px-2 shadow-none hover:bg-muted sm:max-w-44 sm:px-2.5 lg:max-w-40"
+      summaryClassName="h-10 border-transparent bg-transparent px-3 shadow-none hover:bg-muted md:h-8 md:px-2 sm:max-w-44 sm:px-2.5 lg:max-w-40"
       panelClassName="w-64"
       onOpen={() => setLocationQuery("")}
       summary={
@@ -204,7 +213,7 @@ function CountryMenu({ label, query }: { label: string; query: ListingQuery }) {
           }}
           placeholder={t("nav.searchPlace")}
           aria-label={t("nav.searchPlaceLabel")}
-          className="h-8"
+          className="h-10 md:h-8"
         />
       </div>
       <div className="mx-1 my-1 h-px bg-neutral-200" />
@@ -407,164 +416,66 @@ function HeaderMenu({
   )
 }
 
-function MenuLink({
-  href,
-  children,
-  className,
-  onClick,
-  "aria-label": ariaLabel,
-}: {
-  href: string
-  children: ReactNode
-  className?: string
-  onClick?: () => void
-  "aria-label"?: string
-}) {
+function MenuLink({ href, children, className, onClick }: { href: string; children: ReactNode; className?: string; onClick?: () => void }) {
   return (
     <Link
-      href={href}
       role="menuitem"
-      aria-label={ariaLabel}
-      className={cn(
-        "flex h-8 w-full cursor-pointer items-center gap-1.5 rounded-md px-2 text-left text-sm hover:bg-neutral-100",
-        className,
-      )}
+      href={href}
       onClick={onClick}
+      className={cn("flex min-h-10 w-full items-center gap-2 rounded-md px-2 py-1.5 text-sm hover:bg-neutral-100 dark:hover:bg-neutral-800", className)}
     >
       {children}
     </Link>
   )
 }
 
-
 function SearchField({ value, onChange }: { value: string; onChange: (value: string) => void }) {
   const { t } = usePrefs()
-  const [draft, setDraft] = useState(value)
-  const [focused, setFocused] = useState(false)
-
   return (
-    <div className="relative">
-      <Search className="pointer-events-none absolute top-1/2 left-3 size-3.5 -translate-y-1/2 text-neutral-400" />
+    <label className="relative block w-full">
+      <Search className="pointer-events-none absolute top-1/2 left-3 size-4 -translate-y-1/2 text-muted-foreground" aria-hidden="true" />
       <Input
-        value={focused ? draft : value}
-        onFocus={() => {
-          setDraft(value)
-          setFocused(true)
-        }}
-        onBlur={() => setFocused(false)}
-        onChange={(event) => {
-          setDraft(event.target.value)
-          onChange(event.target.value)
-        }}
-        placeholder={t("nav.searchPlaceholder")}
-        aria-label={t("nav.searchListings")}
-        className="h-8 rounded-lg border-border/70 bg-muted/35 pr-3 pl-9 text-[13px] shadow-none focus-visible:border-ring focus-visible:bg-background focus-visible:ring-ring/30"
+        value={value}
+        onChange={(event) => onChange(event.target.value)}
+        placeholder={t("nav.search")}
+        aria-label={t("nav.search")}
+        className="h-9 rounded-lg border-border/70 bg-muted/35 pr-3 pl-9 text-sm shadow-none md:h-8"
       />
-    </div>
+    </label>
   )
-}
-
-const panelWatchers = new WeakMap<HTMLDetailsElement, () => void>()
-
-function watchHeaderPanel(details: HTMLDetailsElement) {
-  stopWatchingHeaderPanel(details)
-  const place = () => placeHeaderPanel(details)
-  place()
-  window.addEventListener("resize", place)
-  const cleanup = () => window.removeEventListener("resize", place)
-  panelWatchers.set(details, cleanup)
-}
-
-function stopWatchingHeaderPanel(details: HTMLDetailsElement) {
-  panelWatchers.get(details)?.()
-  panelWatchers.delete(details)
-}
-
-function placeHeaderPanel(details: HTMLDetailsElement) {
-  const panel = details.querySelector<HTMLElement>("[data-header-panel]")
-  const summary = details.querySelector("summary")
-  if (!panel || !summary) return
-  const trigger = summary.getBoundingClientRect()
-  const width = panel.getBoundingClientRect().width || panel.offsetWidth
-  const margin = 8
-  let left = trigger.right - width
-  if (left < margin) left = margin
-  if (left + width > window.innerWidth - margin) left = Math.max(margin, window.innerWidth - margin - width)
-  const below = window.innerHeight - trigger.bottom
-  const above = trigger.top
-  const openAbove = below < 260 && above > below
-  const top = openAbove ? Math.max(margin, trigger.top - Math.min(384, above - margin) - 6) : trigger.bottom + 6
-  panel.style.position = "fixed"
-  panel.style.top = `${top}px`
-  panel.style.left = `${Math.round(left)}px`
-  panel.style.right = "auto"
-  panel.style.marginTop = "0"
-  panel.style.zIndex = "80"
-  panel.style.maxHeight = `${Math.max(120, Math.round(openAbove ? trigger.top - top - 6 : window.innerHeight - top - margin))}px`
-}
-
-
-function locationHref(pathname: string, search: string, country: string | null, city?: string | null): string {
-  const pathCategory = categoryFromPath(pathname)
-  const onBoard = pathname === "/" || pathCategory !== undefined
-  const params = new URLSearchParams(onBoard ? search : "")
-  if (country) {
-    params.set("country", country)
-    if (city) params.set("city", city)
-    else params.delete("city")
-  } else {
-    params.delete("country")
-    params.delete("city")
-  }
-  params.delete("category")
-  const path = onBoard ? (pathCategory ? `/${pathCategory}` : "/") : "/"
-  const qs = params.toString()
-  return qs ? `${path}?${qs}` : path
 }
 
 function filterCountries(query: string) {
-  const needle = fold(query)
+  const needle = fold(query.trim())
   if (!needle) return countries
-  return countries.filter(
-    (country) =>
-      fold(country.name).includes(needle) ||
-      country.code.toLowerCase() === needle ||
-      fold(country.capital).includes(needle),
-  )
+  return countries.filter((country) => fold(`${country.name} ${country.code}`).includes(needle))
 }
 
-export function HeaderFallback() {
-  const home = navItem("home")
-  const post = navItem("post")
-  const profile = navItem("profile")
-  const HomeIcon = home.icon
-  const ProfileIcon = profile.icon
-  return (
-    <header className="sticky top-0 z-40 border-b border-border bg-background">
-      <div className="grid h-14 w-full grid-cols-[auto_minmax(0,1fr)] items-center gap-2 px-3 md:h-16 md:grid-cols-[15.5rem_minmax(0,1fr)_auto] md:gap-0 md:px-0">
-        <Logo iconOnly className="xl:hidden" />
-        <Logo className="hidden xl:flex" />
-        <div className="min-w-0 md:px-4">
-          <div className="h-8 rounded-lg bg-muted/50" />
-        </div>
-        <nav aria-label={profile.label} className="fixed inset-x-3 bottom-[calc(env(safe-area-inset-bottom)+0.5rem)] z-50 mx-auto flex max-w-md items-center justify-around rounded-2xl border border-border bg-background p-1.5 shadow-lg md:static md:ml-auto md:max-w-none md:gap-2 md:rounded-none md:border-0 md:bg-transparent md:p-0 md:shadow-none lg:gap-3">
-          <Link
-            href={home.href}
-            aria-label={home.label}
-            className={cn(buttonVariants({ variant: "outline", size: "icon-lg" }), "rounded-full md:hidden")}
-          >
-            <HomeIcon />
-            <span className="sr-only">{home.label}</span>
-          </Link>
-          <PostLink className={cn(buttonVariants(), "h-10 rounded-full bg-neutral-950 px-3 text-white")} ariaLabel={post.shortLabel}>
-            {post.shortLabel}
-          </PostLink>
-          <Link href={profile.href} className={cn(buttonVariants({ variant: "outline", size: "icon-lg" }), "relative rounded-full")}>
-            <ProfileIcon />
-            <span className="sr-only">{profile.label}</span>
-          </Link>
-        </nav>
-      </div>
-    </header>
-  )
+function locationHref(pathname: string, search: string, country: string | null, city?: string | null): string {
+  const params = new URLSearchParams(search)
+  if (country) params.set("country", country)
+  else params.delete("country")
+  if (country && city) params.set("city", city)
+  else params.delete("city")
+  const category = categoryFromPath(pathname)
+  const path = pathname === "/" || category ? pathname : category ? `/${category}` : "/"
+  const next = params.toString()
+  return next ? `${path}?${next}` : path
+}
+
+function watchHeaderPanel(details: HTMLDetailsElement) {
+  const panel = details.querySelector<HTMLElement>("[data-header-panel]")
+  if (!panel) return
+  const resize = () => {
+    panel.style.maxWidth = `${Math.max(240, window.innerWidth - 16)}px`
+  }
+  resize()
+  window.addEventListener("resize", resize)
+  ;(details as HTMLDetailsElement & { __headerResize?: () => void }).__headerResize = resize
+}
+
+function stopWatchingHeaderPanel(details: HTMLDetailsElement) {
+  const resize = (details as HTMLDetailsElement & { __headerResize?: () => void }).__headerResize
+  if (resize) window.removeEventListener("resize", resize)
+  delete (details as HTMLDetailsElement & { __headerResize?: () => void }).__headerResize
 }
