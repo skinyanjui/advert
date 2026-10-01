@@ -138,6 +138,20 @@
     grid-template-columns: auto minmax(0, 1fr);
   }
 
+  /* Search is the primary discovery control on mobile. Keep it thumb-friendly
+     and at 16px so focusing it does not trigger iOS viewport zoom. */
+  header.sticky input {
+    min-height: 44px;
+    font-size: 16px;
+  }
+
+  /* The categories trigger is visually compact but still needs a full mobile
+     touch target. The stable sidebar data attribute keeps this at the primitive. */
+  header.sticky [data-sidebar="trigger"] {
+    min-width: 44px;
+    min-height: 44px;
+  }
+
   /* Listing contact is a primary mobile task. Keep the inline composer easy to
      reach above the persistent navigation and prevent iOS input zoom. */
   #listing-contact {
