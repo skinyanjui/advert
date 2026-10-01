@@ -430,10 +430,6 @@ function SearchField({ value, onChange }: { value: string; onChange: (value: str
   const [draft, setDraft] = useState(value)
   const [focused, setFocused] = useState(false)
 
-  useEffect(() => {
-    if (!focused) setDraft(value)
-  }, [focused, value])
-
   return (
     <label className="relative block w-full">
       <Search className="pointer-events-none absolute top-1/2 left-3 size-4 -translate-y-1/2 text-muted-foreground" aria-hidden="true" />
