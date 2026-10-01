@@ -2,8 +2,9 @@ import type { Metadata } from "next"
 import { redirect } from "next/navigation"
 
 import { AdminComplianceIncidentsPage } from "@/components/admin-compliance-incidents-page"
-import { isAdminEmail } from "@/lib/admin"
+import { can } from "@/lib/access-control"
 import { signInHref } from "@/lib/auth-redirect"
+import { resolvePersistedRole } from "@/lib/rbac-store"
 import { listComplianceIncidents } from "@/lib/compliance-incidents"
 import { createServerSupabase } from "@/lib/supabase/server"
 
@@ -17,11 +18,12 @@ export default async function Page() {
   const userId = data.user?.id
   if (!userId || !email) redirect(signInHref("/admin/incidents"))
 
-  if (!isAdminEmail(email)) {
+  const role = await resolvePersistedRole(userId, email)
+  if (!can(role, "compliance:manage")) {
     return (
       <div className="mx-auto max-w-3xl px-4 py-8 md:px-6">
         <h1 className="text-2xl font-semibold tracking-tight">Compliance incidents</h1>
-        <p className="mt-2 text-sm text-neutral-500">This account is not on the admin allowlist.</p>
+        <p className="mt-2 text-sm text-neutral-500">This account does not have the required administrative permission.</p>
       </div>
     )
   }

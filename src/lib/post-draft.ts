@@ -1,9 +1,11 @@
 import type { CategoryId } from "@/lib/types"
 import type { PricePeriodId } from "@/lib/posting"
+import { marketplacePolicy } from "@/lib/marketplace-policy"
+import { policyVersions } from "@/lib/policy-versions"
 
 const DRAFT_KEY = "advert:post-draft:v1"
-const FLOW_VERSION = 3 as const
-export const DRAFT_MAX_AGE_MS = 7 * 24 * 60 * 60 * 1000
+const FLOW_VERSION = policyVersions.postingFlow
+export const DRAFT_MAX_AGE_MS = marketplacePolicy.drafts.maxAgeDays * 24 * 60 * 60 * 1000
 
 export type PostDraft = {
   flowVersion?: 2 | 3
@@ -17,6 +19,8 @@ export type PostDraft = {
   country: string
   currency: string
   city: string
+  locationDetail?: string
+  locationPrecision?: "city" | "specific"
   description: string
   phone: string
   contactWhatsApp?: boolean

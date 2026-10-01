@@ -1,9 +1,11 @@
-export const maxListingPhotos = 6
-export const maxPhotoBytes = 12_000_000
-export const maxStoredPhotoBytes = 1_500_000
-export const maxPhotoDimension = 1600
+import { marketplacePolicy } from "@/lib/marketplace-policy"
 
-const allowedTypes = new Set(["image/jpeg", "image/png", "image/webp"])
+export const maxListingPhotos = marketplacePolicy.photos.maxCount
+export const maxPhotoBytes = marketplacePolicy.photos.maxUploadBytes
+export const maxStoredPhotoBytes = marketplacePolicy.photos.maxStoredBytes
+export const maxPhotoDimension = marketplacePolicy.photos.maxDimension
+
+const allowedTypes = new Set<string>(marketplacePolicy.photos.allowedMimeTypes)
 
 export function listingImages(listing: { image: string; images?: string[] }): string[] {
   if (Array.isArray(listing.images) && listing.images.length > 0) {

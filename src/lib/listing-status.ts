@@ -8,6 +8,17 @@ export type ListingStatusFilter = "all" | ListingStatus
 
 const statusSet = new Set<string>(listingStatuses)
 
+export const listingStatusTransitions: Record<ListingStatus, readonly ListingStatus[]> = {
+  active: ["paused", "sold", "expired"],
+  paused: ["active", "sold", "expired"],
+  sold: ["active", "paused"],
+  expired: ["active"],
+}
+
+export function canTransitionListingStatus(from: ListingStatus, to: ListingStatus): boolean {
+  return from === to || listingStatusTransitions[from].includes(to)
+}
+
 export function isListingStatus(value: unknown): value is ListingStatus {
   return typeof value === "string" && statusSet.has(value)
 }

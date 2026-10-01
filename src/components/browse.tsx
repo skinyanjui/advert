@@ -9,7 +9,6 @@ import { Button } from "@/components/ui/button"
 import { listingGridClassName } from "@/lib/listing-grid"
 import { postAdHref } from "@/lib/active-place"
 import { matchesQuery, sortListings } from "@/lib/board"
-import { distanceKm, listingPoint } from "@/lib/distance"
 import { isPubliclyVisibleListing } from "@/lib/listing-status"
 import { useHomePlace } from "@/lib/home-place"
 import { resolvePlace } from "@/lib/cities"
@@ -23,8 +22,6 @@ export function Browse() {
   const { listings } = useMarketplace()
   const { query, update, clear } = useListingQuery()
   const home = useHomePlace()
-
-  const origin = useMemo(() => homeOrigin(home, query.country), [home, query.country])
 
   const inCountry = useMemo(
     () =>
@@ -59,8 +56,8 @@ export function Browse() {
       : inCity
     const filtered = query.type ? inCategory.filter((listing) => listing.subcategory === query.type) : inCategory
     const preferred = getCountry(query.country ?? "")?.currencies[0]?.code ?? "USD"
-    return sortListings(filtered, query.sort, preferred, query.q, origin)
-  }, [inCity, origin, query.category, query.country, query.q, query.sort, query.type])
+    return sortListings(filtered, query.sort, preferred, query.q, homeOrigin(home, query.country))
+  }, [home, inCity, query.category, query.country, query.q, query.sort, query.type])
 
   const typeName = query.category && query.type ? findSubcategory(query.category, query.type)?.name : undefined
 
@@ -100,7 +97,6 @@ export function Browse() {
               <ListingCard
                 key={listing.id}
                 listing={listing}
-                distanceKm={origin ? distanceKm(origin, listingPoint(listing)) : undefined}
                 preserve={preserve}
               />
             ))}

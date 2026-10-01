@@ -1,4 +1,6 @@
-export const WHATSAPP_CONSENT_VERSION = "2026-09-29-listing-replies-v1"
+import { policyVersions } from "@/lib/policy-versions"
+
+export const WHATSAPP_CONSENT_VERSION = policyVersions.whatsappListingRepliesConsent
 
 export const WHATSAPP_CONSENT_SCOPE = "listing_replies"
 

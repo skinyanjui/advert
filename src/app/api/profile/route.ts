@@ -4,6 +4,7 @@ import { canOwner } from "@/lib/access-control"
 import { fail, ok } from "@/lib/api"
 import { resolveMutationOwner, resolveOwner } from "@/lib/board-session"
 import { deleteAccount, getProfile, updateProfile } from "@/lib/profile-store"
+import { profilePatchFromUnknown } from "@/lib/runtime-contracts"
 
 export const dynamic = "force-dynamic"
 export const runtime = "nodejs"
@@ -27,39 +28,7 @@ export async function PATCH(request: Request) {
     return fail("Sign in to update your profile.", 401)
   }
   try {
-    const body = (await request.json()) as Record<string, unknown>
-    const input = {
-      ...(Object.prototype.hasOwnProperty.call(body, "displayName")
-        ? { displayName: typeof body.displayName === "string" || body.displayName === null ? body.displayName : undefined }
-        : {}),
-      ...(Object.prototype.hasOwnProperty.call(body, "city")
-        ? { city: typeof body.city === "string" || body.city === null ? body.city : undefined }
-        : {}),
-      ...(Object.prototype.hasOwnProperty.call(body, "countryCode")
-        ? {
-            countryCode:
-              typeof body.countryCode === "string" || body.countryCode === null ? body.countryCode : undefined,
-          }
-        : {}),
-      ...(Object.prototype.hasOwnProperty.call(body, "avatarUrl")
-        ? { avatarUrl: typeof body.avatarUrl === "string" || body.avatarUrl === null ? body.avatarUrl : undefined }
-        : {}),
-      ...(Object.prototype.hasOwnProperty.call(body, "phone")
-        ? { phone: typeof body.phone === "string" || body.phone === null ? body.phone : undefined }
-        : {}),
-      ...(Object.prototype.hasOwnProperty.call(body, "language")
-        ? {
-            language:
-              typeof body.language === "string" || body.language === null ? body.language : undefined,
-          }
-        : {}),
-      ...(Object.prototype.hasOwnProperty.call(body, "currency")
-        ? {
-            currency:
-              typeof body.currency === "string" || body.currency === null ? body.currency : undefined,
-          }
-        : {}),
-    }
+    const input = profilePatchFromUnknown(await request.json())
     const result = await updateProfile(owner.id, input, owner.email)
     if (!result.ok) return fail(result.reason)
     return ok({ profile: result.value })

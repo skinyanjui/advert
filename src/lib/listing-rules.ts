@@ -1,12 +1,14 @@
 import { contactPhoneError, normalizeContactPhone } from "@/lib/contact-phone"
 import { getCountry } from "@/lib/countries"
 import { boardCurrencyCodes } from "@/lib/fx"
+import { marketplacePolicy } from "@/lib/marketplace-policy"
+import { policyVersions } from "@/lib/policy-versions"
 import { findSubcategory, isPricePeriodId, pricePeriod } from "@/lib/posting"
 import type { CategoryId, Listing } from "@/lib/types"
 
-const maxPrice = 999_999_999
+const maxPrice = marketplacePolicy.listing.maxPrice
 
-export const FAIR_ACCESS_ATTESTATION_VERSION = "2026-09-29-v1"
+export const FAIR_ACCESS_ATTESTATION_VERSION = policyVersions.fairAccessAttestation
 
 const residentialPropertyTypes = new Set(["sale", "rent", "apartment", "room", "hostel"])
 
@@ -33,6 +35,10 @@ export type ListingFields = {
   details: Record<string, string>
   country: string
   city: string
+  locationDetail: string
+  latitude?: number
+  longitude?: number
+  locationPrecision?: "city" | "specific"
   description: string
   phone: string
   contactWhatsApp?: boolean
@@ -76,7 +82,7 @@ export function listingFieldErrors(input: ListingFields): FieldErrors {
         errors[field.id] = field.kind === "select" ? `Choose ${field.label.toLowerCase()}.` : `Add the ${field.label.toLowerCase()}.`
         continue
       }
-      if (value && field.kind === "select" && !(field.options ?? []).includes(value)) {
+      if (value && field.kind === "select" && !normalizeDetailFieldValue(field, value)) {
         errors[field.id] = `Choose ${field.label.toLowerCase()}.`
       }
     }
@@ -89,6 +95,12 @@ export function listingFieldErrors(input: ListingFields): FieldErrors {
     errors.fairAccess = "Confirm the fair-access rule for this housing or job listing."
   }
   if (input.city.trim().length < 2) errors.city = "Add the city."
+  if (input.locationDetail.trim().length < 2) {
+    errors.locationDetail = "Add a neighborhood, landmark, pickup point, or address."
+  }
+  if (!Number.isFinite(input.latitude) || !Number.isFinite(input.longitude)) {
+    errors.locationDetail = errors.locationDetail ?? "Choose a city or use your current location."
+  }
   const directContactEnabled = input.contactWhatsApp === true || input.contactPhone === true
   const phoneReason = contactPhoneError(input.phone, { required: directContactEnabled, countryCode: input.country })
   if (phoneReason) errors.phone = phoneReason
@@ -107,13 +119,17 @@ export function acceptListing(listing: Listing): { ok: true; listing: Listing } 
   const errors = listingFieldErrors({
     title: listing.title,
     price: listing.price,
-    currency: listing.currency ?? allowedCurrencies(listing.country)[0] ?? "KES",
+    currency: listing.currency ?? allowedCurrencies(listing.country)[0] ?? "",
     priceSuffix: listing.priceSuffix,
     category: listing.category,
     subcategoryId: listing.subcategory ?? null,
     details: listing.details ?? {},
     country: listing.country,
     city: listing.city,
+    locationDetail: listing.locationDetail ?? "",
+    latitude: listing.latitude,
+    longitude: listing.longitude,
+    locationPrecision: listing.locationPrecision,
     description: listing.description,
     phone: listing.phone,
     contactWhatsApp: listing.contactWhatsApp,
@@ -140,20 +156,27 @@ function normalizeListing(listing: Listing): Listing {
   const details = subcategory
     ? Object.fromEntries(
         subcategory.fields.flatMap((field) => {
-          const value = (listing.details?.[field.id] ?? "").trim().slice(0, 80)
+          const value = (listing.details?.[field.id] ?? "")
+            .trim()
+            .slice(0, marketplacePolicy.listing.maxDetailValueLength)
           if (!value) return []
-          if (field.kind === "select" && !(field.options ?? []).includes(value)) return []
-          return [[field.id, value]]
+          const normalized = normalizeDetailFieldValue(field, value)
+          if (field.kind === "select" && !normalized) return []
+          return [[field.id, normalized ?? value]]
         }),
       )
     : undefined
   return {
     ...listing,
-    title: listing.title.trim().slice(0, 80),
+    title: listing.title.trim().slice(0, marketplacePolicy.listing.maxTitleLength),
     price: Math.round(listing.price),
-    currency: listing.currency ?? allowedCurrencies(listing.country)[0] ?? "KES",
-    description: listing.description.trim().slice(0, 2000),
-    city: listing.city.trim().slice(0, 80),
+    currency: listing.currency ?? allowedCurrencies(listing.country)[0] ?? "",
+    description: listing.description.trim().slice(0, marketplacePolicy.listing.maxDescriptionLength),
+    city: listing.city.trim().slice(0, marketplacePolicy.listing.maxCityLength),
+    locationDetail: listing.locationDetail?.trim().slice(0, 120),
+    latitude: Number.isFinite(listing.latitude) ? Number(listing.latitude) : undefined,
+    longitude: Number.isFinite(listing.longitude) ? Number(listing.longitude) : undefined,
+    locationPrecision: listing.locationPrecision === "specific" ? "specific" : "city",
     phone:
       listing.contactWhatsApp === false && listing.contactPhone === false
         ? ""
@@ -162,7 +185,15 @@ function normalizeListing(listing: Listing): Listing {
     contactPhone: listing.contactPhone === true,
     subcategory: subcategory?.id,
     details,
-    condition: details?.condition || subcategory?.name || listing.condition,
+    condition:
+      (subcategory?.fields.find((field) => field.id === "condition") && details?.condition
+        ? detailFieldValueLabel(
+            subcategory.fields.find((field) => field.id === "condition")!,
+            details.condition,
+          )
+        : undefined) ||
+      subcategory?.name ||
+      listing.condition,
     badge: listing.category === "jobs" ? "jobs" : undefined,
     featured: undefined,
     sponsored: listing.sponsored === true || listing.sponsoredLocked === true ? true : undefined,

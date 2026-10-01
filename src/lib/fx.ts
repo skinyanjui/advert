@@ -1,21 +1,14 @@
-import { countries, currencyLabel } from "@/lib/countries"
+import { currencyLabel } from "@/lib/countries"
+import { boardDisplayCurrencyCodes } from "@/lib/currency-registry"
 
-const nonAfricanTenderCodes = new Set(["CNY", "EUR", "GBP", "INR", "JPY", "USD", "ZWB"])
-
-/** African-issued currencies represented by the board's Africa country data. */
+/** Display currencies allowed by the authoritative currency registry. */
 export function boardCurrencyCodes(): string[] {
-  const codes = new Set<string>()
-  for (const country of countries) {
-    for (const currency of country.currencies) {
-      if (!nonAfricanTenderCodes.has(currency.code) && currency.name !== currency.code) codes.add(currency.code)
-    }
-  }
-  return [...codes].sort((a, b) => a.localeCompare(b))
+  return boardDisplayCurrencyCodes()
 }
 
 export function boardCurrencyOptions(): { code: string; label: string }[] {
   return [
-    { code: "listing", label: "Original listing currency" },
+    { code: "listing", label: "Follow selected country" },
     ...boardCurrencyCodes().map((code) => ({ code, label: currencyLabel(code) })),
   ]
 }

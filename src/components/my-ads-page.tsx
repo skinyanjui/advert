@@ -41,6 +41,7 @@ import { daysUntilExpiry, isListingExpiringSoon } from "@/lib/expiry"
 import { formatPosted, formatPrice, hoursAgoOf } from "@/lib/format"
 import {
   effectiveListingStatus,
+  listingStatuses,
   listingStatusLabel,
   type ListingStatus,
   type ListingStatusFilter,
@@ -51,7 +52,7 @@ import { cn } from "@/lib/utils"
 
 type ResumeStatus = "active" | "paused"
 
-const filters: ListingStatusFilter[] = ["all", "active", "paused", "sold", "expired"]
+const filters: ListingStatusFilter[] = ["all", ...listingStatuses]
 const swipeReveal = 144
 
 export function MyAdsPage() {

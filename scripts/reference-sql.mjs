@@ -57,13 +57,13 @@ if (batch === 0) {
   sql.push(upsert("reference_country_currencies", ["country_code", "currency_code"], currencyLinks, ["country_code", "currency_code"]).replace(/ do update set ;/, " do nothing;"))
   sql.push(upsert("reference_country_languages", ["country_code", "language_code"], languageLinks, ["country_code", "language_code"]).replace(/ do update set ;/, " do nothing;"))
   const version = createHash("sha256").update(JSON.stringify(countries)).digest("hex")
-  sql.push(`insert into public.reference_imports (source, source_version, record_count) values ('mledoze/countries snapshot', ${quote(version)}, ${countries.length});\n`)
+  sql.push(`insert into public.reference_imports (source, source_version, content_hash, source_url, license, generated_at, record_count) values ('mledoze/countries snapshot', ${quote(version)}, ${quote(version)}, 'https://github.com/mledoze/countries', 'ODbL-1.0', now(), ${countries.length});\n`)
 } else {
   const slice = cities.slice((batch - 1) * batchSize, batch * batchSize)
   sql.push(upsert("reference_cities", ["geoname_id", "country_code", "name", "latitude", "longitude", "population", "timezone"], slice.map((c) => [number(c.id), quote(c.country), quote(c.name), number(c.lat), number(c.lng), number(c.pop), quote(c.tz)]), ["geoname_id"]))
   if (batch === total - 1) {
     const version = createHash("sha256").update(JSON.stringify(cities)).digest("hex")
-    sql.push(`insert into public.reference_imports (source, source_version, record_count) values ('GeoNames cities15000 snapshot', ${quote(version)}, ${cities.length});\n`)
+    sql.push(`insert into public.reference_imports (source, source_version, content_hash, source_url, license, generated_at, record_count) values ('GeoNames cities15000 snapshot', ${quote(version)}, ${quote(version)}, 'https://download.geonames.org/export/dump/cities15000.zip', 'CC-BY-4.0', now(), ${cities.length});\n`)
   }
 }
 sql.push("commit;\n")

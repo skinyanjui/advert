@@ -36,11 +36,14 @@ import { signInHref } from "@/lib/auth-redirect"
 import { relatedListings } from "@/lib/board"
 import { seedListings } from "@/lib/catalog"
 import { resolvePlace } from "@/lib/cities"
+import { getCountry } from "@/lib/countries"
+import { distanceKm as kilometresBetween, listingPoint } from "@/lib/distance"
 import { trackListingContactEvent } from "@/lib/contact-events"
-import { formatPlace, initials, smsHref, whatsappHref } from "@/lib/format"
+import { formatDistance, formatPlace, initials, smsHref, whatsappHref } from "@/lib/format"
 import { listingContactCapabilities } from "@/lib/listing-contact"
 import { osmLinks } from "@/lib/map"
 import { useMarketplace } from "@/lib/marketplace"
+import { useRememberedPlace } from "@/lib/use-remembered-place"
 import { messageError } from "@/lib/messages"
 import { daysUntilExpiry, isListingExpired, isListingExpiringSoon } from "@/lib/expiry"
 import { effectiveListingStatus } from "@/lib/listing-status"
@@ -62,6 +65,7 @@ export function ListingDetail({ id }: { id: string }) {
   const searchParams = useSearchParams()
   const router = useRouter()
   const auth = useAuth()
+  const viewerPlace = useRememberedPlace()
   const { t } = usePrefs()
   const { listings, ready, isSaved, toggleSaved, messages, sendMessage, setListingSold, setListingPaused, renewListing, removeListing } =
     useMarketplace()
@@ -109,6 +113,8 @@ export function ListingDetail({ id }: { id: string }) {
   const unreadHere = listingMessages.filter((item) => !item.read && !item.fromMe).length
   const myMessageCount = listingMessages.filter((item) => item.fromMe).length
   const voice = listingVoice(ad)
+  const viewerPoint = rememberedPlacePoint(viewerPlace)
+  const distanceAway = viewerPoint ? kilometresBetween(viewerPoint, listingPoint(ad)) : undefined
   const facts = [
     ...(voice.typeName ? [{ label: "Type", value: voice.typeName }] : []),
     ...listingFacts(ad),
@@ -392,7 +398,7 @@ export function ListingDetail({ id }: { id: string }) {
               </button>
             ) : null}
           </section>
-          <PlacePanel listing={listing} />
+          <PlacePanel listing={listing} distanceKm={distanceAway} />
         </div>
         <aside
           id="listing-contact"
@@ -734,7 +740,15 @@ function WhatsAppIcon({ className }: { className?: string }) {
   )
 }
 
-function PlacePanel({ listing }: { listing: Listing }) {
+function rememberedPlacePoint(place: { country: string; city?: string } | null): { lat: number; lng: number } | null {
+  if (!place) return null
+  const city = place.city?.trim() || getCountry(place.country)?.capital
+  if (!city) return null
+  const resolved = resolvePlace(place.country, city)
+  return { lat: resolved.lat, lng: resolved.lng }
+}
+
+function PlacePanel({ listing, distanceKm }: { listing: Listing; distanceKm?: number }) {
   const [mapOpen, setMapOpen] = useState(false)
   const resolved = resolvePlace(listing.country, listing.city)
   const point =
@@ -744,8 +758,19 @@ function PlacePanel({ listing }: { listing: Listing }) {
   if (!point.pinned) return null
   const links = osmLinks(point.lat, point.lng)
 
+  const away = distanceKm === undefined ? undefined : formatDistance(distanceKm)
+
   return (
     <section className="mt-6">
+      <div className="mb-2">
+        <h2 className="text-sm font-medium text-foreground">Location</h2>
+        <p className="mt-1 text-sm text-muted-foreground">
+          {listing.locationDetail ? `${listing.locationDetail} · ` : ""}{formatPlace(listing)}{away ? ` · ${away}` : ""}
+        </p>
+        {listing.locationPrecision !== "specific" ? (
+          <p className="mt-1 text-xs text-muted-foreground">Distance is approximate from the listed city.</p>
+        ) : null}
+      </div>
       <button type="button" className="inline-flex items-center gap-1.5 text-sm font-medium text-muted-foreground hover:text-foreground" aria-expanded={mapOpen} onClick={() => setMapOpen((open) => !open)}>
         <MapPin className="size-4" />
         {mapOpen ? "Hide map" : `View ${listing.city} on map`}

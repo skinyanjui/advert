@@ -5,6 +5,7 @@ import { seedListings } from "@/lib/catalog"
 import { hoursAgoOf } from "@/lib/format"
 import { acceptListing } from "@/lib/listing-rules"
 import { messageError, type BoardMessage } from "@/lib/messages"
+import { maxListingPhotos, maxStoredPhotoBytes } from "@/lib/photos"
 import { cleanListing, parseBoardState, type BoardState } from "@/lib/board-payload"
 import {
   illegalContentNoticeError,
@@ -16,6 +17,7 @@ import {
 } from "@/lib/reports"
 import { expiresAtFrom, expiryNoticeDays, isListingExpired } from "@/lib/expiry"
 import {
+  canTransitionListingStatus,
   effectiveListingStatus,
   isListingStatus,
   isPubliclyVisibleListing,
@@ -105,7 +107,7 @@ function unpack(row: Row, owner?: string): Listing | undefined {
 function payload(listing: Listing) {
   const images =
     Array.isArray(listing.images) && listing.images.length > 0
-      ? listing.images.slice(0, 6)
+      ? listing.images.slice(0, maxListingPhotos)
       : listing.image
         ? [listing.image]
         : []
@@ -136,7 +138,7 @@ async function storePhoto(image: string, owner: string, previous?: string): Prom
   const match = /^data:(image\/(?:jpeg|png|webp));base64,([A-Za-z0-9+/]+={0,2})$/.exec(image)
   if (!match) return { ok: false, reason: "Upload a JPEG, PNG, or WebP photo." }
   const bytes = Buffer.from(match[2], "base64")
-  if (!bytes.length || bytes.length > 1_500_000) return { ok: false, reason: "The photo is too large." }
+  if (!bytes.length || bytes.length > maxStoredPhotoBytes) return { ok: false, reason: "The photo is too large." }
   const mime = match[1]
   const valid = mime === "image/jpeg" ? bytes[0] === 255 && bytes[1] === 216 && bytes[2] === 255
     : mime === "image/png" ? bytes.subarray(0, 8).equals(Buffer.from([137, 80, 78, 71, 13, 10, 26, 10]))
@@ -154,7 +156,7 @@ async function storePhotos(
   owner: string,
   previous: string[] = [],
 ): Promise<Result<string[]>> {
-  if (images.length > 6) return { ok: false, reason: "You can add up to 6 photos." }
+  if (images.length > maxListingPhotos) return { ok: false, reason: `You can add up to ${maxListingPhotos} photos.` }
   if (images.length === 0) return { ok: false, reason: "Add at least one photo, or keep the category placeholder." }
   const stored: string[] = []
   for (let index = 0; index < images.length; index++) {
@@ -173,7 +175,7 @@ async function storePhotos(
 }
 
 function listingPhotoList(listing: Listing): string[] {
-  if (Array.isArray(listing.images) && listing.images.length > 0) return listing.images.slice(0, 6)
+  if (Array.isArray(listing.images) && listing.images.length > 0) return listing.images.slice(0, maxListingPhotos)
   return listing.image ? [listing.image] : []
 }
 async function removePhoto(image: string) {
@@ -310,6 +312,9 @@ export async function createListing(owner: string, input: unknown): Promise<Resu
   if (!photo.ok) return photo
   const profiles = await profilesByUserIds([owner])
   const profile = profiles.get(owner)
+  if (!canTransitionListingStatus(effectiveListingStatus(current), "active")) {
+    return { ok: false, reason: "That listing status change is not allowed." }
+  }
   const postedAt = new Date().toISOString()
   const expiresAt = expiresAtFrom(postedAt)
   const stored = {
@@ -502,6 +507,10 @@ export async function setListingSold(
       : resumeTo === "paused"
         ? "paused"
         : "active"
+  const currentStatus = rowStatus(owned.value, current.sold === true)
+  if (!canTransitionListingStatus(currentStatus, status)) {
+    return { ok: false, reason: "That listing status change is not allowed." }
+  }
   const soldAt = sold ? new Date().toISOString() : null
   const stored = {
     ...current,
@@ -538,6 +547,9 @@ export async function setListingPaused(owner: string, id: string, paused: boolea
     return { ok: false, reason: "Renew the ad before pausing it." }
   }
   const status: ListingStatus = paused ? "paused" : "active"
+  if (!canTransitionListingStatus(effective, status)) {
+    return { ok: false, reason: "That listing status change is not allowed." }
+  }
   const stored = { ...current, status, sold: undefined, soldAt: undefined }
   const { data, error } = await boardDb()
     .from("board_listings")

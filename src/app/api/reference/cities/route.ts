@@ -1,6 +1,8 @@
 import { createClient } from "@supabase/supabase-js"
 
 import { searchCities } from "@/lib/cities"
+import { referenceAuthorityMetadata } from "@/lib/reference-authority"
+import { referenceSnapshotMetadata } from "@/lib/reference-manifest"
 import { canonicalCountry } from "@/lib/countries"
 
 export const runtime = "nodejs"
@@ -21,7 +23,15 @@ export async function GET(request: Request) {
       .ilike("name", `%${query}%`)
       .order("population", { ascending: false })
       .limit(8)
-    if (!error) return Response.json({ places: data?.map((row) => ({ name: row.name, lat: row.latitude, lng: row.longitude, timezone: row.timezone })) ?? [], source: "database" })
+    if (!error) return Response.json({
+      places: data?.map((row) => ({ name: row.name, lat: row.latitude, lng: row.longitude, timezone: row.timezone })) ?? [],
+      source: "database",
+      metadata: await referenceAuthorityMetadata("cities"),
+    })
   }
-  return Response.json({ places: searchCities(country, query, 8).map((city) => ({ name: city.name, lat: city.lat, lng: city.lng, timezone: city.tz })), source: "snapshot" })
+  return Response.json({
+    places: searchCities(country, query, 8).map((city) => ({ name: city.name, lat: city.lat, lng: city.lng, timezone: city.tz })),
+    source: "snapshot",
+    metadata: { authority: "snapshot", stale: false, ...referenceSnapshotMetadata("cities") },
+  })
 }

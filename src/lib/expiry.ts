@@ -1,5 +1,7 @@
-export const listingLifetimeDays = 60
-export const expiryNoticeDays = 7
+import { marketplacePolicy } from "@/lib/marketplace-policy"
+
+export const listingLifetimeDays = marketplacePolicy.listing.lifetimeDays
+export const expiryNoticeDays = marketplacePolicy.listing.expiryNoticeDays
 
 export function expiresAtFrom(postedAt: Date | string = new Date()): string {
   const base = typeof postedAt === "string" ? new Date(postedAt) : postedAt
@@ -15,7 +17,6 @@ export function isListingExpired(expiresAt: string | undefined, now = Date.now()
   return time <= now
 }
 
-/** True when the ad is still live but within the notice window. */
 export function isListingExpiringSoon(
   expiresAt: string | undefined,
   now = Date.now(),
@@ -28,11 +29,10 @@ export function isListingExpiringSoon(
   return time - now <= windowMs
 }
 
-/** Expired, or live and expiring within `withinDays` (default 3 for nav badges). */
 export function isListingNeedingAttention(
   expiresAt: string | undefined,
   now = Date.now(),
-  withinDays = 3,
+  withinDays = marketplacePolicy.listing.attentionNoticeDays,
 ): boolean {
   return isListingExpired(expiresAt, now) || isListingExpiringSoon(expiresAt, now, withinDays)
 }

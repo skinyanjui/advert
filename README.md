@@ -66,8 +66,18 @@ Apply in order on the board Supabase project (SQL editor), after `database/board
 18. `database/migrations/20260929_moderation_redress.sql` — moderation statement-of-reasons evidence and seller appeal records
 19. `database/migrations/20260929_illegal_content_notice.sql` — structured illegal-content notice fields and report reason
 20. `database/migrations/20261001_persisted_rbac.sql` — authoritative persisted application roles; `ADMIN_EMAILS` is bootstrap-only
+21. `database/migrations/20261001_reference_provenance.sql` — source URL, license, content hash, and generation metadata for reference imports
 
 After the lock migration, anyone with only the publishable key must not be able to read `board_listings` (including phones).
+
+
+## Authority model
+
+The repository documents authoritative ownership in `docs/architecture/sources-of-truth.md`. Shared business limits live in `src/lib/marketplace-policy.ts`; category identity lives in `src/lib/category-registry.ts`; contact channels live in `src/lib/contact-methods.ts`; currency availability lives in `src/lib/currency-registry.ts`; and compliance product facts live in `src/lib/product-capabilities.ts`.
+
+Reference APIs prefer the reference database and return provenance/version/staleness metadata. The checked-in ISO/GeoNames snapshots are an explicit resilience fallback, not a second unlabelled source of truth. `npm test` includes authority-integrity checks that fail on taxonomy, reference-relation, lifecycle, contact-event, policy, and provenance drift.
+
+Compliance documentation is generated from the registry with `npm run docs:compliance`.
 
 ## Reference data
 

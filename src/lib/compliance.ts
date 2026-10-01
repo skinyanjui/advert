@@ -1,5 +1,7 @@
 import "server-only"
 
+import { currentProductCapabilities } from "@/lib/product-capabilities"
+
 export type ComplianceState = "implemented" | "conditional" | "operator_action"
 
 export type ComplianceItem = {
@@ -16,24 +18,7 @@ function configured(name: string): boolean {
   return Boolean(process.env[name]?.trim())
 }
 
-export const complianceFacts = {
-  accountMinimumAge: 18,
-  paymentProcessing: false,
-  marketingEmail: false,
-  marketingRobotexts: false,
-  thirdPartyAdPixels: false,
-  sellsPersonalInformation: false,
-  crossContextBehavioralAdvertising: false,
-  significantDecisionAdmt: false,
-  safetyModerationAutomation: true,
-  gpcRecognized: true,
-  dntDisclosed: true,
-  privacyRightsWorkflow: true,
-  structuredIllegalContentNotice: true,
-  moderationRedress: true,
-  dataExport: true,
-  accountDeletion: true,
-} as const
+export const complianceFacts = currentProductCapabilities()
 
 function dmcaRegistrationStatus() {
   if (process.env.DMCA_AGENT_REGISTERED !== "1") return "Not confirmed"

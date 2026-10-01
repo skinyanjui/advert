@@ -38,6 +38,17 @@ Treat role-based access control as a default requirement for every feature.
 - When a protected feature depends on current legal acceptance, enforce that requirement at the API boundary before returning protected data or performing the mutation.
 - Add regression tests for every new permission boundary and for unauthenticated access.
 
+
+## Authoritative-source rule
+
+Before adding a value, field, enum, policy constant, role, category, contact method, or reference dataset, identify its authoritative owner in `docs/architecture/sources-of-truth.md`.
+
+- Derive UI options, API validation, and operational documentation from the authoritative registry instead of copying arrays or constants.
+- Keep server profile/database state authoritative for signed-in account data; browser storage is a cache or anonymous fallback.
+- Preserve stable IDs independently from localized display strings.
+- For reference data, retain source URL, version/hash, license, and import time, and label snapshot fallback responses.
+- Add or extend `scripts/authority-integrity.test.ts` whenever a concept exists in more than one layer.
+
 ## Migration checklist
 
 For database or platform-enforcement changes:

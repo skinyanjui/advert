@@ -5,6 +5,7 @@ import { createClient } from "@supabase/supabase-js"
 
 import countries from "@/data/countries.json"
 import cities from "@/data/cities.json"
+import { referenceSources } from "@/lib/reference-manifest"
 
 function adminClient() {
   const url = process.env.SUPABASE_URL ?? process.env.NEXT_PUBLIC_SUPABASE_URL
@@ -61,8 +62,24 @@ export async function syncReferenceData() {
   }
   if (countriesChanged || citiesChanged) {
     const entries = [
-      ...(countriesChanged ? [{ source: "mledoze/countries snapshot", source_version: countryVersion, record_count: countries.length }] : []),
-      ...(citiesChanged ? [{ source: "GeoNames cities15000 snapshot", source_version: cityVersion, record_count: cityRows.length }] : []),
+      ...(countriesChanged ? [{
+        source: referenceSources.countries.source,
+        source_version: countryVersion,
+        content_hash: countryVersion,
+        source_url: referenceSources.countries.sourceUrl,
+        license: referenceSources.countries.license,
+        generated_at: null,
+        record_count: countries.length,
+      }] : []),
+      ...(citiesChanged ? [{
+        source: referenceSources.cities.source,
+        source_version: cityVersion,
+        content_hash: cityVersion,
+        source_url: referenceSources.cities.sourceUrl,
+        license: referenceSources.cities.license,
+        generated_at: null,
+        record_count: cityRows.length,
+      }] : []),
     ]
     const { error } = await db.from("reference_imports").insert(entries)
     if (error) throw error

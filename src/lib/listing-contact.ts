@@ -1,3 +1,4 @@
+import { contactMethods } from "@/lib/contact-methods"
 import type { ListingStatus } from "@/lib/listing-status"
 
 export type ListingContactCapabilities = {
@@ -25,14 +26,14 @@ export function listingContactCapabilities({
   whatsappEnabled: boolean
   phoneEnabled: boolean
 }): ListingContactCapabilities {
-  const message = status === "active" && !mine
-  const direct = message && signedIn && !sample && hasPhone
+  const activeConversation = status === "active" && !mine
+  const directBase = activeConversation && signedIn && !sample && hasPhone
 
   return {
-    message,
-    whatsapp: direct && whatsappEnabled,
-    text: direct && phoneEnabled,
-    call: direct && phoneEnabled,
+    message: activeConversation && !contactMethods.message.requiresPhone,
+    whatsapp: directBase && contactMethods.whatsapp.sellerOptInRequired && whatsappEnabled,
+    text: directBase && contactMethods.text.sellerOptInRequired && phoneEnabled,
+    call: directBase && contactMethods.call.sellerOptInRequired && phoneEnabled,
     closedStatus: !mine && status !== "active" ? status : null,
   }
 }

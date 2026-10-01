@@ -69,6 +69,10 @@ create table if not exists public.reference_imports (
   source text not null,
   source_version text not null,
   record_count integer not null,
+  source_url text,
+  license text,
+  content_hash text,
+  generated_at timestamptz,
   imported_at timestamptz not null default now()
 );
 

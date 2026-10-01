@@ -8,21 +8,20 @@ import { useRouter } from "next/navigation"
 import { ListingPrice } from "@/components/listing-price"
 import { useAuth } from "@/lib/auth"
 import { signInHref } from "@/lib/auth-redirect"
-import { countryCodeOf, formatDistance, formatPlace } from "@/lib/format"
+import { countryCodeOf, formatPlace } from "@/lib/format"
 import { isListingExpired } from "@/lib/expiry"
 import { useMarketplace } from "@/lib/marketplace"
 import { formatPostedDate, formatRelativePosted, hoursAgoOf, postedDateTime } from "@/lib/relative-time"
 import type { Listing } from "@/lib/types"
 import { cn } from "@/lib/utils"
 
-export function ListingCard({ listing, linked = true, saveable = true, distanceKm, preserve }: { listing: Listing; linked?: boolean; saveable?: boolean; distanceKm?: number; preserve?: string }) {
+export function ListingCard({ listing, linked = true, saveable = true, preserve }: { listing: Listing; linked?: boolean; saveable?: boolean; preserve?: string }) {
   const { isSaved, toggleSaved } = useMarketplace()
   const auth = useAuth()
   const router = useRouter()
   const saved = isSaved(listing.id)
   const placeFull = formatPlace(listing)
   const countryCode = countryCodeOf(listing)
-  const away = distanceKm === undefined ? undefined : formatDistance(distanceKm)
   const listingHref = preserve ? `/listings/${listing.id}?${preserve}` : `/listings/${listing.id}`
   const status = listing.sold ? "Sold" : listing.hidden ? "Hidden" : isListingExpired(listing.expiresAt) ? "Expired" : listing.sponsored ? "Sponsored" : listing.badge === "featured" ? "Featured" : listing.badge === "jobs" ? "Jobs" : null
 
@@ -35,7 +34,7 @@ export function ListingCard({ listing, linked = true, saveable = true, distanceK
       <div className="px-2.5 py-2 sm:px-3 sm:py-2.5">
         <p className="truncate text-[13px] leading-4 font-semibold tracking-tight text-foreground sm:text-sm"><ListingPrice listing={listing} /></p>
         <h3 className="mt-0.5 truncate text-xs leading-4 text-foreground/80 sm:text-[13px]">{listing.title}</h3>
-        <p className="mt-1 truncate text-[10px] leading-4 text-muted-foreground sm:mt-1.5 sm:text-[11px]" title={placeFull} aria-label={placeFull}>{listing.city}, {countryCode}{away ? ` · ${away}` : ""} · <PostedLabel listing={listing} /></p>
+        <p className="mt-1 truncate text-[10px] leading-4 text-muted-foreground sm:mt-1.5 sm:text-[11px]" title={placeFull} aria-label={placeFull}>{listing.city}, {countryCode} · <PostedLabel listing={listing} /></p>
       </div>
       {linked ? <Link href={listingHref} aria-label={`View ${listing.title}`} className="absolute inset-0 z-10 rounded-md outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"><span className="sr-only">View listing</span></Link> : null}
       {saveable ? (

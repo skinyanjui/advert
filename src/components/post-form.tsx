@@ -49,6 +49,8 @@ import type { BoardProfile } from "@/lib/profile"
 import { siteTitle } from "@/lib/site"
 import {
   categoryPlan,
+  detailFieldOptions,
+  normalizeDetailFieldValue,
   findSubcategory,
   isPricePeriodId,
   periodForSuffix,
@@ -114,6 +116,8 @@ function AdForm({ existing }: { existing: Listing | null }) {
     existing?.currency ?? africanCurrencyForCountry(startingCountry) ?? "",
   )
   const [city, setCity] = useState(startingCity)
+  const [locationDetail, setLocationDetail] = useState(existing?.locationDetail ?? "")
+  const [locationPrecision, setLocationPrecision] = useState<"city" | "specific">(existing?.locationPrecision ?? "city")
   const [place, setPlace] = useState<ChosenPlace | null>(placeFromListing(existing))
   const [description, setDescription] = useState(existing?.description ?? "")
   const [phone, setPhone] = useState(existing?.phone ?? "")
@@ -168,6 +172,8 @@ function AdForm({ existing }: { existing: Listing | null }) {
       setCountry(draft.country)
       setCurrency(draft.currency)
       setCity(draft.city)
+      setLocationDetail(draft.locationDetail ?? "")
+      setLocationPrecision(draft.locationPrecision ?? "city")
       setDescription(draft.description)
       setPhone(draft.phone)
       setContactWhatsApp(draft.contactWhatsApp === true)
@@ -250,6 +256,8 @@ function AdForm({ existing }: { existing: Listing | null }) {
         country,
         currency,
         city,
+        locationDetail,
+        locationPrecision,
         description,
         phone,
         contactWhatsApp,
@@ -278,6 +286,8 @@ function AdForm({ existing }: { existing: Listing | null }) {
     country,
     currency,
     city,
+    locationDetail,
+    locationPrecision,
     description,
     phone,
     contactWhatsApp,
@@ -301,8 +311,10 @@ function AdForm({ existing }: { existing: Listing | null }) {
       details,
       country,
       city: city.trim() || "City",
+      locationDetail: locationDetail.trim() || undefined,
       latitude: place?.lat,
       longitude: place?.lng,
+      locationPrecision,
       timezone: place?.timezone,
       hoursAgo: 0,
       postedAt: new Date().toISOString(),
@@ -335,6 +347,8 @@ function AdForm({ existing }: { existing: Listing | null }) {
     details,
     country,
     city,
+    locationDetail,
+    locationPrecision,
     place,
     photos,
     description,
@@ -413,6 +427,10 @@ function AdForm({ existing }: { existing: Listing | null }) {
       details,
       country,
       city,
+      locationDetail,
+      latitude: place?.lat,
+      longitude: place?.lng,
+      locationPrecision,
       description,
       phone,
       contactWhatsApp,
@@ -526,8 +544,10 @@ function AdForm({ existing }: { existing: Listing | null }) {
       details: keptDetails,
       meta: undefined,
       city: located?.name ?? city.trim(),
+      locationDetail: locationDetail.trim(),
       latitude: located?.lat,
       longitude: located?.lng,
+      locationPrecision,
       timezone: located?.timezone,
       hoursAgo: existing?.hoursAgo ?? 0,
       postedAt: existing?.postedAt ?? new Date().toISOString(),
@@ -559,6 +579,8 @@ function AdForm({ existing }: { existing: Listing | null }) {
         country,
         currency,
         city,
+        locationDetail,
+        locationPrecision,
         description,
         phone,
         contactWhatsApp,
@@ -847,7 +869,9 @@ function AdForm({ existing }: { existing: Listing | null }) {
                 <PostingLocationFields
                   country={country}
                   city={city}
+                  locationDetail={locationDetail}
                   cityError={errors.city}
+                  locationDetailError={errors.locationDetail}
                   onCountryChange={(code) => {
                     setCountry(code)
                     setCity("")
@@ -857,9 +881,27 @@ function AdForm({ existing }: { existing: Listing | null }) {
                   }}
                   onCityChange={(value) => {
                     setCity(value)
+                    setLocationPrecision("city")
                     setErrors((current) => ({ ...current, city: undefined }))
                   }}
-                  onPlace={setPlace}
+                  onLocationDetailChange={(value) => {
+                    setLocationDetail(value)
+                    setErrors((current) => ({ ...current, locationDetail: undefined }))
+                  }}
+                  onPlace={(next) => {
+                    setPlace(next)
+                    if (next) setLocationPrecision("city")
+                  }}
+                  onCoordinates={(lat, lng) => {
+                    setPlace((current) => ({
+                      name: current?.name ?? city,
+                      lat,
+                      lng,
+                      timezone: current?.timezone ?? Intl.DateTimeFormat().resolvedOptions().timeZone,
+                    }))
+                    setLocationPrecision("specific")
+                    toast.success("Specific location added for distance")
+                  }}
                 />
               </div>
 
@@ -1157,8 +1199,8 @@ function DetailControl({
       return (
         <Field label={field.label} required={field.required} error={error}>
           <ChoiceRow
-            value={value}
-            options={(field.options ?? []).map((option) => ({ id: option, label: option }))}
+            value={normalizeDetailFieldValue(field, value) ?? ""}
+            options={detailFieldOptions(field)}
             onChange={onChange}
           />
         </Field>

@@ -14,7 +14,8 @@ import {
 
 import { useAuth } from "@/lib/auth"
 import { formatMoney, formatPrice } from "@/lib/format"
-import { readHomePlace, useHomePlace, writeHomePlace } from "@/lib/home-place"
+import { readHomePlace, writeHomePlace } from "@/lib/home-place"
+import { useRememberedPlace } from "@/lib/use-remembered-place"
 import { convertAmount, type FxRates } from "@/lib/fx"
 import { offeredLocales, translate, type MessageKey, type TranslateValues } from "@/lib/i18n"
 import { htmlLang, type Locale } from "@/lib/i18n/locales"
@@ -89,9 +90,8 @@ export function useLanguagePreference(): Locale {
 }
 
 export function useCurrencyPreference(): CurrencyPreference {
-  const home = useHomePlace()
   const override = useSyncExternalStore(subscribeCurrency, readCurrencyOverride, () => null)
-  return override ?? currencyPreferenceForCountry(home?.country)
+  return override ?? defaultCurrencyPreference
 }
 
 type PrefsContextValue = {
@@ -102,8 +102,8 @@ type PrefsContextValue = {
   fx: FxRates | null
   t: (key: MessageKey, values?: TranslateValues) => string
   formatListingPrice: (
-    listing: Pick<Listing, "price" | "priceSuffix" | "currency">,
-  ) => { primary: string; approximate: boolean }
+    listing: Pick<Listing, "price" | "priceSuffix" | "currency" | "country">,
+  ) => { primary: string; approximate: boolean; currency: string }
 }
 
 const PrefsContext = createContext<PrefsContextValue | null>(null)
@@ -111,6 +111,7 @@ const PrefsContext = createContext<PrefsContextValue | null>(null)
 export function PrefsProvider({ children }: { children: ReactNode }) {
   const language = useLanguagePreference()
   const currency = useCurrencyPreference()
+  const marketPlace = useRememberedPlace()
   const auth = useAuth()
   const [fx, setFx] = useState<FxRates | null>(null)
   const t = useCallback(
@@ -257,23 +258,32 @@ export function PrefsProvider({ children }: { children: ReactNode }) {
   )
 
   const formatListingPrice = useCallback(
-    (listing: Pick<Listing, "price" | "priceSuffix" | "currency">) => {
+    (listing: Pick<Listing, "price" | "priceSuffix" | "currency" | "country">) => {
       const original = formatPrice(listing)
-      const listingCurrency = listing.currency ?? "USD"
-      if (currency === defaultCurrencyPreference || currency === listingCurrency) {
-        return { primary: original, approximate: false }
+      const listingCurrency = listing.currency ?? currencyPreferenceForCountry(listing.country)
+      const countryCurrency = currencyPreferenceForCountry(marketPlace?.country ?? listing.country)
+      const targetCurrency =
+        currency === defaultCurrencyPreference
+          ? countryCurrency === defaultCurrencyPreference
+            ? listingCurrency
+            : countryCurrency
+          : currency
+
+      if (targetCurrency === defaultCurrencyPreference || targetCurrency === listingCurrency) {
+        return { primary: original, approximate: false, currency: listingCurrency }
       }
-      if (!fx?.rates) return { primary: "—", approximate: false }
-      const converted = convertAmount(listing.price, listingCurrency, currency, fx.rates, fx.base)
-      if (converted === null) return { primary: "—", approximate: false }
-      const money = formatMoney(converted, currency)
+      if (!fx?.rates) return { primary: original, approximate: false, currency: listingCurrency }
+      const converted = convertAmount(listing.price, listingCurrency, targetCurrency, fx.rates, fx.base)
+      if (converted === null) return { primary: original, approximate: false, currency: listingCurrency }
+      const money = formatMoney(converted, targetCurrency)
       const approx = listing.priceSuffix ? `${money} ${listing.priceSuffix}` : money
       return {
         primary: `≈ ${approx}`,
         approximate: true,
+        currency: targetCurrency,
       }
     },
-    [currency, fx],
+    [currency, fx, marketPlace?.country],
   )
 
   const value = useMemo(

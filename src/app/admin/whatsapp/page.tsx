@@ -2,8 +2,9 @@ import type { Metadata } from "next"
 import Link from "next/link"
 import { redirect } from "next/navigation"
 
-import { isAdminEmail } from "@/lib/admin"
+import { can } from "@/lib/access-control"
 import { signInHref } from "@/lib/auth-redirect"
+import { resolvePersistedRole } from "@/lib/rbac-store"
 import {
   listWhatsAppPlatformEvents,
   listWhatsAppPlatformStatuses,
@@ -20,11 +21,12 @@ export default async function Page() {
   const userId = data.user?.id
 
   if (!userId || !email) redirect(signInHref("/admin/whatsapp"))
-  if (!isAdminEmail(email)) {
+  const role = await resolvePersistedRole(userId, email)
+  if (!can(role, "compliance:manage")) {
     return (
       <div className="w-full px-3 py-8 md:px-4">
         <h1 className="text-2xl font-semibold tracking-tight">WhatsApp health</h1>
-        <p className="mt-2 text-sm text-neutral-500">This account is not on the admin allowlist.</p>
+        <p className="mt-2 text-sm text-neutral-500">This account does not have the required administrative permission.</p>
       </div>
     )
   }

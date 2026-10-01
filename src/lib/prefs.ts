@@ -5,7 +5,7 @@ import { isLocale, type Locale } from "@/lib/i18n/locales"
 export const languageStorageKey = "africa-classifieds-language"
 export const currencyStorageKey = "africa-classifieds-currency"
 
-/** Neutral fallback: show each listing in its stored currency instead of inventing a country. */
+/** Follow the active/default market country; fall back to the listing's posted country. */
 export const defaultCurrencyPreference = "listing" as const
 
 export type CurrencyPreference = string
@@ -29,7 +29,8 @@ export function normalizeCurrencyPreference(
   value: string | null | undefined,
   countryCode?: string | null,
 ): CurrencyPreference {
-  return isCurrencyPreference(value) ? value : currencyPreferenceForCountry(countryCode)
+  if (isCurrencyPreference(value)) return value
+  return countryCode ? currencyPreferenceForCountry(countryCode) : defaultCurrencyPreference
 }
 
 export function normalizeLanguagePreference(value: string | null | undefined): Locale {

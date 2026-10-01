@@ -1,3 +1,4 @@
+import { stableOptionId } from "@/lib/runtime-contracts"
 import { categories, categoryName, type CategoryId, type Listing } from "@/lib/types"
 
 export const pricePeriods = [
@@ -39,10 +40,31 @@ export type DetailField = {
   kind: "text" | "select"
   placeholder?: string
   hint?: string
+  /** Legacy labels define the option set; stable IDs are derived for persistence. */
   options?: readonly string[]
   required?: boolean
   /** Included on the listing card, after the type name. */
   onCard?: boolean
+}
+
+export function detailFieldOptions(field: DetailField): { id: string; label: string }[] {
+  return (field.options ?? []).map((label) => ({ id: stableOptionId(field.id, label), label }))
+}
+
+export function normalizeDetailFieldValue(field: DetailField, value: string | null | undefined): string | undefined {
+  const normalized = value?.trim()
+  if (!normalized) return undefined
+  if (field.kind !== "select") return normalized
+  const options = detailFieldOptions(field)
+  return options.find((option) => option.id === normalized || option.label === normalized)?.id
+}
+
+export function detailFieldValueLabel(field: DetailField, value: string | null | undefined): string | undefined {
+  const normalized = value?.trim()
+  if (!normalized) return undefined
+  if (field.kind !== "select") return normalized
+  const options = detailFieldOptions(field)
+  return options.find((option) => option.id === normalized || option.label === normalized)?.label
 }
 
 export type Subcategory = {
@@ -1638,7 +1660,7 @@ export function listingMeta(listing: Listing): string | undefined {
   if (subcategory) {
     const facts = subcategory.fields
       .filter((field) => field.onCard)
-      .map((field) => listing.details?.[field.id]?.trim())
+      .map((field) => detailFieldValueLabel(field, listing.details?.[field.id]))
       .filter((value): value is string => !!value)
       .slice(0, 2)
     const line = [subcategory.name, ...facts].join(" · ")
@@ -1654,14 +1676,19 @@ export function listingFacts(listing: Listing): { label: string; value: string }
     return listing.condition ? [{ label: "Condition", value: listing.condition }] : []
   }
   return subcategory.fields.flatMap((field) => {
-    const value = listing.details?.[field.id]?.trim()
+    const value = detailFieldValueLabel(field, listing.details?.[field.id])
     return value ? [{ label: field.label, value }] : []
   })
 }
 
 export function listingSearchBits(listing: Listing): string[] {
   const subcategory = findSubcategory(listing.category, listing.subcategory)
-  const details = listing.details ? Object.values(listing.details) : []
+  const details = subcategory && listing.details
+    ? subcategory.fields.flatMap((field) => {
+        const value = detailFieldValueLabel(field, listing.details?.[field.id])
+        return value ? [value] : []
+      })
+    : listing.details ? Object.values(listing.details) : []
   return [categoryName(listing.category), subcategory?.name ?? "", listing.meta ?? "", ...details]
 }
 
