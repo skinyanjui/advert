@@ -7,7 +7,7 @@ import { useEffect, useRef, useState, type ReactNode } from "react"
 
 import { Logo } from "@/components/logo"
 import { CategoryTopNav } from "@/components/category-top-nav"
-import { PostLink, usePostAdHref } from "@/components/post-link"
+import { usePostAdHref } from "@/components/post-link"
 import { ProfileMenu } from "@/components/profile-menu"
 import { LanguageCurrencyMenu } from "@/components/language-currency-fields"
 import { ThemeMenu } from "@/components/theme-choices"
@@ -61,18 +61,14 @@ function TopNavBrand() {
 function TopNavDiscovery({ search, onSearchChange }: { search: string; onSearchChange: (value: string) => void }) {
   return (
     <div className="relative flex min-w-0 items-center gap-2 md:px-4">
-      <TopNavSearch value={search} onChange={onSearchChange} />
+      <TopNavSearch value={search} onSearchChange={onSearchChange} />
       <TopNavCategories />
     </div>
   )
 }
 
-function TopNavSearch({ value, onChange }: { value: string; onChange: (value: string) => void }) {
-  return (
-    <div className="min-w-0 flex-1">
-      <SearchField value={value} onChange={onChange} />
-    </div>
-  )
+function TopNavSearch({ value, onSearchChange }: { value: string; onSearchChange: (value: string) => void }) {
+  return <SearchField value={value} onChange={onSearchChange} />
 }
 
 function TopNavCategories() {
@@ -122,7 +118,7 @@ function TopNavHome({ pathname }: { pathname: string }) {
   const home = navItem("home")
   const Icon = home.icon
   return (
-    <Button asChild variant="outline" size="icon" className="rounded-full md:hidden">
+    <Button asChild variant="outline" size="icon" className="size-10 rounded-full md:hidden">
       <Link href={home.href} aria-label={t("nav.home")} aria-current={pathname === "/" ? "page" : undefined}>
         <Icon />
         <span className="sr-only">{t("nav.home")}</span>
@@ -431,14 +427,29 @@ function MenuLink({ href, children, className, onClick }: { href: string; childr
 
 function SearchField({ value, onChange }: { value: string; onChange: (value: string) => void }) {
   const { t } = usePrefs()
+  const [draft, setDraft] = useState(value)
+  const [focused, setFocused] = useState(false)
+
+  useEffect(() => {
+    if (!focused) setDraft(value)
+  }, [focused, value])
+
   return (
     <label className="relative block w-full">
       <Search className="pointer-events-none absolute top-1/2 left-3 size-4 -translate-y-1/2 text-muted-foreground" aria-hidden="true" />
       <Input
-        value={value}
-        onChange={(event) => onChange(event.target.value)}
-        placeholder={t("nav.search")}
-        aria-label={t("nav.search")}
+        value={focused ? draft : value}
+        onFocus={() => {
+          setDraft(value)
+          setFocused(true)
+        }}
+        onBlur={() => setFocused(false)}
+        onChange={(event) => {
+          setDraft(event.target.value)
+          onChange(event.target.value)
+        }}
+        placeholder={t("nav.searchPlaceholder")}
+        aria-label={t("nav.searchListings")}
         className="h-9 rounded-lg border-border/70 bg-muted/35 pr-3 pl-9 text-sm shadow-none md:h-8"
       />
     </label>
