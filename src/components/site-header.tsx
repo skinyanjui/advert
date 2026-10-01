@@ -402,7 +402,7 @@ function HeaderMenu({
         role={panelRole}
         aria-label={label}
         className={cn(
-          "absolute top-full right-0 z-[80] mt-1.5 max-h-[min(24rem,calc(100dvh-5rem))] max-w-[calc(100vw-1rem)] overflow-y-auto rounded-lg bg-popover p-1 text-sm text-popover-foreground shadow-md ring-1 ring-border",
+          "absolute top-full right-0 z-[80] mt-2 w-56 max-w-[calc(100vw-1rem)] overflow-y-auto rounded-xl border border-border bg-popover p-1 text-popover-foreground shadow-lg",
           panelClassName,
         )}
       >
@@ -417,8 +417,8 @@ function MenuLink({ href, children, className, onClick }: { href: string; childr
     <Link
       role="menuitem"
       href={href}
+      className={cn("flex h-8 w-full items-center rounded-md px-2 text-sm hover:bg-neutral-100", className)}
       onClick={onClick}
-      className={cn("flex min-h-10 w-full items-center gap-2 rounded-md px-2 py-1.5 text-sm hover:bg-neutral-100 dark:hover:bg-neutral-800", className)}
     >
       {children}
     </Link>
@@ -427,27 +427,12 @@ function MenuLink({ href, children, className, onClick }: { href: string; childr
 
 function SearchField({ value, onChange }: { value: string; onChange: (value: string) => void }) {
   const { t } = usePrefs()
-  const [draft, setDraft] = useState(value)
-  const [focused, setFocused] = useState(false)
-
-  useEffect(() => {
-    if (!focused) setDraft(value)
-  }, [focused, value])
-
   return (
     <label className="relative block w-full">
       <Search className="pointer-events-none absolute top-1/2 left-3 size-4 -translate-y-1/2 text-muted-foreground" aria-hidden="true" />
       <Input
-        value={focused ? draft : value}
-        onFocus={() => {
-          setDraft(value)
-          setFocused(true)
-        }}
-        onBlur={() => setFocused(false)}
-        onChange={(event) => {
-          setDraft(event.target.value)
-          onChange(event.target.value)
-        }}
+        value={value}
+        onChange={(event) => onChange(event.target.value)}
         placeholder={t("nav.searchPlaceholder")}
         aria-label={t("nav.searchListings")}
         className="h-9 rounded-lg border-border/70 bg-muted/35 pr-3 pl-9 text-sm shadow-none md:h-8"
@@ -457,36 +442,60 @@ function SearchField({ value, onChange }: { value: string; onChange: (value: str
 }
 
 function filterCountries(query: string) {
-  const needle = fold(query.trim())
+  const needle = fold(query)
   if (!needle) return countries
-  return countries.filter((country) => fold(`${country.name} ${country.code}`).includes(needle))
+  return countries.filter((country) => fold(country.name).includes(needle) || country.code.toLowerCase().includes(needle))
 }
 
-function locationHref(pathname: string, search: string, country: string | null, city?: string | null): string {
+function locationHref(pathname: string, search: string, country: string | null, city?: string | null) {
   const params = new URLSearchParams(search)
   if (country) params.set("country", country)
   else params.delete("country")
   if (country && city) params.set("city", city)
   else params.delete("city")
+  params.delete("page")
+  params.delete("view")
   const category = categoryFromPath(pathname)
-  const path = pathname === "/" || category ? pathname : category ? `/${category}` : "/"
-  const next = params.toString()
-  return next ? `${path}?${next}` : path
+  const path = category ? `/category/${encodeURIComponent(category)}` : "/"
+  const query = params.toString()
+  return query ? `${path}?${query}` : path
+}
+
+const headerPanelObservers = new WeakMap<HTMLDetailsElement, ResizeObserver>()
+
+function stopWatchingHeaderPanel(details: HTMLDetailsElement) {
+  const observer = headerPanelObservers.get(details)
+  observer?.disconnect()
+  headerPanelObservers.delete(details)
 }
 
 function watchHeaderPanel(details: HTMLDetailsElement) {
   const panel = details.querySelector<HTMLElement>("[data-header-panel]")
   if (!panel) return
-  const resize = () => {
-    panel.style.maxWidth = `${Math.max(240, window.innerWidth - 16)}px`
+  stopWatchingHeaderPanel(details)
+  const update = () => {
+    if (!details.open) return
+    const summary = details.querySelector<HTMLElement>("summary")
+    const anchorRect = (summary ?? details).getBoundingClientRect()
+    const viewportWidth = window.innerWidth
+    const viewportHeight = window.innerHeight
+    const gutter = 8
+    const top = anchorRect.bottom + 8
+    const availableHeight = Math.max(0, viewportHeight - top - gutter)
+    const maxWidth = Math.max(0, viewportWidth - gutter * 2)
+    const width = Math.min(panel.scrollWidth, maxWidth)
+    const left = Math.min(Math.max(gutter, anchorRect.right - width), Math.max(gutter, viewportWidth - width - gutter))
+    panel.style.position = "fixed"
+    panel.style.top = `${top}px`
+    panel.style.left = `${left}px`
+    panel.style.right = "auto"
+    panel.style.width = "max-content"
+    panel.style.maxWidth = `${maxWidth}px`
+    panel.style.maxHeight = `${availableHeight}px`
   }
-  resize()
-  window.addEventListener("resize", resize)
-  ;(details as HTMLDetailsElement & { __headerResize?: () => void }).__headerResize = resize
-}
-
-function stopWatchingHeaderPanel(details: HTMLDetailsElement) {
-  const resize = (details as HTMLDetailsElement & { __headerResize?: () => void }).__headerResize
-  if (resize) window.removeEventListener("resize", resize)
-  delete (details as HTMLDetailsElement & { __headerResize?: () => void }).__headerResize
+  update()
+  window.addEventListener("resize", update, { once: true })
+  const observer = new ResizeObserver(update)
+  observer.observe(panel)
+  headerPanelObservers.set(details, observer)
 }
