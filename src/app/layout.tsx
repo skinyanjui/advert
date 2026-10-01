@@ -5,6 +5,7 @@ import { Suspense, type ReactNode } from "react"
 import { CategorySidebar } from "@/components/category-top-nav"
 import { HeaderFallback } from "@/components/header-fallback"
 import { SiteHeader } from "@/components/site-header"
+import { MobileBottomNav } from "@/components/mobile-bottom-nav"
 import { MobileLegalLinks } from "@/components/mobile-legal-links"
 import { LanguageSync, PrefsProvider } from "@/components/prefs-provider"
 import { TermsReacceptDialog } from "@/components/terms-reaccept-dialog"
@@ -41,7 +42,7 @@ export const metadata: Metadata = {
 export default function RootLayout({ children }: { children: ReactNode }) {
   return (
     <html lang="en" className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`} suppressHydrationWarning>
-      <body className="flex min-h-full flex-col bg-background pb-[calc(env(safe-area-inset-bottom)+6rem)] font-sans text-foreground md:pb-0">
+      <body className="flex min-h-full flex-col bg-background pb-[calc(env(safe-area-inset-bottom)+4rem)] font-sans text-foreground md:pb-0">
         <script dangerouslySetInnerHTML={{ __html: themeBootScript }} />
         <script dangerouslySetInnerHTML={{ __html: languageBootScript }} />
         <ThemeSync />
@@ -59,6 +60,7 @@ export default function RootLayout({ children }: { children: ReactNode }) {
                 </div>
                 <MobileLegalLinks />
               </SidebarProvider>
+              <MobileBottomNav />
               <TermsReacceptDialog />
               <Toaster />
             </PrefsProvider>

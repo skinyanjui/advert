@@ -125,6 +125,15 @@
   button:not(:disabled), summary, [role="radio"] { cursor: pointer; }
 }
 
+/* The persistent mobile tab bar owns primary navigation below md.
+   Hide the legacy floating action dock rendered inside the header. */
+@media (max-width: 767px) {
+  header.sticky > div.grid > div.fixed,
+  header.sticky > div.grid > nav.fixed {
+    display: none;
+  }
+}
+
 /* Legacy neutral utilities map into the same monochrome system while screens
    migrate to semantic primitives. This prevents visual drift between flows. */
 .bg-white { background-color: var(--card); }
