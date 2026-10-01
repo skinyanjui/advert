@@ -3,7 +3,13 @@ import { getCountry } from "@/lib/countries"
 import { boardCurrencyCodes } from "@/lib/fx"
 import { marketplacePolicy } from "@/lib/marketplace-policy"
 import { policyVersions } from "@/lib/policy-versions"
-import { findSubcategory, isPricePeriodId, pricePeriod } from "@/lib/posting"
+import {
+  detailFieldValueLabel,
+  findSubcategory,
+  isPricePeriodId,
+  normalizeDetailFieldValue,
+  pricePeriod,
+} from "@/lib/posting"
 import type { CategoryId, Listing } from "@/lib/types"
 
 const maxPrice = marketplacePolicy.listing.maxPrice

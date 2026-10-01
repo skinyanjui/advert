@@ -312,9 +312,6 @@ export async function createListing(owner: string, input: unknown): Promise<Resu
   if (!photo.ok) return photo
   const profiles = await profilesByUserIds([owner])
   const profile = profiles.get(owner)
-  if (!canTransitionListingStatus(effectiveListingStatus(current), "active")) {
-    return { ok: false, reason: "That listing status change is not allowed." }
-  }
   const postedAt = new Date().toISOString()
   const expiresAt = expiresAtFrom(postedAt)
   const stored = {
@@ -571,6 +568,10 @@ export async function renewListing(owner: string, id: string): Promise<Result<Li
   if (!current) return { ok: false, reason: "That ad could not be read." }
   if ((current.status === "sold" || current.sold) && !isListingExpired(owned.value.expires_at ?? undefined)) {
     return { ok: false, reason: "Mark the ad as available before renewing it." }
+  }
+  const currentStatus = effectiveListingStatus(current)
+  if (!canTransitionListingStatus(currentStatus, "active")) {
+    return { ok: false, reason: "That listing status change is not allowed." }
   }
   const postedAt = new Date().toISOString()
   const expiresAt = expiresAtFrom(postedAt)
