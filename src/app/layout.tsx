@@ -45,10 +45,10 @@ export default function RootLayout({ children }: { children: ReactNode }) {
         <script dangerouslySetInnerHTML={{ __html: themeBootScript }} />
         <script dangerouslySetInnerHTML={{ __html: languageBootScript }} />
         <ThemeSync />
-        <PrefsProvider>
-          <LanguageSync />
+        <LanguageSync />
+        <MarketplaceProvider>
           <AuthProvider>
-            <MarketplaceProvider>
+            <PrefsProvider>
               <SidebarProvider defaultOpen className="min-h-svh flex-1 flex-col">
                 <Suspense fallback={<HeaderFallback />}>
                   <SiteHeader />
@@ -61,9 +61,9 @@ export default function RootLayout({ children }: { children: ReactNode }) {
               </SidebarProvider>
               <TermsReacceptDialog />
               <Toaster />
-            </MarketplaceProvider>
+            </PrefsProvider>
           </AuthProvider>
-        </PrefsProvider>
+        </MarketplaceProvider>
       </body>
     </html>
   )
