@@ -14,6 +14,7 @@ const mobileTabs: NavItemId[] = ["home", "saved", "post", "messages", "profile"]
 export function MobileBottomNav() {
   const pathname = usePathname()
   const counts = useNavCounts()
+  const accountActivity = (counts.saved ?? 0) + (counts.messages ?? 0) + (counts["my-ads"] ?? 0)
 
   return (
     <nav
@@ -25,8 +26,10 @@ export function MobileBottomNav() {
           const item = navItem(id)
           const Icon = item.icon
           const active = isActive(pathname, id, item.href)
-          const count = counts[id] ?? 0
-          const label = navCountAriaLabel(item.shortLabel, id, counts)
+          const count = id === "profile" ? accountActivity : counts[id] ?? 0
+          const label = id === "profile" && accountActivity
+            ? `${item.shortLabel}, ${accountActivity} account activities`
+            : navCountAriaLabel(item.shortLabel, id, counts)
 
           if (id === "post") {
             return (
@@ -56,7 +59,9 @@ export function MobileBottomNav() {
             >
               <span className="relative flex h-7 items-center justify-center">
                 <Icon className="size-6" strokeWidth={active ? 2.35 : 1.8} aria-hidden="true" />
-                {id === "messages" ? <NavBadge count={count} className="-top-1.5 -right-2" /> : null}
+                {count > 0 && (id === "saved" || id === "messages" || id === "profile") ? (
+                  <NavBadge count={count} className="-top-1.5 -right-2" />
+                ) : null}
               </span>
               <span className={cn("truncate text-[10px] leading-none", active && "font-semibold")}>
                 {id === "messages" ? "Inbox" : item.shortLabel}
