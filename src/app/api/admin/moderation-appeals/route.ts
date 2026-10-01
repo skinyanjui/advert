@@ -11,7 +11,7 @@ export const runtime = "nodejs"
 
 async function requireAdmin(request: Request, mutating: boolean) {
   const owner = mutating ? await resolveMutationOwner(request) : await resolveOwner(request)
-  if (!canOwner(owner, "admin") || !owner || owner.kind !== "auth") return undefined
+  if (!canOwner(owner, "moderation:review") || !owner || owner.kind !== "auth") return undefined
   return owner
 }
 

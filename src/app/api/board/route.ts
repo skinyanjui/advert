@@ -30,7 +30,7 @@ export async function GET(request: Request) {
         messages: privateAccess ? state.messages : [],
         auth: owner.kind === "auth",
         email: owner.email ?? null,
-        admin: canOwner(owner, "admin"),
+        admin: canOwner(owner, "admin:access"),
       })
     }
     const response = NextResponse.json({

@@ -1,6 +1,6 @@
 import "server-only"
 
-/** Comma-separated emails in ADMIN_EMAILS. Compared case-insensitively. */
+/** Bootstrap-only admin emails. Persisted board_user_roles is authoritative after first role resolution. */
 export function adminEmails(): string[] {
   const raw = process.env.ADMIN_EMAILS ?? ""
   return raw

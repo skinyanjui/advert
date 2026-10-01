@@ -2,7 +2,7 @@ import type { Metadata } from "next"
 import Link from "next/link"
 import { redirect } from "next/navigation"
 
-import { isAdminEmail } from "@/lib/admin"
+import { can } from "@/lib/access-control"
 import { signInHref } from "@/lib/auth-redirect"
 import {
   complianceConfiguration,
@@ -10,6 +10,7 @@ import {
   complianceItems,
   type ComplianceState,
 } from "@/lib/compliance"
+import { resolvePersistedRole } from "@/lib/rbac-store"
 import { createServerSupabase } from "@/lib/supabase/server"
 
 export const metadata: Metadata = { title: "Compliance" }
@@ -29,11 +30,12 @@ export default async function Page() {
 
   if (!userId || !email) redirect(signInHref("/admin/compliance"))
 
-  if (!isAdminEmail(email)) {
+  const role = await resolvePersistedRole(userId, email)
+  if (!can(role, "compliance:manage")) {
     return (
       <div className="w-full px-3 py-8 md:px-4">
         <h1 className="text-2xl font-semibold tracking-tight">Compliance</h1>
-        <p className="mt-2 text-sm text-neutral-500">This account is not on the admin allowlist.</p>
+        <p className="mt-2 text-sm text-neutral-500">This account does not have the compliance management permission.</p>
       </div>
     )
   }

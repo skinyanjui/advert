@@ -24,7 +24,7 @@ Open [http://localhost:3000](http://localhost:3000).
 - My ads with active / paused / sold / expired actions
 - Messenger for real buyer–seller listing threads
 - Saved ads
-- Admin report review at `/admin/reports` for emails listed in `ADMIN_EMAILS`
+- Persisted RBAC for administrative operations. `ADMIN_EMAILS` is bootstrap-only; `board_user_roles` is authoritative after role creation.
 - Supabase Postgres stores board data; a public Storage bucket serves listing photos. Apply `database/board.sql`, then the migrations below, on the connected Supabase project before deploying the board routes.
 
 ## Auth
@@ -40,7 +40,7 @@ Supported flows:
 
 Paste the HTML under `supabase/templates/` into Supabase Dashboard → Authentication → Email Templates (Confirm signup, Magic Link, Reset password, Change email). Prefer `token_hash` links over Management API calls. Site URL and redirect allow lists must include `/auth/confirm` and `/auth/callback` for production, previews, and localhost.
 
-Protected account routes such as `/saved`, `/my-ads`, `/messages`, and `/account/moderation` redirect unsigned visitors to `/sign-in?next=…`. Administrative routes including `/admin/reports`, `/admin/privacy`, `/admin/moderation-appeals`, `/admin/incidents`, and `/admin/compliance` additionally require the admin permission. Profile keeps its public language/currency settings visible but protects private account data and mutations.
+Protected account routes such as `/saved`, `/my-ads`, `/messages`, and `/account/moderation` redirect unsigned visitors to `/sign-in?next=…`. Administrative routes use narrow persisted permissions: moderation review, privacy review, compliance management, and administrative access. Role assignments are stored in `board_user_roles`. Profile keeps its public language/currency settings visible but protects private account data and mutations.
 
 ## Board database migrations
 
@@ -65,6 +65,7 @@ Apply in order on the board Supabase project (SQL editor), after `database/board
 17. `database/migrations/20260929_privacy_rights_workflow.sql` — age/privacy acceptance evidence, privacy-rights cases and audit events, compliance incident records
 18. `database/migrations/20260929_moderation_redress.sql` — moderation statement-of-reasons evidence and seller appeal records
 19. `database/migrations/20260929_illegal_content_notice.sql` — structured illegal-content notice fields and report reason
+20. `database/migrations/20261001_persisted_rbac.sql` — authoritative persisted application roles; `ADMIN_EMAILS` is bootstrap-only
 
 After the lock migration, anyone with only the publishable key must not be able to read `board_listings` (including phones).
 
@@ -142,7 +143,7 @@ route still advances reminder markers as a no-op send.
 
 ## Privacy and regulatory controls
 
-- Onboarding captures a country used as the saved posting/home default, while language and currency selectors stay side-by-side in one row on every shared preference surface. Profile/Settings country updates refresh that same local posting default. For a new ad, precedence is explicit post URL → saved onboarding/settings default → signed-in profile → temporary browsing location → no default.
+- Signed-in profile country/city is authoritative and is cached locally for responsiveness; anonymous onboarding/device state is only a bootstrap/fallback. New-post precedence is explicit action location → signed-in profile → anonymous device default → temporary browsing location → no default. Display currency derives from the authoritative country unless the user has an explicit currency override; with no country, prices remain in each listing's original currency instead of defaulting to one market.
 - Account creation uses two separate confirmations: an 18+ age attestation and a Terms acceptance / Privacy Policy acknowledgment. The server stores the current document versions, disclosure version, locale, timestamp, IP/user-agent evidence, age attestation, and privacy acknowledgment in the append-only legal acceptance log.
 - Protected APIs require the current legal evidence before returning protected data or performing account mutations. A legal-version bump therefore creates an account-access reacceptance boundary rather than interrupting an unrelated feature at the moment of use.
 - Signed-in users can correct profile information, download a machine-readable JSON export, delete their account, submit privacy-rights requests, review their privacy-request history, and review/appeal moderation restrictions.

@@ -30,10 +30,10 @@ Treat role-based access control as a default requirement for every feature.
 
 - Define who can read, create, update, delete, or invoke each resource before implementation.
 - Enforce authorization on the server or database boundary. UI visibility is never the security boundary.
-- Use the canonical guest/member/admin permission model from `src/lib/access-control.ts`; do not add one-off authentication checks when a permission already exists.
+- Use the canonical persisted guest/member/admin role model and capability permissions from `src/lib/access-control.ts`; do not add one-off authentication checks when a permission already exists.
 - Public responses must contain only public fields. Redact protected contact, account, messaging, moderation, and administrative data before serialization.
 - Require ownership in addition to authentication for user-owned resources.
-- Require the admin permission for moderation and administrative resources.
+- Require the narrow capability permission for administrative resources (for example `moderation:review`, `privacy:review`, or `compliance:manage`) instead of checking an email or a generic UI flag.
 - Keep public browsing separate from protected account actions such as saving, messaging, direct contact, posting, reporting, profile access, and listing management.
 - When a protected feature depends on current legal acceptance, enforce that requirement at the API boundary before returning protected data or performing the mutation.
 - Add regression tests for every new permission boundary and for unauthenticated access.

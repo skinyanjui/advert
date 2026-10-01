@@ -3,6 +3,7 @@ import "server-only"
 import { createHmac, randomUUID, timingSafeEqual } from "node:crypto"
 import { NextResponse } from "next/server"
 
+import { resolvePersistedRole, type PersistedAppRole } from "@/lib/rbac-store"
 import { createServerSupabase } from "@/lib/supabase/server"
 
 const cookieName = "board_session"
@@ -12,6 +13,7 @@ export type BoardOwner = {
   id: string
   kind: "auth" | "session"
   email?: string
+  role?: PersistedAppRole
 }
 
 function signature(id: string) {
@@ -57,7 +59,9 @@ async function authOwner(): Promise<BoardOwner | undefined> {
     const supabase = await createServerSupabase()
     const { data, error } = await supabase.auth.getUser()
     if (error || !data.user) return undefined
-    return { id: data.user.id, kind: "auth", email: data.user.email ?? undefined }
+    const email = data.user.email ?? undefined
+    const role = await resolvePersistedRole(data.user.id, email)
+    return { id: data.user.id, kind: "auth", email, role }
   } catch {
     return undefined
   }

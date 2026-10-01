@@ -6,10 +6,19 @@ test("application RBAC separates guest, member, and admin permissions", () => {
   const access = readFileSync(new URL("../src/lib/access-control.ts", import.meta.url), "utf8")
   assert.match(access, /appRoles = \["guest", "member", "admin"\]/)
   assert.match(access, /guest: new Set\(\["browse"\]\)/)
-  assert.match(access, /member: new Set\(\["browse", "contact:direct", "message", "save", "report", "post", "profile"\]\)/)
+  assert.match(access, /moderation:review/)
+  assert.match(access, /privacy:review/)
+  assert.match(access, /compliance:manage/)
+  assert.match(access, /admin:access/)
   assert.match(access, /admin: new Set\(appPermissions\)/)
   assert.match(access, /if \(!owner \|\| owner\.kind !== "auth"\) return "guest"/)
-  assert.match(access, /isAdminEmail\(owner\.email\) \? "admin" : "member"/)
+  assert.match(access, /owner\.role === "admin" \? "admin" : "member"/)
+
+  const rbac = readFileSync(new URL("../src/lib/rbac-store.ts", import.meta.url), "utf8")
+  const migration = readFileSync(new URL("../database/migrations/20261001_persisted_rbac.sql", import.meta.url), "utf8")
+  assert.match(rbac, /board_user_roles/)
+  assert.match(rbac, /isAdminEmail\(email\) \? "admin" : "member"/)
+  assert.match(migration, /revoke all on table public\.board_user_roles from anon, authenticated/i)
 })
 
 test("guest board payload redacts protected contact and private account state", () => {
