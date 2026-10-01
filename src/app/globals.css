@@ -39,192 +39,112 @@
   --color-popover: var(--popover);
   --color-card-foreground: var(--card-foreground);
   --color-card: var(--card);
-  --radius-sm: calc(var(--radius) * 0.6);
-  --radius-md: calc(var(--radius) * 0.8);
-  --radius-lg: var(--radius);
-  --radius-xl: calc(var(--radius) * 1.4);
-  --radius-2xl: calc(var(--radius) * 1.8);
-  --radius-3xl: calc(var(--radius) * 2.2);
-  --radius-4xl: calc(var(--radius) * 2.6);
+  --radius-sm: calc(var(--radius) * 0.75);
+  --radius-md: var(--radius);
+  --radius-lg: calc(var(--radius) * 1.25);
+  --radius-xl: calc(var(--radius) * 1.5);
+  --radius-2xl: calc(var(--radius) * 2);
+  --radius-3xl: calc(var(--radius) * 2.5);
+  --radius-4xl: calc(var(--radius) * 3);
 }
 
 :root {
   --sidebar-width: 15rem;
-  --background: oklch(0.955 0 0);
+  --background: oklch(1 0 0);
   --foreground: oklch(0.145 0 0);
   --card: oklch(1 0 0);
   --card-foreground: oklch(0.145 0 0);
   --popover: oklch(1 0 0);
   --popover-foreground: oklch(0.145 0 0);
-  --primary: oklch(0.205 0 0);
+  --primary: oklch(0.145 0 0);
   --primary-foreground: oklch(0.985 0 0);
-  --secondary: oklch(0.97 0 0);
+  --secondary: oklch(0.985 0 0);
   --secondary-foreground: oklch(0.205 0 0);
-  --muted: oklch(0.97 0 0);
-  --muted-foreground: oklch(0.556 0 0);
-  --accent: oklch(0.97 0 0);
-  --accent-foreground: oklch(0.205 0 0);
+  --muted: oklch(0.975 0 0);
+  --muted-foreground: oklch(0.48 0 0);
+  --accent: oklch(0.965 0 0);
+  --accent-foreground: oklch(0.145 0 0);
   --destructive: oklch(0.577 0.245 27.325);
-  --border: oklch(0.885 0 0);
-  --input: oklch(0.86 0 0);
-  --ring: oklch(0.708 0 0);
+  --border: oklch(0.145 0 0 / 12%);
+  --input: oklch(0.145 0 0 / 16%);
+  --ring: oklch(0.145 0 0 / 55%);
   --chart-1: oklch(0.87 0 0);
-  --chart-2: oklch(0.556 0 0);
-  --chart-3: oklch(0.439 0 0);
-  --chart-4: oklch(0.371 0 0);
-  --chart-5: oklch(0.269 0 0);
-  --radius: 0.625rem;
-  --sidebar: oklch(0.985 0 0);
+  --chart-2: oklch(0.65 0 0);
+  --chart-3: oklch(0.48 0 0);
+  --chart-4: oklch(0.32 0 0);
+  --chart-5: oklch(0.16 0 0);
+  --radius: 0.375rem;
+  --sidebar: oklch(1 0 0);
   --sidebar-foreground: oklch(0.145 0 0);
-  --sidebar-primary: oklch(0.205 0 0);
+  --sidebar-primary: oklch(0.145 0 0);
   --sidebar-primary-foreground: oklch(0.985 0 0);
-  --sidebar-accent: oklch(0.97 0 0);
-  --sidebar-accent-foreground: oklch(0.205 0 0);
-  --sidebar-border: oklch(0.885 0 0);
-  --sidebar-ring: oklch(0.708 0 0);
+  --sidebar-accent: oklch(0.965 0 0);
+  --sidebar-accent-foreground: oklch(0.145 0 0);
+  --sidebar-border: oklch(0.145 0 0 / 12%);
+  --sidebar-ring: oklch(0.145 0 0 / 55%);
 }
 
 .dark {
   color-scheme: dark;
-  --background: oklch(0.145 0 0);
-  --foreground: oklch(0.985 0 0);
-  --card: oklch(0.205 0 0);
-  --card-foreground: oklch(0.985 0 0);
-  --popover: oklch(0.205 0 0);
-  --popover-foreground: oklch(0.985 0 0);
-  --primary: oklch(0.922 0 0);
-  --primary-foreground: oklch(0.205 0 0);
-  --secondary: oklch(0.269 0 0);
-  --secondary-foreground: oklch(0.985 0 0);
-  --muted: oklch(0.269 0 0);
-  --muted-foreground: oklch(0.708 0 0);
-  --accent: oklch(0.269 0 0);
-  --accent-foreground: oklch(0.985 0 0);
+  --background: oklch(0.12 0 0);
+  --foreground: oklch(0.97 0 0);
+  --card: oklch(0.15 0 0);
+  --card-foreground: oklch(0.97 0 0);
+  --popover: oklch(0.15 0 0);
+  --popover-foreground: oklch(0.97 0 0);
+  --primary: oklch(0.97 0 0);
+  --primary-foreground: oklch(0.12 0 0);
+  --secondary: oklch(0.19 0 0);
+  --secondary-foreground: oklch(0.97 0 0);
+  --muted: oklch(0.19 0 0);
+  --muted-foreground: oklch(0.68 0 0);
+  --accent: oklch(0.22 0 0);
+  --accent-foreground: oklch(0.97 0 0);
   --destructive: oklch(0.704 0.191 22.216);
   --border: oklch(1 0 0 / 12%);
   --input: oklch(1 0 0 / 16%);
-  --ring: oklch(0.556 0 0);
-  --chart-1: oklch(0.87 0 0);
-  --chart-2: oklch(0.556 0 0);
-  --chart-3: oklch(0.439 0 0);
-  --chart-4: oklch(0.371 0 0);
-  --chart-5: oklch(0.269 0 0);
-  --sidebar: oklch(0.205 0 0);
-  --sidebar-foreground: oklch(0.985 0 0);
-  --sidebar-primary: oklch(0.488 0.243 264.376);
-  --sidebar-primary-foreground: oklch(0.985 0 0);
-  --sidebar-accent: oklch(0.269 0 0);
-  --sidebar-accent-foreground: oklch(0.985 0 0);
+  --ring: oklch(1 0 0 / 50%);
+  --sidebar: oklch(0.12 0 0);
+  --sidebar-foreground: oklch(0.97 0 0);
+  --sidebar-primary: oklch(0.97 0 0);
+  --sidebar-primary-foreground: oklch(0.12 0 0);
+  --sidebar-accent: oklch(0.22 0 0);
+  --sidebar-accent-foreground: oklch(0.97 0 0);
   --sidebar-border: oklch(1 0 0 / 12%);
-  --sidebar-ring: oklch(0.556 0 0);
+  --sidebar-ring: oklch(1 0 0 / 50%);
 }
 
 @layer base {
-  * {
-    @apply border-border outline-ring/50;
-  }
-  body {
-    @apply bg-background text-foreground;
-  }
-  html {
-    @apply font-sans;
-  }
-  summary.menu-summary {
-    list-style: none;
-  }
-  summary.menu-summary::-webkit-details-marker {
-    display: none;
-  }
-  details:not([open]) > [data-header-panel] {
-    display: none;
-  }
-  button:not(:disabled),
-  summary,
-  [role="radio"] {
-    cursor: pointer;
-  }
+  * { @apply border-border outline-ring/50; }
+  html { @apply font-sans; }
+  body { @apply bg-background text-foreground antialiased; }
+  ::selection { background: var(--foreground); color: var(--background); }
+  summary.menu-summary { list-style: none; }
+  summary.menu-summary::-webkit-details-marker { display: none; }
+  details:not([open]) > [data-header-panel] { display: none; }
+  button:not(:disabled), summary, [role="radio"] { cursor: pointer; }
 }
 
-/* Surfaces are written with neutral utilities. Dark mode remaps those colors
-   so the board, menus, and forms follow the saved appearance. */
-.dark,
-.dark * {
-  --tw-ring-offset-color: var(--background);
-}
-.dark .bg-white {
-  background-color: var(--card);
-}
-.dark .bg-neutral-50,
-.dark .bg-neutral-100,
-.dark .hover\:bg-neutral-50:hover,
-.dark .hover\:bg-neutral-100:hover,
-.dark .group-open\:bg-neutral-100:is(:where(.group):is([open], :popover-open, :open) *) {
-  background-color: var(--muted);
-}
-.dark .bg-neutral-200,
-.dark .bg-neutral-200\/70 {
-  background-color: oklch(0.32 0 0);
-}
-.dark .bg-neutral-300 {
-  background-color: oklch(0.42 0 0);
-}
-.dark .bg-neutral-400 {
-  background-color: oklch(0.62 0 0);
-}
-.dark .bg-neutral-900 {
-  background-color: var(--foreground);
-}
-.dark .bg-neutral-950 {
-  background-color: var(--primary);
-  color: var(--primary-foreground);
-}
-.dark .hover\:bg-neutral-800:hover {
-  background-color: oklch(0.85 0 0);
-}
-.dark .focus-visible\:bg-white:focus-visible {
-  background-color: oklch(0.3 0 0);
-}
-.dark .text-neutral-950,
-.dark .text-neutral-900,
-.dark .hover\:text-neutral-950:hover,
-.dark .hover\:text-neutral-900:hover {
-  color: var(--foreground);
-}
-.dark .text-neutral-800,
-.dark .text-neutral-700 {
-  color: oklch(0.9 0 0);
-}
-.dark .text-neutral-600,
-.dark .text-neutral-500 {
-  color: var(--muted-foreground);
-}
-.dark .text-neutral-400 {
-  color: oklch(0.64 0 0);
-}
-.dark .text-neutral-300 {
-  color: oklch(0.45 0 0);
-}
-.dark .bg-white\/95 {
-  color: oklch(0.2 0 0);
-}
-.dark .border-neutral-100,
-.dark .border-neutral-200,
-.dark .border-neutral-200\/80 {
-  border-color: var(--border);
-}
-.dark .border-neutral-300,
-.dark .border-neutral-400,
-.dark .hover\:border-neutral-400:hover,
-.dark .focus-visible\:border-neutral-300:focus-visible {
-  border-color: oklch(1 0 0 / 22%);
-}
-.dark .border-neutral-950 {
-  border-color: var(--foreground);
-}
-.dark .ring-neutral-200,
-.dark .focus-visible\:ring-neutral-200:focus-visible {
-  --tw-ring-color: var(--border);
-}
-.dark .focus-visible\:ring-neutral-950:focus-visible {
-  --tw-ring-color: var(--foreground);
-}
+/* Legacy neutral utilities map into the same monochrome system while screens
+   migrate to semantic primitives. This prevents visual drift between flows. */
+.bg-white { background-color: var(--card); }
+.bg-neutral-50, .bg-neutral-100 { background-color: var(--muted); }
+.bg-neutral-900, .bg-neutral-950 { background-color: var(--primary); color: var(--primary-foreground); }
+.text-neutral-950, .text-neutral-900 { color: var(--foreground); }
+.text-neutral-800, .text-neutral-700 { color: color-mix(in oklch, var(--foreground) 86%, var(--background)); }
+.text-neutral-600, .text-neutral-500 { color: var(--muted-foreground); }
+.border-neutral-100, .border-neutral-200, .border-neutral-200\/80 { border-color: var(--border); }
+.border-neutral-300, .border-neutral-400 { border-color: color-mix(in oklch, var(--foreground) 20%, transparent); }
+.ring-neutral-200 { --tw-ring-color: var(--border); }
+
+.dark, .dark * { --tw-ring-offset-color: var(--background); }
+.dark .bg-neutral-200, .dark .bg-neutral-200\/70 { background-color: oklch(0.28 0 0); }
+.dark .bg-neutral-300 { background-color: oklch(0.38 0 0); }
+.dark .bg-neutral-400 { background-color: oklch(0.58 0 0); }
+.dark .text-neutral-400 { color: oklch(0.64 0 0); }
+.dark .text-neutral-300 { color: oklch(0.45 0 0); }
+.dark .hover\:bg-neutral-800:hover { background-color: oklch(0.82 0 0); }
+.dark .focus-visible\:bg-white:focus-visible { background-color: oklch(0.24 0 0); }
+.dark .bg-white\/95 { color: oklch(0.2 0 0); }
+.dark .border-neutral-300, .dark .border-neutral-400, .dark .hover\:border-neutral-400:hover, .dark .focus-visible\:border-neutral-300:focus-visible { border-color: oklch(1 0 0 / 20%); }
+.dark .focus-visible\:ring-neutral-950:focus-visible { --tw-ring-color: var(--foreground); }
