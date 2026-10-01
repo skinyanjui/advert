@@ -1,18 +1,23 @@
 import assert from "node:assert/strict"
 import { readFileSync } from "node:fs"
+import { createHash } from "node:crypto"
 import { test } from "node:test"
 
 import cities from "../src/data/cities.json"
-import { categories } from "../src/lib/category-registry"
+import { categories, currentTaxonomyVersion } from "../src/lib/category-registry"
 import { contactMethods } from "../src/lib/contact-methods"
 import { contactEventTypes } from "../src/lib/contact-event-types"
 import { countries } from "../src/lib/countries"
 import { currencyRegistry } from "../src/lib/currency-registry"
 import { listingStatuses } from "../src/lib/listing-status"
 import { marketplacePolicy } from "../src/lib/marketplace-policy"
-import { postingPlans } from "../src/lib/posting"
+import { detailFieldOptions, postingPlans } from "../src/lib/posting"
 import { referenceSnapshotMetadata } from "../src/lib/reference-manifest"
-import { profilePatchFromUnknown, stableOptionId } from "../src/lib/runtime-contracts"
+import { profilePatchFromUnknown } from "../src/lib/runtime-contracts"
+import { referenceCountrySchema, referenceCitySchema } from "../src/lib/reference-contracts"
+import referenceManifest from "../src/data/reference-manifest.json"
+import taxonomy from "../src/data/taxonomy-v1.json"
+import countrySnapshot from "../src/data/countries.json"
 
 test("category registry is unique and every category has one posting plan and translation key", () => {
   assert.equal(new Set(categories.map((item) => item.id)).size, categories.length)
@@ -70,11 +75,35 @@ test("reference snapshots expose provenance hashes", () => {
     assert.ok(meta.sourceUrl.startsWith("https://"))
     assert.ok(meta.license.length > 0)
     assert.ok(meta.recordCount > 0)
+    assert.equal(meta.contentHash, referenceManifest[dataset].contentHash)
+    assert.equal(meta.recordCount, referenceManifest[dataset].recordCount)
   }
 })
 
+test("every reference snapshot row satisfies the wire and sync contract", () => {
+  for (const row of countrySnapshot) assert.equal(referenceCountrySchema.safeParse(row).success, true, row.code)
+  for (const row of cities) assert.equal(referenceCitySchema.safeParse(row).success, true, String(row.id))
+})
+
+test("taxonomy identity matches the frozen version and database validator", () => {
+  const identity = Object.fromEntries(postingPlans().map((plan) => [plan.id, Object.fromEntries(plan.subcategories.map((sub) => [sub.id, Object.fromEntries(sub.fields.map((field) => [field.id, {
+    required: field.required === true,
+    options: field.kind === "select" ? detailFieldOptions(field).map((option) => option.id) : null,
+  }]))]))]))
+  assert.equal(taxonomy.version, currentTaxonomyVersion)
+  assert.deepEqual(identity, taxonomy.categories, "Identity changes need a new taxonomy version and migration")
+  assert.equal(createHash("sha256").update(JSON.stringify(identity)).digest("hex"), taxonomy.hash)
+  const migration = readFileSync(new URL("../supabase/migrations/20261001213348_authority_contracts.sql", import.meta.url), "utf8")
+  const frozen = migration.match(/catalog constant jsonb := '(.+)'::jsonb;/)?.[1]
+  assert.ok(frozen)
+  assert.deepEqual(JSON.parse(frozen.replaceAll("''", "'")), taxonomy.categories)
+  assert.ok(migration.includes(taxonomy.hash))
+})
+
 test("runtime contracts preserve stable IDs independently from labels", () => {
-  assert.equal(stableOptionId("fuel", "Electric / Hybrid"), "fuel:electric-hybrid")
+  const field = postingPlans()[0].subcategories[0].fields.find((field) => field.id === "fuel")!
+  const relabelled = { ...field, options: field.options!.map((option) => ({ ...option, label: `Translated ${option.label}` })) }
+  assert.deepEqual(detailFieldOptions(relabelled).map((option) => option.id), detailFieldOptions(field).map((option) => option.id))
   assert.deepEqual(profilePatchFromUnknown({ countryCode: "KE", city: "Nairobi", extra: 1 }), {
     countryCode: "KE",
     city: "Nairobi",

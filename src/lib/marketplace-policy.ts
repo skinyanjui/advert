@@ -7,6 +7,7 @@ export const marketplacePolicy = {
     maxTitleLength: 80,
     maxDescriptionLength: 2000,
     maxCityLength: 80,
+    maxLocationDetailLength: 120,
     maxDetailValueLength: 80,
   },
   photos: {

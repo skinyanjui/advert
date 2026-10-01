@@ -1,7 +1,12 @@
 import type { CategoryId } from "@/lib/types"
 import type { PricePeriodId } from "@/lib/posting"
+import { pricePeriods } from "@/lib/posting"
+import { categories } from "@/lib/category-registry"
+import { isGeoPoint } from "@/lib/distance"
+import { timeZoneId } from "@/lib/domain-ids"
 import { marketplacePolicy } from "@/lib/marketplace-policy"
 import { policyVersions } from "@/lib/policy-versions"
+import { z } from "zod"
 
 const DRAFT_KEY = "advert:post-draft:v1"
 const FLOW_VERSION = policyVersions.postingFlow
@@ -21,6 +26,9 @@ export type PostDraft = {
   city: string
   locationDetail?: string
   locationPrecision?: "city" | "specific"
+  latitude?: number
+  longitude?: number
+  timezone?: string
   description: string
   phone: string
   contactWhatsApp?: boolean
@@ -35,30 +43,69 @@ export type WritePostDraftResult =
   | { ok: true; omittedPhotos?: boolean }
   | { ok: false }
 
+const draftSchema = z.object({
+  flowVersion: z.number().int().optional(),
+  step: z.number().int().nonnegative(),
+  category: z.enum(categories.map((category) => category.id)).nullable(),
+  subcategoryId: z.string().nullable(),
+  title: z.string(),
+  price: z.string(),
+  period: z.enum(pricePeriods.map((period) => period.id)),
+  details: z.record(z.string(), z.string()),
+  country: z.string(),
+  currency: z.string(),
+  city: z.string(),
+  locationDetail: z.string().optional(),
+  locationPrecision: z.enum(["city", "specific"]).optional(),
+  latitude: z.unknown().optional(),
+  longitude: z.unknown().optional(),
+  timezone: z.unknown().optional(),
+  description: z.string(),
+  phone: z.string(),
+  contactWhatsApp: z.boolean().optional(),
+  contactPhone: z.boolean().optional(),
+  photos: z.array(z.string()).max(marketplacePolicy.photos.maxCount),
+  sponsored: z.boolean().optional(),
+  fairAccessAttested: z.boolean().optional(),
+  savedAt: z.number().finite().nonnegative(),
+})
+
+/** Preserve draft content while discarding malformed or incomplete saved pins. */
+export function normalizePostDraft(value: unknown, now = Date.now()): PostDraft | null {
+  const result = draftSchema.safeParse(value)
+  if (!result.success || isPostDraftExpired(result.data.savedAt, now)) return null
+  const parsed = result.data
+  const step = parsed.flowVersion === FLOW_VERSION
+    ? Math.min(3, parsed.step)
+    : parsed.step >= 2
+      ? 3
+      : parsed.step >= 1 || parsed.subcategoryId
+        ? 2
+        : parsed.category ? 1 : 0
+  const zone = typeof parsed.timezone === "string" ? timeZoneId(parsed.timezone) : null
+  const hasPin = isGeoPoint(parsed.latitude, parsed.longitude) && !!zone
+  return {
+    ...parsed,
+    flowVersion: FLOW_VERSION,
+    step,
+    latitude: hasPin ? parsed.latitude as number : undefined,
+    longitude: hasPin ? parsed.longitude as number : undefined,
+    timezone: hasPin ? zone! : undefined,
+    locationPrecision: hasPin ? parsed.locationPrecision : "city",
+  }
+}
+
 export function readPostDraft(now = Date.now()): PostDraft | null {
   if (typeof window === "undefined") return null
   try {
     const raw = window.localStorage.getItem(DRAFT_KEY)
     if (!raw) return null
-    const parsed = JSON.parse(raw) as PostDraft
-    if (!parsed || typeof parsed !== "object") return null
-    if (typeof parsed.savedAt === "number" && now - parsed.savedAt > DRAFT_MAX_AGE_MS) {
+    const parsed = normalizePostDraft(JSON.parse(raw), now)
+    if (!parsed) {
       clearPostDraft()
       return null
     }
-    const legacyStep = parsed.step
-    // v2 combined category and type in step 0. Keep the user's selections while
-    // placing old drafts at the equivalent point in the new four-step flow.
-    const step = parsed.flowVersion === FLOW_VERSION
-      ? Math.min(3, Math.max(0, legacyStep))
-      : legacyStep >= 2
-        ? 3
-        : legacyStep >= 1 || parsed.subcategoryId
-          ? 2
-          : parsed.category
-            ? 1
-            : 0
-    return { ...parsed, flowVersion: FLOW_VERSION, step }
+    return parsed
   } catch {
     return null
   }

@@ -2,6 +2,7 @@ import { fail, ok } from "@/lib/api"
 import { canOwner } from "@/lib/access-control"
 import { requireCurrentTerms } from "@/lib/terms-gate"
 import { resolveMutationOwner } from "@/lib/board-session"
+import { saveInputSchema, readApiInput } from "@/lib/runtime-contracts"
 import { toggleSave } from "@/lib/board-store"
 
 export const dynamic = "force-dynamic"
@@ -13,8 +14,9 @@ export async function POST(request: Request) {
   const termsBlock = await requireCurrentTerms(owner.id)
   if (termsBlock) return termsBlock
   try {
-    const body = (await request.json()) as { listingId?: unknown }
-    const listingId = typeof body.listingId === "string" ? body.listingId : ""
+    const parsed = await readApiInput(request, saveInputSchema)
+    if (!parsed.ok) return fail(parsed.reason)
+    const { listingId } = parsed.value
     const result = await toggleSave(owner.id, listingId)
     if (!result.ok) return fail(result.reason)
     return ok({ savedIds: result.value })

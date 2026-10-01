@@ -12,8 +12,8 @@ export function ListingPrice({
   listing: Pick<Listing, "price" | "priceSuffix" | "currency" | "country">
   className?: string
 }) {
-  const { formatListingPrice } = usePrefs()
+  const { formatListingPrice, t } = usePrefs()
   const display = formatListingPrice(listing)
 
-  return <span className={cn("truncate", className)}>{display.primary}</span>
+  return <span className={cn("truncate", className)} title={display.conversionUnavailable ? t("price.conversionUnavailable") : undefined}>{display.primary}</span>
 }

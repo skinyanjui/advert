@@ -1,4 +1,3 @@
-import { stableOptionId } from "@/lib/runtime-contracts"
 import { categories, categoryName, type CategoryId, type Listing } from "@/lib/types"
 
 export const pricePeriods = [
@@ -40,31 +39,31 @@ export type DetailField = {
   kind: "text" | "select"
   placeholder?: string
   hint?: string
-  /** Legacy labels define the option set; stable IDs are derived for persistence. */
-  options?: readonly string[]
+  /** Explicit persistence codes. Labels can change without changing stored values. */
+  options?: readonly { id: string; label: string; legacyLabels?: readonly string[] }[]
   required?: boolean
   /** Included on the listing card, after the type name. */
   onCard?: boolean
 }
 
 export function detailFieldOptions(field: DetailField): { id: string; label: string }[] {
-  return (field.options ?? []).map((label) => ({ id: stableOptionId(field.id, label), label }))
+  return (field.options ?? []).map(({ id, label }) => ({ id, label }))
 }
 
 export function normalizeDetailFieldValue(field: DetailField, value: string | null | undefined): string | undefined {
   const normalized = value?.trim()
   if (!normalized) return undefined
   if (field.kind !== "select") return normalized
-  const options = detailFieldOptions(field)
-  return options.find((option) => option.id === normalized || option.label === normalized)?.id
+  const options = field.options ?? []
+  return options.find((option) => option.id === normalized || option.label === normalized || option.legacyLabels?.includes(normalized))?.id
 }
 
 export function detailFieldValueLabel(field: DetailField, value: string | null | undefined): string | undefined {
   const normalized = value?.trim()
   if (!normalized) return undefined
   if (field.kind !== "select") return normalized
-  const options = detailFieldOptions(field)
-  return options.find((option) => option.id === normalized || option.label === normalized)?.label
+  const options = field.options ?? []
+  return options.find((option) => option.id === normalized || option.label === normalized || option.legacyLabels?.includes(normalized))?.label
 }
 
 export type Subcategory = {
@@ -108,10 +107,10 @@ export type ListingVoice = {
   safety: string
 }
 
-const condition = ["New", "Like new", "Used"] as const
-const fuel = ["Petrol", "Diesel", "Hybrid", "Electric"] as const
-const furnished = ["Furnished", "Unfurnished", "Partly furnished"] as const
-const beds = ["Studio", "1 bed", "2 bed", "3 bed", "4 bed", "5+ bed"] as const
+const condition = [{ id: "condition:new", label: "New" }, { id: "condition:like-new", label: "Like new" }, { id: "condition:used", label: "Used" }] as const
+const fuel = [{ id: "fuel:petrol", label: "Petrol" }, { id: "fuel:diesel", label: "Diesel" }, { id: "fuel:hybrid", label: "Hybrid" }, { id: "fuel:electric", label: "Electric" }] as const
+const furnished = [{ id: "furnished:furnished", label: "Furnished" }, { id: "furnished:unfurnished", label: "Unfurnished" }, { id: "furnished:partly-furnished", label: "Partly furnished" }] as const
+const beds = [{ id: "bedrooms:studio", label: "Studio" }, { id: "bedrooms:1-bed", label: "1 bed" }, { id: "bedrooms:2-bed", label: "2 bed" }, { id: "bedrooms:3-bed", label: "3 bed" }, { id: "bedrooms:4-bed", label: "4 bed" }, { id: "bedrooms:5-bed", label: "5+ bed" }] as const
 
 function text(
   id: string,
@@ -125,7 +124,7 @@ function text(
 function select(
   id: string,
   label: string,
-  options: readonly string[],
+  options: NonNullable<DetailField["options"]>,
   extra?: Pick<DetailField, "hint" | "required" | "onCard">,
 ): DetailField {
   return { id, label, kind: "select", options, ...extra }
@@ -159,7 +158,7 @@ const plans = {
           text("year", "Year", "2016", { required: true, onCard: true }),
           text("mileage", "Mileage", "86,000 km", { hint: "Write the unit, such as km or miles." }),
           select("fuel", "Fuel", fuel, { required: true, onCard: true }),
-          select("transmission", "Transmission", ["Manual", "Automatic"]),
+          select("transmission", "Transmission", [{ id: "transmission:manual", label: "Manual" }, { id: "transmission:automatic", label: "Automatic" }]),
           select("condition", "Condition", condition, { required: true }),
         ],
       },
@@ -203,7 +202,7 @@ const plans = {
         periods: ["fixed"],
         fields: [
           text("year", "Year", "2014", { onCard: true }),
-          select("cab", "Cab", ["Single cab", "Double cab", "Extended cab"], { onCard: true }),
+          select("cab", "Cab", [{ id: "cab:single-cab", label: "Single cab" }, { id: "cab:double-cab", label: "Double cab" }, { id: "cab:extended-cab", label: "Extended cab" }], { onCard: true }),
           select("fuel", "Fuel", fuel, { required: true, onCard: true }),
           text("mileage", "Mileage", "140,000 km"),
           select("condition", "Condition", condition, { required: true }),
@@ -234,7 +233,7 @@ const plans = {
         periods: ["fixed"],
         fields: [
           text("year", "Year", "2020", { onCard: true }),
-          select("use", "Use", ["Passenger", "Goods"], { required: true, onCard: true }),
+          select("use", "Use", [{ id: "use:passenger", label: "Passenger" }, { id: "use:goods", label: "Goods" }], { required: true, onCard: true }),
           select("condition", "Condition", condition, { required: true }),
         ],
       },
@@ -278,9 +277,9 @@ const plans = {
         periods: ["fixed"],
         fields: [
           select("bedrooms", "Bedrooms", beds, { required: true, onCard: true }),
-          select("bathrooms", "Bathrooms", ["1", "2", "3", "4+"]),
+          select("bathrooms", "Bathrooms", [{ id: "bathrooms:1", label: "1" }, { id: "bathrooms:2", label: "2" }, { id: "bathrooms:3", label: "3" }, { id: "bathrooms:4", label: "4+" }]),
           select("furnished", "Furnished", furnished, { onCard: true }),
-          select("title", "Title", ["Title deed", "Leasehold", "Still confirming"], {
+          select("title", "Title", [{ id: "title:title-deed", label: "Title deed" }, { id: "title:leasehold", label: "Leasehold" }, { id: "title:still-confirming", label: "Still confirming" }], {
             hint: "Say what you can show a buyer.",
           }),
         ],
@@ -295,7 +294,7 @@ const plans = {
         periods: ["month"],
         fields: [
           select("bedrooms", "Bedrooms", beds, { required: true, onCard: true }),
-          select("bathrooms", "Bathrooms", ["1", "2", "3", "4+"]),
+          select("bathrooms", "Bathrooms", [{ id: "bathrooms:1", label: "1" }, { id: "bathrooms:2", label: "2" }, { id: "bathrooms:3", label: "3" }, { id: "bathrooms:4", label: "4+" }]),
           select("furnished", "Furnished", furnished, { required: true, onCard: true }),
           text("available", "Available", "1 April"),
         ],
@@ -324,7 +323,7 @@ const plans = {
         pricePlaceholder: "600",
         periods: ["month"],
         fields: [
-          select("use", "Use", ["Office", "Shop", "Warehouse", "Mixed"], { required: true, onCard: true }),
+          select("use", "Use", [{ id: "use:office", label: "Office" }, { id: "use:shop", label: "Shop" }, { id: "use:warehouse", label: "Warehouse" }, { id: "use:mixed", label: "Mixed" }], { required: true, onCard: true }),
           text("size", "Size", "42 m²", { onCard: true }),
           select("furnished", "Furnished", furnished),
         ],
@@ -340,7 +339,7 @@ const plans = {
         descriptionPlaceholder: "What is included, how many people fit, and how check-in works.",
         fields: [
           text("sleeps", "Sleeps", "2 guests", { required: true, onCard: true }),
-          select("place", "Place", ["Room", "Cottage", "Apartment", "Guesthouse"], { required: true, onCard: true }),
+          select("place", "Place", [{ id: "place:room", label: "Room" }, { id: "place:cottage", label: "Cottage" }, { id: "place:apartment", label: "Apartment" }, { id: "place:guesthouse", label: "Guesthouse" }], { required: true, onCard: true }),
           text("beds", "Beds", "1 double"),
         ],
       },
@@ -353,7 +352,7 @@ const plans = {
         pricePlaceholder: "80",
         periods: ["month"],
         fields: [
-          select("kind", "Kind", ["Single room", "Bedsitter", "Shared room"], { required: true, onCard: true }),
+          select("kind", "Kind", [{ id: "kind:single-room", label: "Single room" }, { id: "kind:bedsitter", label: "Bedsitter" }, { id: "kind:shared-room", label: "Shared room" }], { required: true, onCard: true }),
           select("furnished", "Furnished", furnished, { required: true, onCard: true }),
           text("area", "Area", "Umoja"),
         ],
@@ -367,7 +366,7 @@ const plans = {
         pricePlaceholder: "40",
         periods: ["month"],
         fields: [
-          select("sharing", "Sharing", ["Single", "Two to a room", "Dorm"], { required: true, onCard: true }),
+          select("sharing", "Sharing", [{ id: "sharing:single", label: "Single" }, { id: "sharing:two-to-a-room", label: "Two to a room" }, { id: "sharing:dorm", label: "Dorm" }], { required: true, onCard: true }),
           text("who", "Who it is for", "Students", { required: true, onCard: true }),
         ],
       },
@@ -398,7 +397,7 @@ const plans = {
         periods: ["fixed"],
         fields: [
           text("brand", "Model", "iPhone 14 Pro", { required: true }),
-          select("storage", "Storage", ["64GB", "128GB", "256GB", "512GB", "1TB"], { required: true, onCard: true }),
+          select("storage", "Storage", [{ id: "storage:64gb", label: "64GB" }, { id: "storage:128gb", label: "128GB" }, { id: "storage:256gb", label: "256GB" }, { id: "storage:512gb", label: "512GB" }, { id: "storage:1tb", label: "1TB" }], { required: true, onCard: true }),
           select("condition", "Condition", condition, { required: true, onCard: true }),
         ],
       },
@@ -441,7 +440,7 @@ const plans = {
         periods: ["fixed"],
         fields: [
           text("output", "Output", "550W", { required: true, onCard: true }),
-          select("kind", "Kind", ["Panel", "Inverter", "Battery", "Kit"], { required: true, onCard: true }),
+          select("kind", "Kind", [{ id: "kind:panel", label: "Panel" }, { id: "kind:inverter", label: "Inverter" }, { id: "kind:battery", label: "Battery" }, { id: "kind:kit", label: "Kit" }], { required: true, onCard: true }),
           select("condition", "Condition", condition, { required: true }),
         ],
       },
@@ -528,7 +527,7 @@ const plans = {
         pricePlaceholder: "900",
         periods: ["month"],
         fields: [
-          select("workplace", "Workplace", ["On site", "Hybrid", "Remote"], { required: true, onCard: true }),
+          select("workplace", "Workplace", [{ id: "workplace:on-site", label: "On site" }, { id: "workplace:hybrid", label: "Hybrid" }, { id: "workplace:remote", label: "Remote" }], { required: true, onCard: true }),
           text("experience", "Experience", "2 years in freight", { required: true }),
         ],
       },
@@ -542,7 +541,7 @@ const plans = {
         periods: ["month"],
         fields: [
           text("days", "Days", "3 days a week", { required: true, onCard: true }),
-          select("workplace", "Workplace", ["On site", "Hybrid", "Remote"], { required: true }),
+          select("workplace", "Workplace", [{ id: "workplace:on-site", label: "On site" }, { id: "workplace:hybrid", label: "Hybrid" }, { id: "workplace:remote", label: "Remote" }], { required: true }),
         ],
       },
       {
@@ -555,7 +554,7 @@ const plans = {
         periods: ["month"],
         fields: [
           text("length", "Length", "6 months", { required: true, onCard: true }),
-          select("workplace", "Workplace", ["On site", "Hybrid", "Remote"], { required: true, onCard: true }),
+          select("workplace", "Workplace", [{ id: "workplace:on-site", label: "On site" }, { id: "workplace:hybrid", label: "Hybrid" }, { id: "workplace:remote", label: "Remote" }], { required: true, onCard: true }),
         ],
       },
       {
@@ -594,7 +593,7 @@ const plans = {
         periods: ["month"],
         fields: [
           text("length", "Length", "3 months", { required: true, onCard: true }),
-          select("workplace", "Workplace", ["On site", "Hybrid", "Remote"], { required: true, onCard: true }),
+          select("workplace", "Workplace", [{ id: "workplace:on-site", label: "On site" }, { id: "workplace:hybrid", label: "Hybrid" }, { id: "workplace:remote", label: "Remote" }], { required: true, onCard: true }),
         ],
       },
     ],
@@ -623,7 +622,7 @@ const plans = {
         pricePlaceholder: "25",
         periods: ["fixed", "hour"],
         fields: [
-          select("trade", "Trade", ["Plumbing", "Electrical", "Carpentry", "Painting", "Other"], {
+          select("trade", "Trade", [{ id: "trade:plumbing", label: "Plumbing" }, { id: "trade:electrical", label: "Electrical" }, { id: "trade:carpentry", label: "Carpentry" }, { id: "trade:painting", label: "Painting" }, { id: "trade:other", label: "Other" }], {
             required: true,
             onCard: true,
           }),
@@ -640,7 +639,7 @@ const plans = {
         periods: ["fixed"],
         fields: [
           text("service", "Service", "Knotless braids", { required: true, onCard: true }),
-          select("place", "Where", ["At your home", "At my salon", "Either"], { required: true, onCard: true }),
+          select("place", "Where", [{ id: "place:at-your-home", label: "At your home" }, { id: "place:at-my-salon", label: "At my salon" }, { id: "place:either", label: "Either" }], { required: true, onCard: true }),
         ],
       },
       {
@@ -667,7 +666,7 @@ const plans = {
         periods: ["fixed"],
         fields: [
           text("turnaround", "Turnaround", "Same day", { required: true, onCard: true }),
-          select("place", "Where", ["At my shop", "I collect", "Either"], { onCard: true }),
+          select("place", "Where", [{ id: "place:at-my-shop", label: "At my shop" }, { id: "place:i-collect", label: "I collect" }, { id: "place:either", label: "Either" }], { onCard: true }),
         ],
       },
       {
@@ -741,10 +740,10 @@ const plans = {
     descriptionPlaceholder: "Routes, capacity, timing, loading help, insurance and what the quoted price includes.",
     subcategories: [
       { id: "freight", name: "Freight & haulage", summary: "Trucks moving commercial or bulk loads.", titlePlaceholder: "10-tonne haulage within Nairobi", priceLabel: "Starting price", pricePlaceholder: "200", periods: ["fixed"], fields: [text("vehicle", "Vehicle", "10-tonne truck", { required: true, onCard: true }), text("capacity", "Capacity", "10 tonnes", { required: true, onCard: true }), text("route", "Route", "Nairobi to Mombasa", { required: true })] },
-      { id: "courier", name: "Courier & delivery", summary: "Parcels and last-mile deliveries.", titlePlaceholder: "Same-day city courier", priceLabel: "Starting price", pricePlaceholder: "5", periods: ["fixed"], fields: [select("vehicle", "Vehicle", ["Bicycle", "Motorbike", "Car", "Van"], { required: true, onCard: true }), text("area", "Area covered", "Within Accra", { required: true, onCard: true })] },
-      { id: "moving-logistics", name: "Moving & removals", summary: "Home, office and shop moves.", titlePlaceholder: "Two-person home moving team", priceLabel: "Starting price", pricePlaceholder: "80", periods: ["fixed"], fields: [text("vehicle", "Vehicle", "3-tonne truck", { required: true, onCard: true }), select("crew", "Crew", ["Driver only", "Driver and helper", "Full moving crew"], { required: true, onCard: true })] },
+      { id: "courier", name: "Courier & delivery", summary: "Parcels and last-mile deliveries.", titlePlaceholder: "Same-day city courier", priceLabel: "Starting price", pricePlaceholder: "5", periods: ["fixed"], fields: [select("vehicle", "Vehicle", [{ id: "vehicle:bicycle", label: "Bicycle" }, { id: "vehicle:motorbike", label: "Motorbike" }, { id: "vehicle:car", label: "Car" }, { id: "vehicle:van", label: "Van" }], { required: true, onCard: true }), text("area", "Area covered", "Within Accra", { required: true, onCard: true })] },
+      { id: "moving-logistics", name: "Moving & removals", summary: "Home, office and shop moves.", titlePlaceholder: "Two-person home moving team", priceLabel: "Starting price", pricePlaceholder: "80", periods: ["fixed"], fields: [text("vehicle", "Vehicle", "3-tonne truck", { required: true, onCard: true }), select("crew", "Crew", [{ id: "crew:driver-only", label: "Driver only" }, { id: "crew:driver-and-helper", label: "Driver and helper" }, { id: "crew:full-moving-crew", label: "Full moving crew" }], { required: true, onCard: true })] },
       { id: "passenger", name: "Passenger transport", summary: "Taxi, shuttle, bus or charter service.", titlePlaceholder: "Airport shuttle for 7 passengers", priceLabel: "Starting price", pricePlaceholder: "25", periods: ["fixed"], fields: [text("vehicle", "Vehicle", "7-seat van", { required: true, onCard: true }), text("seats", "Seats", "7", { required: true, onCard: true }), text("route", "Route", "Airport and city") ] },
-      { id: "storage", name: "Warehousing & storage", summary: "Short- or long-term goods storage.", titlePlaceholder: "Secure pallet storage", priceLabel: "Storage price", pricePlaceholder: "30", periods: ["month", "week"], fields: [text("size", "Space", "20 m²", { required: true, onCard: true }), select("access", "Access", ["Business hours", "24 hours", "By appointment"], { required: true, onCard: true })] },
+      { id: "storage", name: "Warehousing & storage", summary: "Short- or long-term goods storage.", titlePlaceholder: "Secure pallet storage", priceLabel: "Storage price", pricePlaceholder: "30", periods: ["month", "week"], fields: [text("size", "Space", "20 m²", { required: true, onCard: true }), select("access", "Access", [{ id: "access:business-hours", label: "Business hours" }, { id: "access:24-hours", label: "24 hours" }, { id: "access:by-appointment", label: "By appointment" }], { required: true, onCard: true })] },
     ],
   },
   energy: {
@@ -762,10 +761,10 @@ const plans = {
     descriptionLabel: "Description",
     descriptionPlaceholder: "Output, age, battery health, installation, warranty and items included.",
     subcategories: [
-      { id: "solar-systems", name: "Solar systems", summary: "Panels, inverters and complete solar kits.", titlePlaceholder: "3kW home solar system", priceLabel: "Price", pricePlaceholder: "1800", periods: ["fixed"], fields: [text("output", "Output", "3kW", { required: true, onCard: true }), select("kind", "System", ["Complete kit", "Panels", "Inverter", "Controller"], { required: true, onCard: true }), select("condition", "Condition", condition, { required: true })] },
-      { id: "batteries", name: "Batteries & storage", summary: "Solar, backup and industrial batteries.", titlePlaceholder: "5kWh lithium battery", priceLabel: "Price", pricePlaceholder: "950", periods: ["fixed"], fields: [text("capacity", "Capacity", "5kWh", { required: true, onCard: true }), select("chemistry", "Battery type", ["Lithium", "Lead acid", "Gel", "Other"], { required: true, onCard: true }), select("condition", "Condition", condition, { required: true })] },
-      { id: "generators-power", name: "Generators", summary: "Petrol, diesel and gas generators.", titlePlaceholder: "20kVA diesel generator", priceLabel: "Price", pricePlaceholder: "4200", periods: ["fixed", "day"], fields: [text("output", "Output", "20kVA", { required: true, onCard: true }), select("fuel", "Fuel", ["Diesel", "Petrol", "Gas"], { required: true, onCard: true }), select("condition", "Condition", condition, { required: true })] },
-      { id: "fuel", name: "Fuel & gas", summary: "Commercial fuel, LPG and clean-cooking supply.", titlePlaceholder: "LPG cylinder exchange", priceLabel: "Price", pricePlaceholder: "35", periods: ["fixed"], fields: [select("product", "Product", ["LPG", "Cooking fuel", "Diesel supply", "Other"], { required: true, onCard: true }), text("quantity", "Quantity", "13kg", { required: true, onCard: true })] },
+      { id: "solar-systems", name: "Solar systems", summary: "Panels, inverters and complete solar kits.", titlePlaceholder: "3kW home solar system", priceLabel: "Price", pricePlaceholder: "1800", periods: ["fixed"], fields: [text("output", "Output", "3kW", { required: true, onCard: true }), select("kind", "System", [{ id: "kind:complete-kit", label: "Complete kit" }, { id: "kind:panels", label: "Panels" }, { id: "kind:inverter", label: "Inverter" }, { id: "kind:controller", label: "Controller" }], { required: true, onCard: true }), select("condition", "Condition", condition, { required: true })] },
+      { id: "batteries", name: "Batteries & storage", summary: "Solar, backup and industrial batteries.", titlePlaceholder: "5kWh lithium battery", priceLabel: "Price", pricePlaceholder: "950", periods: ["fixed"], fields: [text("capacity", "Capacity", "5kWh", { required: true, onCard: true }), select("chemistry", "Battery type", [{ id: "chemistry:lithium", label: "Lithium" }, { id: "chemistry:lead-acid", label: "Lead acid" }, { id: "chemistry:gel", label: "Gel" }, { id: "chemistry:other", label: "Other" }], { required: true, onCard: true }), select("condition", "Condition", condition, { required: true })] },
+      { id: "generators-power", name: "Generators", summary: "Petrol, diesel and gas generators.", titlePlaceholder: "20kVA diesel generator", priceLabel: "Price", pricePlaceholder: "4200", periods: ["fixed", "day"], fields: [text("output", "Output", "20kVA", { required: true, onCard: true }), select("fuel", "Fuel", [{ id: "fuel:diesel", label: "Diesel" }, { id: "fuel:petrol", label: "Petrol" }, { id: "fuel:gas", label: "Gas" }], { required: true, onCard: true }), select("condition", "Condition", condition, { required: true })] },
+      { id: "fuel", name: "Fuel & gas", summary: "Commercial fuel, LPG and clean-cooking supply.", titlePlaceholder: "LPG cylinder exchange", priceLabel: "Price", pricePlaceholder: "35", periods: ["fixed"], fields: [select("product", "Product", [{ id: "product:lpg", label: "LPG" }, { id: "product:cooking-fuel", label: "Cooking fuel" }, { id: "product:diesel-supply", label: "Diesel supply" }, { id: "product:other", label: "Other" }], { required: true, onCard: true }), text("quantity", "Quantity", "13kg", { required: true, onCard: true })] },
       { id: "installation", name: "Power installation", summary: "Solar, electrical and backup-power work.", titlePlaceholder: "Certified solar installation", priceLabel: "Starting price", pricePlaceholder: "150", periods: ["fixed"], fields: [text("service", "Service", "Solar installation", { required: true, onCard: true }), text("area", "Area covered", "Kigali", { required: true, onCard: true })] },
     ],
   },
@@ -784,11 +783,11 @@ const plans = {
     descriptionLabel: "Description",
     descriptionPlaceholder: "Grade, source, harvest or preparation date, minimum order, storage and delivery.",
     subcategories: [
-      { id: "fresh-produce", name: "Fresh produce", summary: "Fruit, vegetables and fresh crops.", titlePlaceholder: "Fresh tomatoes, 20kg crate", priceLabel: "Price", pricePlaceholder: "18", periods: ["fixed"], fields: [text("product", "Product", "Tomatoes", { required: true, onCard: true }), text("pack", "Pack", "20kg crate", { required: true, onCard: true }), select("grade", "Grade", ["Premium", "Standard", "Processing"], { required: true })] },
-      { id: "grains-staples", name: "Grains & staples", summary: "Maize, rice, flour, pulses and cooking staples.", titlePlaceholder: "Clean dry maize, 90kg bag", priceLabel: "Price", pricePlaceholder: "45", periods: ["fixed"], fields: [text("product", "Product", "Maize", { required: true, onCard: true }), text("pack", "Pack", "90kg bag", { required: true, onCard: true }), select("sale", "Sale", ["Retail", "Wholesale", "Both"], { required: true })] },
-      { id: "meat-fish", name: "Meat, fish & dairy", summary: "Chilled, frozen or fresh animal products.", titlePlaceholder: "Fresh tilapia by the kilo", priceLabel: "Price", pricePlaceholder: "6", periods: ["fixed"], fields: [text("product", "Product", "Tilapia", { required: true, onCard: true }), text("pack", "Pack", "Per kg", { required: true, onCard: true }), select("storage", "Storage", ["Fresh", "Chilled", "Frozen", "Shelf stable"], { required: true })] },
+      { id: "fresh-produce", name: "Fresh produce", summary: "Fruit, vegetables and fresh crops.", titlePlaceholder: "Fresh tomatoes, 20kg crate", priceLabel: "Price", pricePlaceholder: "18", periods: ["fixed"], fields: [text("product", "Product", "Tomatoes", { required: true, onCard: true }), text("pack", "Pack", "20kg crate", { required: true, onCard: true }), select("grade", "Grade", [{ id: "grade:premium", label: "Premium" }, { id: "grade:standard", label: "Standard" }, { id: "grade:processing", label: "Processing" }], { required: true })] },
+      { id: "grains-staples", name: "Grains & staples", summary: "Maize, rice, flour, pulses and cooking staples.", titlePlaceholder: "Clean dry maize, 90kg bag", priceLabel: "Price", pricePlaceholder: "45", periods: ["fixed"], fields: [text("product", "Product", "Maize", { required: true, onCard: true }), text("pack", "Pack", "90kg bag", { required: true, onCard: true }), select("sale", "Sale", [{ id: "sale:retail", label: "Retail" }, { id: "sale:wholesale", label: "Wholesale" }, { id: "sale:both", label: "Both" }], { required: true })] },
+      { id: "meat-fish", name: "Meat, fish & dairy", summary: "Chilled, frozen or fresh animal products.", titlePlaceholder: "Fresh tilapia by the kilo", priceLabel: "Price", pricePlaceholder: "6", periods: ["fixed"], fields: [text("product", "Product", "Tilapia", { required: true, onCard: true }), text("pack", "Pack", "Per kg", { required: true, onCard: true }), select("storage", "Storage", [{ id: "storage:fresh", label: "Fresh" }, { id: "storage:chilled", label: "Chilled" }, { id: "storage:frozen", label: "Frozen" }, { id: "storage:shelf-stable", label: "Shelf stable" }], { required: true })] },
       { id: "prepared-food", name: "Prepared food", summary: "Meals, baked goods and ready-to-eat food.", titlePlaceholder: "Lunch trays for offices", priceLabel: "Price", pricePlaceholder: "5", periods: ["fixed"], fields: [text("product", "Food", "Lunch tray", { required: true, onCard: true }), text("serves", "Serves", "1 person", { required: true, onCard: true }), text("notice", "Order notice", "One day") ] },
-      { id: "market-supplies", name: "Market & shop supplies", summary: "Packaged household goods sold retail or wholesale.", titlePlaceholder: "Cooking oil wholesale cartons", priceLabel: "Price", pricePlaceholder: "30", periods: ["fixed"], fields: [text("product", "Product", "Cooking oil", { required: true, onCard: true }), text("pack", "Pack", "Carton of 12", { required: true, onCard: true }), select("sale", "Sale", ["Retail", "Wholesale", "Both"], { required: true })] },
+      { id: "market-supplies", name: "Market & shop supplies", summary: "Packaged household goods sold retail or wholesale.", titlePlaceholder: "Cooking oil wholesale cartons", priceLabel: "Price", pricePlaceholder: "30", periods: ["fixed"], fields: [text("product", "Product", "Cooking oil", { required: true, onCard: true }), text("pack", "Pack", "Carton of 12", { required: true, onCard: true }), select("sale", "Sale", [{ id: "sale:retail", label: "Retail" }, { id: "sale:wholesale", label: "Wholesale" }, { id: "sale:both", label: "Both" }], { required: true })] },
     ],
   },
   industrial: {
@@ -851,8 +850,8 @@ const plans = {
         pricePlaceholder: "1800",
         periods: ["fixed"],
         fields: [
-          select("size", "Size", ["20ft", "40ft", "Other"], { required: true, onCard: true }),
-          select("condition", "Condition", ["Wind and watertight", "Needs work", "For scrap"], {
+          select("size", "Size", [{ id: "size:20ft", label: "20ft" }, { id: "size:40ft", label: "40ft" }, { id: "size:other", label: "Other" }], { required: true, onCard: true }),
+          select("condition", "Condition", [{ id: "condition:wind-and-watertight", label: "Wind and watertight" }, { id: "condition:needs-work", label: "Needs work" }, { id: "condition:for-scrap", label: "For scrap" }], {
             required: true,
             onCard: true,
           }),
@@ -868,7 +867,7 @@ const plans = {
         periods: ["fixed"],
         fields: [
           text("output", "Output", "50kVA", { required: true, onCard: true }),
-          select("fuel", "Fuel", ["Diesel", "Petrol"], { required: true }),
+          select("fuel", "Fuel", [{ id: "fuel:diesel", label: "Diesel" }, { id: "fuel:petrol", label: "Petrol" }], { required: true }),
           select("condition", "Condition", condition, { required: true, onCard: true }),
         ],
       },
@@ -895,7 +894,7 @@ const plans = {
         periods: ["fixed"],
         fields: [
           text("business", "Business", "Provision shop", { required: true, onCard: true }),
-          select("stock", "Stock", ["Included", "Not included", "Negotiable"], { required: true, onCard: true }),
+          select("stock", "Stock", [{ id: "stock:included", label: "Included" }, { id: "stock:not-included", label: "Not included" }, { id: "stock:negotiable", label: "Negotiable" }], { required: true, onCard: true }),
         ],
       },
     ],
@@ -939,7 +938,7 @@ const plans = {
         periods: ["fixed"],
         fields: [
           text("size", "Size", "5 acres", { required: true, onCard: true }),
-          select("title", "Papers", ["Title deed", "Offer letter", "Still confirming"], { required: true }),
+          select("title", "Papers", [{ id: "title:title-deed", label: "Title deed" }, { id: "title:offer-letter", label: "Offer letter" }, { id: "title:still-confirming", label: "Still confirming" }], { required: true }),
           text("use", "Current use", "Maize", { onCard: true }),
         ],
       },
@@ -1085,7 +1084,7 @@ const plans = {
         fields: [
           text("item", "Item", "Women's tops", { required: true, onCard: true }),
           text("sizes", "Sizes", "Mixed", { required: true, onCard: true }),
-          select("condition", "Condition", ["New", "Like new", "Used", "Bulk, unchecked"], { required: true }),
+          select("condition", "Condition", [{ id: "condition:new", label: "New" }, { id: "condition:like-new", label: "Like new" }, { id: "condition:used", label: "Used" }, { id: "condition:bulk-unchecked", label: "Bulk, unchecked" }], { required: true }),
         ],
       },
       {
@@ -1169,7 +1168,7 @@ const plans = {
         periods: ["fixed"],
         fields: [
           text("stock", "Stock", "OTC medicines", { required: true, onCard: true }),
-          select("condition", "Condition", ["Sealed", "Short dated", "Mixed"], { required: true, onCard: true }),
+          select("condition", "Condition", [{ id: "condition:sealed", label: "Sealed" }, { id: "condition:short-dated", label: "Short dated" }, { id: "condition:mixed", label: "Mixed" }], { required: true, onCard: true }),
         ],
       },
       {
@@ -1227,7 +1226,7 @@ const plans = {
         fields: [
           text("subject", "Subject", "Maths", { required: true, onCard: true }),
           text("level", "Level", "Secondary", { required: true, onCard: true }),
-          select("format", "Format", ["At my place", "At the student's home", "Online"], { required: true }),
+          select("format", "Format", [{ id: "format:at-my-place", label: "At my place" }, { id: "format:at-the-student-s-home", label: "At the student's home" }, { id: "format:online", label: "Online" }], { required: true }),
         ],
       },
     ],
@@ -1302,7 +1301,7 @@ const plans = {
         fields: [
           text("size", "Size", "265/70 R17", { required: true, onCard: true }),
           text("count", "Count", "4", { required: true, onCard: true }),
-          select("condition", "Condition", ["New", "Used, good tread", "Used"], { required: true }),
+          select("condition", "Condition", [{ id: "condition:new", label: "New" }, { id: "condition:used-good-tread", label: "Used, good tread" }, { id: "condition:used", label: "Used" }], { required: true }),
         ],
       },
       {
@@ -1360,7 +1359,7 @@ const plans = {
         periods: ["fixed"],
         fields: [
           text("size", "Size", "50 by 100 ft", { required: true, onCard: true }),
-          select("papers", "Papers", ["Title deed", "Offer letter", "Still confirming"], { required: true, onCard: true }),
+          select("papers", "Papers", [{ id: "papers:title-deed", label: "Title deed" }, { id: "papers:offer-letter", label: "Offer letter" }, { id: "papers:still-confirming", label: "Still confirming" }], { required: true, onCard: true }),
           text("access", "Access", "Murram road"),
         ],
       },
@@ -1374,7 +1373,7 @@ const plans = {
         periods: ["fixed"],
         fields: [
           text("size", "Size", "Quarter acre", { required: true, onCard: true }),
-          select("papers", "Papers", ["Title deed", "Offer letter", "Still confirming"], { required: true, onCard: true }),
+          select("papers", "Papers", [{ id: "papers:title-deed", label: "Title deed" }, { id: "papers:offer-letter", label: "Offer letter" }, { id: "papers:still-confirming", label: "Still confirming" }], { required: true, onCard: true }),
           text("frontage", "Frontage", "On the tarmac"),
         ],
       },
@@ -1406,7 +1405,7 @@ const plans = {
         fields: [
           text("gauge", "Gauge", "Gauge 30", { required: true, onCard: true }),
           text("length", "Length", "3 metres", { required: true, onCard: true }),
-          select("condition", "Condition", ["New", "Used"], { required: true }),
+          select("condition", "Condition", [{ id: "condition:new", label: "New" }, { id: "condition:used", label: "Used" }], { required: true }),
         ],
       },
       {
@@ -1432,7 +1431,7 @@ const plans = {
         periods: ["fixed"],
         fields: [
           text("size", "Size", "2 by 2, 12ft", { required: true, onCard: true }),
-          select("treatment", "Treatment", ["Treated", "Untreated"], { required: true, onCard: true }),
+          select("treatment", "Treatment", [{ id: "treatment:treated", label: "Treated" }, { id: "treatment:untreated", label: "Untreated" }], { required: true, onCard: true }),
         ],
       },
       {
@@ -1446,7 +1445,7 @@ const plans = {
         fields: [
           text("item", "Item", "PVC pipe", { required: true, onCard: true }),
           text("size", "Size", "20mm, 6 metres", { required: true, onCard: true }),
-          select("condition", "Condition", ["New", "Used"], { required: true }),
+          select("condition", "Condition", [{ id: "condition:new", label: "New" }, { id: "condition:used", label: "Used" }], { required: true }),
         ],
       },
     ],
@@ -1476,7 +1475,7 @@ const plans = {
         periods: ["fixed"],
         fields: [
           text("capacity", "Capacity", "1000 litres", { required: true, onCard: true }),
-          select("material", "Material", ["Plastic", "Steel", "Concrete"], { required: true, onCard: true }),
+          select("material", "Material", [{ id: "material:plastic", label: "Plastic" }, { id: "material:steel", label: "Steel" }, { id: "material:concrete", label: "Concrete" }], { required: true, onCard: true }),
           select("condition", "Condition", condition, { required: true }),
         ],
       },
@@ -1536,7 +1535,7 @@ const plans = {
         fields: [
           text("breed", "Breed", "German shepherd", { required: true, onCard: true }),
           text("age", "Age", "8 weeks", { required: true, onCard: true }),
-          select("sex", "Sex", ["Male", "Female"], { required: true }),
+          select("sex", "Sex", [{ id: "sex:male", label: "Male" }, { id: "sex:female", label: "Female" }], { required: true }),
         ],
       },
       {
@@ -1550,7 +1549,7 @@ const plans = {
         fields: [
           text("breed", "Breed", "Tabby", { required: true, onCard: true }),
           text("age", "Age", "10 weeks", { required: true, onCard: true }),
-          select("sex", "Sex", ["Male", "Female", "Mixed"], { required: true }),
+          select("sex", "Sex", [{ id: "sex:male", label: "Male" }, { id: "sex:female", label: "Female" }, { id: "sex:mixed", label: "Mixed" }], { required: true }),
         ],
       },
       {

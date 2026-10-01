@@ -1,7 +1,7 @@
 "use client"
 
 import { Check, LocateFixed } from "lucide-react"
-import { useRef, useState } from "react"
+import { useEffect, useRef, useState } from "react"
 
 import { CityField, type ChosenPlace } from "@/components/city-field"
 import { FormField } from "@/components/form-field"
@@ -14,6 +14,8 @@ import {
   primaryCountries,
   type CountryRecord,
 } from "@/lib/countries"
+import { marketplacePolicy } from "@/lib/marketplace-policy"
+import { usePrefs } from "@/components/prefs-provider"
 import { cn } from "@/lib/utils"
 
 export function PostingLocationFields({
@@ -39,17 +41,36 @@ export function PostingLocationFields({
   onPlace: (place: ChosenPlace | null) => void
   onCoordinates: (lat: number, lng: number) => void
 }) {
+  const { t } = usePrefs()
   const [locating, setLocating] = useState(false)
+  const [locationError, setLocationError] = useState<string | null>(null)
+  const context = `${country}|${city}`
+  const currentContext = useRef(context)
+  useEffect(() => { currentContext.current = context }, [context])
 
   function useCurrentLocation() {
-    if (!navigator.geolocation) return
+    setLocationError(null)
+    if (!navigator.geolocation) {
+      setLocationError(t("post.locationUnavailable"))
+      return
+    }
     setLocating(true)
     navigator.geolocation.getCurrentPosition(
       (position) => {
+        if (currentContext.current !== context) {
+          setLocating(false)
+          setLocationError(t("post.locationFailed"))
+          return
+        }
         onCoordinates(position.coords.latitude, position.coords.longitude)
         setLocating(false)
       },
-      () => setLocating(false),
+      (error) => {
+        setLocating(false)
+        setLocationError(error.code === 1
+          ? t("post.locationDenied")
+          : t("post.locationFailed"))
+      },
       { enableHighAccuracy: true, timeout: 10000, maximumAge: 60_000 },
     )
   }
@@ -57,42 +78,44 @@ export function PostingLocationFields({
   return (
     <div className="grid gap-3">
       <div className="grid gap-3 sm:grid-cols-2">
-        <FormField label="Country" required>
+        <FormField label={t("post.country")} required>
           <CountryField country={country} onChange={onCountryChange} />
         </FormField>
-        <FormField label="City" required error={cityError}>
+        <FormField label={t("post.city")} required error={cityError}>
           {country ? (
             <CityField country={country} city={city} onCityChange={onCityChange} onPlace={onPlace} />
           ) : (
-            <Input disabled placeholder="Choose a country first" aria-disabled="true" className="h-11 bg-background sm:h-10" />
+            <Input disabled placeholder={t("post.chooseCountryFirst")} aria-disabled="true" className="h-11 bg-background sm:h-10" />
           )}
         </FormField>
       </div>
       <FormField
-        label="Specific location"
+        label={t("post.specificLocation")}
         required
         error={locationDetailError}
-        hint="Neighborhood, landmark, pickup point, or address. This appears on the listing detail page, so avoid a private home address unless you want it public."
+        hint={t("post.specificLocationHint")}
       >
         <div className="flex gap-2">
           <Input
             value={locationDetail}
             onChange={(event) => onLocationDetailChange(event.target.value)}
-            placeholder="e.g. Ntinda, near Capital Shoppers"
+            placeholder={t("post.specificLocationPlaceholder")}
             className="h-11 bg-background sm:h-10"
-            maxLength={120}
+            maxLength={marketplacePolicy.listing.maxLocationDetailLength}
           />
-          <Button type="button" variant="outline" className="h-11 shrink-0 rounded-xl sm:h-10" onClick={useCurrentLocation} disabled={locating}>
+          <Button type="button" variant="outline" className="h-11 shrink-0 rounded-xl sm:h-10" onClick={useCurrentLocation} disabled={locating} aria-label={locating ? t("post.findingLocation") : t("post.useCurrentLocation")}>
             <LocateFixed className="size-4" />
-            <span className="hidden sm:inline">{locating ? "Locating…" : "Use location"}</span>
+            <span className="hidden sm:inline">{locating ? t("post.locating") : t("post.useLocation")}</span>
           </Button>
         </div>
       </FormField>
+      {locationError ? <p role="alert" className="text-sm text-destructive">{locationError}</p> : null}
     </div>
   )
 }
 
 function CountryField({ country, onChange }: { country: string; onChange: (code: string) => void }) {
+  const { t } = usePrefs()
   const inputRef = useRef<HTMLInputElement>(null)
   const [query, setQuery] = useState("")
   const [open, setOpen] = useState(false)
@@ -118,7 +141,7 @@ function CountryField({ country, onChange }: { country: string; onChange: (code:
         aria-expanded={open}
         aria-controls="post-country-list"
         aria-autocomplete="list"
-        placeholder="Choose country"
+        placeholder={t("post.chooseCountry")}
         className="h-11 bg-background sm:h-10"
         onClick={() => setOpen(true)}
         onFocus={() => { setQuery(""); setOpen(true) }}
@@ -135,7 +158,7 @@ function CountryField({ country, onChange }: { country: string; onChange: (code:
       />
       {open ? (
         <ul id="post-country-list" role="listbox" className="absolute z-30 mt-1 max-h-56 w-full overflow-auto rounded-xl border border-border bg-popover p-1 text-popover-foreground shadow-md">
-          {matches.length === 0 ? <li className="px-2 py-2 text-sm text-muted-foreground">No country matches</li> : (
+          {matches.length === 0 ? <li className="px-2 py-2 text-sm text-muted-foreground">{t("nav.noPlaceMatches")}</li> : (
             <>
               {featured.map((item) => <CountryOption key={item.code} item={item} selected={item.code === country} onPick={pick} />)}
               {featured.length > 0 && rest.length > 0 ? <li className="my-1 border-t border-border" /> : null}

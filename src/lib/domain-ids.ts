@@ -1,5 +1,5 @@
 import { canonicalCountry } from "@/lib/countries"
-import { isCurrencyPreference } from "@/lib/prefs"
+import { currencyRegistry } from "@/lib/currency-registry"
 
 declare const brand: unique symbol
 export type Brand<T, Name extends string> = T & { readonly [brand]: Name }
@@ -15,11 +15,11 @@ export function countryCode(value: string | null | undefined): CountryCode | nul
 }
 
 export function currencyCode(value: string | null | undefined): CurrencyCode | null {
-  return value && value !== "listing" && isCurrencyPreference(value) ? (value as CurrencyCode) : null
+  return value && currencyRegistry().some((currency) => currency.code === value) ? (value as CurrencyCode) : null
 }
 
 export function timeZoneId(value: string | null | undefined): TimeZoneId | null {
-  if (!value || !value.includes("/")) return null
+  if (!value) return null
   try {
     new Intl.DateTimeFormat("en", { timeZone: value }).format()
     return value as TimeZoneId

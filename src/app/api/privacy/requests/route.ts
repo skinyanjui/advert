@@ -1,9 +1,6 @@
+import { privacyRequestInputSchema, readApiInput } from "@/lib/runtime-contracts"
 import { fail, ok } from "@/lib/api"
 import { resolveMutationOwner, resolveOwner } from "@/lib/board-session"
-import {
-  isPrivacyJurisdiction,
-  isPrivacyRequestType,
-} from "@/lib/privacy-rights"
 import {
   createPrivacyRequest,
   listPrivacyRequestsForUser,
@@ -34,22 +31,10 @@ export async function GET(request: Request) {
 export async function POST(request: Request) {
   const owner = await resolveMutationOwner(request)
   try {
-    const body = (await request.json()) as {
-      email?: unknown
-      subjectEmail?: unknown
-      actingAsAgent?: unknown
-      jurisdiction?: unknown
-      requestType?: unknown
-      details?: unknown
-      locale?: unknown
-    }
-
-    const jurisdiction = typeof body.jurisdiction === "string" ? body.jurisdiction : ""
-    const requestType = typeof body.requestType === "string" ? body.requestType : ""
-    if (!isPrivacyJurisdiction(jurisdiction)) return fail("Choose the jurisdiction that best fits your request.")
-    if (!isPrivacyRequestType(requestType)) return fail("Choose a privacy request type.")
-
-    const actingAsAgent = body.actingAsAgent === true
+    const parsed = await readApiInput(request, privacyRequestInputSchema)
+    if (!parsed.ok) return fail(parsed.reason)
+    const body = parsed.value
+    const { jurisdiction, requestType, actingAsAgent } = body
     const suppliedEmail = cleanEmail(body.email)
     const accountEmail = owner?.kind === "auth" ? cleanEmail(owner.email) : ""
     const requestEmail = accountEmail || suppliedEmail

@@ -2,6 +2,7 @@ import { fail, ok } from "@/lib/api"
 import { canOwner } from "@/lib/access-control"
 import { requireCurrentTerms } from "@/lib/terms-gate"
 import { resolveMutationOwner } from "@/lib/board-session"
+import { reportInputSchema, readApiInput } from "@/lib/runtime-contracts"
 import { createReport } from "@/lib/board-store"
 
 export const dynamic = "force-dynamic"
@@ -13,20 +14,9 @@ export async function POST(request: Request) {
   const termsBlock = await requireCurrentTerms(owner.id)
   if (termsBlock) return termsBlock
   try {
-    const body = (await request.json()) as {
-      listingId?: unknown
-      reason?: unknown
-      note?: unknown
-      legalBasis?: unknown
-      jurisdiction?: unknown
-      goodFaith?: unknown
-    }
-    const listingId = typeof body.listingId === "string" ? body.listingId : ""
-    const reason = typeof body.reason === "string" ? body.reason : ""
-    const note = typeof body.note === "string" ? body.note : ""
-    const legalBasis = typeof body.legalBasis === "string" ? body.legalBasis : ""
-    const jurisdiction = typeof body.jurisdiction === "string" ? body.jurisdiction : ""
-    const goodFaith = body.goodFaith === true
+    const parsed = await readApiInput(request, reportInputSchema)
+    if (!parsed.ok) return fail(parsed.reason)
+    const { listingId, reason, note, legalBasis, jurisdiction, goodFaith } = parsed.value
     const result = await createReport(
       owner.id,
       listingId,

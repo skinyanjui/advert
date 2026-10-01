@@ -1,3 +1,6 @@
+/** Increment only when persisted taxonomy semantics change; label edits keep this version. */
+export const currentTaxonomyVersion = 1 as const
+
 export const categories = [
   { id: "vehicles", name: "Vehicles", labelKey: "category.vehicles" },
   { id: "parts", name: "Vehicle parts", labelKey: "category.parts" },

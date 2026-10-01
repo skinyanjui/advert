@@ -30,6 +30,7 @@ export function listingContactCapabilities({
   const directBase = activeConversation && signedIn && !sample && hasPhone
 
   return {
+    // Keep the guest CTA available so it can preserve listing context through sign-in.
     message: activeConversation && !contactMethods.message.requiresPhone,
     whatsapp: directBase && contactMethods.whatsapp.sellerOptInRequired && whatsappEnabled,
     text: directBase && contactMethods.text.sellerOptInRequired && phoneEnabled,

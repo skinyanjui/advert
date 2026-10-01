@@ -1,3 +1,4 @@
+import { moderationAppealReviewSchema, readApiInput } from "@/lib/runtime-contracts"
 import { canOwner } from "@/lib/access-control"
 import { fail, ok } from "@/lib/api"
 import { resolveMutationOwner, resolveOwner } from "@/lib/board-session"
@@ -29,18 +30,9 @@ export async function PATCH(request: Request) {
   const admin = await requireAdmin(request, true)
   if (!admin) return fail("Admin access required.", 403)
   try {
-    const body = (await request.json()) as {
-      appealId?: unknown
-      outcome?: unknown
-      resolution?: unknown
-    }
-    const appealId = typeof body.appealId === "string" ? body.appealId.trim() : ""
-    const outcome = typeof body.outcome === "string" ? body.outcome : ""
-    const resolution =
-      typeof body.resolution === "string" ? body.resolution.trim().slice(0, 2500) : ""
-    if (!appealId) return fail("Choose an appeal.")
-    if (outcome !== "uphold" && outcome !== "reverse") return fail("Choose uphold or reverse.")
-    if (!resolution) return fail("Add a reasoned resolution before deciding the appeal.")
+    const parsed = await readApiInput(request, moderationAppealReviewSchema)
+    if (!parsed.ok) return fail(parsed.reason)
+    const { appealId, outcome, resolution } = parsed.value
     const result = await reviewModerationAppeal(admin.id, appealId, outcome, resolution)
     if (!result.ok) return fail(result.reason)
     return ok({ appeals: await listModerationAppealsAdmin() })

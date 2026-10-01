@@ -1,3 +1,4 @@
+import { boardImportSchema, readApiInput } from "@/lib/runtime-contracts"
 import { NextResponse } from "next/server"
 import { fail, ok } from "@/lib/api"
 import { canOwner } from "@/lib/access-control"
@@ -66,8 +67,9 @@ export async function POST(request: Request) {
   const termsBlock = await requireCurrentTerms(owner.id)
   if (termsBlock) return termsBlock
   try {
-    const body: unknown = await request.json()
-    return ok(await importBoard(owner.id, body))
+    const parsed = await readApiInput(request, boardImportSchema)
+    if (!parsed.ok) return fail(parsed.reason)
+    return ok(await importBoard(owner.id, parsed.value))
   } catch {
     return fail("The board database did not respond.", 500)
   }

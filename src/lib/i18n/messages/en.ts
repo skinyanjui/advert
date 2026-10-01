@@ -745,6 +745,19 @@ export const en = {
   "post.sub.retail-equipment": "Retail & hospitality equipment",
   "post.sub.office-equipment": "Office equipment",
   "post.sub.commercial-stock": "Wholesale & commercial stock",
+  "price.conversionUnavailable": "Exchange rates are unavailable. Showing the posted price and currency.",
+  "post.locationUnavailable": "Location is unavailable. Enter a neighborhood or pickup point instead.",
+  "post.locationDenied": "Location permission was denied. Enter a pickup point, or allow location in your browser and try again.",
+  "post.locationFailed": "Could not find your location. Try again or enter a neighborhood or pickup point.",
+  "post.specificLocation": "Specific location",
+  "post.specificLocationHint": "Neighborhood, landmark, pickup point, or address. This text and any coordinates you choose are public on the listing detail page. Choose the pickup location and avoid a private home address unless you want it public.",
+  "post.specificLocationPlaceholder": "e.g. Ntinda, near Capital Shoppers",
+  "post.findingLocation": "Finding listing location",
+  "post.useCurrentLocation": "Use current location for this listing",
+  "post.locating": "Locating…",
+  "post.useLocation": "Use location",
+  "post.locationAdded": "Pickup coordinates added. These appear publicly on the listing.",
+  "listing.distanceApproximate": "Straight-line distance is approximate from your saved city.",
 } as const
 
 export type MessageKey = keyof typeof en

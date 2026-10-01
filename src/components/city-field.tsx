@@ -1,6 +1,6 @@
 "use client"
 
-import { useEffect, useRef, useState } from "react"
+import { useEffect, useId, useRef, useState } from "react"
 
 import { Input } from "@/components/ui/input"
 import { searchCities } from "@/lib/cities"
@@ -28,6 +28,7 @@ export function CityField({
   onCityChange: (city: string) => void
   onPlace: (place: ChosenPlace | null) => void
 }) {
+  const listId = useId()
   const inputRef = useRef<HTMLInputElement>(null)
   const [open, setOpen] = useState(false)
   const [remote, setRemote] = useState<{ key: string; places: Suggestion[] }>({ key: "", places: [] })
@@ -39,8 +40,7 @@ export function CityField({
     timezone: item.tz,
   }))
   const key = `${country}|${city.trim()}`
-  const known = new Set(local.map((place) => fold(place.name)))
-  const suggestions = [...local, ...(remote.key === key ? remote.places.filter((place) => !known.has(fold(place.name))) : [])].slice(0, 8)
+  const suggestions = (remote.key === key ? remote.places : local).slice(0, 8)
 
   useEffect(() => {
     const query = city.trim()
@@ -93,11 +93,12 @@ export function CityField({
         aria-autocomplete="list"
         aria-expanded={open && suggestions.length > 0}
         role="combobox"
+        aria-controls={listId}
       />
       {open && suggestions.length > 0 ? (
-        <ul className="absolute z-30 mt-1 max-h-56 w-full overflow-auto rounded-lg border bg-white p-1 shadow-md">
+        <ul id={listId} role="listbox" className="absolute z-30 mt-1 max-h-56 w-full overflow-auto rounded-lg border bg-white p-1 shadow-md">
           {suggestions.map((place) => (
-            <li key={`${place.name}-${place.lat}`}>
+            <li key={`${place.name}-${place.lat}`} role="option" aria-selected={fold(place.name) === fold(city)}>
               <button
                 type="button"
                 className="flex min-h-11 w-full items-center justify-between gap-3 rounded-md px-2 py-2 text-left text-sm hover:bg-neutral-100 focus-visible:outline-2 focus-visible:outline-offset-[-2px] focus-visible:outline-ring sm:min-h-0 sm:py-1.5"

@@ -1,0 +1,1713 @@
+{
+  "version": 1,
+  "hash": "6bd706790d5c1ffcdf863fbe49e86d9ebcadf4f02f4eaf2feefa797264fcf47e",
+  "categories": {
+    "vehicles": {
+      "cars": {
+        "year": {
+          "required": true,
+          "options": null
+        },
+        "mileage": {
+          "required": false,
+          "options": null
+        },
+        "fuel": {
+          "required": true,
+          "options": [
+            "fuel:petrol",
+            "fuel:diesel",
+            "fuel:hybrid",
+            "fuel:electric"
+          ]
+        },
+        "transmission": {
+          "required": false,
+          "options": [
+            "transmission:manual",
+            "transmission:automatic"
+          ]
+        },
+        "condition": {
+          "required": true,
+          "options": [
+            "condition:new",
+            "condition:like-new",
+            "condition:used"
+          ]
+        }
+      },
+      "motorcycles": {
+        "year": {
+          "required": false,
+          "options": null
+        },
+        "engine": {
+          "required": true,
+          "options": null
+        },
+        "mileage": {
+          "required": false,
+          "options": null
+        },
+        "condition": {
+          "required": true,
+          "options": [
+            "condition:new",
+            "condition:like-new",
+            "condition:used"
+          ]
+        }
+      },
+      "vans": {
+        "year": {
+          "required": true,
+          "options": null
+        },
+        "seats": {
+          "required": true,
+          "options": null
+        },
+        "fuel": {
+          "required": false,
+          "options": [
+            "fuel:petrol",
+            "fuel:diesel",
+            "fuel:hybrid",
+            "fuel:electric"
+          ]
+        },
+        "condition": {
+          "required": true,
+          "options": [
+            "condition:new",
+            "condition:like-new",
+            "condition:used"
+          ]
+        }
+      },
+      "pickups": {
+        "year": {
+          "required": false,
+          "options": null
+        },
+        "cab": {
+          "required": false,
+          "options": [
+            "cab:single-cab",
+            "cab:double-cab",
+            "cab:extended-cab"
+          ]
+        },
+        "fuel": {
+          "required": true,
+          "options": [
+            "fuel:petrol",
+            "fuel:diesel",
+            "fuel:hybrid",
+            "fuel:electric"
+          ]
+        },
+        "mileage": {
+          "required": false,
+          "options": null
+        },
+        "condition": {
+          "required": true,
+          "options": [
+            "condition:new",
+            "condition:like-new",
+            "condition:used"
+          ]
+        }
+      },
+      "trucks": {
+        "year": {
+          "required": true,
+          "options": null
+        },
+        "capacity": {
+          "required": true,
+          "options": null
+        },
+        "fuel": {
+          "required": false,
+          "options": [
+            "fuel:petrol",
+            "fuel:diesel",
+            "fuel:hybrid",
+            "fuel:electric"
+          ]
+        },
+        "condition": {
+          "required": true,
+          "options": [
+            "condition:new",
+            "condition:like-new",
+            "condition:used"
+          ]
+        }
+      },
+      "tricycles": {
+        "year": {
+          "required": false,
+          "options": null
+        },
+        "use": {
+          "required": true,
+          "options": [
+            "use:passenger",
+            "use:goods"
+          ]
+        },
+        "condition": {
+          "required": true,
+          "options": [
+            "condition:new",
+            "condition:like-new",
+            "condition:used"
+          ]
+        }
+      },
+      "bicycles": {
+        "size": {
+          "required": true,
+          "options": null
+        },
+        "condition": {
+          "required": true,
+          "options": [
+            "condition:new",
+            "condition:like-new",
+            "condition:used"
+          ]
+        }
+      }
+    },
+    "parts": {
+      "tyres": {
+        "size": {
+          "required": true,
+          "options": null
+        },
+        "count": {
+          "required": true,
+          "options": null
+        },
+        "condition": {
+          "required": true,
+          "options": [
+            "condition:new",
+            "condition:used-good-tread",
+            "condition:used"
+          ]
+        }
+      },
+      "engines": {
+        "part": {
+          "required": true,
+          "options": null
+        },
+        "fits": {
+          "required": true,
+          "options": null
+        },
+        "condition": {
+          "required": true,
+          "options": [
+            "condition:new",
+            "condition:like-new",
+            "condition:used"
+          ]
+        }
+      },
+      "body": {
+        "part": {
+          "required": true,
+          "options": null
+        },
+        "fits": {
+          "required": true,
+          "options": null
+        },
+        "condition": {
+          "required": true,
+          "options": [
+            "condition:new",
+            "condition:like-new",
+            "condition:used"
+          ]
+        }
+      }
+    },
+    "property": {
+      "sale": {
+        "bedrooms": {
+          "required": true,
+          "options": [
+            "bedrooms:studio",
+            "bedrooms:1-bed",
+            "bedrooms:2-bed",
+            "bedrooms:3-bed",
+            "bedrooms:4-bed",
+            "bedrooms:5-bed"
+          ]
+        },
+        "bathrooms": {
+          "required": false,
+          "options": [
+            "bathrooms:1",
+            "bathrooms:2",
+            "bathrooms:3",
+            "bathrooms:4"
+          ]
+        },
+        "furnished": {
+          "required": false,
+          "options": [
+            "furnished:furnished",
+            "furnished:unfurnished",
+            "furnished:partly-furnished"
+          ]
+        },
+        "title": {
+          "required": false,
+          "options": [
+            "title:title-deed",
+            "title:leasehold",
+            "title:still-confirming"
+          ]
+        }
+      },
+      "rent": {
+        "bedrooms": {
+          "required": true,
+          "options": [
+            "bedrooms:studio",
+            "bedrooms:1-bed",
+            "bedrooms:2-bed",
+            "bedrooms:3-bed",
+            "bedrooms:4-bed",
+            "bedrooms:5-bed"
+          ]
+        },
+        "bathrooms": {
+          "required": false,
+          "options": [
+            "bathrooms:1",
+            "bathrooms:2",
+            "bathrooms:3",
+            "bathrooms:4"
+          ]
+        },
+        "furnished": {
+          "required": true,
+          "options": [
+            "furnished:furnished",
+            "furnished:unfurnished",
+            "furnished:partly-furnished"
+          ]
+        },
+        "available": {
+          "required": false,
+          "options": null
+        }
+      },
+      "apartment": {
+        "bedrooms": {
+          "required": true,
+          "options": [
+            "bedrooms:studio",
+            "bedrooms:1-bed",
+            "bedrooms:2-bed",
+            "bedrooms:3-bed",
+            "bedrooms:4-bed",
+            "bedrooms:5-bed"
+          ]
+        },
+        "furnished": {
+          "required": true,
+          "options": [
+            "furnished:furnished",
+            "furnished:unfurnished",
+            "furnished:partly-furnished"
+          ]
+        },
+        "area": {
+          "required": false,
+          "options": null
+        }
+      },
+      "commercial": {
+        "use": {
+          "required": true,
+          "options": [
+            "use:office",
+            "use:shop",
+            "use:warehouse",
+            "use:mixed"
+          ]
+        },
+        "size": {
+          "required": false,
+          "options": null
+        },
+        "furnished": {
+          "required": false,
+          "options": [
+            "furnished:furnished",
+            "furnished:unfurnished",
+            "furnished:partly-furnished"
+          ]
+        }
+      },
+      "stay": {
+        "sleeps": {
+          "required": true,
+          "options": null
+        },
+        "place": {
+          "required": true,
+          "options": [
+            "place:room",
+            "place:cottage",
+            "place:apartment",
+            "place:guesthouse"
+          ]
+        },
+        "beds": {
+          "required": false,
+          "options": null
+        }
+      },
+      "room": {
+        "kind": {
+          "required": true,
+          "options": [
+            "kind:single-room",
+            "kind:bedsitter",
+            "kind:shared-room"
+          ]
+        },
+        "furnished": {
+          "required": true,
+          "options": [
+            "furnished:furnished",
+            "furnished:unfurnished",
+            "furnished:partly-furnished"
+          ]
+        },
+        "area": {
+          "required": false,
+          "options": null
+        }
+      },
+      "hostel": {
+        "sharing": {
+          "required": true,
+          "options": [
+            "sharing:single",
+            "sharing:two-to-a-room",
+            "sharing:dorm"
+          ]
+        },
+        "who": {
+          "required": true,
+          "options": null
+        }
+      }
+    },
+    "plots": {
+      "residential": {
+        "size": {
+          "required": true,
+          "options": null
+        },
+        "papers": {
+          "required": true,
+          "options": [
+            "papers:title-deed",
+            "papers:offer-letter",
+            "papers:still-confirming"
+          ]
+        },
+        "access": {
+          "required": false,
+          "options": null
+        }
+      },
+      "commercial-plot": {
+        "size": {
+          "required": true,
+          "options": null
+        },
+        "papers": {
+          "required": true,
+          "options": [
+            "papers:title-deed",
+            "papers:offer-letter",
+            "papers:still-confirming"
+          ]
+        },
+        "frontage": {
+          "required": false,
+          "options": null
+        }
+      }
+    },
+    "electronics": {
+      "phones": {
+        "brand": {
+          "required": true,
+          "options": null
+        },
+        "storage": {
+          "required": true,
+          "options": [
+            "storage:64gb",
+            "storage:128gb",
+            "storage:256gb",
+            "storage:512gb",
+            "storage:1tb"
+          ]
+        },
+        "condition": {
+          "required": true,
+          "options": [
+            "condition:new",
+            "condition:like-new",
+            "condition:used"
+          ]
+        }
+      },
+      "computers": {
+        "brand": {
+          "required": true,
+          "options": null
+        },
+        "memory": {
+          "required": true,
+          "options": null
+        },
+        "storage": {
+          "required": true,
+          "options": null
+        },
+        "condition": {
+          "required": true,
+          "options": [
+            "condition:new",
+            "condition:like-new",
+            "condition:used"
+          ]
+        }
+      },
+      "screens": {
+        "brand": {
+          "required": false,
+          "options": null
+        },
+        "size": {
+          "required": true,
+          "options": null
+        },
+        "condition": {
+          "required": true,
+          "options": [
+            "condition:new",
+            "condition:like-new",
+            "condition:used"
+          ]
+        }
+      },
+      "power": {
+        "output": {
+          "required": true,
+          "options": null
+        },
+        "kind": {
+          "required": true,
+          "options": [
+            "kind:panel",
+            "kind:inverter",
+            "kind:battery",
+            "kind:kit"
+          ]
+        },
+        "condition": {
+          "required": true,
+          "options": [
+            "condition:new",
+            "condition:like-new",
+            "condition:used"
+          ]
+        }
+      }
+    },
+    "home": {
+      "furniture": {
+        "piece": {
+          "required": true,
+          "options": null
+        },
+        "material": {
+          "required": false,
+          "options": null
+        },
+        "condition": {
+          "required": true,
+          "options": [
+            "condition:new",
+            "condition:like-new",
+            "condition:used"
+          ]
+        }
+      },
+      "appliances": {
+        "appliance": {
+          "required": true,
+          "options": null
+        },
+        "condition": {
+          "required": true,
+          "options": [
+            "condition:new",
+            "condition:like-new",
+            "condition:used"
+          ]
+        }
+      },
+      "solar": {
+        "output": {
+          "required": true,
+          "options": null
+        },
+        "condition": {
+          "required": true,
+          "options": [
+            "condition:new",
+            "condition:like-new",
+            "condition:used"
+          ]
+        }
+      }
+    },
+    "building": {
+      "sheets": {
+        "gauge": {
+          "required": true,
+          "options": null
+        },
+        "length": {
+          "required": true,
+          "options": null
+        },
+        "condition": {
+          "required": true,
+          "options": [
+            "condition:new",
+            "condition:used"
+          ]
+        }
+      },
+      "cement": {
+        "brand": {
+          "required": true,
+          "options": null
+        },
+        "pack": {
+          "required": true,
+          "options": null
+        }
+      },
+      "timber": {
+        "size": {
+          "required": true,
+          "options": null
+        },
+        "treatment": {
+          "required": true,
+          "options": [
+            "treatment:treated",
+            "treatment:untreated"
+          ]
+        }
+      },
+      "plumbing": {
+        "item": {
+          "required": true,
+          "options": null
+        },
+        "size": {
+          "required": true,
+          "options": null
+        },
+        "condition": {
+          "required": true,
+          "options": [
+            "condition:new",
+            "condition:used"
+          ]
+        }
+      }
+    },
+    "water": {
+      "tanks": {
+        "capacity": {
+          "required": true,
+          "options": null
+        },
+        "material": {
+          "required": true,
+          "options": [
+            "material:plastic",
+            "material:steel",
+            "material:concrete"
+          ]
+        },
+        "condition": {
+          "required": true,
+          "options": [
+            "condition:new",
+            "condition:like-new",
+            "condition:used"
+          ]
+        }
+      },
+      "pumps": {
+        "kind": {
+          "required": true,
+          "options": null
+        },
+        "output": {
+          "required": false,
+          "options": null
+        },
+        "condition": {
+          "required": true,
+          "options": [
+            "condition:new",
+            "condition:like-new",
+            "condition:used"
+          ]
+        }
+      },
+      "boreholes": {
+        "depth": {
+          "required": true,
+          "options": null
+        },
+        "area": {
+          "required": true,
+          "options": null
+        }
+      }
+    },
+    "transport": {
+      "freight": {
+        "vehicle": {
+          "required": true,
+          "options": null
+        },
+        "capacity": {
+          "required": true,
+          "options": null
+        },
+        "route": {
+          "required": true,
+          "options": null
+        }
+      },
+      "courier": {
+        "vehicle": {
+          "required": true,
+          "options": [
+            "vehicle:bicycle",
+            "vehicle:motorbike",
+            "vehicle:car",
+            "vehicle:van"
+          ]
+        },
+        "area": {
+          "required": true,
+          "options": null
+        }
+      },
+      "moving-logistics": {
+        "vehicle": {
+          "required": true,
+          "options": null
+        },
+        "crew": {
+          "required": true,
+          "options": [
+            "crew:driver-only",
+            "crew:driver-and-helper",
+            "crew:full-moving-crew"
+          ]
+        }
+      },
+      "passenger": {
+        "vehicle": {
+          "required": true,
+          "options": null
+        },
+        "seats": {
+          "required": true,
+          "options": null
+        },
+        "route": {
+          "required": false,
+          "options": null
+        }
+      },
+      "storage": {
+        "size": {
+          "required": true,
+          "options": null
+        },
+        "access": {
+          "required": true,
+          "options": [
+            "access:business-hours",
+            "access:24-hours",
+            "access:by-appointment"
+          ]
+        }
+      }
+    },
+    "energy": {
+      "solar-systems": {
+        "output": {
+          "required": true,
+          "options": null
+        },
+        "kind": {
+          "required": true,
+          "options": [
+            "kind:complete-kit",
+            "kind:panels",
+            "kind:inverter",
+            "kind:controller"
+          ]
+        },
+        "condition": {
+          "required": true,
+          "options": [
+            "condition:new",
+            "condition:like-new",
+            "condition:used"
+          ]
+        }
+      },
+      "batteries": {
+        "capacity": {
+          "required": true,
+          "options": null
+        },
+        "chemistry": {
+          "required": true,
+          "options": [
+            "chemistry:lithium",
+            "chemistry:lead-acid",
+            "chemistry:gel",
+            "chemistry:other"
+          ]
+        },
+        "condition": {
+          "required": true,
+          "options": [
+            "condition:new",
+            "condition:like-new",
+            "condition:used"
+          ]
+        }
+      },
+      "generators-power": {
+        "output": {
+          "required": true,
+          "options": null
+        },
+        "fuel": {
+          "required": true,
+          "options": [
+            "fuel:diesel",
+            "fuel:petrol",
+            "fuel:gas"
+          ]
+        },
+        "condition": {
+          "required": true,
+          "options": [
+            "condition:new",
+            "condition:like-new",
+            "condition:used"
+          ]
+        }
+      },
+      "fuel": {
+        "product": {
+          "required": true,
+          "options": [
+            "product:lpg",
+            "product:cooking-fuel",
+            "product:diesel-supply",
+            "product:other"
+          ]
+        },
+        "quantity": {
+          "required": true,
+          "options": null
+        }
+      },
+      "installation": {
+        "service": {
+          "required": true,
+          "options": null
+        },
+        "area": {
+          "required": true,
+          "options": null
+        }
+      }
+    },
+    "food": {
+      "fresh-produce": {
+        "product": {
+          "required": true,
+          "options": null
+        },
+        "pack": {
+          "required": true,
+          "options": null
+        },
+        "grade": {
+          "required": true,
+          "options": [
+            "grade:premium",
+            "grade:standard",
+            "grade:processing"
+          ]
+        }
+      },
+      "grains-staples": {
+        "product": {
+          "required": true,
+          "options": null
+        },
+        "pack": {
+          "required": true,
+          "options": null
+        },
+        "sale": {
+          "required": true,
+          "options": [
+            "sale:retail",
+            "sale:wholesale",
+            "sale:both"
+          ]
+        }
+      },
+      "meat-fish": {
+        "product": {
+          "required": true,
+          "options": null
+        },
+        "pack": {
+          "required": true,
+          "options": null
+        },
+        "storage": {
+          "required": true,
+          "options": [
+            "storage:fresh",
+            "storage:chilled",
+            "storage:frozen",
+            "storage:shelf-stable"
+          ]
+        }
+      },
+      "prepared-food": {
+        "product": {
+          "required": true,
+          "options": null
+        },
+        "serves": {
+          "required": true,
+          "options": null
+        },
+        "notice": {
+          "required": false,
+          "options": null
+        }
+      },
+      "market-supplies": {
+        "product": {
+          "required": true,
+          "options": null
+        },
+        "pack": {
+          "required": true,
+          "options": null
+        },
+        "sale": {
+          "required": true,
+          "options": [
+            "sale:retail",
+            "sale:wholesale",
+            "sale:both"
+          ]
+        }
+      }
+    },
+    "industrial": {
+      "manufacturing": {
+        "machine": {
+          "required": true,
+          "options": null
+        },
+        "capacity": {
+          "required": true,
+          "options": null
+        },
+        "condition": {
+          "required": true,
+          "options": [
+            "condition:new",
+            "condition:like-new",
+            "condition:used"
+          ]
+        }
+      },
+      "construction-plant": {
+        "machine": {
+          "required": true,
+          "options": null
+        },
+        "year": {
+          "required": false,
+          "options": null
+        },
+        "condition": {
+          "required": true,
+          "options": [
+            "condition:new",
+            "condition:like-new",
+            "condition:used"
+          ]
+        }
+      },
+      "retail-equipment": {
+        "item": {
+          "required": true,
+          "options": null
+        },
+        "capacity": {
+          "required": false,
+          "options": null
+        },
+        "condition": {
+          "required": true,
+          "options": [
+            "condition:new",
+            "condition:like-new",
+            "condition:used"
+          ]
+        }
+      },
+      "office-equipment": {
+        "item": {
+          "required": true,
+          "options": null
+        },
+        "brand": {
+          "required": false,
+          "options": null
+        },
+        "condition": {
+          "required": true,
+          "options": [
+            "condition:new",
+            "condition:like-new",
+            "condition:used"
+          ]
+        }
+      },
+      "commercial-stock": {
+        "product": {
+          "required": true,
+          "options": null
+        },
+        "quantity": {
+          "required": true,
+          "options": null
+        },
+        "condition": {
+          "required": true,
+          "options": [
+            "condition:new",
+            "condition:like-new",
+            "condition:used"
+          ]
+        }
+      }
+    },
+    "jobs": {
+      "full-time": {
+        "workplace": {
+          "required": true,
+          "options": [
+            "workplace:on-site",
+            "workplace:hybrid",
+            "workplace:remote"
+          ]
+        },
+        "experience": {
+          "required": true,
+          "options": null
+        }
+      },
+      "part-time": {
+        "days": {
+          "required": true,
+          "options": null
+        },
+        "workplace": {
+          "required": true,
+          "options": [
+            "workplace:on-site",
+            "workplace:hybrid",
+            "workplace:remote"
+          ]
+        }
+      },
+      "contract": {
+        "length": {
+          "required": true,
+          "options": null
+        },
+        "workplace": {
+          "required": true,
+          "options": [
+            "workplace:on-site",
+            "workplace:hybrid",
+            "workplace:remote"
+          ]
+        }
+      },
+      "casual": {
+        "work": {
+          "required": true,
+          "options": null
+        },
+        "place": {
+          "required": true,
+          "options": null
+        }
+      },
+      "domestic": {
+        "work": {
+          "required": true,
+          "options": null
+        },
+        "days": {
+          "required": true,
+          "options": null
+        }
+      },
+      "internship": {
+        "length": {
+          "required": true,
+          "options": null
+        },
+        "workplace": {
+          "required": true,
+          "options": [
+            "workplace:on-site",
+            "workplace:hybrid",
+            "workplace:remote"
+          ]
+        }
+      }
+    },
+    "services": {
+      "repairs": {
+        "trade": {
+          "required": true,
+          "options": [
+            "trade:plumbing",
+            "trade:electrical",
+            "trade:carpentry",
+            "trade:painting",
+            "trade:other"
+          ]
+        },
+        "area": {
+          "required": true,
+          "options": null
+        }
+      },
+      "beauty": {
+        "service": {
+          "required": true,
+          "options": null
+        },
+        "place": {
+          "required": true,
+          "options": [
+            "place:at-your-home",
+            "place:at-my-salon",
+            "place:either"
+          ]
+        }
+      },
+      "moving": {
+        "vehicle": {
+          "required": true,
+          "options": null
+        },
+        "area": {
+          "required": true,
+          "options": null
+        }
+      },
+      "tailoring": {
+        "turnaround": {
+          "required": true,
+          "options": null
+        },
+        "place": {
+          "required": false,
+          "options": [
+            "place:at-my-shop",
+            "place:i-collect",
+            "place:either"
+          ]
+        }
+      },
+      "events": {
+        "offer": {
+          "required": true,
+          "options": null
+        },
+        "serves": {
+          "required": false,
+          "options": null
+        }
+      },
+      "phones": {
+        "repair": {
+          "required": true,
+          "options": null
+        },
+        "brands": {
+          "required": true,
+          "options": null
+        }
+      },
+      "photography": {
+        "event": {
+          "required": true,
+          "options": null
+        },
+        "coverage": {
+          "required": true,
+          "options": null
+        }
+      },
+      "delivery": {
+        "vehicle": {
+          "required": true,
+          "options": null
+        },
+        "area": {
+          "required": true,
+          "options": null
+        }
+      }
+    },
+    "business": {
+      "machinery": {
+        "machine": {
+          "required": true,
+          "options": null
+        },
+        "year": {
+          "required": false,
+          "options": null
+        },
+        "condition": {
+          "required": true,
+          "options": [
+            "condition:new",
+            "condition:like-new",
+            "condition:used"
+          ]
+        }
+      },
+      "containers": {
+        "size": {
+          "required": true,
+          "options": [
+            "size:20ft",
+            "size:40ft",
+            "size:other"
+          ]
+        },
+        "condition": {
+          "required": true,
+          "options": [
+            "condition:wind-and-watertight",
+            "condition:needs-work",
+            "condition:for-scrap"
+          ]
+        }
+      },
+      "generators": {
+        "output": {
+          "required": true,
+          "options": null
+        },
+        "fuel": {
+          "required": true,
+          "options": [
+            "fuel:diesel",
+            "fuel:petrol"
+          ]
+        },
+        "condition": {
+          "required": true,
+          "options": [
+            "condition:new",
+            "condition:like-new",
+            "condition:used"
+          ]
+        }
+      },
+      "hire": {
+        "item": {
+          "required": true,
+          "options": null
+        },
+        "minimum": {
+          "required": true,
+          "options": null
+        }
+      },
+      "takeover": {
+        "business": {
+          "required": true,
+          "options": null
+        },
+        "stock": {
+          "required": true,
+          "options": [
+            "stock:included",
+            "stock:not-included",
+            "stock:negotiable"
+          ]
+        }
+      }
+    },
+    "agriculture": {
+      "machinery": {
+        "machine": {
+          "required": true,
+          "options": null
+        },
+        "year": {
+          "required": false,
+          "options": null
+        },
+        "condition": {
+          "required": true,
+          "options": [
+            "condition:new",
+            "condition:like-new",
+            "condition:used"
+          ]
+        }
+      },
+      "land": {
+        "size": {
+          "required": true,
+          "options": null
+        },
+        "title": {
+          "required": true,
+          "options": [
+            "title:title-deed",
+            "title:offer-letter",
+            "title:still-confirming"
+          ]
+        },
+        "use": {
+          "required": false,
+          "options": null
+        }
+      },
+      "produce": {
+        "crop": {
+          "required": true,
+          "options": null
+        },
+        "pack": {
+          "required": true,
+          "options": null
+        }
+      }
+    },
+    "livestock": {
+      "cattle": {
+        "animal": {
+          "required": true,
+          "options": null
+        },
+        "count": {
+          "required": true,
+          "options": null
+        },
+        "detail": {
+          "required": false,
+          "options": null
+        }
+      },
+      "goats": {
+        "animal": {
+          "required": true,
+          "options": null
+        },
+        "count": {
+          "required": true,
+          "options": null
+        },
+        "detail": {
+          "required": false,
+          "options": null
+        }
+      },
+      "poultry": {
+        "animal": {
+          "required": true,
+          "options": null
+        },
+        "count": {
+          "required": true,
+          "options": null
+        },
+        "detail": {
+          "required": false,
+          "options": null
+        }
+      },
+      "pigs": {
+        "animal": {
+          "required": true,
+          "options": null
+        },
+        "count": {
+          "required": true,
+          "options": null
+        },
+        "detail": {
+          "required": false,
+          "options": null
+        }
+      },
+      "fish": {
+        "animal": {
+          "required": true,
+          "options": null
+        },
+        "count": {
+          "required": true,
+          "options": null
+        },
+        "detail": {
+          "required": false,
+          "options": null
+        }
+      },
+      "other": {
+        "animal": {
+          "required": true,
+          "options": null
+        },
+        "count": {
+          "required": true,
+          "options": null
+        },
+        "detail": {
+          "required": false,
+          "options": null
+        }
+      }
+    },
+    "pets": {
+      "dogs": {
+        "breed": {
+          "required": true,
+          "options": null
+        },
+        "age": {
+          "required": true,
+          "options": null
+        },
+        "sex": {
+          "required": true,
+          "options": [
+            "sex:male",
+            "sex:female"
+          ]
+        }
+      },
+      "cats": {
+        "breed": {
+          "required": true,
+          "options": null
+        },
+        "age": {
+          "required": true,
+          "options": null
+        },
+        "sex": {
+          "required": true,
+          "options": [
+            "sex:male",
+            "sex:female",
+            "sex:mixed"
+          ]
+        }
+      },
+      "birds": {
+        "breed": {
+          "required": true,
+          "options": null
+        },
+        "count": {
+          "required": true,
+          "options": null
+        }
+      }
+    },
+    "babies": {
+      "kids-clothes": {
+        "age": {
+          "required": true,
+          "options": null
+        },
+        "item": {
+          "required": true,
+          "options": null
+        },
+        "condition": {
+          "required": true,
+          "options": [
+            "condition:new",
+            "condition:like-new",
+            "condition:used"
+          ]
+        }
+      },
+      "gear": {
+        "item": {
+          "required": true,
+          "options": null
+        },
+        "condition": {
+          "required": true,
+          "options": [
+            "condition:new",
+            "condition:like-new",
+            "condition:used"
+          ]
+        }
+      },
+      "school": {
+        "item": {
+          "required": true,
+          "options": null
+        },
+        "level": {
+          "required": true,
+          "options": null
+        },
+        "condition": {
+          "required": true,
+          "options": [
+            "condition:new",
+            "condition:like-new",
+            "condition:used"
+          ]
+        }
+      }
+    },
+    "fashion": {
+      "clothing": {
+        "item": {
+          "required": true,
+          "options": null
+        },
+        "sizes": {
+          "required": true,
+          "options": null
+        },
+        "condition": {
+          "required": true,
+          "options": [
+            "condition:new",
+            "condition:like-new",
+            "condition:used",
+            "condition:bulk-unchecked"
+          ]
+        }
+      },
+      "fabric": {
+        "fabric": {
+          "required": true,
+          "options": null
+        },
+        "length": {
+          "required": true,
+          "options": null
+        }
+      },
+      "shoes": {
+        "item": {
+          "required": true,
+          "options": null
+        },
+        "sizes": {
+          "required": true,
+          "options": null
+        },
+        "condition": {
+          "required": true,
+          "options": [
+            "condition:new",
+            "condition:like-new",
+            "condition:used"
+          ]
+        }
+      }
+    },
+    "health": {
+      "space": {
+        "use": {
+          "required": true,
+          "options": null
+        },
+        "size": {
+          "required": false,
+          "options": null
+        }
+      },
+      "care": {
+        "service": {
+          "required": true,
+          "options": null
+        },
+        "who": {
+          "required": true,
+          "options": null
+        }
+      },
+      "pharmacy": {
+        "stock": {
+          "required": true,
+          "options": null
+        },
+        "condition": {
+          "required": true,
+          "options": [
+            "condition:sealed",
+            "condition:short-dated",
+            "condition:mixed"
+          ]
+        }
+      },
+      "equipment": {
+        "item": {
+          "required": true,
+          "options": null
+        },
+        "condition": {
+          "required": true,
+          "options": [
+            "condition:new",
+            "condition:like-new",
+            "condition:used"
+          ]
+        }
+      }
+    },
+    "education": {
+      "materials": {
+        "level": {
+          "required": true,
+          "options": null
+        },
+        "subject": {
+          "required": false,
+          "options": null
+        },
+        "condition": {
+          "required": true,
+          "options": [
+            "condition:new",
+            "condition:like-new",
+            "condition:used"
+          ]
+        }
+      },
+      "lessons": {
+        "subject": {
+          "required": true,
+          "options": null
+        },
+        "level": {
+          "required": true,
+          "options": null
+        },
+        "format": {
+          "required": true,
+          "options": [
+            "format:at-my-place",
+            "format:at-the-student-s-home",
+            "format:online"
+          ]
+        }
+      }
+    },
+    "community": {
+      "venues": {
+        "space": {
+          "required": true,
+          "options": null
+        },
+        "capacity": {
+          "required": true,
+          "options": null
+        }
+      },
+      "goods": {
+        "item": {
+          "required": true,
+          "options": null
+        },
+        "quantity": {
+          "required": true,
+          "options": null
+        },
+        "condition": {
+          "required": false,
+          "options": [
+            "condition:new",
+            "condition:like-new",
+            "condition:used"
+          ]
+        }
+      }
+    }
+  }
+}

@@ -1,0 +1,18 @@
+{
+  "countries": {
+    "source": "mledoze/countries snapshot",
+    "sourceUrl": "https://github.com/mledoze/countries",
+    "license": "ODbL-1.0",
+    "contentHash": "4c810b7b5cefbd57196a060d0c3470a7fe689e1af4858389d87628b2bd5cd8eb",
+    "recordCount": 54,
+    "generatedAt": null
+  },
+  "cities": {
+    "source": "GeoNames cities15000 snapshot",
+    "sourceUrl": "https://download.geonames.org/export/dump/cities15000.zip",
+    "license": "CC-BY-4.0",
+    "contentHash": "8773d590ed12547850aedfd10c5972d531719af75bb2ad675ac191e80825256f",
+    "recordCount": 4017,
+    "generatedAt": null
+  }
+}

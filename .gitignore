@@ -44,3 +44,5 @@ next-env.d.ts
 # board database
 /data/*.db
 /data/*.db-*
+# Local Supabase CLI cache
+supabase/.temp/

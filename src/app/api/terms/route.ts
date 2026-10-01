@@ -1,6 +1,6 @@
+import { termsAcceptanceSchema, readApiInput } from "@/lib/runtime-contracts"
 import { fail, ok } from "@/lib/api"
 import { resolveMutationOwner, resolveOwner } from "@/lib/board-session"
-import { isTermsAcceptanceContext } from "@/lib/legal"
 import { clientIp, clientUserAgent, recordTermsAcceptance } from "@/lib/terms-acceptance"
 import { getTermsStatus } from "@/lib/terms-gate"
 
@@ -33,25 +33,15 @@ export async function POST(request: Request) {
     return fail("Sign in to accept the Terms.", 401)
   }
   try {
-    const body = (await request.json().catch(() => ({}))) as {
-      context?: unknown
-      ageAttested?: unknown
-      privacyAcknowledged?: unknown
-      locale?: unknown
-    }
-    const contextRaw = typeof body.context === "string" ? body.context : "signup"
-    if (!isTermsAcceptanceContext(contextRaw)) {
-      return fail("Choose signup or reaccept.")
-    }
-    const ageAttested = body.ageAttested === true
-    const privacyAcknowledged = body.privacyAcknowledged === true
-    const locale = typeof body.locale === "string" ? body.locale.slice(0, 16) : null
+    const parsed = await readApiInput(request, termsAcceptanceSchema)
+    if (!parsed.ok) return fail(parsed.reason)
+    const { context: contextRaw, ageAttested, privacyAcknowledged, locale } = parsed.value
     const result = await recordTermsAcceptance(owner.id, contextRaw, {
       ip: clientIp(request),
       userAgent: clientUserAgent(request),
       ageAttested,
       privacyAcknowledged,
-      locale,
+      locale: locale ?? null,
     })
     if (!result.ok) return fail("Could not record Terms acceptance.")
     const status = await getTermsStatus(owner.id)

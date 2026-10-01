@@ -28,4 +28,4 @@ for (const item of complianceItems()) {
   }
 }
 
-writeFileSync("docs/compliance-controls.md", `${lines.join("\n")}\n`)
+writeFileSync("docs/compliance-controls.md", `${lines.join("\n").trimEnd()}\n`)

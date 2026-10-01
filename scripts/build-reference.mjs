@@ -4,6 +4,7 @@
 // Cities and IANA time zones: GeoNames cities15000.
 // Display names for regions, languages, and currencies: Intl / Unicode CLDR.
 
+import { createHash } from "node:crypto"
 import { writeFileSync } from "node:fs"
 import { execSync } from "node:child_process"
 
@@ -132,3 +133,10 @@ const countries = africa
 writeFileSync("src/data/countries.json", `${JSON.stringify(countries)}\n`)
 writeFileSync("src/data/cities.json", `${JSON.stringify(cities)}\n`)
 console.log(`wrote ${countries.length} countries and ${cities.length} cities`)
+
+const generatedAt = new Date().toISOString()
+const manifest = {
+  countries: { source: "mledoze/countries snapshot", sourceUrl: countryUrl, license: "ODbL-1.0", generatedAt, recordCount: countries.length, contentHash: createHash("sha256").update(JSON.stringify(countries)).digest("hex") },
+  cities: { source: "GeoNames cities15000 snapshot", sourceUrl: citiesZip, license: "CC-BY-4.0", generatedAt, recordCount: cities.length, contentHash: createHash("sha256").update(JSON.stringify(cities)).digest("hex") },
+}
+writeFileSync("src/data/reference-manifest.json", `${JSON.stringify(manifest, null, 2)}\n`)

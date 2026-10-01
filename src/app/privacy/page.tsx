@@ -1,7 +1,7 @@
 import type { Metadata } from "next"
 import Link from "next/link"
 
-import { LEGAL_EFFECTIVE_DATE, PRIVACY_VERSION, TERMS_VERSION } from "@/lib/legal"
+import { PRIVACY_EFFECTIVE_DATE, PRIVACY_VERSION, TERMS_VERSION } from "@/lib/legal"
 import { legalOperatorIdentity, privacyOfficerContacts } from "@/lib/legal-config"
 import { SUPPORT_CONTACT_PLACEHOLDER, site, siteSupportMailto } from "@/lib/site"
 
@@ -21,7 +21,7 @@ export default function PrivacyPage() {
       </div>
       <h1 className="mt-6 text-2xl font-semibold tracking-tight">Privacy Policy</h1>
       <p className="mt-2 text-sm text-neutral-500">
-        Version {PRIVACY_VERSION} · Effective {LEGAL_EFFECTIVE_DATE} · Terms version {TERMS_VERSION}
+        Version {PRIVACY_VERSION} · Effective {PRIVACY_EFFECTIVE_DATE} · Terms version {TERMS_VERSION}
       </p>
       <p className="mt-4 text-sm leading-6 text-neutral-700">
         This Privacy Policy is a <strong>DRAFT</strong> for {site.name}. It describes how we handle
@@ -55,6 +55,19 @@ export default function PrivacyPage() {
         <h2 className="text-base font-medium text-neutral-950">Access controls</h2>
         <p className="text-sm leading-6 text-neutral-700">
           Public visitors receive public listing information only. Seller direct-contact details, saved listings, marketplace messages, reports, profile information, account-management data, and administrative information are restricted to authenticated roles with the required permission. We apply these checks on the server as well as in the interface.
+        </p>
+      </section>
+
+      <section className="mt-8 space-y-3">
+        <h2 className="text-base font-medium text-neutral-950">Public listing location</h2>
+        <p className="text-sm leading-6 text-neutral-700">
+          The city, specific pickup description, and any coordinates you attach to a listing are public.
+          Use a suitable public pickup point instead of a private home address when appropriate.
+          Device location is optional and is requested only when you choose Use location; use it at the
+          intended pickup place. You can enter the city and pickup description without sharing a device
+          location. Drafts keep the chosen coordinates on this device until the location is changed or
+          the draft is cleared. Listing distance is approximate and uses the buyer&apos;s saved city;
+          it is not a live location, route, or travel time.
         </p>
       </section>
 
@@ -179,8 +192,7 @@ export default function PrivacyPage() {
       <section className="mt-8 space-y-3">
         <h2 className="text-base font-medium text-neutral-950">Children and age</h2>
         <p className="text-sm leading-6 text-neutral-700">
-          Accounts are intended for people age 18 or older. The service is not directed to children
-          The 2026 California regulations add requirements for covered risk assessments and cybersecurity audits and, beginning January 1, 2027, requirements for covered uses of automated decisionmaking technology. Those duties depend on the business and processing triggers; we will reassess them before enabling significant-decision ADMT or other covered high-risk processing.
+          Accounts are intended for people age 18 or older. The service is not directed to children.
         </p>
         <p className="text-sm leading-6 text-neutral-700">
           The service is intended for adults. We do not knowingly seek personal information from children under 13. If we
@@ -277,6 +289,9 @@ export default function PrivacyPage() {
           similarly significant service. Before adding significant-decision automated processing or
           profiling, we will reassess applicable notice, assessment, explanation, access, and
           opt-out/appeal requirements.
+        </p>
+        <p className="text-sm leading-6 text-neutral-700">
+          The 2026 California regulations add requirements for covered risk assessments and cybersecurity audits and, beginning January 1, 2027, requirements for covered uses of automated decisionmaking technology. Those duties depend on the business and processing triggers; we will reassess them before enabling significant-decision ADMT or other covered high-risk processing.
         </p>
       </section>
 

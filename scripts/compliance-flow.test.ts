@@ -199,7 +199,7 @@ test("privacy jurisdictions include Indiana in code and migration", () => {
 test("residential housing and job listings require versioned fair-access evidence", () => {
   const rules = source("src/lib/listing-rules.ts")
   const post = source("src/components/post-form.tsx")
-  const types = source("src/lib/types.ts")
+  const types = source("src/lib/runtime-contracts.ts")
   const reports = source("src/lib/reports.ts")
   const migration = source("database/migrations/20260929_discrimination_listing_reports.sql")
 

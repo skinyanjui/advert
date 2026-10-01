@@ -50,7 +50,7 @@ test("acceptListing normalizes sold and trims fields", () => {
   const listing: Listing = {
     id: "ad-test-1",
     title: "  Clean title  ",
-    price: 100.4,
+    price: 100,
     currency: "KES",
     category: "vehicles",
     subcategory: "cars",

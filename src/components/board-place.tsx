@@ -41,7 +41,9 @@ export function BoardCitySearch({
   const query = draft.trim()
   const local = useMemo(() => listedAndKnownCities(country, query, places), [country, query, places])
   const key = `${country}|${query}`
-  const suggestions = open ? mergePlaces(local, remote.key === key ? remote.places : []) : []
+  const suggestions = open ? (remote.key === key
+    ? mergePlaces(local.filter((place) => place.source === "listed"), remote.places)
+    : local) : []
 
   useEffect(() => {
     if (!open || query.length < 2) return

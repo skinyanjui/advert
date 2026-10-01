@@ -2,7 +2,8 @@ import { canonicalCountry } from "@/lib/countries"
 import { isBoardMessage, type BoardMessage } from "@/lib/messages"
 import { normalizeListingPhotos } from "@/lib/photos"
 import { isListingStatus } from "@/lib/listing-status"
-import { isCategoryId, type Listing } from "@/lib/types"
+import { listingRecordSchema } from "@/lib/runtime-contracts"
+import { type Listing } from "@/lib/types"
 
 export type BoardState = {
   posted: Listing[]
@@ -29,62 +30,44 @@ export function parseBoardState(value: unknown): BoardState {
 }
 
 export function cleanListing(value: unknown): Listing | undefined {
-  if (!isStoredListing(value)) return undefined
-  const country = canonicalCountry(value.country)
+  const parsed = listingRecordSchema.safeParse(value)
+  if (!parsed.success) return undefined
+  const record = parsed.data
+  const country = canonicalCountry(record.country)
   if (!country) return undefined
-  const images = normalizeListingPhotos(value.images, value.image)
-  const status = isListingStatus(value.status) ? value.status : undefined
-  const sold = status === "sold" || value.sold === true ? true : undefined
+  const images = normalizeListingPhotos(record.images, record.image)
+  const status = isListingStatus(record.status) ? record.status : undefined
+  const sold = status === "sold" || record.sold === true ? true : undefined
   return {
-    ...value,
+    ...record,
     country,
-    image: images[0] ?? value.image,
+    image: images[0] ?? record.image,
     images: images.length > 1 ? images : images.length === 1 ? images : undefined,
-    subcategory: cleanText(value.subcategory),
-    details: cleanDetails(value.details),
-    currency: cleanText(value.currency),
-    priceSuffix: cleanText(value.priceSuffix),
-    timezone: cleanText(value.timezone),
-    locationDetail: cleanText(value.locationDetail),
-    locationPrecision: value.locationPrecision === "specific" ? "specific" : value.locationPrecision === "city" ? "city" : undefined,
-    latitude: typeof value.latitude === "number" && Number.isFinite(value.latitude) ? value.latitude : undefined,
-    longitude: typeof value.longitude === "number" && Number.isFinite(value.longitude) ? value.longitude : undefined,
-    postedAt: cleanText(value.postedAt),
-    meta: cleanText(value.meta),
+    subcategory: cleanText(record.subcategory),
+    details: cleanDetails(record.details),
+    currency: cleanText(record.currency),
+    priceSuffix: cleanText(record.priceSuffix),
+    timezone: cleanText(record.timezone),
+    locationDetail: cleanText(record.locationDetail),
+    locationPrecision: record.locationPrecision === "specific" ? "specific" : record.locationPrecision === "city" ? "city" : undefined,
+    latitude: typeof record.latitude === "number" && Number.isFinite(record.latitude) ? record.latitude : undefined,
+    longitude: typeof record.longitude === "number" && Number.isFinite(record.longitude) ? record.longitude : undefined,
+    postedAt: cleanText(record.postedAt),
+    meta: cleanText(record.meta),
     status,
     sold,
-    soldAt: sold ? cleanText(value.soldAt) : undefined,
-    expiresAt: cleanText(value.expiresAt),
-    hidden: value.hidden === true ? true : undefined,
-    mine: value.mine === true ? true : undefined,
-    sponsored: value.sponsored === true ? true : undefined,
-    sponsoredLocked: value.sponsoredLocked === true ? true : undefined,
-    fairAccessAttested: value.fairAccessAttested === true ? true : undefined,
+    soldAt: sold ? cleanText(record.soldAt) : undefined,
+    expiresAt: cleanText(record.expiresAt),
+    hidden: record.hidden === true ? true : undefined,
+    mine: record.mine === true ? true : undefined,
+    sponsored: record.sponsored === true ? true : undefined,
+    sponsoredLocked: record.sponsoredLocked === true ? true : undefined,
+    fairAccessAttested: record.fairAccessAttested === true ? true : undefined,
     fairAccessAttestationVersion:
-      value.fairAccessAttested === true ? cleanText(value.fairAccessAttestationVersion) : undefined,
-    contactWhatsApp: value.contactWhatsApp === false ? false : true,
-    contactPhone: value.contactPhone === false ? false : true,
+      record.fairAccessAttested === true ? cleanText(record.fairAccessAttestationVersion) : undefined,
+    contactWhatsApp: record.contactWhatsApp === true,
+    contactPhone: record.contactPhone === true,
   }
-}
-
-function isStoredListing(value: unknown): value is Listing {
-  if (!value || typeof value !== "object") return false
-  const listing = value as Partial<Listing>
-  return (
-    typeof listing.id === "string" &&
-    typeof listing.title === "string" &&
-    typeof listing.price === "number" &&
-    Number.isFinite(listing.price) &&
-    typeof listing.city === "string" &&
-    typeof listing.image === "string" &&
-    typeof listing.description === "string" &&
-    typeof listing.sellerName === "string" &&
-    typeof listing.phone === "string" &&
-    typeof listing.condition === "string" &&
-    typeof listing.hoursAgo === "number" &&
-    isCategoryId(listing.category) &&
-    canonicalCountry(typeof listing.country === "string" ? listing.country : undefined) !== undefined
-  )
 }
 
 function cleanText(value: unknown): string | undefined {

@@ -7,11 +7,11 @@
     "build": "npm run ci",
     "start": "next start",
     "lint": "eslint",
-    "test": "tsx --test scripts/listing-rules.test.ts scripts/auth-redirect.test.ts scripts/messages.test.ts scripts/reports.test.ts scripts/expiry.test.ts scripts/photos.test.ts scripts/lock-listings-reads.test.ts scripts/relative-time.test.ts scripts/scroll-fades.test.ts scripts/listing-status.test.ts scripts/listing-contact.test.ts scripts/profile.test.ts scripts/contact-phone.test.ts scripts/contact-events.test.ts scripts/contact-component.test.ts scripts/application-consistency.test.ts scripts/access-control.test.ts scripts/whatsapp-consent.test.ts scripts/whatsapp-platform-policy.test.ts scripts/whatsapp-webhook.test.ts scripts/posting-country.test.ts scripts/posting-value.test.ts scripts/legal.test.ts scripts/privacy-regulatory.test.ts scripts/compliance-flow.test.ts scripts/fx.test.ts scripts/i18n.test.ts scripts/prefs.test.ts scripts/mobile-nav.test.ts scripts/mobile-header.test.ts scripts/mobile-header-touch-targets.test.ts scripts/mobile-browse-ergonomics.test.ts scripts/mobile-inbox-ergonomics.test.ts scripts/mobile-listing-detail.test.ts scripts/mobile-posting-ergonomics.test.ts scripts/mobile-my-ads-ergonomics.test.ts scripts/mobile-account-ergonomics.test.ts scripts/account-settings-ux.test.ts scripts/authority-integrity.test.ts",
+    "test": "node scripts/run-tests.mjs",
     "build:app": "next build",
     "typecheck": "tsc --noEmit",
     "ci": "npm run lint && npm run typecheck && npm test && npm run build:app",
-    "docs:compliance": "NODE_OPTIONS=--conditions=react-server tsx scripts/generate-compliance-docs.ts"
+    "docs:compliance": "node --conditions=react-server --import tsx scripts/generate-compliance-docs.ts"
   },
   "dependencies": {
     "@supabase/ssr": "^0.12.7",
@@ -24,9 +24,11 @@
     "radix-ui": "^1.6.7",
     "react": "19.2.8",
     "react-dom": "19.2.8",
+    "server-only": "0.0.1",
     "shadcn": "^4.21.0",
     "sonner": "^2.0.8",
-    "tw-animate-css": "^1.4.0"
+    "tw-animate-css": "^1.4.0",
+    "zod": "4.6.5"
   },
   "devDependencies": {
     "@tailwindcss/postcss": "^4",

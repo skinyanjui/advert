@@ -3,6 +3,8 @@ import { getCountry } from "@/lib/countries"
 import { boardCurrencyCodes } from "@/lib/fx"
 import { marketplacePolicy } from "@/lib/marketplace-policy"
 import { policyVersions } from "@/lib/policy-versions"
+import { currentTaxonomyVersion } from "@/lib/category-registry"
+import { isGeoPoint } from "@/lib/distance"
 import {
   detailFieldValueLabel,
   findSubcategory,
@@ -66,9 +68,10 @@ export function listingFieldErrors(input: ListingFields): FieldErrors {
   if (input.category && !subcategory) errors.form = "Choose a type first."
 
   if (input.title.trim().length < 4) errors.title = "Use at least 4 characters."
+  else if (input.title.trim().length > marketplacePolicy.listing.maxTitleLength) errors.title = "Use at most 80 characters."
 
-  const amount = Number.isFinite(input.price) ? Math.round(input.price) : Number.NaN
-  if (!Number.isFinite(amount) || amount <= 0) errors.price = "Enter an amount greater than zero."
+  const amount = Number.isSafeInteger(input.price) ? input.price : Number.NaN
+  if (!Number.isFinite(amount) || amount <= 0) errors.price = "Enter a whole amount greater than zero."
   else if (amount > maxPrice) errors.price = "Enter a smaller amount."
 
   if (!getCountry(input.country)) errors.form = errors.form ?? "Choose a country."
@@ -91,21 +94,27 @@ export function listingFieldErrors(input: ListingFields): FieldErrors {
       if (value && field.kind === "select" && !normalizeDetailFieldValue(field, value)) {
         errors[field.id] = `Choose ${field.label.toLowerCase()}.`
       }
+      if (value.length > marketplacePolicy.listing.maxDetailValueLength) errors[field.id] = "Use at most 80 characters."
     }
   }
 
   if (input.description.trim().length < 20) {
     errors.description = "Write at least 20 characters. This is the paragraph on the listing."
-  }
+  } else if (input.description.trim().length > marketplacePolicy.listing.maxDescriptionLength) errors.description = "Use at most 2000 characters."
   if (requiresFairAccessAttestation(input.category, input.subcategoryId) && input.fairAccessAttested !== true) {
     errors.fairAccess = "Confirm the fair-access rule for this housing or job listing."
   }
   if (input.city.trim().length < 2) errors.city = "Add the city."
+  else if (input.city.trim().length > marketplacePolicy.listing.maxCityLength) errors.city = "Use at most 80 characters."
   if (input.locationDetail.trim().length < 2) {
     errors.locationDetail = "Add a neighborhood, landmark, pickup point, or address."
   }
-  if (!Number.isFinite(input.latitude) || !Number.isFinite(input.longitude)) {
-    errors.locationDetail = errors.locationDetail ?? "Choose a city or use your current location."
+  if (input.locationDetail.trim().length > marketplacePolicy.listing.maxLocationDetailLength) {
+    errors.locationDetail = "Use at most 120 characters for the specific location."
+  }
+  if ((input.latitude !== undefined || input.longitude !== undefined || input.locationPrecision === "specific") &&
+      !isGeoPoint(input.latitude, input.longitude)) {
+    errors.locationDetail = errors.locationDetail ?? "Choose valid coordinates or enter a city and specific location without a pin."
   }
   const directContactEnabled = input.contactWhatsApp === true || input.contactPhone === true
   const phoneReason = contactPhoneError(input.phone, { required: directContactEnabled, countryCode: input.country })
@@ -175,11 +184,11 @@ function normalizeListing(listing: Listing): Listing {
   return {
     ...listing,
     title: listing.title.trim().slice(0, marketplacePolicy.listing.maxTitleLength),
-    price: Math.round(listing.price),
+    price: listing.price,
     currency: listing.currency ?? allowedCurrencies(listing.country)[0] ?? "",
     description: listing.description.trim().slice(0, marketplacePolicy.listing.maxDescriptionLength),
     city: listing.city.trim().slice(0, marketplacePolicy.listing.maxCityLength),
-    locationDetail: listing.locationDetail?.trim().slice(0, 120),
+    locationDetail: listing.locationDetail?.trim().slice(0, marketplacePolicy.listing.maxLocationDetailLength),
     latitude: Number.isFinite(listing.latitude) ? Number(listing.latitude) : undefined,
     longitude: Number.isFinite(listing.longitude) ? Number(listing.longitude) : undefined,
     locationPrecision: listing.locationPrecision === "specific" ? "specific" : "city",
@@ -190,6 +199,7 @@ function normalizeListing(listing: Listing): Listing {
     contactWhatsApp: listing.contactWhatsApp === true,
     contactPhone: listing.contactPhone === true,
     subcategory: subcategory?.id,
+    taxonomyVersion: currentTaxonomyVersion,
     details,
     condition:
       (subcategory?.fields.find((field) => field.id === "condition") && details?.condition

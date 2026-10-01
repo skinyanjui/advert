@@ -67,6 +67,8 @@ Apply in order on the board Supabase project (SQL editor), after `database/board
 19. `database/migrations/20260929_illegal_content_notice.sql` — structured illegal-content notice fields and report reason
 20. `database/migrations/20261001_persisted_rbac.sql` — authoritative persisted application roles; `ADMIN_EMAILS` is bootstrap-only
 21. `database/migrations/20261001_reference_provenance.sql` — source URL, license, content hash, and generation metadata for reference imports
+22. `supabase/migrations/20261001213348_authority_contracts.sql` — atomic reference import, active reference rows, versioned taxonomy validation, listing payload constraints, and country/currency relation
+23. `supabase/migrations/20261001215910_authority_constraint_indexes.sql` — covering foreign-key indexes and validation of the new listing contracts
 
 After the lock migration, anyone with only the publishable key must not be able to read `board_listings` (including phones).
 
@@ -79,11 +81,20 @@ Reference APIs prefer the reference database and return provenance/version/stale
 
 Compliance documentation is generated from the registry with `npm run docs:compliance`.
 
+Request and listing response types derive from Zod schemas in `src/lib/runtime-contracts.ts`.
+Taxonomy identities and option codes are frozen in `src/data/taxonomy-v1.json`; relabelling
+does not change stored values. Identity/schema changes require a new version and migration.
+`npm test -- --test-name-pattern="posting|country"` runs targeted tests.
+Generate the rollback-only database checks with
+`node --import tsx scripts/database-contracts.ts > /tmp/advert-database-contracts.sql`
+and execute the generated SQL on the target database after applying migrations.
+The chat-and-file implementation audit is in `docs/implementation-audit.md`.
+
 ## Reference data
 
 - **Countries.** ISO 3166-1 codes and names, snapshotted from the open [mledoze/countries](https://github.com/mledoze/countries) dataset (the historical source behind REST Countries). The public REST Countries API v3 is deprecated, and v5 needs a key. `REST_COUNTRIES_API_KEY` is reserved for a later refresh; the app ships the snapshot so it runs with no key.
 - **Cities.** GeoNames places with population over 15,000, each with an IANA time zone. A country’s default zone is its capital’s zone (Tanzania is `Africa/Dar_es_Salaam`).
-- **Currencies.** ISO 4217 codes. Display names come from Unicode CLDR through `Intl.DisplayNames`. Sample ads stay in USD. A new ad defaults to the country’s currency, and USD stays available.
+- **Currencies.** ISO 4217 codes. Display names come from Unicode CLDR through `Intl.DisplayNames`. Sample ads preserve their original currency. New ads use a currency accepted in their country. Display prices follow the selected country unless the member explicitly chooses another African currency; each listing shows one price. If exchange rates are unavailable, the original price stays visible.
 - **Languages.** ISO 639 codes, with CLDR display names through `Intl`.
 - **Time zones.** IANA Time Zone Database, formatted with `Intl.DateTimeFormat`.
 - **Map and search.** OpenStreetMap embeds on listing pages. City suggestions come from the bundled GeoNames snapshot and do not call the public Nominatim search service. Typed cities that do not match GeoNames are stored without a pin.
@@ -93,10 +104,12 @@ Rebuild the snapshots with `node scripts/build-reference.mjs`.
 ## Reference database and sync webhook
 
 The checked-in snapshots are the app's offline fallback. The dedicated Supabase
-database mirrors those records so other clients can query the same reference
-data. Apply `database/schema.sql` once, then import the snapshots with
-`node scripts/reference-sql.mjs batches` and apply numbered batches from
-`node scripts/reference-sql.mjs 0` onward. The import is idempotent. The
+database is the production authority so other clients can query the same reference
+data. Apply `database/schema.sql` and the ordered migrations, then generate an atomic
+import with `node scripts/reference-sql.mjs sync > /tmp/advert-reference-sync.sql`
+and execute that SQL with a server-only database connection. The import is idempotent
+and uses an advisory lock; data and provenance commit together. Removed places become
+inactive so historical references remain valid. The
 database holds countries, cities (population at least 15,000), currencies,
 languages, time zones, country relationships, and source hashes. There are no
 currency conversion rates or translated names stored in these tables.
@@ -109,7 +122,7 @@ Display labels and local time remain formatted by `Intl` at runtime.
 `POST /api/reference/sync` is a webhook receiver for a snapshot update. Send
 `Authorization: Bearer <REFERENCE_WEBHOOK_SECRET>` after a deployment containing
 the refreshed JSON files. It upserts only changed snapshots and stores their
-SHA-256 versions in `reference_imports`. The endpoint **does not** accept arbitrary
+SHA-256 versions in `reference_imports`, in the same transaction as all reference changes. The endpoint **does not** accept arbitrary
 external data or call upstream services. Configure `SUPABASE_URL`, a server-only
 `SUPABASE_SECRET_KEY`, and `REFERENCE_WEBHOOK_SECRET` in Vercel. The key must
 never be prefixed `NEXT_PUBLIC_` or committed. If Vercel supplies the legacy
@@ -130,8 +143,9 @@ embeds; no request goes to the public Nominatim autocomplete API.
 
 ## Photos
 
-User uploads accept JPEG, PNG, or WebP, up to 700 KB each, and up to 6 photos
-per ad. The cover photo is stored as `image` and mirrored as the first entry in
+User uploads accept JPEG, PNG, or WebP, up to 12 MB before browser preparation,
+and up to 6 photos per ad. Preparation resizes to at most 1600 pixels, strips
+photo metadata, and stores files of at most 1.5 MB each. The cover photo is stored as `image` and mirrored as the first entry in
 `images[]`. The server validates each file signature, uploads to
 `listing-photos`, and stores only the resulting public URLs in Postgres.
 Sellers can add, remove, reorder, and set the cover when editing.

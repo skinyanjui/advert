@@ -1,3 +1,4 @@
+import { privacyRequestReviewSchema, readApiInput } from "@/lib/runtime-contracts"
 import { fail, ok } from "@/lib/api"
 import { canOwner } from "@/lib/access-control"
 import { resolveMutationOwner, resolveOwner } from "@/lib/board-session"
@@ -30,30 +31,15 @@ export async function PATCH(request: Request) {
   if (!admin) return fail("Admin access required.", 403)
 
   try {
-    const body = (await request.json()) as {
-      requestId?: unknown
-      action?: unknown
-      resolution?: unknown
-    }
-    const requestId = typeof body.requestId === "string" ? body.requestId.trim() : ""
-    const action = typeof body.action === "string" ? body.action : ""
-    const resolution =
-      typeof body.resolution === "string" && body.resolution.trim()
-        ? body.resolution.trim().slice(0, 2500)
-        : null
-
-    if (!requestId) return fail("Choose a privacy request.")
-    if (!["verify", "start", "complete", "deny"].includes(action)) {
-      return fail("Choose verify, start, complete, or deny.")
-    }
-    if ((action === "complete" || action === "deny") && !resolution) {
-      return fail("Add a resolution note before completing or denying a request.")
-    }
+    const parsed = await readApiInput(request, privacyRequestReviewSchema)
+    if (!parsed.ok) return fail(parsed.reason)
+    const { requestId, action } = parsed.value
+    const resolution = parsed.value.resolution || null
 
     const result = await updatePrivacyRequest(
       admin.id,
       requestId,
-      action as "verify" | "start" | "complete" | "deny",
+      action,
       resolution,
     )
     if (!result.ok) return fail(result.reason)

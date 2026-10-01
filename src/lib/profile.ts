@@ -3,6 +3,7 @@ import { canonicalCountry } from "@/lib/countries"
 import { boardCurrencyCodes } from "@/lib/fx"
 import { isLocale } from "@/lib/i18n/locales"
 import { photoFileError } from "@/lib/photos"
+import type { ProfilePatchInput } from "@/lib/runtime-contracts"
 
 export type BoardProfile = {
   userId: string
@@ -20,15 +21,7 @@ export type BoardProfile = {
   createdAt: string | null
 }
 
-export type ProfileUpdateInput = {
-  displayName?: string | null
-  city?: string | null
-  countryCode?: string | null
-  avatarUrl?: string | null
-  phone?: string | null
-  language?: string | null
-  currency?: string | null
-}
+export type ProfileUpdateInput = ProfilePatchInput
 
 const displayNameMax = 80
 const cityMax = 80

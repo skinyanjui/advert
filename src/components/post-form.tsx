@@ -181,7 +181,9 @@ function AdForm({ existing }: { existing: Listing | null }) {
       setPhotos(draft.photos)
       setSponsored(draft.sponsored === true)
       setFairAccessAttested(draft.fairAccessAttested === true)
-      setPlace(locatedPlace(null, draft.country, draft.city))
+      setPlace(draft.latitude !== undefined && draft.longitude !== undefined && draft.timezone
+        ? { name: draft.city, lat: draft.latitude, lng: draft.longitude, timezone: draft.timezone }
+        : locatedPlace(null, draft.country, draft.city))
       if (auth.signedIn) toast.success("Restored your draft")
     }, 0)
     return () => window.clearTimeout(timer)
@@ -258,6 +260,9 @@ function AdForm({ existing }: { existing: Listing | null }) {
         city,
         locationDetail,
         locationPrecision,
+        latitude: place?.lat,
+        longitude: place?.lng,
+        timezone: place?.timezone,
         description,
         phone,
         contactWhatsApp,
@@ -288,6 +293,7 @@ function AdForm({ existing }: { existing: Listing | null }) {
     city,
     locationDetail,
     locationPrecision,
+    place,
     description,
     phone,
     contactWhatsApp,
@@ -581,6 +587,9 @@ function AdForm({ existing }: { existing: Listing | null }) {
         city,
         locationDetail,
         locationPrecision,
+        latitude: place?.lat,
+        longitude: place?.lng,
+        timezone: place?.timezone,
         description,
         phone,
         contactWhatsApp,
@@ -875,6 +884,8 @@ function AdForm({ existing }: { existing: Listing | null }) {
                   onCountryChange={(code) => {
                     setCountry(code)
                     setCity("")
+                    setLocationDetail("")
+                    setLocationPrecision("city")
                     setPlace(null)
                     setCurrency(africanCurrencyForCountry(code) ?? "")
                     setErrors((current) => ({ ...current, city: undefined, currency: undefined, form: undefined }))
@@ -900,7 +911,7 @@ function AdForm({ existing }: { existing: Listing | null }) {
                       timezone: current?.timezone ?? Intl.DateTimeFormat().resolvedOptions().timeZone,
                     }))
                     setLocationPrecision("specific")
-                    toast.success("Specific location added for distance")
+                    toast.success(t("post.locationAdded"))
                   }}
                 />
               </div>
@@ -908,7 +919,7 @@ function AdForm({ existing }: { existing: Listing | null }) {
               <div className="grid gap-5 sm:grid-cols-2">
                 <Field label={`${subcategory.priceLabel} (${currency})`} required error={errors.price}>
                   <Input
-                    inputMode="decimal"
+                    inputMode="numeric"
                     value={price}
                     aria-invalid={Boolean(errors.price)}
                     onChange={(event) => {

@@ -2,7 +2,7 @@ import { NextResponse } from "next/server"
 
 import { boardDb } from "@/lib/board-db"
 import { resolveMutationOwner } from "@/lib/board-session"
-import { isContactEventType, isTrackableListingId } from "@/lib/contact-event-types"
+import { contactEventSchema, readApiInput } from "@/lib/runtime-contracts"
 
 export const dynamic = "force-dynamic"
 export const runtime = "nodejs"
@@ -12,10 +12,9 @@ export async function POST(request: Request) {
   if (!owner) return new NextResponse(null, { status: 204 })
 
   try {
-    const body = (await request.json()) as { listingId?: unknown; eventType?: unknown }
-    if (!isTrackableListingId(body.listingId) || !isContactEventType(body.eventType)) {
-      return new NextResponse(null, { status: 204 })
-    }
+    const parsed = await readApiInput(request, contactEventSchema)
+    if (!parsed.ok) return new NextResponse(null, { status: 204 })
+    const body = parsed.value
 
     const { error } = await boardDb().from("board_contact_events").insert({
       id: crypto.randomUUID(),

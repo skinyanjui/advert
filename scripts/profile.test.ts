@@ -84,17 +84,14 @@ test("avatar URL updates reject arbitrary external links", () => {
   assert.equal(foreign.ok, false)
 })
 
-test("package.json test script has no conflict markers and includes profile tests", () => {
+test("package.json test script discovers every test and accepts Node test options", () => {
   const pkg = readFileSync(new URL("../package.json", import.meta.url), "utf8")
   assert.doesNotMatch(pkg, /<<<<<<|>>>>>>|======/)
-  assert.match(pkg, /scripts\/relative-time\.test\.ts/)
-  assert.match(pkg, /scripts\/scroll-fades\.test\.ts/)
-  assert.match(pkg, /scripts\/listing-status\.test\.ts/)
-  assert.match(pkg, /scripts\/profile\.test\.ts/)
-  assert.match(pkg, /scripts\/contact-phone\.test\.ts/)
-  assert.match(pkg, /scripts\/fx\.test\.ts/)
-  assert.match(pkg, /scripts\/i18n\.test\.ts/)
-  assert.match(pkg, /scripts\/prefs\.test\.ts/)
+  assert.equal(JSON.parse(pkg).scripts.test, "node scripts/run-tests.mjs")
+  const runner = readFileSync(new URL("./run-tests.mjs", import.meta.url), "utf8")
+  assert.match(runner, /readdirSync/)
+  assert.match(runner, /endsWith\("\.test\.ts"\)/)
+  assert.match(runner, /"--test", \.\.\.forwarded, \.\.\.files/)
 })
 
 test("account page has no ProfileShortcuts hub", () => {

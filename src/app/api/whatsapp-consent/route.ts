@@ -1,3 +1,4 @@
+import { whatsappConsentInputSchema, readApiInput } from "@/lib/runtime-contracts"
 import { NextResponse } from "next/server"
 
 import { canOwner } from "@/lib/access-control"
@@ -34,16 +35,9 @@ export async function POST(request: Request) {
   const termsBlock = await requireCurrentTerms(actor.id)
   if (termsBlock) return termsBlock
 
-  let body: { listingId?: unknown }
-  try {
-    body = (await request.json()) as { listingId?: unknown }
-  } catch {
-    return NextResponse.json({ ok: false, reason: "Invalid request." }, { status: 400 })
-  }
-
-  if (typeof body.listingId !== "string" || !/^ad-[a-zA-Z0-9-]{1,64}$/.test(body.listingId)) {
-    return NextResponse.json({ ok: false, reason: "Invalid listing." }, { status: 400 })
-  }
+  const parsed = await readApiInput(request, whatsappConsentInputSchema)
+  if (!parsed.ok) return NextResponse.json({ ok: false, reason: parsed.reason }, { status: 400 })
+  const body = parsed.value
 
   const db = boardDb()
   const { data, error } = await db

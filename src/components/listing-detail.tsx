@@ -113,7 +113,8 @@ export function ListingDetail({ id }: { id: string }) {
   const myMessageCount = listingMessages.filter((item) => item.fromMe).length
   const voice = listingVoice(ad)
   const viewerPoint = rememberedPlacePoint(viewerPlace)
-  const distanceAway = viewerPoint ? kilometresBetween(viewerPoint, listingPoint(ad)) : undefined
+  const sellerPoint = listingPoint(ad)
+  const distanceAway = viewerPoint && sellerPoint ? kilometresBetween(viewerPoint, sellerPoint) : undefined
   const facts = [
     ...(voice.typeName ? [{ label: "Type", value: voice.typeName }] : []),
     ...listingFacts(ad),
@@ -743,18 +744,14 @@ function rememberedPlacePoint(place: { country: string; city?: string } | null):
   const city = place?.city?.trim()
   if (!place || !city) return null
   const resolved = resolvePlace(place.country, city)
-  return { lat: resolved.lat, lng: resolved.lng }
+  return resolved.matched ? { lat: resolved.lat, lng: resolved.lng } : null
 }
 
 function PlacePanel({ listing, distanceKm }: { listing: Listing; distanceKm?: number }) {
+  const { t } = usePrefs()
   const [mapOpen, setMapOpen] = useState(false)
-  const resolved = resolvePlace(listing.country, listing.city)
-  const point =
-    typeof listing.latitude === "number" && typeof listing.longitude === "number"
-      ? { lat: listing.latitude, lng: listing.longitude, pinned: true }
-      : { lat: resolved.lat, lng: resolved.lng, pinned: resolved.matched }
-  if (!point.pinned) return null
-  const links = osmLinks(point.lat, point.lng)
+  const point = listingPoint(listing)
+  const links = point ? osmLinks(point.lat, point.lng) : null
 
   const away = distanceKm === undefined ? undefined : formatDistance(distanceKm)
 
@@ -765,15 +762,15 @@ function PlacePanel({ listing, distanceKm }: { listing: Listing; distanceKm?: nu
         <p className="mt-1 text-sm text-muted-foreground">
           {listing.locationDetail ? `${listing.locationDetail} · ` : ""}{formatPlace(listing)}{away ? ` · ${away}` : ""}
         </p>
-        {listing.locationPrecision !== "specific" ? (
-          <p className="mt-1 text-xs text-muted-foreground">Distance is approximate from the listed city.</p>
+        {away ? (
+          <p className="mt-1 text-xs text-muted-foreground">{t("listing.distanceApproximate")}</p>
         ) : null}
       </div>
-      <button type="button" className="inline-flex items-center gap-1.5 text-sm font-medium text-muted-foreground hover:text-foreground" aria-expanded={mapOpen} onClick={() => setMapOpen((open) => !open)}>
+      {links ? <button type="button" className="inline-flex items-center gap-1.5 text-sm font-medium text-muted-foreground hover:text-foreground" aria-expanded={mapOpen} onClick={() => setMapOpen((open) => !open)}>
         <MapPin className="size-4" />
         {mapOpen ? "Hide map" : `View ${listing.city} on map`}
-      </button>
-      {mapOpen ? (
+      </button> : null}
+      {mapOpen && links ? (
         <div className="mt-3 overflow-hidden rounded-xl border border-border">
           <iframe title={`Map of ${listing.city}`} src={links.embed} className="h-56 w-full" loading="lazy" />
           <a href={links.external} target="_blank" rel="noreferrer" className="block border-t border-border px-3 py-2 text-xs text-muted-foreground hover:text-foreground">

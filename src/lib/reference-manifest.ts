@@ -2,18 +2,9 @@ import { createHash } from "node:crypto"
 import cities from "@/data/cities.json"
 import countries from "@/data/countries.json"
 
-export const referenceSources = {
-  countries: {
-    source: "mledoze/countries snapshot",
-    sourceUrl: "https://github.com/mledoze/countries",
-    license: "ODbL-1.0",
-  },
-  cities: {
-    source: "GeoNames cities15000 snapshot",
-    sourceUrl: "https://download.geonames.org/export/dump/cities15000.zip",
-    license: "CC-BY-4.0",
-  },
-} as const
+import manifest from "@/data/reference-manifest.json"
+
+export const referenceSources = manifest
 
 export type ReferenceDataset = keyof typeof referenceSources
 

@@ -4,6 +4,7 @@ import { resolveMutationOwner } from "@/lib/board-session"
 import { createListing } from "@/lib/board-store"
 import { createListingAuthError } from "@/lib/listing-create-auth"
 import { authConfigured } from "@/lib/supabase/env"
+import { listingWriteSchema, readApiInput } from "@/lib/runtime-contracts"
 import { requireCurrentTerms } from "@/lib/terms-gate"
 
 export const dynamic = "force-dynamic"
@@ -22,8 +23,9 @@ export async function POST(request: Request) {
       const termsBlock = await requireCurrentTerms(owner.id)
       if (termsBlock) return termsBlock
     }
-    const body: unknown = await request.json()
-    const result = await createListing(owner.id, body)
+    const parsed = await readApiInput(request, listingWriteSchema)
+    if (!parsed.ok) return fail(parsed.reason)
+    const result = await createListing(owner.id, parsed.value)
     if (!result.ok) return fail(result.reason)
     return ok({ listing: result.value })
   } catch {

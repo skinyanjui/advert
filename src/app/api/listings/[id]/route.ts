@@ -8,6 +8,7 @@ import {
   setListingSold,
   updateListing,
 } from "@/lib/board-store"
+import { listingMutationSchema, readApiInput, type ListingMutationInput } from "@/lib/runtime-contracts"
 import { requireCurrentTerms } from "@/lib/terms-gate"
 
 export const dynamic = "force-dynamic"
@@ -25,8 +26,9 @@ export async function PATCH(request: Request, context: Context) {
   if (termsBlock) return termsBlock
   const { id } = await context.params
   try {
-    const body: unknown = await request.json()
-    const result = await patchListing(owner.id, id, body)
+    const parsed = await readApiInput(request, listingMutationSchema)
+    if (!parsed.ok) return fail(parsed.reason)
+    const result = await patchListing(owner.id, id, parsed.value)
     if (!result.ok) return fail(result.reason, result.reason === "This ad is not yours." ? 403 : 400)
     return ok({ listing: result.value })
   } catch {
@@ -51,15 +53,11 @@ export async function DELETE(request: Request, context: Context) {
   }
 }
 
-async function patchListing(owner: string, id: string, body: unknown) {
-  if (body && typeof body === "object" && !Array.isArray(body)) {
-    const action = body as { sold?: unknown; renew?: unknown; paused?: unknown; resumeTo?: unknown }
-    if (typeof action.sold === "boolean") {
-      const resumeTo = action.resumeTo === "paused" || action.resumeTo === "active" ? action.resumeTo : undefined
-      return setListingSold(owner, id, action.sold, resumeTo)
-    }
-    if (typeof action.paused === "boolean") return setListingPaused(owner, id, action.paused)
-    if (action.renew === true) return renewListing(owner, id)
+async function patchListing(owner: string, id: string, body: ListingMutationInput) {
+  switch (body.kind) {
+    case "sold": return setListingSold(owner, id, body.sold, body.resumeTo)
+    case "paused": return setListingPaused(owner, id, body.paused)
+    case "renew": return renewListing(owner, id)
+    case "edit": return updateListing(owner, id, body.listing)
   }
-  return updateListing(owner, id, body)
 }

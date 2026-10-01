@@ -1,7 +1,7 @@
 export const contactMethods = {
   message: {
     id: "message",
-    requiresAuthentication: false,
+    requiresAuthentication: true,
     requiresPhone: false,
     sellerOptInRequired: false,
     analyticsEvent: "message_start",

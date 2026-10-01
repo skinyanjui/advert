@@ -4,7 +4,7 @@ import { canOwner } from "@/lib/access-control"
 import { fail, ok } from "@/lib/api"
 import { resolveMutationOwner, resolveOwner } from "@/lib/board-session"
 import { deleteAccount, getProfile, updateProfile } from "@/lib/profile-store"
-import { profilePatchFromUnknown } from "@/lib/runtime-contracts"
+import { profilePatchSchema, accountDeletionSchema, readApiInput } from "@/lib/runtime-contracts"
 
 export const dynamic = "force-dynamic"
 export const runtime = "nodejs"
@@ -28,7 +28,9 @@ export async function PATCH(request: Request) {
     return fail("Sign in to update your profile.", 401)
   }
   try {
-    const input = profilePatchFromUnknown(await request.json())
+    const parsed = await readApiInput(request, profilePatchSchema)
+    if (!parsed.ok) return fail(parsed.reason)
+    const input = parsed.value
     const result = await updateProfile(owner.id, input, owner.email)
     if (!result.ok) return fail(result.reason)
     return ok({ profile: result.value })
@@ -43,10 +45,8 @@ export async function DELETE(request: Request) {
     return fail("Sign in to delete your account.", 401)
   }
   try {
-    const body = (await request.json().catch(() => ({}))) as { confirm?: unknown }
-    if (body.confirm !== "DELETE") {
-      return fail('Type DELETE to confirm account deletion.')
-    }
+    const parsed = await readApiInput(request, accountDeletionSchema)
+    if (!parsed.ok) return fail(parsed.reason)
     const result = await deleteAccount(owner.id)
     if (!result.ok) {
       if (result.authDeleted) {

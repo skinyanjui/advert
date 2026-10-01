@@ -88,12 +88,15 @@ export function sortListings(
 function sortByRelevance(listings: Listing[], query: string, origin?: GeoPoint | null): Listing[] {
   const words = query.trim()
   if (!words && !origin) return listings
-  const ranked = listings.map((listing) => ({
-    listing,
-    relevance: words ? relevanceScore(listing, query) : 0,
-    distance: origin ? distanceKm(origin, listingPoint(listing)) : 0,
-    age: hoursAgoOf(listing),
-  }))
+  const ranked = listings.map((listing) => {
+    const point = listingPoint(listing)
+    return {
+      listing,
+      relevance: words ? relevanceScore(listing, query) : 0,
+      distance: origin && point ? distanceKm(origin, point) : Number.POSITIVE_INFINITY,
+      age: hoursAgoOf(listing),
+    }
+  })
   ranked.sort((a, b) => {
     if (words && a.relevance !== b.relevance) return b.relevance - a.relevance
     if (origin && a.distance !== b.distance) return a.distance - b.distance

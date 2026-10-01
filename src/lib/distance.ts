@@ -6,12 +6,17 @@ export type GeoPoint = {
   lng: number
 }
 
-export function listingPoint(listing: Pick<Listing, "country" | "city" | "latitude" | "longitude">): GeoPoint {
-  if (Number.isFinite(listing.latitude) && Number.isFinite(listing.longitude)) {
+export function isGeoPoint(lat: unknown, lng: unknown): boolean {
+  return typeof lat === "number" && Number.isFinite(lat) && Math.abs(lat) <= 90 &&
+    typeof lng === "number" && Number.isFinite(lng) && Math.abs(lng) <= 180
+}
+
+export function listingPoint(listing: Pick<Listing, "country" | "city" | "latitude" | "longitude">): GeoPoint | null {
+  if (isGeoPoint(listing.latitude, listing.longitude)) {
     return { lat: listing.latitude as number, lng: listing.longitude as number }
   }
   const place = resolvePlace(listing.country, listing.city)
-  return { lat: place.lat, lng: place.lng }
+  return place.matched ? { lat: place.lat, lng: place.lng } : null
 }
 
 /** Great-circle distance in kilometres. */

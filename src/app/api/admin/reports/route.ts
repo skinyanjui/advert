@@ -1,3 +1,4 @@
+import { reportReviewSchema, readApiInput } from "@/lib/runtime-contracts"
 import { canOwner } from "@/lib/access-control"
 import { fail, ok } from "@/lib/api"
 import { resolveMutationOwner, resolveOwner } from "@/lib/board-session"
@@ -35,21 +36,10 @@ export async function PATCH(request: Request) {
   const admin = await requireAdmin(request, true)
   if (!admin) return fail("Admin access required.", 403)
   try {
-    const body = (await request.json()) as {
-      reportId?: unknown
-      action?: unknown
-      decisionReason?: unknown
-    }
-    const reportId = typeof body.reportId === "string" ? body.reportId : ""
-    const action = typeof body.action === "string" ? body.action : ""
-    const decisionReason =
-      typeof body.decisionReason === "string" && body.decisionReason.trim()
-        ? body.decisionReason.trim().slice(0, 1500)
-        : null
-    if (!reportId) return fail("Choose a report.")
-    if ((action === "hide" || action === "remove") && !decisionReason) {
-      return fail("Add a clear reason before restricting this listing.")
-    }
+    const parsed = await readApiInput(request, reportReviewSchema)
+    if (!parsed.ok) return fail(parsed.reason)
+    const { reportId, action } = parsed.value
+    const decisionReason = parsed.value.decisionReason || null
 
     let result
     if (action === "dismiss") result = await dismissReport(admin.id, reportId)

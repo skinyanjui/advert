@@ -3,44 +3,41 @@ import "server-only"
 import { boardDb } from "@/lib/board-db"
 import { referenceSnapshotMetadata, type ReferenceDataset } from "@/lib/reference-manifest"
 
-export async function referenceAuthorityMetadata(dataset: ReferenceDataset) {
+export async function referenceAuthorityMetadata(dataset: ReferenceDataset, authority: "database" | "snapshot" = "database") {
   const snapshot = referenceSnapshotMetadata(dataset)
+  const base = {
+    authority,
+    sourceName: snapshot.source,
+    sourceUrl: snapshot.sourceUrl,
+    license: snapshot.license,
+    importedAt: null,
+    generatedAt: snapshot.generatedAt,
+  }
+  if (authority === "snapshot") return { ...base, version: snapshot.version, stale: false, recordCount: snapshot.recordCount }
   try {
     const { data, error } = await boardDb()
       .from("reference_imports")
-      .select("source_version,content_hash,imported_at,source_url,license,generated_at")
+      .select("source_version,content_hash,record_count,imported_at,source_url,license,generated_at")
       .eq("source", snapshot.source)
       .order("imported_at", { ascending: false })
       .limit(1)
+      .abortSignal(AbortSignal.timeout(4000))
       .maybeSingle()
-
     if (!error && data) {
-      const version =
-        (typeof data.content_hash === "string" && data.content_hash) ||
-        (typeof data.source_version === "string" ? data.source_version : "")
+      const version = data.content_hash || data.source_version || null
       return {
-        authority: "database" as const,
+        ...base,
         version,
         stale: version !== snapshot.version,
-        sourceName: snapshot.source,
         sourceUrl: data.source_url || snapshot.sourceUrl,
         license: data.license || snapshot.license,
         importedAt: data.imported_at ?? null,
         generatedAt: data.generated_at ?? null,
-        recordCount: snapshot.recordCount,
+        recordCount: data.record_count ?? null,
       }
     }
   } catch {
-    // Reference data can still be served from the checked-in snapshot.
+    // Missing provenance must not change the authority of the data actually served.
   }
-
-  return {
-    authority: "snapshot" as const,
-    version: snapshot.version,
-    stale: false,
-    sourceName: snapshot.source,
-    sourceUrl: snapshot.sourceUrl,
-    license: snapshot.license,
-    recordCount: snapshot.recordCount,
-  }
+  return { ...base, version: null, stale: true, recordCount: null }
 }
