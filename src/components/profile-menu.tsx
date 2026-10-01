@@ -16,11 +16,12 @@ const rowClass = "flex min-h-11 items-center gap-3 rounded-lg px-3 py-2 text-sm 
 
 export function ProfileMenu() {
   const auth = useAuth()
-  const { savedIds, ready, refreshBoard } = useMarketplace()
+  const { ready, refreshBoard } = useMarketplace()
   const { t } = usePrefs()
   const counts = useNavCounts()
   const unread = counts.messages ?? 0
   const attention = auth.signedIn ? counts["my-ads"] ?? 0 : 0
+  const saved = auth.signedIn ? counts.saved ?? 0 : 0
   const [open, setOpen] = useState(false)
   const [signingOut, setSigningOut] = useState(false)
 
@@ -37,11 +38,12 @@ export function ProfileMenu() {
     }
   }
 
-  const badgeCount = unread + attention
+  const badgeCount = unread + attention + saved
   const label = [
     t("nav.profile"),
     unread ? t("nav.unreadMessages", { count: unread }) : null,
     attention ? t(attention === 1 ? "nav.needsAttentionOne" : "nav.needsAttentionMany", { count: attention }) : null,
+    saved ? `${saved} ${saved === 1 ? "saved listing" : "saved listings"}` : null,
   ].filter(Boolean).join(", ")
 
   return (
@@ -53,7 +55,7 @@ export function ProfileMenu() {
         <button
           type="button"
           aria-label={label}
-          className="relative flex size-9 items-center justify-center rounded-full border border-transparent bg-transparent text-foreground outline-none transition-colors hover:bg-muted focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 md:size-8"
+          className="relative flex size-11 items-center justify-center rounded-full border border-transparent bg-transparent text-foreground outline-none transition-colors hover:bg-muted focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 md:size-8"
         >
           <UserRound className="size-4" aria-hidden="true" />
           <NavBadge count={badgeCount} />
@@ -97,7 +99,7 @@ export function ProfileMenu() {
               <Link href="/saved" onClick={() => setOpen(false)} className={rowClass}>
                 <Bookmark className="size-4" aria-hidden="true" />
                 <span className="flex-1">{t("nav.saved")}</span>
-                {savedIds.length > 0 ? <span className="text-xs tabular-nums text-muted-foreground">{savedIds.length}</span> : null}
+                {saved > 0 ? <NavBadge count={saved} placement="inline" ariaLabel={`${saved} ${saved === 1 ? "saved listing" : "saved listings"}`} /> : null}
               </Link>
             </>
           ) : null}
