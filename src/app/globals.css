@@ -173,6 +173,23 @@
   #listing-message-composer {
     scroll-margin-bottom: calc(env(safe-area-inset-bottom) + 10rem);
   }
+
+  /* Account/profile is form-heavy and appears on every device class. Scope
+     mobile ergonomics to the account surface so desktop density stays compact. */
+  [data-mobile-form-surface] [data-slot="button"],
+  [data-mobile-form-surface] [data-slot="input"],
+  [data-mobile-form-surface] [data-slot="select-trigger"] {
+    min-height: 44px;
+  }
+
+  [data-mobile-form-surface] [data-slot="input"] {
+    font-size: 16px;
+    scroll-margin-bottom: calc(env(safe-area-inset-bottom) + 6rem);
+  }
+
+  [data-mobile-form-surface] [data-slot="select-trigger"] {
+    scroll-margin-bottom: calc(env(safe-area-inset-bottom) + 6rem);
+  }
 }
 
 /* Legacy neutral utilities map into the same monochrome system while screens
