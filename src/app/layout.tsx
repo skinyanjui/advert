@@ -3,7 +3,8 @@ import { Geist, Geist_Mono } from "next/font/google"
 import { Suspense, type ReactNode } from "react"
 
 import { CategorySidebar } from "@/components/category-top-nav"
-import { HeaderFallback, SiteHeader } from "@/components/site-header"
+import { HeaderFallback } from "@/components/header-fallback"
+import { SiteHeader } from "@/components/site-header"
 import { MobileLegalLinks } from "@/components/mobile-legal-links"
 import { LanguageSync, PrefsProvider } from "@/components/prefs-provider"
 import { TermsReacceptDialog } from "@/components/terms-reaccept-dialog"
@@ -19,7 +20,7 @@ import { themeBootScript } from "@/lib/theme"
 import "./globals.css"
 
 const geistSans = Geist({
-  variable: "--font-sans",
+  variable: "--font-geist-sans",
   subsets: ["latin"],
 })
 
@@ -29,10 +30,10 @@ const geistMono = Geist_Mono({
 })
 
 export const metadata: Metadata = {
-  metadataBase: new URL(`https://${process.env.VERCEL_PROJECT_PRODUCTION_URL ?? "adverts-murex.vercel.app"}`),
+  metadataBase: new URL(site.url),
   title: {
     default: site.name,
-    template: siteTitleTemplate(),
+    template: siteTitleTemplate,
   },
   description: site.tagline,
 }
@@ -44,27 +45,25 @@ export default function RootLayout({ children }: { children: ReactNode }) {
         <script dangerouslySetInnerHTML={{ __html: themeBootScript }} />
         <script dangerouslySetInnerHTML={{ __html: languageBootScript }} />
         <ThemeSync />
-        <LanguageSync />
-        <MarketplaceProvider>
+        <PrefsProvider>
+          <LanguageSync />
           <AuthProvider>
-            <PrefsProvider>
+            <MarketplaceProvider>
               <SidebarProvider defaultOpen className="min-h-svh flex-1 flex-col">
                 <Suspense fallback={<HeaderFallback />}>
                   <SiteHeader />
                 </Suspense>
-                <div className="flex min-h-0 w-full flex-1">
+                <div className="flex min-h-0 flex-1">
                   <CategorySidebar />
-                  <SidebarInset className="min-w-0">
-                    <div className="flex-1">{children}</div>
-                    <MobileLegalLinks />
-                  </SidebarInset>
+                  <SidebarInset className="min-w-0 flex-1">{children}</SidebarInset>
                 </div>
-                <Toaster />
-                <TermsReacceptDialog />
+                <MobileLegalLinks />
               </SidebarProvider>
-            </PrefsProvider>
+              <TermsReacceptDialog />
+              <Toaster />
+            </MarketplaceProvider>
           </AuthProvider>
-        </MarketplaceProvider>
+        </PrefsProvider>
       </body>
     </html>
   )
