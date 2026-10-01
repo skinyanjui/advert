@@ -125,7 +125,7 @@
   button:not(:disabled), summary, [role="radio"] { cursor: pointer; }
 }
 
-/* Mobile primary navigation lives exclusively in the persistent bottom bar.
+/* The persistent mobile tab bar owns primary navigation.
    Keep the top bar task-focused: brand, search, and the categories control. */
 @media (max-width: 767px) {
   header.sticky > div.grid > div:nth-child(3),
