@@ -29,10 +29,10 @@ export function ListingCard({ listing, linked = true, saveable = true, distanceK
   return (
     <article className="group relative flex h-full flex-col overflow-hidden rounded-md border border-border/70 bg-card transition-colors hover:border-foreground/25">
       <div className="relative aspect-[5/4] overflow-hidden bg-muted">
-        <Image src={listing.image} alt="" fill sizes="(max-width: 640px) 50vw, (max-width: 1024px) 33vw, (max-width: 1280px) 25vw, 20vw" unoptimized={listing.image.startsWith("data:")} className="object-cover transition-transform duration-300 group-hover:scale-[1.01]" />
+        <Image src={listing.image} alt="" fill sizes="(max-width: 640px) 50vw, (max-width: 1024px) 33vw, (max-width: 1280px) 25vw, 20vw" unoptimized={listing.image.startsWith("data:")} className="object-cover" />
         {status ? <span className="absolute top-2 left-2 rounded-sm bg-primary px-1.5 py-0.5 text-[9px] font-medium tracking-wide text-primary-foreground uppercase">{status}</span> : null}
       </div>
-      <div className="px-2.5 py-2.5 sm:px-3 sm:py-2.5">
+      <div className="px-2.5 py-2 sm:px-3 sm:py-2.5">
         <p className="truncate text-[13px] leading-4 font-semibold tracking-tight text-foreground sm:text-sm"><ListingPrice listing={listing} /></p>
         <h3 className="mt-0.5 truncate text-xs leading-4 text-foreground/80 sm:text-[13px]">{listing.title}</h3>
         <p className="mt-1 truncate text-[10px] leading-4 text-muted-foreground sm:mt-1.5 sm:text-[11px]" title={placeFull} aria-label={placeFull}>{listing.city}, {countryCode}{away ? ` · ${away}` : ""} · <PostedLabel listing={listing} /></p>
