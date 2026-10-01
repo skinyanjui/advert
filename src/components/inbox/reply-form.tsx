@@ -15,7 +15,7 @@ export function ReplyForm({ placeholder, sending, onSend }: { placeholder: strin
 
   return (
     <form
-      className="grid gap-2 border-t border-neutral-200 bg-white px-4 py-3 sm:px-5"
+      className="grid gap-2 border-t border-neutral-200 bg-white px-3 py-3 sm:px-5"
       onSubmit={(event) => {
         event.preventDefault()
         if (sending || submitting.current || draft.trim().length < 8) return
@@ -33,10 +33,10 @@ export function ReplyForm({ placeholder, sending, onSend }: { placeholder: strin
         aria-label={t("inbox.replyPlaceholder")}
         maxLength={1000}
         rows={2}
-        className="resize-none rounded-xl"
+        className="resize-none rounded-xl text-base sm:text-sm"
       />
       <div className="flex justify-end">
-        <Button type="submit" disabled={sending || draft.trim().length < 8} className="rounded-full">
+        <Button type="submit" disabled={sending || draft.trim().length < 8} className="h-11 rounded-full px-5 sm:h-8">
           <Send className="size-4" aria-hidden="true" />
           {sending ? t("inbox.sending") : t("inbox.send")}
         </Button>

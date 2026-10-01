@@ -98,7 +98,7 @@ export function MessagesPage() {
       {missing ? (
         <p className="mb-3 rounded-lg border border-neutral-200 bg-white px-3 py-2 text-sm text-neutral-600">{t("messages.missing")}</p>
       ) : null}
-      <div className="grid h-[calc(100dvh-11rem)] min-h-[26rem] min-w-0 overflow-hidden rounded-xl border border-neutral-200 bg-white md:h-[calc(100dvh-6rem)] lg:grid-cols-[360px_minmax(0,1fr)]">
+      <div className="-mx-3 grid h-[calc(100dvh-11rem)] min-h-[26rem] min-w-0 overflow-hidden border-y border-neutral-200 bg-white md:mx-0 md:h-[calc(100dvh-6rem)] md:rounded-xl md:border lg:grid-cols-[360px_minmax(0,1fr)]">
         <ConversationList
           threads={filtered}
           listings={listingsById}
