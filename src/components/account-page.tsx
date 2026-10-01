@@ -287,7 +287,7 @@ function SignedInProfile({ email, pendingEmail, createdAt, signOut, signOutAll, 
   return (
     <>
       <div className="grid items-start gap-6 md:grid-cols-[13rem_minmax(0,1fr)] lg:gap-10">
-        <aside className="md:sticky md:top-24">
+        <aside>
           <AccountSettingsNav />
         </aside>
 
@@ -377,9 +377,9 @@ function SignedInProfile({ email, pendingEmail, createdAt, signOut, signOutAll, 
             <Card>
               <CardContent className="divide-y divide-border p-0">
                 <SettingsAction title={t("profile.downloadData")} description="Download a copy of your account data."><Button type="button" variant="outline" disabled={downloadingData} onClick={() => void downloadPrivacyData()}>{downloadingData ? <Loader2 className="animate-spin" /> : null}{downloadingData ? t("profile.downloadingData") : t("profile.downloadData")}</Button></SettingsAction>
-                <SettingsAction title={t("profile.privacyChoices")} description="Review privacy and data-use choices."><Button type="button" variant="ghost" asChild><Link href="/privacy/choices">Open</Link></Button></SettingsAction>
-                <SettingsAction title={t("profile.privacyRequest")} description="Submit an access, correction, or deletion request."><Button type="button" variant="ghost" asChild><Link href="/privacy/request">Open</Link></Button></SettingsAction>
-                <SettingsAction title="Moderation decisions" description="Review moderation actions and available appeals."><Button type="button" variant="ghost" asChild><Link href="/account/moderation">Open</Link></Button></SettingsAction>
+                <SettingsAction title={t("profile.privacyChoices")} description="Review privacy and data-use choices."><Button type="button" variant="ghost" asChild><Link href="/privacy/choices" aria-label={`Open ${t("profile.privacyChoices")}`}>Open</Link></Button></SettingsAction>
+                <SettingsAction title={t("profile.privacyRequest")} description="Submit an access, correction, or deletion request."><Button type="button" variant="ghost" asChild><Link href="/privacy/request" aria-label={`Open ${t("profile.privacyRequest")}`}>Open</Link></Button></SettingsAction>
+                <SettingsAction title="Moderation decisions" description="Review moderation actions and available appeals."><Button type="button" variant="ghost" asChild><Link href="/account/moderation" aria-label="Open moderation decisions">Open</Link></Button></SettingsAction>
               </CardContent>
             </Card>
           </section>
