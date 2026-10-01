@@ -1,4 +1,4 @@
-import type { Subcategory } from "@/lib/posting"
+import { detailFieldValueLabel, type Subcategory } from "@/lib/posting"
 import type { CategoryId } from "@/lib/types"
 
 type TitleInput = {
@@ -10,7 +10,10 @@ type TitleInput = {
 
 export function suggestListingTitle({ category, subcategory, details, city }: TitleInput): string {
   const place = clean(city)
-  const value = (key: string) => clean(details[key])
+  const value = (key: string) => {
+    const field = subcategory.fields.find((item) => item.id === key)
+    return clean(field ? detailFieldValueLabel(field, details[key]) : details[key])
+  }
   let lead: string[]
   let facts: string[]
 

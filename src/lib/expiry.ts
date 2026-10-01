@@ -32,7 +32,7 @@ export function isListingExpiringSoon(
 export function isListingNeedingAttention(
   expiresAt: string | undefined,
   now = Date.now(),
-  withinDays = marketplacePolicy.listing.attentionNoticeDays,
+  withinDays: number = marketplacePolicy.listing.attentionNoticeDays,
 ): boolean {
   return isListingExpired(expiresAt, now) || isListingExpiringSoon(expiresAt, now, withinDays)
 }

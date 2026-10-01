@@ -36,7 +36,6 @@ import { signInHref } from "@/lib/auth-redirect"
 import { relatedListings } from "@/lib/board"
 import { seedListings } from "@/lib/catalog"
 import { resolvePlace } from "@/lib/cities"
-import { getCountry } from "@/lib/countries"
 import { distanceKm as kilometresBetween, listingPoint } from "@/lib/distance"
 import { trackListingContactEvent } from "@/lib/contact-events"
 import { formatDistance, formatPlace, initials, smsHref, whatsappHref } from "@/lib/format"
@@ -741,9 +740,8 @@ function WhatsAppIcon({ className }: { className?: string }) {
 }
 
 function rememberedPlacePoint(place: { country: string; city?: string } | null): { lat: number; lng: number } | null {
-  if (!place) return null
-  const city = place.city?.trim() || getCountry(place.country)?.capital
-  if (!city) return null
+  const city = place?.city?.trim()
+  if (!place || !city) return null
   const resolved = resolvePlace(place.country, city)
   return { lat: resolved.lat, lng: resolved.lng }
 }
