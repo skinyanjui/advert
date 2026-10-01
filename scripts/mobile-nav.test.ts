@@ -10,12 +10,19 @@ test("mobile navigation uses five persistent marketplace destinations", () => {
   assert.match(nav, /\["home", "saved", "post", "messages", "profile"\]/)
   assert.match(nav, /grid-cols-5/)
   assert.match(nav, /safe-area-inset-bottom/)
-  assert.match(nav, /<NavBadge count=\{count\}/)
   assert.match(nav, /aria-current=\{active \? "page"/)
   assert.match(nav, /<PostLink/)
 })
 
-test("mobile nav is mounted once and replaces the legacy floating header dock", () => {
+test("activity indicators remain visible across mobile destinations", () => {
+  assert.match(nav, /const accountActivity = \(counts\.saved \?\? 0\) \+ \(counts\.messages \?\? 0\) \+ \(counts\["my-ads"\] \?\? 0\)/)
+  assert.match(nav, /const count = id === "profile" \? accountActivity : counts\[id\] \?\? 0/)
+  assert.match(nav, /id === "saved" \|\| id === "messages" \|\| id === "profile"/)
+  assert.match(nav, /<NavBadge count=\{count\}/)
+})
+
+test("global navigation chrome is mounted once for every route", () => {
+  assert.match(layout, /<SiteHeader \/>/)
   assert.match(layout, /<MobileBottomNav \/>/)
   assert.match(layout, /pb-\[calc\(env\(safe-area-inset-bottom\)\+4rem\)\]/)
   assert.match(globals, /persistent mobile tab bar owns primary navigation/i)
