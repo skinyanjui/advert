@@ -19,6 +19,10 @@ test("account settings uses a task-oriented information architecture", () => {
   assert.match(nav, /Settings sections/)
   assert.match(nav, /Identity and contact/)
   assert.match(nav, /Email, password, sessions/)
+  assert.match(nav, /#account-management/)
+  assert.match(nav, /aria-current=\{active \? "location"/)
+  assert.match(nav, /sticky top-14/)
+  assert.match(nav, /IntersectionObserver/)
 })
 
 test("account settings exposes save state and separates destructive actions", () => {
@@ -36,4 +40,13 @@ test("admin operations are separated from personal settings", () => {
 
   assert.match(page, /Administration/)
   assert.match(page, /Operational tools are separate from personal account settings/)
+})
+
+
+test("privacy action rows have specific accessible names", () => {
+  const page = source("src/components/account-page.tsx")
+
+  assert.match(page, /aria-label=\{`Open \$\{t\("profile\.privacyChoices"\)\}`\}/)
+  assert.match(page, /aria-label=\{`Open \$\{t\("profile\.privacyRequest"\)\}`\}/)
+  assert.match(page, /aria-label="Open moderation decisions"/)
 })
