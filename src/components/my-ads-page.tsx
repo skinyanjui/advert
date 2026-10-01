@@ -215,11 +215,11 @@ export function MyAdsPage() {
         <h1 className="text-2xl font-semibold tracking-tight">{t("myAds.title")}</h1>
         <div className="flex flex-wrap gap-2">
           {mine.some((listing) => listing.hidden) ? (
-            <Button asChild size="sm" variant="outline" className="h-8 rounded-lg px-3 text-xs">
+            <Button asChild size="sm" variant="outline" className="h-11 rounded-lg px-3 text-xs md:h-8">
               <Link href="/account/moderation">Moderation decisions</Link>
             </Button>
           ) : null}
-          <Button asChild size="sm" className="h-8 rounded-lg px-3 text-xs">
+          <Button asChild size="sm" className="h-11 rounded-lg px-3 text-xs md:h-8">
             <Link href={postHref}>{t("myAds.postAd")}</Link>
           </Button>
         </div>
@@ -277,10 +277,10 @@ export function MyAdsPage() {
             </DialogDescription>
           </DialogHeader>
           <DialogFooter>
-            <Button variant="outline" onClick={() => setPendingId(null)}>
+            <Button variant="outline" className="h-11 md:h-8" onClick={() => setPendingId(null)}>
               {t("myAds.keepIt")}
             </Button>
-            <Button variant="destructive" disabled={busyId === pendingId} onClick={() => void onRemove()}>
+            <Button variant="destructive" className="h-11 md:h-8" disabled={busyId === pendingId} onClick={() => void onRemove()}>
               {t("myAds.removeAd")}
             </Button>
           </DialogFooter>
@@ -316,7 +316,7 @@ function StatusFilterChips({
             aria-pressed={filter === option}
             onClick={() => onChange(option)}
             className={cn(
-              "shrink-0 rounded-full px-3 py-1 text-xs font-medium",
+              "min-h-11 shrink-0 rounded-full px-3 py-2 text-xs font-medium outline-none focus-visible:ring-2 focus-visible:ring-ring/40 md:min-h-0 md:py-1",
               filter === option ? "bg-neutral-950 text-white" : "text-neutral-600 hover:bg-neutral-100",
             )}
           >
