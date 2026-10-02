@@ -26,6 +26,7 @@ export default function PrivacyPage() {
           <li>Listings you post (title, description, photos, location, and related fields)</li>
           <li>Messages you send through the board</li>
           <li>Reports you submit about listings</li>
+          <li>Support requests you submit, including your email address, category, subject, and message</li>
           <li>Contact-intent events such as listing views and clicks to message, text, call, or open WhatsApp</li>
           <li>WhatsApp consent records, including the listing, named seller, consent text/version, account or session identifier, and time</li>
           <li>WhatsApp Business Platform enforcement metadata received for our business account, such as warnings, restrictions, policy references, and restriction periods</li>
@@ -343,7 +344,7 @@ export default function PrivacyPage() {
       <section className="mt-8 space-y-3">
         <h2 className="text-base font-medium text-neutral-950">Retention</h2>
         <p className="text-sm leading-6 text-neutral-700">
-          We keep account, listing, message, report, contact-intent, WhatsApp consent, and business-platform enforcement records only for as long as reasonably needed for the purposes described above, account operation, safety, disputes, security, or legal obligations. Account deletion removes account-linked listings, saves, conversations, submitted reports, authenticated contact-intent events, and WhatsApp consent records from the active application data, subject to narrow legal or safety exceptions. Terms and Privacy acceptance records are linked to the authentication account and are deleted with it. Privacy-request case records may be retained after account deletion only as reasonably needed to document request handling, satisfy legal obligations, or resolve disputes, then deleted or de-identified. Backup and service-provider copies may persist for a limited period under provider retention processes.
+          We keep account, listing, message, report, support-request, contact-intent, WhatsApp consent, and business-platform enforcement records only for as long as reasonably needed for the purposes described above, account operation, safety, disputes, security, or legal obligations. Account deletion removes account-linked listings, saves, conversations, submitted reports, authenticated contact-intent events, and WhatsApp consent records from the active application data, subject to narrow legal or safety exceptions. Terms and Privacy acceptance records are linked to the authentication account and are deleted with it. Privacy-request case records may be retained after account deletion only as reasonably needed to document request handling, satisfy legal obligations, or resolve disputes, then deleted or de-identified. Backup and service-provider copies may persist for a limited period under provider retention processes.
         </p>
       </section>
 
