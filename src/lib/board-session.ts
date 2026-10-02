@@ -3,6 +3,7 @@ import "server-only"
 import { createHmac, randomUUID, timingSafeEqual } from "node:crypto"
 import { NextResponse } from "next/server"
 
+import { accountDeletionPending } from "@/lib/account-deletion"
 import { resolvePersistedRole, type PersistedAppRole } from "@/lib/rbac-store"
 import { createServerSupabase } from "@/lib/supabase/server"
 
@@ -77,7 +78,9 @@ export async function resolveOwner(request: Request): Promise<BoardOwner | undef
 
 export async function resolveMutationOwner(request: Request): Promise<BoardOwner | undefined> {
   if (!sameOrigin(request)) return undefined
-  return resolveOwner(request)
+  const owner = await resolveOwner(request)
+  if (owner?.kind === "auth" && await accountDeletionPending(owner.id)) return undefined
+  return owner
 }
 
 /** @deprecated Prefer resolveMutationOwner — kept for call sites during migration. */
