@@ -1,5 +1,4 @@
-import { NextResponse } from "next/server"
-
+import { NextResponse } from "next/server"\n
 import { canOwner } from "@/lib/access-control"
 import { fail, ok } from "@/lib/api"
 import { resolveMutationOwner, resolveOwner } from "@/lib/board-session"
@@ -48,16 +47,19 @@ export async function DELETE(request: Request) {
     const parsed = await readApiInput(request, accountDeletionSchema)
     if (!parsed.ok) return fail(parsed.reason)
     const result = await deleteAccount(owner.id)
-    if (!result.ok) {
-      if (result.authDeleted) {
-        return NextResponse.json(
-          { ok: false, authDeleted: true, reason: result.reason },
-          { status: 500 },
-        )
-      }
-      return fail(result.reason, 500)
-    }
-    return ok({ deleted: true })
+    if (!result.ok) return fail(result.reason, 500)
+    const completed = result.value.completed
+    return NextResponse.json(
+      {
+        ok: true,
+        deletionRequested: true,
+        deleted: completed,
+        reason: completed
+          ? "Account deletion completed."
+          : "Account deletion is in progress. Account access is locked while cleanup retries automatically.",
+      },
+      { status: completed ? 200 : 202 },
+    )
   } catch {
     return fail("Could not delete your account.", 500)
   }

@@ -69,7 +69,9 @@ export function ListingDetail({ id, initialListing }: { id: string; initialListi
   const { t } = usePrefs()
   const { listings, ready, isSaved, toggleSaved, messages, sendMessage, setListingSold, setListingPaused, renewListing, removeListing } =
     useMarketplace()
-  const listing = listings.find((item) => item.id === id) ?? (!ready ? initialListing : undefined)
+  const baseListing = listings.find((item) => item.id === id) ?? initialListing
+  const [directContact, setDirectContact] = useState<{ phone: string; contactPhone: boolean; contactWhatsApp: boolean } | null>(null)
+  const listing = baseListing && directContact ? { ...baseListing, ...directContact } : baseListing
   const [phoneVisible, setPhoneVisible] = useState(false)
   const [messageOpen, setMessageOpen] = useState(false)
   const [message, setMessage] = useState("")
@@ -96,9 +98,37 @@ export function ListingDetail({ id, initialListing }: { id: string; initialListi
   const activePhoto = gallery[Math.min(photoIndex, Math.max(gallery.length - 1, 0))] ?? listing?.image
 
   useEffect(() => {
-    if (!listing) return
-    if (!listing.mine) trackListingContactEvent(listing.id, "listing_view")
-  }, [listing])
+    if (!baseListing) return
+    if (!baseListing.mine) trackListingContactEvent(baseListing.id, "listing_view")
+  }, [baseListing?.id, baseListing?.mine])
+
+  useEffect(() => {
+    setDirectContact(null)
+    setPhoneVisible(false)
+    if (!baseListing || baseListing.mine || isSampleListing(baseListing.id) || !auth.signedIn) return
+    const controller = new AbortController()
+    void (async () => {
+      try {
+        const response = await fetch(`/api/listings/${encodeURIComponent(baseListing.id)}/contact`, {
+          cache: "no-store",
+          signal: controller.signal,
+        })
+        if (!response.ok) return
+        const payload = (await response.json()) as {
+          contact?: { phone?: string; contactPhone?: boolean; contactWhatsApp?: boolean }
+        }
+        if (!payload.contact || typeof payload.contact.phone !== "string") return
+        setDirectContact({
+          phone: payload.contact.phone,
+          contactPhone: payload.contact.contactPhone === true,
+          contactWhatsApp: payload.contact.contactWhatsApp === true,
+        })
+      } catch {
+        // Marketplace messaging remains available if direct contact cannot be loaded.
+      }
+    })()
+    return () => controller.abort()
+  }, [auth.signedIn, baseListing?.id, baseListing?.mine])
 
   if (!listing) {
     if (!ready) return <DetailSkeleton />

@@ -9,8 +9,7 @@ import { listingStatuses } from "@/lib/listing-status"
 import { marketplacePolicy } from "@/lib/marketplace-policy"
 import { reportReasons } from "@/lib/reports"
 import { privacyJurisdictions, privacyRequestTypes } from "@/lib/privacy-rights"
-import { complianceIncidentSeverities } from "@/lib/compliance-incident-types"
-import { TERMS_ACCEPTANCE_CONTEXTS } from "@/lib/legal"
+import { complianceIncidentSeverities } from "@/lib/compliance-incident-types"\nimport { supportCategories } from "@/lib/support"\nimport { TERMS_ACCEPTANCE_CONTEXTS } from "@/lib/legal"
 
 const limits = marketplacePolicy.listing
 export const listingIdSchema = z.string().regex(/^ad-[a-zA-Z0-9-]{1,64}$/, "Choose a real listing.")
@@ -153,6 +152,13 @@ export const termsAcceptanceSchema = z.object({
   privacyAcknowledged: z.literal(true, "Acknowledge the Privacy Policy to continue."),
   locale: z.string().max(16).nullable().optional(),
 })
+export const supportRequestSchema = z.object({
+  category: z.enum(supportCategories),
+  email: z.string().trim().email("Enter a valid email address.").max(320),
+  message: z.string().trim().min(10, "Tell us a little more so support can investigate.").max(4000),
+  website: z.string().max(200).optional().default(""),
+})
+
 export const whatsappConsentInputSchema = z.object({ listingId: listingIdSchema })
 export const boardImportSchema = z.object({
   posted: z.array(listingRecordSchema).max(40).default([]),

@@ -2,7 +2,7 @@ import { NextResponse } from "next/server"
 
 import { expireContactEventsIfAvailable } from "@/lib/contact-leads-store"
 import { expirePromotionsIfAvailable } from "@/lib/promotion-store"
-import { sendExpiryReminders } from "@/lib/board-store"
+import { sendExpiryReminders } from "@/lib/board-store"\nimport { runAccountDeletionRetries } from "@/lib/account-deletion"\nimport { boardDb } from "@/lib/board-db"
 
 export const dynamic = "force-dynamic"
 export const runtime = "nodejs"
@@ -21,8 +21,18 @@ export async function GET(request: Request) {
   try {
     const contactEventsDeleted = await expireContactEventsIfAvailable()
     const featuredExpired = await expirePromotionsIfAvailable()
+    const accountDeletions = await runAccountDeletionRetries()
+    const { data: contactRevealsDeleted, error: revealRetentionError } = await boardDb().rpc("expire_board_contact_reveals")
+    if (revealRetentionError) throw new Error(revealRetentionError.message)
     const summary = await sendExpiryReminders()
-    return NextResponse.json({ ok: true, ...summary, featuredExpired, contactEventsDeleted })
+    return NextResponse.json({
+      ok: true,
+      ...summary,
+      featuredExpired,
+      contactEventsDeleted,
+      accountDeletions,
+      contactRevealsDeleted: typeof contactRevealsDeleted === "number" ? contactRevealsDeleted : 0,
+    })
   } catch {
     return NextResponse.json({ ok: false, reason: "Expiry reminder run failed." }, { status: 500 })
   }

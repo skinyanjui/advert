@@ -6,6 +6,26 @@ export function legalOperatorIdentity() {
   return { name, address, complete: Boolean(name && address) }
 }
 
+export function legalPublicationConfiguration() {
+  const operator = legalOperatorIdentity()
+  const governingLaw = process.env.LEGAL_GOVERNING_LAW?.trim() || null
+  const venue = process.env.LEGAL_VENUE?.trim() || null
+  const approved = process.env.LEGAL_DOCUMENTS_APPROVED === "1"
+  return {
+    ...operator,
+    governingLaw,
+    venue,
+    approved,
+    ready: Boolean(operator.complete && governingLaw && venue && approved),
+  }
+}
+
+export function privacyPublicationConfiguration() {
+  const operator = legalOperatorIdentity()
+  const approved = process.env.LEGAL_DOCUMENTS_APPROVED === "1"
+  return { ...operator, approved, ready: Boolean(operator.complete && approved) }
+}
+
 export function privacyOfficerContacts() {
   return {
     dpoEmail: process.env.PRIVACY_DPO_EMAIL?.trim() || null,

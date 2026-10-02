@@ -22,11 +22,19 @@ export function CityField({
   city,
   onCityChange,
   onPlace,
+  id,
+  ariaDescribedBy,
+  ariaErrorMessage,
+  invalid = false,
 }: {
   country: string
   city: string
   onCityChange: (city: string) => void
   onPlace: (place: ChosenPlace | null) => void
+  id?: string
+  ariaDescribedBy?: string
+  ariaErrorMessage?: string
+  invalid?: boolean
 }) {
   const listId = useId()
   const inputRef = useRef<HTMLInputElement>(null)
@@ -61,6 +69,7 @@ export function CityField({
   return (
     <div className="relative">
       <Input
+        id={id}
         ref={inputRef}
         value={city}
         onChange={(event) => {
@@ -94,6 +103,9 @@ export function CityField({
         aria-expanded={open && suggestions.length > 0}
         role="combobox"
         aria-controls={listId}
+        aria-describedby={ariaDescribedBy}
+        aria-errormessage={ariaErrorMessage}
+        aria-invalid={invalid || undefined}
       />
       {open && suggestions.length > 0 ? (
         <ul id={listId} role="listbox" className="absolute z-30 mt-1 max-h-56 w-full overflow-auto rounded-lg border bg-white p-1 shadow-md">
@@ -111,9 +123,7 @@ export function CityField({
                 }}
               >
                 <span className="truncate">{place.name}</span>
-                <span className="shrink-0 text-[11px] text-neutral-400">
-                  GeoNames
-                </span>
+                <span className="shrink-0 text-[11px] text-neutral-400">GeoNames</span>
               </button>
             </li>
           ))}

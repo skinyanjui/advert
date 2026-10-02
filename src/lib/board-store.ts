@@ -1,7 +1,7 @@
 import "server-only"
 
 import { boardDb } from "@/lib/board-db"
-import { readBoardInventory, readSavedListingIds, type BoardListingRow as Row } from "@/lib/board-inventory"
+import { readOwnedInventory, readPublicBoardPage, readSavedListingIds, type BoardListingRow as Row, type PublicBoardFilters } from "@/lib/board-inventory"
 import { seedListings } from "@/lib/catalog"
 import { hoursAgoOf } from "@/lib/format"
 import { acceptListing } from "@/lib/listing-rules"
@@ -181,23 +181,37 @@ async function removePhoto(image: string) {
 export async function listBoard(owner: string): Promise<BoardState> {
   const db = boardDb()
   const [boardRows, savedIds, messages] = await Promise.all([
-    readBoardInventory(db, owner),
+    readOwnedInventory(db, owner),
     readSavedListingIds(db, owner),
     listMessagesFor(owner),
   ])
-  const ownerIds = boardRows.map((row) => row.owner_id as string)
-  const profiles = await profilesByUserIds(ownerIds)
+  const profiles = await profilesByUserIds([owner])
   return {
     posted: boardRows.flatMap((row) => {
       const item = unpack(row as Row, owner)
-      if (!item) return []
-      // Non-owners only see publicly active, non-expired, non-hidden ads.
-      // Owners keep paused/sold/expired/hidden ads for My ads management.
-      if (!item.mine && !isPubliclyVisibleListing(item)) return []
-      return [applySellerProfile(item, profiles.get(row.owner_id as string))]
+      return item ? [applySellerProfile(item, profiles.get(owner))] : []
     }),
     savedIds,
     messages,
+  }
+}
+
+export async function listPublicBoardPage(filters: PublicBoardFilters): Promise<{ listings: Listing[]; nextCursor: string | null }> {
+  const page = await readPublicBoardPage(boardDb(), filters)
+  const profiles = await profilesByUserIds(page.rows.map((row) => row.owner_id))
+  return {
+    listings: page.rows.flatMap((row) => {
+      const item = unpack(row as Row)
+      if (!item || !isPubliclyVisibleListing(item)) return []
+      const publicItem = applySellerProfile(item, profiles.get(row.owner_id))
+      return [{
+        ...publicItem,
+        phone: "",
+        contactPhone: false,
+        contactWhatsApp: false,
+      }]
+    }),
+    nextCursor: page.nextCursor,
   }
 }
 
@@ -216,6 +230,53 @@ export async function getPublicListing(id: string): Promise<Listing | undefined>
     phone: "",
     contactPhone: false,
     contactWhatsApp: false,
+  }
+}
+
+export async function getListingDirectContact(
+  viewerId: string,
+  id: string,
+): Promise<Result<{ phone: string; contactPhone: boolean; contactWhatsApp: boolean }>> {
+  if (!listingIdPattern.test(id)) return { ok: false, reason: "This listing is unavailable." }
+  const db = boardDb()
+  const since = new Date(Date.now() - 60 * 60 * 1000).toISOString()
+  const { count, error: countError } = await db.from("board_contact_reveals")
+    .select("id", { count: "exact", head: true })
+    .eq("viewer_id", viewerId)
+    .gte("created_at", since)
+  check(countError)
+  if ((count ?? 0) >= 30) return { ok: false, reason: "Contact reveal limit reached. Try again later." }
+
+  const { data: row, error } = await db.from("board_listings")
+    .select(listingSelect)
+    .eq("id", id)
+    .maybeSingle()
+  check(error)
+  if (!row) return { ok: false, reason: "This listing is unavailable." }
+  if (row.owner_id === viewerId) {
+    const own = unpack(row as Row, viewerId)
+    return own
+      ? { ok: true, value: { phone: own.phone, contactPhone: own.contactPhone === true, contactWhatsApp: own.contactWhatsApp === true } }
+      : { ok: false, reason: "This listing is unavailable." }
+  }
+  const item = unpack(row as Row)
+  if (!item || !isPubliclyVisibleListing(item)) return { ok: false, reason: "This listing is unavailable." }
+  const enabled = item.contactPhone === true || item.contactWhatsApp === true
+  const phone = enabled ? item.phone.trim() : ""
+  if (!phone) return { ok: true, value: { phone: "", contactPhone: false, contactWhatsApp: false } }
+
+  const { error: revealError } = await db.from("board_contact_reveals").insert({
+    viewer_id: viewerId,
+    listing_id: id,
+  })
+  check(revealError)
+  return {
+    ok: true,
+    value: {
+      phone,
+      contactPhone: item.contactPhone === true,
+      contactWhatsApp: item.contactWhatsApp === true,
+    },
   }
 }
 

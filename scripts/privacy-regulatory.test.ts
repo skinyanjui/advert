@@ -14,7 +14,7 @@ test("the initial document permits same-origin posting location requests after c
   assert.equal(policy, "camera=(), microphone=(), geolocation=(self)")
 })
 
-test("privacy draft covers GDPR and California rights without claiming sale or sharing", () => {
+test("privacy policy covers GDPR and California rights without claiming sale or sharing", () => {
   const privacy = source("src/app/privacy/page.tsx")
   assert.match(privacy, /GDPR legal bases/)
   assert.match(privacy, /Your GDPR rights/)
@@ -47,13 +47,14 @@ test("account privacy export is authenticated and excludes counterpart private i
   assert.doesNotMatch(helper, /peerName/)
 })
 
-test("account deletion removes account-linked privacy records", () => {
-  const profileStore = source("src/lib/profile-store.ts")
-  assert.match(profileStore, /from\("board_reports"\)\.delete\(\)\.eq\("reporter_id", userId\)/)
-  assert.match(profileStore, /from\("board_contact_events"\)/)
-  assert.match(profileStore, /eq\("actor_id", userId\)/)
-  assert.match(profileStore, /from\("board_whatsapp_consents"\)/)
-  assert.match(profileStore, /buyer_id\.eq\.\$\{userId\},seller_id\.eq\.\$\{userId\}/)
+test("account deletion removes account-linked privacy records through a durable database cleanup", () => {
+  const worker = source("src/lib/account-deletion.ts")
+  const migration = source("database/migrations/20261002_operational_hardening.sql")
+  assert.match(worker, /begin_board_account_deletion/)
+  assert.match(worker, /cleanup_board_account_data/)
+  assert.match(migration, /delete from public\.board_reports where reporter_id=p_user/)
+  assert.match(migration, /delete from public\.board_contact_events where actor_id=p_user/)
+  assert.match(migration, /delete from public\.board_whatsapp_consents where buyer_id=p_user or seller_id=p_user/)
 })
 
 test("onboarding and terms set an adult-only account boundary", () => {
@@ -62,26 +63,22 @@ test("onboarding and terms set an adult-only account boundary", () => {
   assert.match(en, /I confirm I am at least 18 years old/)
   assert.match(en, /I agree to the/)
   assert.match(en, /acknowledge that I have read the/)
-  assert.match(terms, /You must be at least 18 years old/)
-  assert.match(terms, /not directed[\s\S]*children under 13/)
-})
+  assert.match(terms, /Account holders must be at least 18 years old/)
+  })
 
-test("federal regulatory readiness covers marketplace communications consumer protection and DMCA", () => {
+test("federal marketplace and communications statements avoid unverified registration claims", () => {
   const terms = source("src/app/terms/page.tsx")
-  assert.match(terms, /INFORM Consumers Act/)
-  assert.match(terms, /CAN-SPAM Act/)
-  assert.match(terms, /Telephone Consumer Protection Act/)
-  assert.match(terms, /Children[\s\S]*Online Privacy[\s\S]*Protection Act \(COPPA\)/)
-  assert.match(terms, /Federal Trade Commission Act/)
-  assert.match(terms, /Digital Millennium Copyright Act section 512/)
-  assert.match(terms, /DMCA AGENT DETAILS/)
+  assert.match(terms, /Copyright/)
+  assert.match(terms, /DMCA/)
+  assert.match(terms, /does not represent[\s\S]*designated-agent registration is active/)
+  assert.doesNotMatch(terms, /DMCA AGENT DETAILS|LAWYER TO CONFIRM|\[PLACEHOLDER/)
 })
 
 test("public privacy contact can be configured without hard-coding an address", () => {
   const site = source("src/lib/site.ts")
   const env = source(".env.example")
   assert.match(site, /NEXT_PUBLIC_SUPPORT_EMAIL/)
-  assert.match(env, /NEXT_PUBLIC_SUPPORT_EMAIL=privacy@example\.com/)
+  assert.match(env, /NEXT_PUBLIC_SUPPORT_EMAIL/)
 })
 
 
@@ -127,5 +124,5 @@ test("listing flow applies privacy by default and rejects obvious sensitive paym
   assert.match(privacy, /New listings default to marketplace messaging/)
   assert.match(privacy, /regulations effective January 1, 2026/)
   assert.match(privacy, /beginning January 1, 2027/)
-  assert.match(terms, /do not hold purchase money, escrow payments, or collect payment-card details/)
+  assert.match(terms, /does not hold purchase money in escrow/)
 })

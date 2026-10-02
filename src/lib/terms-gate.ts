@@ -9,8 +9,7 @@ import {
   TERMS_OUTDATED_MESSAGE,
   TERMS_VERSION,
 } from "@/lib/legal"
-import type { NextResponse } from "next/server"
-
+import type { NextResponse } from "next/server"\nimport { legalPublicationConfiguration } from "@/lib/legal-config"\n
 export { TERMS_OUTDATED_MESSAGE }
 
 function isMissingRelationError(error: { code?: string; message?: string } | null | undefined): boolean {
@@ -33,17 +32,22 @@ export type TermsStatus = {
   acceptedPrivacyVersion: string | null
   /** True when the acceptance store is unavailable; protected features fail closed. */
   tableMissing: boolean
+  /** True only after operator details, venue/law, and explicit legal approval are configured. */
+  publicationReady: boolean
 }
 
 export async function getTermsStatus(userId: string): Promise<TermsStatus> {
+  const publicationReady = legalPublicationConfiguration().ready
   const base: TermsStatus = {
-    current: true,
+    current: publicationReady,
     termsVersion: TERMS_VERSION,
     privacyVersion: PRIVACY_VERSION,
     acceptedTermsVersion: null,
     acceptedPrivacyVersion: null,
     tableMissing: false,
+    publicationReady,
   }
+  if (!publicationReady) return { ...base, current: false }
   try {
     const { data, error } = await boardDb()
       .from("terms_acceptances")
@@ -84,7 +88,7 @@ export async function getTermsStatus(userId: string): Promise<TermsStatus> {
 /** Returns a 428 response when acceptance is outdated and a 503 when the acceptance store is unavailable. */
 export async function requireCurrentTerms(userId: string): Promise<NextResponse | null> {
   const status = await getTermsStatus(userId)
-  if (status.tableMissing) return fail(LEGAL_ACCEPTANCE_UNAVAILABLE_MESSAGE, 503)
+  if (!status.publicationReady || status.tableMissing) return fail(LEGAL_ACCEPTANCE_UNAVAILABLE_MESSAGE, 503)
   if (status.current) return null
   return fail(TERMS_OUTDATED_MESSAGE, 428)
 }
