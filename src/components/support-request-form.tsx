@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react"
+import { useState, type FormEvent } from "react"
 
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -25,7 +25,7 @@ export function SupportRequestForm() {
   const [submitting, setSubmitting] = useState(false)
   const [status, setStatus] = useState<{ kind: "success" | "error"; message: string } | null>(null)
 
-  async function submit(event: React.FormEvent<HTMLFormElement>) {
+  async function submit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault()
     if (submitting) return
     setSubmitting(true)
