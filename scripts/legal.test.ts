@@ -38,11 +38,22 @@ test("terms outdated message matches the product copy", () => {
   assert.equal(TERMS_OUTDATED_MESSAGE, "Accept the updated Terms to continue.")
 })
 
-test("support contact is unset until a public address is configured", () => {
+test("support fallback routes people to a usable public intake", () => {
   assert.equal(site.supportEmail, undefined)
   assert.equal(siteSupportMailto(), undefined)
-  assert.match(SUPPORT_CONTACT_PLACEHOLDER, /support address to be added/i)
-  assert.match(SUPPORT_CONTACT_PLACEHOLDER, /Report on any listing/i)
+  assert.match(SUPPORT_CONTACT_PLACEHOLDER, /Contact page/i)
+  assert.doesNotMatch(SUPPORT_CONTACT_PLACEHOLDER, /\[[^\]]+\]/)
+})
+
+test("legal publication is gated and published pages contain no unfinished markers", () => {
+  const config = readFileSync(new URL("../src/lib/legal-config.ts", import.meta.url), "utf8")
+  const gate = readFileSync(new URL("../src/lib/terms-gate.ts", import.meta.url), "utf8")
+  const terms = readFileSync(new URL("../src/app/terms/page.tsx", import.meta.url), "utf8")
+  const privacy = readFileSync(new URL("../src/app/privacy/page.tsx", import.meta.url), "utf8")
+  assert.match(config, /LEGAL_DOCUMENTS_APPROVED/)
+  assert.match(gate, /publicationReady/)
+  assert.doesNotMatch(terms, /Draft — pending legal review|\[LAWYER|\[PLACEHOLDER|\[OPERATOR|\[DMCA/)
+  assert.doesNotMatch(privacy, /Draft — pending legal review|\[OPERATOR/)
 })
 
 test("terms acceptance migration is append-only with RLS and no public grants", () => {

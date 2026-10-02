@@ -26,6 +26,6 @@ export function siteSupportMailto(): string | undefined {
   return site.supportEmail ? `mailto:${site.supportEmail}` : undefined
 }
 
-/** Shared placeholder for Terms/Privacy while no public support address is set. */
+/** Plain fallback used only where a link cannot be rendered. */
 export const SUPPORT_CONTACT_PLACEHOLDER =
-  "Contact: [support address to be added]. Until then, use Report on any listing."
+  "Use the Contact page to submit a support or privacy request."

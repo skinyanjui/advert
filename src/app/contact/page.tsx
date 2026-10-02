@@ -2,6 +2,7 @@ import { ExternalLink, Flag, HelpCircle, LockKeyhole, Mail, MessageCircle, Scale
 import Link from "next/link"
 import type { Metadata } from "next"
 
+import { SupportRequestForm } from "@/components/support-request-form"
 import { site, siteSupportMailto } from "@/lib/site"
 
 export const metadata: Metadata = {
@@ -67,8 +68,10 @@ export default function ContactPage() {
           </p>
         </header>
 
+        <SupportRequestForm />
+
         {support ? (
-          <a href={support} className="mt-6 flex items-center justify-between gap-4 rounded-xl border border-border bg-card p-4 transition-colors hover:border-foreground/20">
+          <a href={support} className="mt-3 flex items-center justify-between gap-4 rounded-xl border border-border bg-card p-4 transition-colors hover:border-foreground/20">
             <span className="flex min-w-0 items-center gap-3">
               <span className="flex size-9 shrink-0 items-center justify-center rounded-lg bg-muted"><Mail className="size-4" aria-hidden /></span>
               <span className="min-w-0">
@@ -78,20 +81,13 @@ export default function ContactPage() {
             </span>
             <span className="text-sm font-medium">Email us</span>
           </a>
-        ) : (
-          <div className="mt-6 rounded-xl border border-border bg-muted/40 p-4">
-            <p className="text-sm font-medium">Support email is being configured</p>
-            <p className="mt-1 text-sm leading-6 text-muted-foreground">
-              You can still use the in-product routes below for listing reports and privacy requests.
-            </p>
-          </div>
-        )}
+        ) : null}
 
         <section className="mt-6 grid gap-3 sm:grid-cols-2" aria-label="Contact departments">
           {departments.map((department) => {
             const Icon = department.icon
-            const href = "href" in department ? department.href : mailto(department.subject)
-            const action = "action" in department ? department.action : "Email this team"
+            const href = "href" in department ? department.href : (mailto(department.subject) ?? "#support-request-heading")
+            const action = "action" in department ? department.action : (site.supportEmail ? "Email this team" : "Use support form")
             const content = (
               <>
                 <Icon className="size-5" aria-hidden />
@@ -99,7 +95,7 @@ export default function ContactPage() {
                   <h2 className="text-sm font-semibold">{department.title}</h2>
                   <p className="mt-1 text-sm leading-5 text-muted-foreground">{department.body}</p>
                 </div>
-                <p className="mt-4 text-sm font-medium">{href ? action : "Email support unavailable"}</p>
+                <p className="mt-4 text-sm font-medium">{action}</p>
               </>
             )
             return href ? (

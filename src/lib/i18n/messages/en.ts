@@ -526,7 +526,7 @@ export const en = {
   "post.fairAccessRequired": "Confirm the fair-access rule before continuing.",
   "report.reason.other": "Something else",
   "legal.languageNoticeTitle": "Legal document language",
-  "legal.languageNoticeBody": "The full legal drafts are currently available in English only. French and Swahili legal translations are pending counsel review. The privacy-rights request form is available in the selected app language.",
+  "legal.languageNoticeBody": "The full legal documents are currently published in English. French and Swahili translations are not yet available. The privacy-rights request form is available in the selected app language.",
   "terms.reacceptTitle": "Complete account access",
   "terms.reacceptBody": "Review version {terms} / {privacy} (effective {date}) and complete both confirmations before protected account features become available. Public browsing remains available.",
   "terms.reacceptRead": "Review",

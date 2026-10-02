@@ -180,11 +180,11 @@ async function removePhoto(image: string) {
 }
 export async function listBoard(owner: string): Promise<BoardState> {
   const db = boardDb()
-  const [boardRows, savedIds, messages] = await Promise.all([
-    readBoardInventory(db, owner),
+  const [savedIds, messages] = await Promise.all([
     readSavedListingIds(db, owner),
     listMessagesFor(owner),
   ])
+  const boardRows = await readBoardInventory(db, owner, savedIds)
   const ownerIds = boardRows.map((row) => row.owner_id as string)
   const profiles = await profilesByUserIds(ownerIds)
   return {

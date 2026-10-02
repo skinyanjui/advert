@@ -527,7 +527,7 @@ export const sw: Messages = {
   "post.fairAccessRequired": "Thibitisha sheria ya upatikanaji wa haki kabla ya kuendelea.",
   "report.reason.other": "Kingine",
   "legal.languageNoticeTitle": "Lugha ya nyaraka za kisheria",
-  "legal.languageNoticeBody": "Rasimu kamili za kisheria kwa sasa zinapatikana kwa Kiingereza pekee. Tafsiri za kisheria za Kifaransa na Kiswahili zinasubiri ukaguzi wa mshauri wa sheria. Fomu ya haki za faragha inapatikana kwa lugha iliyochaguliwa kwenye programu.",
+  "legal.languageNoticeBody": "Nyaraka kamili za kisheria kwa sasa zimechapishwa kwa Kiingereza. Tafsiri za Kifaransa na Kiswahili bado hazipatikani. Fomu ya haki za faragha inapatikana kwa lugha iliyochaguliwa kwenye programu.",
   "terms.reacceptTitle": "Masharti na Faragha yaliyosasishwa",
   "terms.reacceptBody": "Kagua toleo {terms} / {privacy} (linatumika {date}) na ukamilishe uthibitisho wote wawili kabla ya kutumia vipengele vinavyolindwa. Kuvinjari kwa umma bado kunapatikana.",
   "terms.reacceptRead": "Soma",

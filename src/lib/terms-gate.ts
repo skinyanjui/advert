@@ -9,6 +9,7 @@ import {
   TERMS_OUTDATED_MESSAGE,
   TERMS_VERSION,
 } from "@/lib/legal"
+import { legalPublicationStatus } from "@/lib/legal-config"
 import type { NextResponse } from "next/server"
 
 export { TERMS_OUTDATED_MESSAGE }
@@ -33,16 +34,20 @@ export type TermsStatus = {
   acceptedPrivacyVersion: string | null
   /** True when the acceptance store is unavailable; protected features fail closed. */
   tableMissing: boolean
+  /** True only after operator identity is configured and the documents are approved for publication. */
+  publicationReady: boolean
 }
 
 export async function getTermsStatus(userId: string): Promise<TermsStatus> {
+  const publicationReady = legalPublicationStatus().ready
   const base: TermsStatus = {
-    current: true,
+    current: false,
     termsVersion: TERMS_VERSION,
     privacyVersion: PRIVACY_VERSION,
     acceptedTermsVersion: null,
     acceptedPrivacyVersion: null,
     tableMissing: false,
+    publicationReady,
   }
   try {
     const { data, error } = await boardDb()
@@ -62,6 +67,7 @@ export async function getTermsStatus(userId: string): Promise<TermsStatus> {
     const acceptedTermsVersion = typeof data.terms_version === "string" ? data.terms_version : null
     const acceptedPrivacyVersion = typeof data.privacy_version === "string" ? data.privacy_version : null
     const current =
+      publicationReady &&
       acceptedTermsVersion === TERMS_VERSION &&
       acceptedPrivacyVersion === PRIVACY_VERSION &&
       data.age_attested === true &&
@@ -84,7 +90,7 @@ export async function getTermsStatus(userId: string): Promise<TermsStatus> {
 /** Returns a 428 response when acceptance is outdated and a 503 when the acceptance store is unavailable. */
 export async function requireCurrentTerms(userId: string): Promise<NextResponse | null> {
   const status = await getTermsStatus(userId)
-  if (status.tableMissing) return fail(LEGAL_ACCEPTANCE_UNAVAILABLE_MESSAGE, 503)
+  if (status.tableMissing || !status.publicationReady) return fail(LEGAL_ACCEPTANCE_UNAVAILABLE_MESSAGE, 503)
   if (status.current) return null
   return fail(TERMS_OUTDATED_MESSAGE, 428)
 }

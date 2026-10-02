@@ -104,25 +104,22 @@ test("account page has no ProfileShortcuts hub", () => {
   assert.match(page, /from "@\/components\/empty-panel"/)
 })
 
-test("deleteAccount cleanup failure logs orphans and returns a plain message", () => {
+test("account deletion is durable, blocks writes, retries, and deletes auth last", () => {
   const store = readFileSync(new URL("../src/lib/profile-store.ts", import.meta.url), "utf8")
-  assert.match(store, /authDeleted/)
-  assert.match(store, /Account auth deleted but board cleanup incomplete/)
-  assert.match(store, /userId/)
-  assert.match(store, /listingIds/)
-  assert.match(store, /conversationIds/)
-  assert.match(
-    store,
-    /Your account was deleted, but some data couldn't be cleaned up\. We'll remove it\./,
-  )
-  assert.doesNotMatch(store, /userId=\$\{userId\}/)
-})
+  const worker = readFileSync(new URL("../src/lib/account-deletion.ts", import.meta.url), "utf8")
+  const session = readFileSync(new URL("../src/lib/board-session.ts", import.meta.url), "utf8")
+  const route = readFileSync(new URL("../src/app/api/profile/route.ts", import.meta.url), "utf8")
+  const migration = readFileSync(new URL("../database/migrations/20261002_account_deletion_jobs.sql", import.meta.url), "utf8")
 
-test("deleteAccount auth failure returns a plain message and logs the raw error", () => {
-  const store = readFileSync(new URL("../src/lib/profile-store.ts", import.meta.url), "utf8")
-  assert.match(store, /Could not delete auth user during account deletion/)
-  assert.match(store, /We couldn't delete your account\. Please try again\./)
-  assert.doesNotMatch(store, /reason: authError\.message/)
+  assert.match(store, /requestAccountDeletion/)
+  assert.match(worker, /account_deletion_jobs/)
+  assert.match(worker, /status: "finalizing"/)
+  assert.match(worker, /auth\.admin\.deleteUser/)
+  assert.match(worker, /retryDueAccountDeletions/)
+  assert.match(session, /accountDeletionPending/)
+  assert.match(route, /deletionQueued/)
+  assert.match(migration, /enable row level security/i)
+  assert.match(migration, /revoke all on table public\.account_deletion_jobs from anon, authenticated/i)
 })
 
 

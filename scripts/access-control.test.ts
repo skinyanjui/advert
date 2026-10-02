@@ -24,11 +24,14 @@ test("application RBAC separates guest, member, and admin permissions", () => {
 test("guest board payload redacts protected contact and private account state", () => {
   const route = readFileSync(new URL("../src/app/api/board/route.ts", import.meta.url), "utf8")
   assert.match(route, /phone: ""/)
-  assert.match(route, /contactPhone: false/)
-  assert.match(route, /contactWhatsApp: false/)
   assert.match(route, /savedIds: \[\]/)
   assert.match(route, /messages: \[\]/)
   assert.match(route, /getTermsStatus/)
+  const contact = readFileSync(new URL("../src/app/api/listings/[id]/contact/route.ts", import.meta.url), "utf8")
+  assert.match(contact, /resolveOwner\(request\)/)
+  assert.match(contact, /requireCurrentTerms\(owner\.id\)/)
+  assert.match(contact, /board_contact_reveals/)
+  assert.match(contact, /Too many contact lookups/)
 })
 
 test("registration discloses protected features and requires legal acceptance", () => {

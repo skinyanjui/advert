@@ -137,6 +137,7 @@ function AdForm({ existing }: { existing: Listing | null }) {
   const locationTouched = useRef(false)
   const restoredDraft = useRef(false)
   const omittedPhotosToastShown = useRef(false)
+  const errorSummaryRef = useRef<HTMLDivElement>(null)
 
   useEffect(() => {
     if (existing || !auth.ready) return
@@ -481,7 +482,15 @@ function AdForm({ existing }: { existing: Listing | null }) {
   function showErrors(next: FieldErrors) {
     setErrors(next)
     requestAnimationFrame(() => {
-      document.querySelector("[data-field-error]")?.scrollIntoView({ block: "center", behavior: "smooth" })
+      const summary = errorSummaryRef.current
+      if (summary) {
+        summary.focus()
+        summary.scrollIntoView({ block: "center", behavior: "smooth" })
+        return
+      }
+      const firstInvalid = document.querySelector<HTMLElement>("[aria-invalid='true']")
+      firstInvalid?.focus()
+      firstInvalid?.scrollIntoView({ block: "center", behavior: "smooth" })
     })
   }
 
@@ -722,6 +731,22 @@ function AdForm({ existing }: { existing: Listing | null }) {
             else void submit()
           }}
         >
+          {Object.values(errors).some(Boolean) ? (
+            <div
+              ref={errorSummaryRef}
+              tabIndex={-1}
+              role="alert"
+              aria-live="assertive"
+              className="rounded-xl border border-destructive/30 bg-destructive/5 px-3 py-3 text-sm"
+            >
+              <p className="font-medium text-destructive">Check the highlighted fields</p>
+              <ul className="mt-1 list-disc space-y-0.5 pl-5 text-xs text-destructive">
+                {[...new Set(Object.values(errors).filter((value): value is string => Boolean(value)))].map((message) => (
+                  <li key={message}>{message}</li>
+                ))}
+              </ul>
+            </div>
+          ) : null}
           {step === 0 ? (
             <div className="grid gap-3">
               <div>
@@ -845,16 +870,16 @@ function AdForm({ existing }: { existing: Listing | null }) {
                 </span>
               ) : null}
               <Field label="Title" required error={errors.title}>
-                <Input
+                {(controlProps) => <Input
+                  {...controlProps}
                   value={title}
-                  aria-invalid={Boolean(errors.title)}
                   onChange={(event) => {
                     setTitle(event.target.value)
                     setErrors((current) => ({ ...current, title: undefined }))
                   }}
                   placeholder={subcategory.titlePlaceholder}
                   className="h-10 bg-white"
-                />
+                />}
               </Field>
               {suggestListingTitle({ category, subcategory, details, city }) &&
               suggestListingTitle({ category, subcategory, details, city }) !== title.trim() ? (
@@ -931,19 +956,19 @@ function AdForm({ existing }: { existing: Listing | null }) {
 
               <div className="grid gap-5 sm:grid-cols-2">
                 <Field label={`${subcategory.priceLabel} (${currency})`} required error={errors.price}>
-                  <Input
+                  {(controlProps) => <Input
+                    {...controlProps}
                     inputMode="numeric"
                     value={price}
-                    aria-invalid={Boolean(errors.price)}
                     onChange={(event) => {
                       setPrice(event.target.value)
                       setErrors((current) => ({ ...current, price: undefined }))
                     }}
                     placeholder={subcategory.pricePlaceholder}
                     className="h-10 bg-white"
-                  />
+                  />}
                 </Field>
-                <Field label="Currency" error={errors.currency}>
+                <ChoiceField label="Currency" error={errors.currency}>
                   <ChoiceRow
                     value={currency}
                     options={currencies.map((code) => ({
@@ -956,10 +981,10 @@ function AdForm({ existing }: { existing: Listing | null }) {
                       setErrors((current) => ({ ...current, currency: undefined }))
                     }}
                   />
-                </Field>
+                </ChoiceField>
               </div>
               {subcategory.periods.length > 1 ? (
-                <Field label="Charged" error={errors.priceSuffix}>
+                <ChoiceField label="Charged" error={errors.priceSuffix}>
                   <ChoiceRow
                     value={activePeriod}
                     options={subcategory.periods.map((id) => ({ id, label: pricePeriod(id).label }))}
@@ -967,7 +992,7 @@ function AdForm({ existing }: { existing: Listing | null }) {
                       if (isPricePeriodId(id) && subcategory.periods.includes(id)) setPeriod(id)
                     }}
                   />
-                </Field>
+                </ChoiceField>
               ) : null}
               <div className="grid gap-5 sm:grid-cols-2">
                 {subcategory.fields.map((field) => (
@@ -1032,9 +1057,9 @@ function AdForm({ existing }: { existing: Listing | null }) {
                 error={errors.description}
                 hint={descriptionHint(description)}
               >
-                <Textarea
+                {(controlProps) => <Textarea
+                  {...controlProps}
                   value={description}
-                  aria-invalid={Boolean(errors.description)}
                   onChange={(event) => {
                     setDescription(event.target.value)
                     setErrors((current) => ({ ...current, description: undefined }))
@@ -1042,7 +1067,7 @@ function AdForm({ existing }: { existing: Listing | null }) {
                   rows={5}
                   placeholder={subcategory.descriptionPlaceholder ?? plan.descriptionPlaceholder}
                   className="bg-white"
-                />
+                />}
               </Field>
             </section>
           ) : null}
@@ -1221,24 +1246,24 @@ function DetailControl({
   switch (field.kind) {
     case "select":
       return (
-        <Field label={field.label} required={field.required} error={error}>
+        <ChoiceField label={field.label} required={field.required} error={error}>
           <ChoiceRow
             value={normalizeDetailFieldValue(field, value) ?? ""}
             options={detailFieldOptions(field)}
             onChange={onChange}
           />
-        </Field>
+        </ChoiceField>
       )
     case "text":
       return (
         <Field label={field.label} required={field.required} error={error} hint={field.hint}>
-          <Input
+          {(controlProps) => <Input
+            {...controlProps}
             value={value}
-            aria-invalid={Boolean(error)}
             onChange={(event) => onChange(event.target.value)}
             placeholder={field.placeholder}
             className="h-10 bg-white"
-          />
+          />}
         </Field>
       )
     default: {
@@ -1325,11 +1350,34 @@ function Field({
   error?: string
   required?: boolean
   hint?: string
-  children: ReactNode
+  children: ReactNode | ((props: import("@/components/form-field").FormFieldControlProps) => ReactNode)
 }) {
   return (
     <FormField label={label} error={error} required={required} hint={hint}>
       {children}
     </FormField>
+  )
+}
+
+function ChoiceField({
+  label,
+  error,
+  required,
+  children,
+}: {
+  label: string
+  error?: string
+  required?: boolean
+  children: ReactNode
+}) {
+  const errorId = error ? `choice-${label.toLowerCase().replace(/[^a-z0-9]+/g, "-")}-error` : undefined
+  return (
+    <fieldset aria-invalid={error ? true : undefined} aria-describedby={errorId} className="grid gap-1.5">
+      <legend className="text-sm font-medium">
+        {label}{required ? <span aria-hidden="true" className="text-destructive"> *</span> : null}
+      </legend>
+      {children}
+      {error ? <span id={errorId} data-field-error role="alert" className="text-xs text-destructive">{error}</span> : null}
+    </fieldset>
   )
 }

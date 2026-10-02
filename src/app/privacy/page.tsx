@@ -3,7 +3,7 @@ import Link from "next/link"
 
 import { PRIVACY_EFFECTIVE_DATE, PRIVACY_VERSION, TERMS_VERSION } from "@/lib/legal"
 import { legalOperatorIdentity, privacyOfficerContacts } from "@/lib/legal-config"
-import { SUPPORT_CONTACT_PLACEHOLDER, site, siteSupportMailto } from "@/lib/site"
+import { site, siteSupportMailto } from "@/lib/site"
 
 export const metadata: Metadata = { title: "Privacy Policy" }
 
@@ -13,21 +13,10 @@ export default function PrivacyPage() {
   const privacyContacts = privacyOfficerContacts()
   return (
     <div className="w-full px-3 py-8 md:px-4">
-      <div
-        role="status"
-        className="rounded-xl border border-amber-200 bg-amber-50 px-3 py-2 text-sm text-amber-950"
-      >
-        Draft — pending legal review
-      </div>
-      <h1 className="mt-6 text-2xl font-semibold tracking-tight">Privacy Policy</h1>
+      <h1 className="text-2xl font-semibold tracking-tight">Privacy Policy</h1>
       <p className="mt-2 text-sm text-neutral-500">
         Version {PRIVACY_VERSION} · Effective {PRIVACY_EFFECTIVE_DATE} · Terms version {TERMS_VERSION}
       </p>
-      <p className="mt-4 text-sm leading-6 text-neutral-700">
-        This Privacy Policy is a <strong>DRAFT</strong> for {site.name}. It describes how we handle
-        personal data in plain language. A lawyer will review it before it applies in production.
-      </p>
-
       <section className="mt-8 space-y-3">
         <h2 className="text-base font-medium text-neutral-950">What we collect</h2>
         <ul className="list-disc space-y-1 pl-5 text-sm leading-6 text-neutral-700">
@@ -37,6 +26,7 @@ export default function PrivacyPage() {
           <li>Listings you post (title, description, photos, location, and related fields)</li>
           <li>Messages you send through the board</li>
           <li>Reports you submit about listings</li>
+          <li>Support requests you submit, including your email address, category, subject, and message</li>
           <li>Contact-intent events such as listing views and clicks to message, text, call, or open WhatsApp</li>
           <li>WhatsApp consent records, including the listing, named seller, consent text/version, account or session identifier, and time</li>
           <li>WhatsApp Business Platform enforcement metadata received for our business account, such as warnings, restrictions, policy references, and restriction periods</li>
@@ -95,7 +85,7 @@ export default function PrivacyPage() {
           {operator.complete ? (
             <strong>{operator.name} · {operator.address}</strong>
           ) : (
-            <strong>[OPERATOR LEGAL NAME AND BUSINESS ADDRESS — configure before final legal approval]</strong>
+            <>Operator identity is not yet configured, so account acceptance remains disabled. Privacy and support requests remain available through the <Link href="/contact" className="underline underline-offset-2">Contact page</Link>.</>
           )}
           . The support contact below is also the privacy contact.
           {privacyContacts.dpoEmail ? <> Data protection contact: <strong>{privacyContacts.dpoEmail}</strong>.</> : null}
@@ -218,7 +208,7 @@ export default function PrivacyPage() {
           Service providers may process data in countries other than the country where you live. Where
           GDPR transfer rules apply, we will rely on an available lawful transfer mechanism and
           appropriate safeguards, such as an adequacy decision or contractual safeguards, as applicable.
-          This draft does not claim participation in any certification program unless separately verified.
+          This policy does not claim participation in any certification program unless separately verified.
         </p>
       </section>
 
@@ -354,7 +344,7 @@ export default function PrivacyPage() {
       <section className="mt-8 space-y-3">
         <h2 className="text-base font-medium text-neutral-950">Retention</h2>
         <p className="text-sm leading-6 text-neutral-700">
-          We keep account, listing, message, report, contact-intent, WhatsApp consent, and business-platform enforcement records only for as long as reasonably needed for the purposes described above, account operation, safety, disputes, security, or legal obligations. Account deletion removes account-linked listings, saves, conversations, submitted reports, authenticated contact-intent events, and WhatsApp consent records from the active application data, subject to narrow legal or safety exceptions. Terms and Privacy acceptance records are linked to the authentication account and are deleted with it. Privacy-request case records may be retained after account deletion only as reasonably needed to document request handling, satisfy legal obligations, or resolve disputes, then deleted or de-identified. Backup and service-provider copies may persist for a limited period under provider retention processes.
+          We keep account, listing, message, report, support-request, contact-intent, WhatsApp consent, and business-platform enforcement records only for as long as reasonably needed for the purposes described above, account operation, safety, disputes, security, or legal obligations. Account deletion removes account-linked listings, saves, conversations, submitted reports, authenticated contact-intent events, and WhatsApp consent records from the active application data, subject to narrow legal or safety exceptions. Terms and Privacy acceptance records are linked to the authentication account and are deleted with it. Privacy-request case records may be retained after account deletion only as reasonably needed to document request handling, satisfy legal obligations, or resolve disputes, then deleted or de-identified. Backup and service-provider copies may persist for a limited period under provider retention processes.
         </p>
       </section>
 
@@ -382,7 +372,7 @@ export default function PrivacyPage() {
               .
             </>
           ) : (
-            SUPPORT_CONTACT_PLACEHOLDER
+            <Link href="/contact" className="underline underline-offset-2">Submit a privacy or support request</Link>
           )}
         </p>
       </section>

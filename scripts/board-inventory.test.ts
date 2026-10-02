@@ -16,42 +16,26 @@ function client(fetcher: (url: URL) => Response | Promise<Response>) {
   })
 }
 
-test("inventory includes old owned and matching public ads beyond 500, even under a smaller service page cap", async () => {
-  const rows: BoardListingRow[] = Array.from({ length: 1_207 }, (_, index) => ({
-    id: `ad-${String(index).padStart(5, "0")}`,
-    owner_id: other,
-    posted_at: "2026-01-01T00:00:00.000Z", // Ties cannot skip a page.
-    payload: { title: index === 1_200 ? "Old searchable stock" : "Listing" },
-    status: "active", hidden_at: null, expires_at: null,
-  }))
-  rows[1_201] = { ...rows[1_201]!, owner_id: owner, status: "paused" }
-  rows[1_202] = { ...rows[1_202]!, owner_id: owner, status: "sold", hidden_at: "2026-01-02" }
-  rows[1_203] = { ...rows[1_203]!, status: "paused" }
-  rows[1_204] = { ...rows[1_204]!, hidden_at: "2026-01-02" }
-  rows[1_205] = { ...rows[1_205]!, expires_at: "2020-01-01T00:00:00Z" }
-  rows[1_206] = { ...rows[1_206]!, status: "sold" }
-  let calls = 0
+test("account inventory contains owned and explicitly saved ads without sweeping public stock", async () => {
+  const rows: BoardListingRow[] = [
+    { id: "ad-owned-old", owner_id: owner, posted_at: "2025-01-01T00:00:00Z", payload: { title: "Owned" }, status: "paused" },
+    { id: "ad-saved", owner_id: other, posted_at: "2026-01-01T00:00:00Z", payload: { title: "Saved" }, status: "active" },
+    { id: "ad-public", owner_id: other, posted_at: "2026-02-01T00:00:00Z", payload: { title: "Public but not account scoped" }, status: "active" },
+  ]
   const db = client(url => {
-    calls++
     assert.equal(url.pathname, "/rest/v1/board_listings")
-    assert.equal(url.searchParams.get("order"), "id.asc")
-    assert.equal(url.searchParams.has("offset"), false)
-    const filter = url.searchParams.get("or")!
-    assert.match(filter, new RegExp(`^\\(owner_id.eq.${owner},and\\(hidden_at.is.null,or\\(status.is.null,status.eq.active\\),or\\(expires_at.is.null,expires_at.gt.`))
-    const after = url.searchParams.get("id")?.slice(3)
-    const visible = rows.filter(row => row.owner_id === owner || (
-      !row.hidden_at && row.status === "active" && (!row.expires_at || Date.parse(row.expires_at) > Date.now())
-    ))
-    return Response.json(visible.filter(row => !after || row.id > after).slice(0, 73))
+    const ownerFilter = url.searchParams.get("owner_id")
+    if (ownerFilter) {
+      assert.equal(ownerFilter, `eq.${owner}`)
+      return Response.json(rows.filter(row => row.owner_id === owner))
+    }
+    const idFilter = url.searchParams.get("id")
+    assert.match(idFilter ?? "", /^in\.\(/)
+    return Response.json(rows.filter(row => row.id === "ad-saved"))
   })
-  const actual = await readBoardInventory(db, owner)
-  assert.equal(actual.length, 1_203)
-  assert.equal(new Set(actual.map(row => row.id)).size, 1_203)
-  assert.deepEqual(actual.find(row => row.id === "ad-01200")?.payload, { title: "Old searchable stock" })
-  assert.ok(actual.some(row => row.id === "ad-01201" && row.status === "paused"))
-  assert.ok(actual.some(row => row.id === "ad-01202" && row.hidden_at))
-  assert.ok(!actual.some(row => ["ad-01203", "ad-01204", "ad-01205", "ad-01206"].includes(row.id)))
-  assert.ok(calls > 16)
+  const actual = await readBoardInventory(db, owner, ["ad-saved"])
+  assert.deepEqual(actual.map(row => row.id), ["ad-saved", "ad-owned-old"])
+  assert.equal(actual.some(row => row.id === "ad-public"), false)
 })
 
 test("saved ads beyond the service limit remain available only for their owner", async () => {

@@ -28,3 +28,14 @@ export function dmcaAgentConfiguration() {
     contactComplete: Boolean(name && email && address),
   }
 }
+
+
+export function legalPublicationStatus() {
+  const operator = legalOperatorIdentity()
+  const approved = process.env.LEGAL_DOCUMENTS_APPROVED === "1"
+  return {
+    approved,
+    operatorComplete: operator.complete,
+    ready: approved && operator.complete,
+  }
+}

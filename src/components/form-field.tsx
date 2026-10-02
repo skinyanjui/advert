@@ -1,8 +1,18 @@
-import type { ReactNode } from "react"
+"use client"
+
+import { useId, type ReactNode } from "react"
 
 import { Label } from "@/components/ui/label"
 
-/** Shared label / error / hint wrapper used by post-an-ad and Profile forms. */
+export type FormFieldControlProps = {
+  id: string
+  "aria-describedby"?: string
+  "aria-errormessage"?: string
+  "aria-invalid"?: true
+  "aria-required"?: true
+}
+
+/** Shared label / error / hint wrapper. Generates stable control and help IDs. */
 export function FormField({
   label,
   error,
@@ -16,21 +26,36 @@ export function FormField({
   required?: boolean
   hint?: string
   htmlFor?: string
-  children: ReactNode
+  children: ReactNode | ((props: FormFieldControlProps) => ReactNode)
 }) {
+  const reactId = useId().replace(/:/g, "")
+  const controlId = htmlFor ?? `field-${reactId}`
+  const hintId = hint ? `${controlId}-hint` : undefined
+  const errorId = error ? `${controlId}-error` : undefined
+  const describedBy = [hintId, errorId].filter(Boolean).join(" ") || undefined
+  const controlProps: FormFieldControlProps = {
+    id: controlId,
+    ...(describedBy ? { "aria-describedby": describedBy } : {}),
+    ...(errorId ? { "aria-errormessage": errorId, "aria-invalid": true as const } : {}),
+    ...(required ? { "aria-required": true as const } : {}),
+  }
+
   return (
     <div className="grid gap-1.5">
-      <Label htmlFor={htmlFor}>
+      <Label htmlFor={controlId}>
         {label}
-        {required ? <span className="text-destructive"> *</span> : null}
+        {required ? <span aria-hidden="true" className="text-destructive"> *</span> : null}
       </Label>
-      {children}
+      {typeof children === "function" ? children(controlProps) : children}
+      {hint ? (
+        <span id={hintId} className="text-xs text-muted-foreground">
+          {hint}
+        </span>
+      ) : null}
       {error ? (
-        <span data-field-error className="text-xs text-destructive">
+        <span id={errorId} data-field-error role="alert" className="text-xs text-destructive">
           {error}
         </span>
-      ) : hint ? (
-        <span className="text-xs text-muted-foreground">{hint}</span>
       ) : null}
     </div>
   )

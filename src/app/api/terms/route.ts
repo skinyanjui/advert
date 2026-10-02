@@ -21,6 +21,7 @@ export async function GET(request: Request) {
       acceptedTermsVersion: status.acceptedTermsVersion,
       acceptedPrivacyVersion: status.acceptedPrivacyVersion,
       tableMissing: status.tableMissing,
+      publicationReady: status.publicationReady,
     })
   } catch {
     return fail("The board database did not respond.", 500)
@@ -33,6 +34,10 @@ export async function POST(request: Request) {
     return fail("Sign in to accept the Terms.", 401)
   }
   try {
+    const before = await getTermsStatus(owner.id)
+    if (before.tableMissing || !before.publicationReady) {
+      return fail("Terms acceptance is unavailable until the published legal documents are ready.", 503)
+    }
     const parsed = await readApiInput(request, termsAcceptanceSchema)
     if (!parsed.ok) return fail(parsed.reason)
     const { context: contextRaw, ageAttested, privacyAcknowledged, locale } = parsed.value
