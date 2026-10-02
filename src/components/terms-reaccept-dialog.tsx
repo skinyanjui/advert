@@ -27,6 +27,7 @@ import {
 type TermsPayload = {
   current?: boolean
   tableMissing?: boolean
+  publicationReady?: boolean
   reason?: string
 }
 
@@ -51,7 +52,7 @@ export function TermsReacceptDialog() {
       const response = await fetch("/api/terms", { method: "GET" })
       if (!response.ok) return
       const payload = (await response.json()) as TermsPayload
-      if (payload.tableMissing) {
+      if (payload.tableMissing || payload.publicationReady === false) {
         startTransition(() => {
           setServiceUnavailable(true)
           setOpen(true)
