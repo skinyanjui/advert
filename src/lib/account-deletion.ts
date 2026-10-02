@@ -66,7 +66,7 @@ function avatarStoragePath(image: string | null | undefined) {
   const index = image.indexOf(marker)
   if (index < 0) return undefined
   const path = image.slice(index + marker.length)
-  return /^[0-9a-f-]{36}/[0-9a-f-]{36}.(jpg|png|webp)$/i.test(path) ? path : undefined
+  return /^[0-9a-f-]{36}\/[0-9a-f-]{36}\.(jpg|png|webp)$/i.test(path) ? path : undefined
 }
 
 function listingPhotoPath(image: string) {
@@ -74,7 +74,7 @@ function listingPhotoPath(image: string) {
   const index = image.indexOf(marker)
   if (index < 0) return undefined
   const path = image.slice(index + marker.length)
-  return /^[0-9a-f-]{36}/[0-9a-f-]{36}.(jpg|png|webp)$/i.test(path) ? path : undefined
+  return /^[0-9a-f-]{36}\/[0-9a-f-]{36}\.(jpg|png|webp)$/i.test(path) ? path : undefined
 }
 
 function listingPhotoPaths(listing: Listing | undefined) {
