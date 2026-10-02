@@ -2,7 +2,7 @@ import type { Metadata } from "next"
 import Link from "next/link"
 import { headers } from "next/headers"
 
-import { site, siteSupportMailto, SUPPORT_CONTACT_PLACEHOLDER } from "@/lib/site"
+import { site, siteSupportMailto } from "@/lib/site"
 
 export const metadata: Metadata = { title: "Privacy choices" }
 export const dynamic = "force-dynamic"
@@ -123,7 +123,7 @@ export default async function PrivacyChoicesPage() {
               {site.supportEmail}
             </a>
           ) : (
-            SUPPORT_CONTACT_PLACEHOLDER
+            <Link href="/contact" className="underline underline-offset-2">Submit a privacy or support request</Link>
           )}
         </p>
       </section>
