@@ -31,8 +31,6 @@ export function Browse() {
   const [loading, setLoading] = useState(true)
   const [loadError, setLoadError] = useState(false)
 
-  const searchKey = [query.country ?? "", query.city ?? "", query.category ?? "", query.type ?? "", query.q ?? ""].join("|")
-
   useEffect(() => {
     const controller = new AbortController()
     const params = new URLSearchParams()
@@ -62,7 +60,7 @@ export function Browse() {
         if (!controller.signal.aborted) setLoading(false)
       })
     return () => controller.abort()
-  }, [searchKey])
+  }, [query.country, query.city, query.category, query.type, query.q])
 
   const listings = useMemo(() => {
     const samples = seedListings.filter(
