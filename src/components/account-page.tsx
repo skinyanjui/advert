@@ -239,15 +239,15 @@ function SignedInProfile({ email, pendingEmail, createdAt, signOut, signOutAll, 
     setDeleting(true)
     try {
       const response = await fetch("/api/profile", { method: "DELETE", headers: { "content-type": "application/json" }, body: JSON.stringify({ confirm: "DELETE" }) })
-      const payload = (await response.json()) as { ok?: boolean; reason?: string; authDeleted?: boolean }
+      const payload = (await response.json()) as { ok?: boolean; reason?: string; deletionQueued?: boolean }
       if (!response.ok) {
-        if (payload.authDeleted) {
-          toast.error(payload.reason ?? "Your account was deleted, but some data couldn't be cleaned up. We'll remove it.")
-          setDeleteOpen(false); await signOut(); router.replace("/"); router.refresh(); return
-        }
-        toast.error(payload.reason ?? "Could not delete your account."); return
+        toast.error(payload.reason ?? "Could not start account deletion."); return
       }
-      setDeleteOpen(false); toast.success("Account deleted"); await signOut(); router.replace("/"); router.refresh()
+      setDeleteOpen(false)
+      toast.success(payload.deletionQueued ? "Account deletion started" : "Account deleted")
+      await signOut()
+      router.replace("/")
+      router.refresh()
     } catch { toast.error("Could not delete your account.") } finally { setDeleting(false) }
   }
 
