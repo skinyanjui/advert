@@ -16,14 +16,10 @@ export async function GET(request: Request) {
       const state = await listBoard(owner.id)
       const terms = owner.kind === "auth" ? await getTermsStatus(owner.id) : null
       const privateAccess = canOwner(owner, "profile") && (terms?.current ?? false)
-      const posted = privateAccess
-        ? state.posted
-        : state.posted.map((listing) => ({
-            ...listing,
-            phone: "",
-            contactPhone: false,
-            contactWhatsApp: false,
-          }))
+      const posted = state.posted.map((listing) => ({
+        ...listing,
+        phone: "",
+      }))
       return NextResponse.json({
         ...state,
         posted,
@@ -47,8 +43,6 @@ export async function GET(request: Request) {
     const posted = state.posted.map((listing) => ({
       ...listing,
       phone: "",
-      contactPhone: false,
-      contactWhatsApp: false,
     }))
     return NextResponse.json(
       { ...state, posted, savedIds: [], messages: [], auth: false, email: null, admin: false },
