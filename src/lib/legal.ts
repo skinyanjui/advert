@@ -1,6 +1,6 @@
-/** Draft legal document versions. Bump when Terms or Privacy text changes. */
-export const TERMS_VERSION = "2026-10-02-featured-promotions-draft"
-export const PRIVACY_VERSION = "2026-10-02-seller-reporting-draft"
+/** Published document versions. Bump whenever accepted Terms or Privacy text changes. */
+export const TERMS_VERSION = "2026-10-02-v2"
+export const PRIVACY_VERSION = "2026-10-02-v2"
 
 export const LEGAL_EFFECTIVE_DATE = "2026-10-02"
 export const PRIVACY_EFFECTIVE_DATE = "2026-10-02"
@@ -24,4 +24,4 @@ export function isTermsAcceptanceContext(value: string): value is TermsAcceptanc
 
 /** Returned with HTTP 428 when the user must accept updated Terms. */
 export const TERMS_OUTDATED_MESSAGE = "Accept the updated Terms to continue."
-export const LEGAL_ACCEPTANCE_UNAVAILABLE_MESSAGE = "Account access is temporarily unavailable while legal acceptance records are unavailable."
+export const LEGAL_ACCEPTANCE_UNAVAILABLE_MESSAGE = "Account access is temporarily unavailable while legal acceptance records or publication requirements are incomplete."
