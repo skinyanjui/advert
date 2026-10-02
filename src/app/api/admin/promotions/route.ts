@@ -22,11 +22,11 @@ export async function PATCH(request: Request) {
     if (body.action === "grant") {
       await promotionRpc("grant_board_promotion", { p_listing: body.listingId, p_actor: owner.id, p_days: body.days, p_reason: body.reason.trim() })
     } else {
-      if (body.action === "retry_refund") await finishPromotionRefund(body.id)
+      if (body.action === "retry_refund") await finishPromotionRefund(body.id, true)
       else {
         const result = await promotionRpc<Promotion>("decide_board_promotion", { p_id: body.id, p_actor: owner.id, p_action: body.action, p_reason: body.reason.trim() })
         if (result.status === "refund_pending") {
-          try { await finishPromotionRefund(body.id) }
+          try { await finishPromotionRefund(body.id, true) }
           catch { return fail("Decision saved; refund is pending. Retry the refund from this queue.", 502) }
         }
       }

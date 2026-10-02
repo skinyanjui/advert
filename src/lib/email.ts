@@ -1,5 +1,6 @@
 import "server-only"
 
+import { emailTextToHtml } from "@/lib/email-content"
 import { siteEmailFrom } from "@/lib/site"
 
 export type OutboundEmail = {
@@ -7,6 +8,7 @@ export type OutboundEmail = {
   subject: string
   text: string
   html?: string
+  idempotencyKey?: string
 }
 
 export type EmailSendResult =
@@ -28,16 +30,18 @@ export async function sendEmail(message: OutboundEmail): Promise<EmailSendResult
   try {
     const response = await fetch("https://api.resend.com/emails", {
       method: "POST",
+      signal: AbortSignal.timeout(8000),
       headers: {
         authorization: `Bearer ${key}`,
         "content-type": "application/json",
+        ...(message.idempotencyKey ? { "Idempotency-Key": message.idempotencyKey } : {}),
       },
       body: JSON.stringify({
         from,
         to: [message.to],
         subject: message.subject,
         text: message.text,
-        html: message.html ?? message.text.replace(/\n/g, "<br/>"),
+        html: message.html ?? emailTextToHtml(message.text),
       }),
     })
     if (!response.ok) {

@@ -61,7 +61,7 @@ test("buyer contact migration is service-role-only with phone checks", () => {
 })
 
 test("public seller overlay select never includes phone", () => {
-  const store = readFileSync(new URL("../src/lib/profile-store.ts", import.meta.url), "utf8")
+  const store = readFileSync(new URL("../src/lib/board-inventory.ts", import.meta.url), "utf8")
   assert.match(store, /\.select\("user_id,display_name,avatar_url,created_at"\)/)
   assert.doesNotMatch(
     store,

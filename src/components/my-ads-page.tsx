@@ -17,6 +17,7 @@ import { EmptyPanel } from "@/components/empty-panel"
 import { ListingThumb } from "@/components/inbox/listing-thumb"
 import { usePrefs } from "@/components/prefs-provider"
 import { ListingPrice } from "@/components/listing-price"
+import { SellerContactLeads } from "@/components/seller-contact-leads"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import {
@@ -215,7 +216,7 @@ export function MyAdsPage() {
       <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
         <h1 className="text-2xl font-semibold tracking-tight">{t("myAds.title")}</h1>
         <div className="flex flex-wrap gap-2">
-          <Button asChild size="sm" variant="outline" className="h-11 rounded-lg px-3 text-xs md:h-8"><Link href="/my-ads/featured">Feature an ad</Link></Button>
+          <Button asChild size="sm" variant="outline" className="h-11 rounded-lg px-3 text-xs md:h-8"><Link href="/my-ads/featured">{t("promotion.sellerTitle")}</Link></Button>
           {mine.some((listing) => listing.hidden) ? (
             <Button asChild size="sm" variant="outline" className="h-11 rounded-lg px-3 text-xs md:h-8">
               <Link href="/account/moderation">Moderation decisions</Link>
@@ -227,6 +228,7 @@ export function MyAdsPage() {
         </div>
       </div>
 
+      <SellerContactLeads />
       <div className="overflow-hidden rounded-xl border border-neutral-200 bg-white">
           {mine.length > 0 ? (
             <div className="space-y-3 border-b border-neutral-200 p-4">
@@ -369,6 +371,7 @@ function MyAdRow({
   onDelete: () => void
 }) {
   const status = effectiveListingStatus(listing)
+  const { t } = usePrefs()
   const sold = status === "sold"
   const paused = status === "paused"
   const expired = status === "expired"
@@ -488,7 +491,7 @@ function MyAdRow({
           </DropdownMenuTrigger>
           <DropdownMenuContent align="end" className="min-w-44">
             <DropdownMenuItem asChild>
-              <Link href={`/my-ads/featured?listing=${encodeURIComponent(listing.id)}`}>Feature / promotion stats</Link>
+              <Link href={`/my-ads/featured?listing=${encodeURIComponent(listing.id)}`}>{t("promotion.manageLink")}</Link>
             </DropdownMenuItem>
             <DropdownMenuItem asChild>
               <Link href={`/post?edit=${encodeURIComponent(listing.id)}`}>Edit</Link>

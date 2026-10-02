@@ -2,7 +2,7 @@ import { canOwner } from "@/lib/access-control"
 import { fail, ok } from "@/lib/api"
 import { resolveOwner } from "@/lib/board-session"
 import { listPromotions, promotionListOptions } from "@/lib/promotion-store"
-import { paidFeaturingConfigured } from "@/lib/stripe"
+import { paidCheckoutReady } from "@/lib/checkout-readiness"
 import { featuredPackage } from "@/lib/promotions"
 import { requireCurrentTerms } from "@/lib/terms-gate"
 
@@ -14,6 +14,6 @@ export async function GET(request: Request) {
     const block = await requireCurrentTerms(owner.id)
     if (block) return block
     const { page, status } = promotionListOptions(request)
-    return ok({ ...await listPromotions(owner.id, page, status), package: featuredPackage, checkoutAvailable: paidFeaturingConfigured() })
+    return ok({ ...await listPromotions(owner.id, page, status), package: featuredPackage, checkoutAvailable: await paidCheckoutReady() })
   } catch { return fail("Promotions could not be loaded. Check the database migration.", 503) }
 }

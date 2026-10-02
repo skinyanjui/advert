@@ -1,4 +1,5 @@
 import "server-only"
+import { readSellerProfileRows } from "@/lib/board-inventory"
 
 import { boardDb } from "@/lib/board-db"
 import { cleanListing } from "@/lib/board-payload"
@@ -118,16 +119,12 @@ export async function profilesByUserIds(userIds: string[]): Promise<Map<string, 
   const unique = [...new Set(userIds.filter(Boolean))]
   const map = new Map<string, ProfilePublic>()
   if (unique.length === 0) return map
-  const { data, error } = await boardDb()
-    .from("board_profiles")
-    .select("user_id,display_name,avatar_url,created_at")
-    .in("user_id", unique)
-  check(error)
-  for (const row of data ?? []) {
-    map.set(row.user_id as string, {
-      displayName: typeof row.display_name === "string" ? row.display_name : null,
-      avatarUrl: typeof row.avatar_url === "string" ? row.avatar_url : null,
-      createdAt: typeof row.created_at === "string" ? row.created_at : null,
+  const rows = await readSellerProfileRows(boardDb(), unique)
+  for (const row of rows) {
+    map.set(row.user_id, {
+      displayName: row.display_name,
+      avatarUrl: row.avatar_url,
+      createdAt: row.created_at,
     })
   }
   return map
@@ -306,6 +303,10 @@ export async function deleteAccount(userId: string): Promise<DeleteAccountResult
   }
 
   const issues: CleanupIssue[] = []
+  const { error: noticesError } = await db.from("board_promotion_notifications").delete().eq("owner_id", userId)
+  if (noticesError && !["42P01", "PGRST205"].includes(noticesError.code)) {
+    issues.push({ step: "promotion_notifications", message: noticesError.message, ids: [userId] })
+  }
 
   for (const row of listings ?? []) {
     const listingId = row.id as string

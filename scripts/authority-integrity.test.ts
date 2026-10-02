@@ -136,3 +136,22 @@ test("promotion fields, package and consent version share their authoritative ow
   assert.equal(promotionDecisionSchema.safeParse({ action: "approve", id: "not-a-uuid", reason: "Reason" }).success, false)
   assert.equal(promotionDecisionSchema.safeParse(null).success, false)
 })
+
+
+test("promotion operational kinds, delivery states, review and retry policy match the database", async () => {
+  const { promotionNotificationKinds, promotionNotificationStatuses } = await import("../src/lib/promotions")
+  const sql = readFileSync(new URL("../database/migrations/20261002_promotion_operations.sql", import.meta.url), "utf8")
+  for (const value of [...promotionNotificationKinds, ...promotionNotificationStatuses]) assert.ok(sql.includes(`'${value}'`))
+  assert.ok(sql.includes(`interval '${marketplacePolicy.promotions.reviewHours} hours'`))
+  assert.ok(sql.includes(`refund_attempts < ${marketplacePolicy.promotions.maxRefundAttempts}`))
+  assert.ok(sql.includes(`attempts < ${marketplacePolicy.promotions.maxNotificationAttempts}`))
+})
+
+test("support verification and lead retention SQL match shared policy", () => {
+  const support = readFileSync(new URL("../database/migrations/20261002_payment_support.sql", import.meta.url), "utf8")
+  assert.ok(support.includes(`interval '${marketplacePolicy.paymentSupport.resendSeconds} seconds'`))
+  assert.ok(support.includes(`interval '${marketplacePolicy.paymentSupport.challengeMinutes} minutes'`))
+  const leads = readFileSync(new URL("../database/migrations/20261002_seller_contact_leads.sql", import.meta.url), "utf8")
+  assert.ok(leads.includes(`interval '${marketplacePolicy.contactAnalytics.retentionDays} days'`))
+  for (const value of contactEventTypes) assert.ok(leads.includes(`'${value}'`))
+})

@@ -7,6 +7,9 @@ import { promotionRpc } from "@/lib/promotion-store"
 import { canCreatePromotionCheckout, type Promotion } from "@/lib/promotions"
 import { checkoutBaseUrl, stripeRequest, type StripeSession } from "@/lib/stripe"
 import { requireCurrentTerms } from "@/lib/terms-gate"
+import { paidCheckoutReady } from "@/lib/checkout-readiness"
+import { promotionCheckoutCopy } from "@/lib/promotion-checkout-copy"
+import type { Locale } from "@/lib/i18n/locales"
 
 export const runtime = "nodejs"
 export async function POST(request: Request) {
@@ -15,7 +18,7 @@ export async function POST(request: Request) {
   try {
     const block = await requireCurrentTerms(owner.id)
     if (block) return block
-    if (!process.env.STRIPE_SECRET_KEY || !process.env.STRIPE_WEBHOOK_SECRET) return fail("Paid featuring is not available yet.", 503)
+    if (!await paidCheckoutReady()) return fail("Paid featuring is temporarily unavailable while payment support is verified.", 503)
     const base = checkoutBaseUrl()
     const parsed = await readApiInput(request, promotionCheckoutSchema)
     if (!parsed.ok) return fail(parsed.reason)
@@ -33,12 +36,16 @@ export async function POST(request: Request) {
       if (session.status !== "open") return fail("This checkout is being processed or has expired. Refresh promotion status before retrying.", 409)
     } else {
       if (!canCreatePromotionCheckout(promotion.created_at)) return fail("This checkout needs reconciliation in Stripe before retrying. Contact support; do not pay twice.", 409)
+      const checkoutLanguage = await promotionRpc<Locale>("resolve_board_promotion_checkout_language", { p_id: promotion.id, p_owner: owner.id, p_language: body.language })
+      const copy = promotionCheckoutCopy(checkoutLanguage, promotion.duration_days)
       const params = new URLSearchParams({
         mode: "payment",
+        locale: copy.locale,
         "payment_method_types[0]": "card",
         "line_items[0][price_data][currency]": promotion.currency,
         "line_items[0][price_data][unit_amount]": String(promotion.amount),
-        "line_items[0][price_data][product_data][name]": `Featured ad — ${promotion.duration_days} days after approval`,
+        "line_items[0][price_data][product_data][name]": copy.name,
+        "line_items[0][price_data][product_data][description]": copy.description,
         "line_items[0][quantity]": "1",
         "metadata[promotion_id]": promotion.id,
         "payment_intent_data[metadata][promotion_id]": promotion.id,

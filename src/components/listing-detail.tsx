@@ -1,7 +1,7 @@
 "use client"
 
 import { useFeaturedClock } from "@/hooks/use-featured"
-import { isFeatured, promotionDisclosure } from "@/lib/promotions"
+import { isFeatured } from "@/lib/promotions"
 
 import { ArrowLeft, ChevronLeft, ChevronRight, Flag, Heart, MapPin, MessageSquareText, MoreHorizontal, Phone, Share2 } from "lucide-react"
 import Image from "next/image"
@@ -37,7 +37,7 @@ import { Textarea } from "@/components/ui/textarea"
 import { useAuth } from "@/lib/auth"
 import { signInHref } from "@/lib/auth-redirect"
 import { relatedListings } from "@/lib/board"
-import { seedListings } from "@/lib/catalog"
+import { isSampleListing } from "@/lib/catalog"
 import { resolvePlace } from "@/lib/cities"
 import { distanceKm as kilometresBetween, listingPoint } from "@/lib/distance"
 import { trackListingContactEvent } from "@/lib/contact-events"
@@ -61,9 +61,7 @@ import { reportReasons } from "@/lib/reports"
 import { categoryName, type Listing } from "@/lib/types"
 import { cn } from "@/lib/utils"
 
-const sampleIds = new Set(seedListings.map((item) => item.id))
-
-export function ListingDetail({ id }: { id: string }) {
+export function ListingDetail({ id, initialListing }: { id: string; initialListing?: Listing }) {
   const searchParams = useSearchParams()
   const router = useRouter()
   const auth = useAuth()
@@ -71,7 +69,7 @@ export function ListingDetail({ id }: { id: string }) {
   const { t } = usePrefs()
   const { listings, ready, isSaved, toggleSaved, messages, sendMessage, setListingSold, setListingPaused, renewListing, removeListing } =
     useMarketplace()
-  const listing = listings.find((item) => item.id === id)
+  const listing = listings.find((item) => item.id === id) ?? (!ready ? initialListing : undefined)
   const [phoneVisible, setPhoneVisible] = useState(false)
   const [messageOpen, setMessageOpen] = useState(false)
   const [message, setMessage] = useState("")
@@ -108,7 +106,7 @@ export function ListingDetail({ id }: { id: string }) {
   }
 
   const ad = listing
-  const isSample = sampleIds.has(ad.id)
+  const isSample = isSampleListing(ad.id)
   const saved = isSaved(ad.id)
   const listingMessages = messages.filter((item) => item.listingId === ad.id)
   const threadCount = new Set(listingMessages.map((item) => item.conversationId)).size
@@ -318,6 +316,7 @@ export function ListingDetail({ id }: { id: string }) {
         <ArrowLeft className="size-4" />
         {categoryName(listing.category)}
       </Link>
+      {isSample ? <p className="mt-4 rounded-md border border-border bg-muted px-3 py-2 text-sm font-medium text-foreground">{t("listing.sampleContactUnavailable")}</p> : null}
       <div className="mt-4 grid gap-6 lg:grid-cols-[minmax(0,1fr)_320px]">
         <div>
           <div className="overflow-hidden rounded-xl bg-muted">
@@ -875,6 +874,7 @@ function DetailSkeleton() {
 }
 
 function FeaturedDisclosure({ listing }: { listing: Listing }) {
+  const { t } = usePrefs()
   const now = useFeaturedClock([listing])
-  return isFeatured(listing, now) ? <p className="mb-2 text-sm text-muted-foreground">{listing.featuredPaid ? `Ad · Featured. ${promotionDisclosure}` : "Featured by the marketplace at no charge."}</p> : null
+  return isFeatured(listing, now) ? <p className="mb-2 text-sm text-muted-foreground">{listing.featuredPaid ? `${t("promotion.badgePaid")}. ${t("promotion.disclosure")}` : t("promotion.freeDisclosure")}</p> : null
 }

@@ -3,13 +3,14 @@
 import Link from "next/link"
 import { useMemo } from "react"
 
+import { usePrefs } from "@/components/prefs-provider"
 import { BoardCitySearch } from "@/components/board-place"
 import { ListingCard } from "@/components/listing-card"
 import { Button } from "@/components/ui/button"
 import { listingGridClassName } from "@/lib/listing-grid"
 import { postAdHref } from "@/lib/active-place"
 import { useFeaturedClock } from "@/hooks/use-featured"
-import { isFeatured, promotionDisclosure } from "@/lib/promotions"
+import { isFeatured } from "@/lib/promotions"
 import { matchesQuery, sortListings } from "@/lib/board"
 import { isPubliclyVisibleListing } from "@/lib/listing-status"
 import { useHomePlace } from "@/lib/home-place"
@@ -21,6 +22,7 @@ import { findSubcategory } from "@/lib/posting"
 import { boardSearch, useListingQuery } from "@/lib/use-listing-query"
 
 export function Browse() {
+  const { t } = usePrefs()
   const { listings } = useMarketplace()
   const featuredNow = useFeaturedClock(listings)
   const { query, update, clear } = useListingQuery()
@@ -82,7 +84,7 @@ export function Browse() {
           </div>
         ) : null}
         {query.sort === "relevant" && visible.some(listing => isFeatured(listing, featuredNow)) ? (
-          <p className="mb-3 text-xs text-muted-foreground">Featured listings appear first among matching results. {promotionDisclosure} Complimentary placements are marked “Featured”. Price and newest sorts do not receive a boost.</p>
+          <p className="mb-3 text-xs text-muted-foreground">{t("promotion.browseDisclosure")}</p>
         ) : null}
         {visible.length === 0 ? (
           <EmptyResults

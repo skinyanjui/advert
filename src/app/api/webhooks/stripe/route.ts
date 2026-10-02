@@ -32,6 +32,9 @@ export async function POST(request: Request) {
         await promotionRpc("cancel_board_promotion_checkout", { p_id: metadata.promotion_id, p_session: object.id })
       }
     } else if (event.type === "refund.updated" || event.type === "refund.created") {
+      if ((object.status === "failed" || object.status === "canceled") && typeof object.payment_intent === "string" && typeof object.id === "string") {
+        await promotionRpc("fail_board_promotion_refund", { p_intent: object.payment_intent, p_refund: object.id })
+      }
       if (object.status === "succeeded" && typeof object.payment_intent === "string" && typeof object.id === "string") {
         const { data: row, error } = await boardDb().from("board_promotions").select("amount").eq("stripe_payment_intent", object.payment_intent).maybeSingle()
         if (error) throw new Error(error.message)

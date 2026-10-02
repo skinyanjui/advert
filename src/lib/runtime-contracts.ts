@@ -1,4 +1,5 @@
 import { z } from "zod"
+import { locales } from "@/lib/i18n/locales"
 import { promotionStatuses, promotionEventTypes } from "@/lib/promotions"
 
 import { categories, currentTaxonomyVersion } from "@/lib/category-registry"
@@ -227,7 +228,7 @@ export async function readApiInput<S extends z.ZodType>(request: Request, schema
 
 const promotionIdSchema = z.string().uuid("Choose a promotion.")
 const promotionReasonSchema = z.string().trim().min(3).max(1500)
-export const promotionCheckoutSchema = z.object({ listingId: listingIdSchema, acceptTerms: z.literal(true) })
+export const promotionCheckoutSchema = z.object({ listingId: listingIdSchema, acceptTerms: z.literal(true), language: z.enum(locales).default("en") })
 export const promotionEventSchema = z.object({ promotionId: promotionIdSchema, type: z.enum(promotionEventTypes) })
 export const promotionListSchema = z.object({ page: z.coerce.number().int().min(0).max(100000).default(0), status: z.enum(["all", ...promotionStatuses]).default("all") })
 export const promotionDecisionSchema = z.discriminatedUnion("action", [

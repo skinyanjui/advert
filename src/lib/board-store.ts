@@ -1,6 +1,7 @@
 import "server-only"
 
 import { boardDb } from "@/lib/board-db"
+import { readBoardInventory, readSavedListingIds, type BoardListingRow as Row } from "@/lib/board-inventory"
 import { seedListings } from "@/lib/catalog"
 import { hoursAgoOf } from "@/lib/format"
 import { acceptListing } from "@/lib/listing-rules"
@@ -29,24 +30,6 @@ import { site } from "@/lib/site"
 import type { Listing } from "@/lib/types"
 
 type Result<T> = { ok: true; value: T } | { ok: false; reason: string }
-type Row = {
-  id: string
-  owner_id: string
-  posted_at: string
-  payload: unknown
-  hidden_at?: string | null
-  hidden_reason?: string | null
-  expires_at?: string | null
-  expiry_reminder_sent_at?: string | null
-  status?: string | null
-  sold_at?: string | null
-  featured?: boolean | null
-  featured_until?: string | null
-  featured_paid?: boolean | null
-  featured_promotion_id?: string | null
-  sponsored?: boolean | null
-  sponsored_locked?: boolean | null
-}
 const seedIds = new Set(seedListings.map((item) => item.id))
 const developmentSellerId = "00000000-0000-4000-8000-000000000001"
 const listingIdPattern = /^ad-[a-zA-Z0-9-]{1,64}$/
@@ -197,21 +180,11 @@ async function removePhoto(image: string) {
 }
 export async function listBoard(owner: string): Promise<BoardState> {
   const db = boardDb()
-  const [posted, featured, saved, messages] = await Promise.all([
-    db
-      .from("board_listings")
-      .select(listingSelect)
-      .order("posted_at", { ascending: false })
-      .limit(500),
-    // Old paid listings must not fall out of browse merely because newer ads filled the window.
-    db.from("board_listings").select(listingSelect).eq("featured", true).gt("featured_until", new Date().toISOString()).eq("status", "active").is("hidden_at", null).limit(500),
-    db.from("board_saves").select("listing_id").eq("owner_id", owner).order("created_at", { ascending: false }),
+  const [boardRows, savedIds, messages] = await Promise.all([
+    readBoardInventory(db, owner),
+    readSavedListingIds(db, owner),
     listMessagesFor(owner),
   ])
-  check(posted.error)
-  if (featured.error && !isMissingColumnError(featured.error)) check(featured.error)
-  check(saved.error)
-  const boardRows = [...new Map([...(posted.data ?? []), ...(featured.data ?? [])].map(row => [row.id, row])).values()]
   const ownerIds = boardRows.map((row) => row.owner_id as string)
   const profiles = await profilesByUserIds(ownerIds)
   return {
@@ -223,8 +196,26 @@ export async function listBoard(owner: string): Promise<BoardState> {
       if (!item.mine && !isPubliclyVisibleListing(item)) return []
       return [applySellerProfile(item, profiles.get(row.owner_id as string))]
     }),
-    savedIds: (saved.data ?? []).map((row) => row.listing_id),
+    savedIds,
     messages,
+  }
+}
+
+/** Direct public lookup for listing URLs and metadata, independent of browse. */
+export async function getPublicListing(id: string): Promise<Listing | undefined> {
+  if (!listingIdPattern.test(id)) return undefined
+  const { data: row, error } = await boardDb().from("board_listings")
+    .select(listingSelect).eq("id", id).maybeSingle()
+  check(error)
+  if (!row) return undefined
+  const item = unpack(row as Row)
+  if (!item || !isPubliclyVisibleListing(item)) return undefined
+  const profiles = await profilesByUserIds([row.owner_id as string])
+  return {
+    ...applySellerProfile(item, profiles.get(row.owner_id as string)),
+    phone: "",
+    contactPhone: false,
+    contactWhatsApp: false,
   }
 }
 
@@ -1488,6 +1479,5 @@ export async function sendExpiryReminders(): Promise<ExpiryReminderSummary> {
     failed,
   }
 }
-
 
 

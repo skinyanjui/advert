@@ -72,16 +72,17 @@ function ensureLoaded(): Promise<void> {
 
 async function loadBoard() {
   try {
-    const response = await fetch("/api/board", { headers: requestHeaders(), cache: "no-store" })
+    let response = await fetch("/api/board", { headers: requestHeaders(), cache: "no-store" })
     if (!response.ok) throw new Error("board")
+    let migrated = false
     try {
-      await migrateLegacy()
+      migrated = await migrateLegacy()
     } catch {
       toast.error("Saved ads on this browser could not be moved into the database.")
     }
-    const refreshed = await fetch("/api/board", { headers: requestHeaders(), cache: "no-store" })
-    if (!refreshed.ok) throw new Error("board")
-    const payload: unknown = await refreshed.json()
+    if (migrated) response = await fetch("/api/board", { headers: requestHeaders(), cache: "no-store" })
+    if (!response.ok) throw new Error("board")
+    const payload: unknown = await response.json()
     memory = { ...parseBoardState(payload), ready: true, admin: adminFromPayload(payload) }
     lastSoftRefreshAt = Date.now()
   } catch {
@@ -133,11 +134,11 @@ export async function reloadBoard(): Promise<void> {
 }
 
 async function migrateLegacy() {
-  if (localStorage.getItem(migratedKey) === "1") return
+  if (localStorage.getItem(migratedKey) === "1") return false
   const raw = localStorage.getItem(legacyKey)
   if (!raw) {
     localStorage.setItem(migratedKey, "1")
-    return
+    return false
   }
   const response = await fetch("/api/board", {
     method: "POST",
@@ -147,6 +148,7 @@ async function migrateLegacy() {
   if (!response.ok) throw new Error("migrate")
   localStorage.removeItem(legacyKey)
   localStorage.setItem(migratedKey, "1")
+  return true
 }
 
 async function readFailure(response: Response, fallback: string): Promise<string> {

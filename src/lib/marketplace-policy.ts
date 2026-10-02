@@ -16,7 +16,12 @@ export const marketplacePolicy = {
     days: 7,
     maxGrantDays: 30,
     retentionDays: 90,
+    reviewHours: 24,
+    maxRefundAttempts: 3,
+    maxNotificationAttempts: 5,
   },
+  contactAnalytics: { retentionDays: 90, pageSize: 50 },
+  paymentSupport: { challengeMinutes: 30, resendSeconds: 60, verificationDays: 90 },
   photos: {
     maxCount: 6,
     maxUploadBytes: 12_000_000,

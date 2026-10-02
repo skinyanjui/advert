@@ -15,12 +15,13 @@ import { AuthProvider } from "@/lib/auth"
 import { MarketplaceProvider } from "@/lib/marketplace"
 import { languageBootScript } from "@/lib/prefs"
 import { site, siteTitleTemplate } from "@/lib/site"
+import { canonicalOrigin } from "@/lib/search-discovery"
 import { themeBootScript } from "@/lib/theme"
 
 import "./globals.css"
 
 export const metadata: Metadata = {
-  metadataBase: new URL(`https://${process.env.VERCEL_PROJECT_PRODUCTION_URL ?? "adverts-murex.vercel.app"}`),
+  metadataBase: new URL(canonicalOrigin()),
   title: {
     default: site.name,
     template: siteTitleTemplate(),

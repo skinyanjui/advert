@@ -69,6 +69,10 @@ Apply in order on the board Supabase project (SQL editor), after `database/board
 21. `database/migrations/20261001_reference_provenance.sql` — source URL, license, content hash, and generation metadata for reference imports
 22. `supabase/migrations/20261001213348_authority_contracts.sql` — atomic reference import, active reference rows, versioned taxonomy validation, listing payload constraints, and country/currency relation
 23. `supabase/migrations/20261001215910_authority_constraint_indexes.sql` — covering foreign-key indexes and validation of the new listing contracts
+24. `database/migrations/20261002_featured_promotions.sql` — paid placement, admin decisions, refunds and promotion statistics
+25. `database/migrations/20261002_promotion_operations.sql` — review targets, notifications, refund retry state and stable checkout language
+26. `database/migrations/20261002_payment_support.sql` — server-only support mailbox verification
+27. `database/migrations/20261002_seller_contact_leads.sql` — owner-only contact reporting and retention
 
 After the lock migration, anyone with only the publishable key must not be able to read `board_listings` (including phones).
 
@@ -281,3 +285,42 @@ promotion history. Terms/Privacy draft versions changed, so accounts must reacce
 ownership, confirmed payment before approval, retries, refunds, expiry, event
 deduplication, access grants, and forged featured fields. External Stripe/Supabase
 integration still requires the test-mode validation above.
+
+### Seller reporting and payment operations
+
+Apply the additive migrations after the featured migration, before deploying this
+application version:
+
+1. `database/migrations/20261002_promotion_operations.sql`
+2. `database/migrations/20261002_payment_support.sql`
+3. `database/migrations/20261002_seller_contact_leads.sql`
+
+The support migration stores a hashed, single-use mailbox challenge. Configure a
+monitored `NEXT_PUBLIC_SUPPORT_EMAIL`, `RESEND_API_KEY`, `RESEND_FROM_EMAIL`, and
+`CRON_SECRET`; use Admin → Featured promotions → Payment support to send a code
+and enter the code received in that inbox. Verification expires after 90 days and
+does not transfer to a different address. A provider accepting the outgoing email
+does not verify the mailbox: the received code is required. Checkout stays disabled
+without current verification, delivery configuration, Stripe configuration and the
+promotion operations migration. Confirm staffing and actual support response separately.
+
+Paid requests have a 24-hour review target from confirmed payment. An hourly
+`/api/cron/promotion-operations` job sends queued decision/payment/refund emails,
+alerts operators about overdue reviews and refund failures, and retries refunds
+up to three automatic attempts. Delivery jobs retry up to five times; inspect
+failed notices and refund state in the admin queue. `PROMOTION_ALERT_EMAIL` may
+override the public-support destination for operator alerts. Configure an external
+hourly scheduler with `Authorization: Bearer <CRON_SECRET>` if the hosting plan does
+not support hourly cron. Verify scheduler execution before enabling live payments.
+
+My ads and promotion history show owner-only contact-intent totals for the last
+90 days, with unique viewers and contacts by channel. Daily writes are deduplicated;
+window totals count each account once per channel/listing. Seller activity is
+excluded. These are contact intentions, not completed sales or attributed promotion
+conversions. Daily expiry cleanup removes old contact events.
+
+Board inventory, saves and seller profiles are traversed in primary-key batches
+without a fixed 500-row cutoff. Direct public listing lookups are independent of
+the board snapshot. The client still loads the complete eligible board; very large
+markets will need server-side search and incremental browser result pagination.
+Sample cards and details are labeled, and samples are excluded from search indexing.

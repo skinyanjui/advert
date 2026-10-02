@@ -316,6 +316,10 @@ export default function PrivacyPage() {
           dates to provide the placement, handle refunds and resolve disputes. Payment and
           decision records may remain after listing or account deletion as reasonably needed
           for refunds, disputes and financial-record obligations.
+          We send transactional payment, review and refund updates to your verified account
+          email. Operational notification records are available in your data export and are
+          removed on account deletion; completed or failed delivery records are otherwise
+          retained for up to 90 days before scheduled cleanup.
         </p>
         <p className="text-sm leading-6 text-neutral-700">
           First-party featured-card statistics count visible impressions and clicks, excluding
@@ -324,6 +328,16 @@ export default function PrivacyPage() {
           in these analytics records. Events are retained for up to 90 days and then removed
           by the scheduled cleanup. These are approximate aggregate measurements, not
           cross-site behavioral advertising or third-party advertising pixels.
+        </p>
+        <p className="text-sm leading-6 text-neutral-700">
+          Seller contact reports show aggregate listing views and contact intent by channel
+          for the last 90 days. These first-party contact events retain a session or account
+          identifier to count distinct viewers and contacts, exclude the seller, and honor
+          account export and deletion requests. Sellers receive counts, never viewer or buyer
+          identifiers. Repeated activity is stored at most once per listing, channel and
+          account/session per UTC day; reports deduplicate accounts across the reporting period.
+          Contact clicks do not establish completed messages, sales, or attribution to a paid
+          placement. Events older than 90 days are excluded immediately and removed by daily cleanup.
         </p>
       </section>
 

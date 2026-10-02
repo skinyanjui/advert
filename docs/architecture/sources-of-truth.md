@@ -20,11 +20,16 @@ Use one authoritative owner for each concept. Caches, snapshots, UI state, and c
 | Featured state and payment/review history | `board_listings.featured*` + `board_promotions` | Client cards use server fields and enforce end dates; sample badges have no authority |
 | Promotion statuses and events | `src/lib/promotions.ts` | Runtime schemas and SQL constraints are checked by authority-integrity tests |
 | Featured package, grants and analytics retention | `src/lib/marketplace-policy.ts` | Frozen SQL package constraints tested against the policy |
+| Promotion review targets and retry limits | `src/lib/marketplace-policy.ts` | SQL deadline/outbox/retry functions; integrity and lifecycle tests |
+| Promotion notifications and refund attempts | `board_promotion_notifications` + `board_promotions` | Admin/seller UI shows server status; cron claims durable jobs |
+| Payment support verification | `payment_support_verification` bound to `NEXT_PUBLIC_SUPPORT_EMAIL` | Receipt challenge and validity limits derive from `marketplacePolicy.paymentSupport`; checkout fails closed |
 | Featured placement consent version | `src/lib/policy-versions.ts` | Stored evidence retains the checkout version |
 | Listing business limits | `src/lib/marketplace-policy.ts` | None |
 | Category identity | `src/lib/category-registry.ts` | Localized labels in i18n |
 | Category posting schema | `src/lib/posting.ts` | Explicit field/option codes; versioned `src/data/taxonomy-v1.json` contract |
 | Contact channels | `src/lib/contact-methods.ts` | Listing seller opt-in flags |
+| Contact-intent event types | `src/lib/contact-event-types.ts` | Channel events derive from contact methods |
+| Seller contact-lead summaries | `seller_contact_leads` over `board_contact_events` | Owner-only API; no buyer identifiers; window/paging derive from `marketplacePolicy.contactAnalytics` |
 | Compliance product facts | `src/lib/product-capabilities.ts` | Environment configuration with conservative defaults |
 | Law-to-product controls | `src/lib/compliance.ts` | Generated `docs/compliance-controls.md` |
 | Consent/policy versions | Dedicated policy modules (`legal.ts`, `policy-versions.ts`) | Stored evidence retains historical version |

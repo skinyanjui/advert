@@ -4,6 +4,8 @@ import type { Listing } from "@/lib/types"
 
 export const featuredPackage = marketplacePolicy.promotions
 export const promotionStatuses = ["awaiting_payment", "pending", "active", "refund_pending", "refunded", "revoked", "expired", "cancelled"] as const
+export const promotionNotificationKinds = ["payment_received", "approved", "rejected", "removed", "granted", "refunded", "refund_failed", "review_overdue"] as const
+export const promotionNotificationStatuses = ["pending", "processing", "sent", "failed"] as const
 export const promotionEventTypes = ["impression", "click"] as const
 export const promotionDisclosure = "Paid placement: the seller paid for priority in matching browse and search results. This is not an endorsement."
 
@@ -30,6 +32,13 @@ export type Promotion = {
   starts_at: string | null
   ends_at: string | null
   decision_reason: string | null
+  paid_at?: string | null
+  review_due_at?: string | null
+  review_overdue?: boolean
+  refund_attempts?: number
+  refund_last_error?: string | null
+  refund_next_attempt_at?: string | null
+  notifications?: { kind: (typeof promotionNotificationKinds)[number]; status: (typeof promotionNotificationStatuses)[number]; attempts: number; created_at: string; delivered_at: string | null }[]
   decisions?: { action: string; reason: string; created_at: string }[]
   impressions?: number
   clicks?: number

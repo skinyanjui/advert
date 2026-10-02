@@ -1,8 +1,10 @@
 import { NextResponse } from "next/server"
 
 import { boardDb } from "@/lib/board-db"
+import { canOwner } from "@/lib/access-control"
 import { resolveMutationOwner } from "@/lib/board-session"
 import { contactEventSchema, readApiInput } from "@/lib/runtime-contracts"
+import { requireCurrentTerms } from "@/lib/terms-gate"
 
 export const dynamic = "force-dynamic"
 export const runtime = "nodejs"
@@ -15,13 +17,15 @@ export async function POST(request: Request) {
     const parsed = await readApiInput(request, contactEventSchema)
     if (!parsed.ok) return new NextResponse(null, { status: 204 })
     const body = parsed.value
-
-    const { error } = await boardDb().from("board_contact_events").insert({
-      id: crypto.randomUUID(),
-      listing_id: body.listingId,
-      actor_id: owner.id,
-      actor_kind: owner.kind,
-      event_type: body.eventType,
+    if (body.eventType !== "listing_view") {
+      const permission = body.eventType === "message_start" ? "message" : "contact:direct"
+      if (owner.kind !== "auth" || !canOwner(owner, permission) || await requireCurrentTerms(owner.id)) return new NextResponse(null, { status: 204 })
+    }
+    const { error } = await boardDb().rpc("record_board_contact_event", {
+      p_listing: body.listingId,
+      p_actor: owner.id,
+      p_kind: owner.kind,
+      p_event: body.eventType,
     })
 
     if (error) {

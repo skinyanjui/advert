@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server"
 
+import { expireContactEventsIfAvailable } from "@/lib/contact-leads-store"
 import { expirePromotionsIfAvailable } from "@/lib/promotion-store"
 import { sendExpiryReminders } from "@/lib/board-store"
 
@@ -18,9 +19,10 @@ export async function GET(request: Request) {
     return NextResponse.json({ ok: false, reason: "Unauthorized" }, { status: 401 })
   }
   try {
+    const contactEventsDeleted = await expireContactEventsIfAvailable()
     const featuredExpired = await expirePromotionsIfAvailable()
     const summary = await sendExpiryReminders()
-    return NextResponse.json({ ok: true, ...summary, featuredExpired })
+    return NextResponse.json({ ok: true, ...summary, featuredExpired, contactEventsDeleted })
   } catch {
     return NextResponse.json({ ok: false, reason: "Expiry reminder run failed." }, { status: 500 })
   }

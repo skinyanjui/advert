@@ -1183,6 +1183,13 @@ export const seedListings: Listing[] = [
   }),
 ]
 
+const sampleListingIds = new Set(seedListings.map((item) => item.id))
+
+/** Catalog entries demonstrate the product and are never live seller inventory. */
+export function isSampleListing(id: string): boolean {
+  return sampleListingIds.has(id)
+}
+
 for (const item of seedListings) {
   const posted = seedPosting[item.id]
   if (!posted || !findSubcategory(item.category, posted.subcategory)) {

@@ -34,6 +34,7 @@ export async function exportPrivacyData(userId: string, email?: string | null) {
     moderationDecisions,
     moderationAppeals,
     promotions,
+    promotionNotifications,
   ] = await Promise.all([
     getProfile(userId, email),
     db
@@ -98,6 +99,9 @@ export async function exportPrivacyData(userId: string, email?: string | null) {
     db.from("board_promotions")
       .select("id,listing_id,status,paid,amount,currency,duration_days,created_at,starts_at,ends_at,decision_reason,checkout_terms_version,checkout_terms_accepted_at,decisions:board_promotion_decisions(action,reason,created_at)")
       .eq("owner_id", userId).order("created_at", { ascending: false }),
+    db.from("board_promotion_notifications")
+      .select("promotion_id,kind,status,attempts,created_at,delivered_at")
+      .eq("owner_id", userId).eq("audience", "seller").order("created_at", { ascending: false }),
   ])
 
   for (const result of [
@@ -120,6 +124,8 @@ export async function exportPrivacyData(userId: string, email?: string | null) {
   // The paid-feature migration is additive; keep existing exports available
   // while an operator prepares it. Other failures must still surface.
   if (promotions.error && !["42P01", "PGRST205"].includes(promotions.error.code)) check(promotions.error)
+
+  if (promotionNotifications.error && !["42P01", "PGRST205"].includes(promotionNotifications.error.code)) check(promotionNotifications.error)
 
   const conversations = new Map<string, ConversationRow>()
   for (const row of [...(buyerThreads.data ?? []), ...(sellerThreads.data ?? [])] as ConversationRow[]) {
@@ -173,6 +179,7 @@ export async function exportPrivacyData(userId: string, email?: string | null) {
     moderationDecisions: moderationDecisions.data ?? [],
     moderationAppeals: moderationAppeals.data ?? [],
     featuredPromotions: promotions.data ?? [],
+    featuredNotifications: promotionNotifications.data ?? [],
     currentProcessingFacts: {
       sellsPersonalInformation: false,
       crossContextBehavioralAdvertising: false,
