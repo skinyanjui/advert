@@ -304,14 +304,17 @@ does not verify the mailbox: the received code is required. Checkout stays disab
 without current verification, delivery configuration, Stripe configuration and the
 promotion operations migration. Confirm staffing and actual support response separately.
 
-Paid requests have a 24-hour review target from confirmed payment. An hourly
-`/api/cron/promotion-operations` job sends queued decision/payment/refund emails,
+Paid requests have a 24-hour review target from confirmed payment. Payment webhooks
+and admin updates attempt queued notifications after sending the response. A daily
+Hobby-compatible `/api/cron/promotion-operations` fallback sends queued emails,
 alerts operators about overdue reviews and refund failures, and retries refunds
 up to three automatic attempts. Delivery jobs retry up to five times; inspect
 failed notices and refund state in the admin queue. `PROMOTION_ALERT_EMAIL` may
 override the public-support destination for operator alerts. Configure an external
-hourly scheduler with `Authorization: Bearer <CRON_SECRET>` if the hosting plan does
-not support hourly cron. Verify scheduler execution before enabling live payments.
+hourly scheduler with `Authorization: Bearer <CRON_SECRET>` for faster overdue
+alerts and retries, or increase the Vercel schedule on a plan that supports it.
+With the daily fallback alone, failed deliveries, refunds and overdue alerts can
+wait until the next day. Verify scheduler execution before enabling live payments.
 
 My ads and promotion history show owner-only contact-intent totals for the last
 90 days, with unique viewers and contacts by channel. Daily writes are deduplicated;

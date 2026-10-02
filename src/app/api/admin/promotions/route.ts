@@ -4,8 +4,11 @@ import { fail, ok } from "@/lib/api"
 import { resolveMutationOwner, resolveOwner } from "@/lib/board-session"
 import { finishPromotionRefund, listPromotions, promotionListOptions, promotionRpc } from "@/lib/promotion-store"
 import type { Promotion } from "@/lib/promotions"
+import { schedulePromotionOperations } from "@/lib/promotion-operations-after"
 
 export const dynamic = "force-dynamic"
+export const runtime = "nodejs"
+export const maxDuration = 60
 export async function GET(request: Request) {
   const owner = await resolveOwner(request)
   if (!owner || owner.kind !== "auth" || !canOwner(owner, "promotion:manage")) return fail("Admin access required.", 403)
@@ -19,6 +22,7 @@ export async function PATCH(request: Request) {
     const parsed = await readApiInput(request, promotionDecisionSchema)
     if (!parsed.ok) return fail(parsed.reason)
     const body = parsed.value
+    schedulePromotionOperations()
     if (body.action === "grant") {
       await promotionRpc("grant_board_promotion", { p_listing: body.listingId, p_actor: owner.id, p_days: body.days, p_reason: body.reason.trim() })
     } else {

@@ -50,4 +50,4 @@ Production HTTP smoke checks passed for home, robots and both sitemap routes;
 sample detail pages expose the Sample label and noindex metadata. Anonymous lead,
 support-admin and operations-cron requests, plus cross-origin checkout/support
 mutations, were rejected. These checks used the local production server, not live
-provider credentials. The changes and migrations have not been deployed.
+provider credentials. These checks preceded production deployment.
