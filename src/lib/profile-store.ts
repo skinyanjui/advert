@@ -6,7 +6,6 @@ import { boardDb } from "@/lib/board-db"
 import {
   acceptAvatarUrlUpdate,
   normalizeProfileUpdate,
-  ownedAvatarPath,
   type BoardProfile,
   type ProfileUpdateInput,
 } from "@/lib/profile"
