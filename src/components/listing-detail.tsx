@@ -69,7 +69,9 @@ export function ListingDetail({ id, initialListing }: { id: string; initialListi
   const { t } = usePrefs()
   const { listings, ready, isSaved, toggleSaved, messages, sendMessage, setListingSold, setListingPaused, renewListing, removeListing } =
     useMarketplace()
-  const listing = listings.find((item) => item.id === id) ?? (!ready ? initialListing : undefined)
+  const baseListing = listings.find((item) => item.id === id) ?? initialListing
+  const [directContact, setDirectContact] = useState<{ phone: string; contactPhone: boolean; contactWhatsApp: boolean } | null>(null)
+  const listing = baseListing && directContact ? { ...baseListing, ...directContact } : baseListing
   const [phoneVisible, setPhoneVisible] = useState(false)
   const [messageOpen, setMessageOpen] = useState(false)
   const [message, setMessage] = useState("")
@@ -99,6 +101,30 @@ export function ListingDetail({ id, initialListing }: { id: string; initialListi
     if (!listing) return
     if (!listing.mine) trackListingContactEvent(listing.id, "listing_view")
   }, [listing])
+
+  useEffect(() => {
+    setDirectContact(null)
+    if (!auth.ready || !auth.signedIn || !baseListing || isSampleListing(baseListing.id)) return
+    const controller = new AbortController()
+    void fetch(`/api/listings/${encodeURIComponent(baseListing.id)}/contact`, {
+      cache: "no-store",
+      signal: controller.signal,
+    })
+      .then(async (response) => {
+        if (!response.ok) return null
+        return await response.json() as { phone?: unknown; contactPhone?: unknown; contactWhatsApp?: unknown }
+      })
+      .then((payload) => {
+        if (!payload || controller.signal.aborted) return
+        setDirectContact({
+          phone: typeof payload.phone === "string" ? payload.phone : "",
+          contactPhone: payload.contactPhone === true,
+          contactWhatsApp: payload.contactWhatsApp === true,
+        })
+      })
+      .catch(() => undefined)
+    return () => controller.abort()
+  }, [auth.ready, auth.signedIn, baseListing?.id])
 
   if (!listing) {
     if (!ready) return <DetailSkeleton />
