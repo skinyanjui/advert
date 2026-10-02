@@ -7,8 +7,8 @@ import {
   PROHIBITED_ITEM_SUMMARY,
   TERMS_VERSION,
 } from "@/lib/legal"
-import { dmcaAgentConfiguration, legalOperatorIdentity } from "@/lib/legal-config"
-import { SUPPORT_CONTACT_PLACEHOLDER, site, siteSupportMailto } from "@/lib/site"
+import { dmcaAgentConfiguration, legalOperatorIdentity, legalPublicationStatus } from "@/lib/legal-config"
+import { site, siteSupportMailto } from "@/lib/site"
 
 export const metadata: Metadata = { title: "Terms of use" }
 
@@ -16,23 +16,18 @@ export default function TermsPage() {
   const contactHref = siteSupportMailto()
   const operator = legalOperatorIdentity()
   const dmca = dmcaAgentConfiguration()
+  const publication = legalPublicationStatus()
   return (
     <div className="w-full px-3 py-8 md:px-4">
-      <div
-        role="status"
-        className="rounded-xl border border-amber-200 bg-amber-50 px-3 py-2 text-sm text-amber-950"
-      >
-        Draft — pending legal review
-      </div>
-      <h1 className="mt-6 text-2xl font-semibold tracking-tight">Terms of use</h1>
+      {!publication.ready ? (
+        <div role="status" className="rounded-xl border border-amber-200 bg-amber-50 px-3 py-2 text-sm text-amber-950">
+          Account acceptance is disabled until the operator identity is configured and these documents are approved for publication.
+        </div>
+      ) : null}
+      <h1 className={publication.ready ? "text-2xl font-semibold tracking-tight" : "mt-6 text-2xl font-semibold tracking-tight"}>Terms of use</h1>
       <p className="mt-2 text-sm text-neutral-500">
         Version {TERMS_VERSION} · Effective {LEGAL_EFFECTIVE_DATE} · Privacy version {PRIVACY_VERSION}
       </p>
-      <p className="mt-4 text-sm leading-6 text-neutral-700">
-        These Terms are a <strong>DRAFT</strong> for {site.name}. They are not final legal advice. A
-        lawyer will review them before they apply in production.
-      </p>
-
       <section className="mt-8 space-y-3">
         <h2 className="text-base font-medium text-neutral-950">Account access and permissions</h2>
         <p className="text-sm leading-6 text-neutral-700">
@@ -103,7 +98,7 @@ export default function TermsPage() {
               {dmca.phone ? <> · {dmca.phone}</> : null}
             </strong>
           ) : (
-            <strong>[DMCA AGENT DETAILS — register and configure before relying on the safe harbor]</strong>
+            <>The service does not claim section 512 safe-harbor protection unless a designated-agent registration is current. Copyright notices can be submitted through the <Link href="/contact" className="underline underline-offset-2">Contact page</Link>.</>
           )}
         </p>
       </section>
@@ -112,8 +107,7 @@ export default function TermsPage() {
         <h2 className="text-base font-medium text-neutral-950">1. The platform is not a party to sales</h2>
         <p className="text-sm leading-6 text-neutral-700">
           {site.name} helps people list and find goods and services. We are not the buyer or the
-          seller. Buyers pay sellers directly. We do not hold purchase money, escrow payments, or collect payment-card details for listing transactions.
-          guarantee that a sale will complete.
+          seller. Buyers pay sellers directly. We do not hold purchase money, escrow payments, or collect payment-card details for listing transactions, and we do not guarantee that a sale will complete.
         </p>
       </section>
 
@@ -121,11 +115,10 @@ export default function TermsPage() {
         <h2 className="text-base font-medium text-neutral-950">2. Liability limit</h2>
         <p className="text-sm leading-6 text-neutral-700">
           To the fullest extent allowed by law, {site.name} is not liable for disputes between
-          buyers and sellers, failed payments, loss of goods, or reliance on listing content. Where
-          liability cannot be excluded, it is limited to the greater of (a) fees you paid us for the
-          service in the three months before the claim, or (b){" "}
-          <strong>[LAWYER TO CONFIRM]</strong> USD 50. Nothing in this draft removes rights your local
-          consumer law may give you that cannot be waived.
+          buyers and sellers, failed payments, loss of goods, or reliance on listing content. To the
+          extent liability can lawfully be limited, aggregate liability for a claim is limited to fees
+          paid to us for the affected paid service during the three months before the claim. Nothing
+          in these Terms limits rights or liabilities that applicable law does not allow the parties to waive.
         </p>
       </section>
 
@@ -175,9 +168,12 @@ export default function TermsPage() {
       <section className="mt-8 space-y-3">
         <h2 className="text-base font-medium text-neutral-950">5. Removal and suspension</h2>
         <p className="text-sm leading-6 text-neutral-700">
-          We may hide, remove, or refuse listings, and suspend or end accounts, when we believe
-          Do not publish passwords, payment-card details, government identification numbers, medical information, or other unnecessary sensitive personal information in a listing. We may reject or remove content that exposes such information. Where content or behaviour breaks these Terms, our listing rules, or the law, or harms other
-          users. We may also act on reports from the community. Multiple distinct pending reports
+          We may hide, remove, or refuse listings, and suspend or end accounts when content or
+          behavior violates these Terms, our listing rules, applicable law, or creates a safety or
+          security risk. Do not publish passwords, payment-card details, government identification
+          numbers, medical information, or other unnecessary sensitive personal information in a
+          listing. We may reject or remove content that exposes such information. We may also act
+          on reports from the community. Multiple distinct pending reports
           can automatically hide a listing temporarily before moderator review. A moderator can
           dismiss reports and restore the listing, or take further action. This report-threshold
           automation is a marketplace safety/moderation tool; the current service does not use it
@@ -236,11 +232,10 @@ export default function TermsPage() {
       <section className="mt-8 space-y-3">
         <h2 className="text-base font-medium text-neutral-950">8. Disputes</h2>
         <p className="text-sm leading-6 text-neutral-700">
-          If you have a problem with another user or with the service, contact support first. If we
-          cannot resolve it, the next step is{" "}
-          <strong>[LAWYER TO CONFIRM]</strong> mediation before court proceedings, unless your local
-          consumer law says otherwise. This draft does <strong>not</strong> include an arbitration
-          clause or a class-action waiver — a lawyer will decide those points.
+          If you have a problem with another user or with the service, contact support first. If the
+          issue remains unresolved, either party may use courts or other dispute-resolution processes
+          available under applicable law. These Terms do not impose mandatory arbitration or a
+          class-action waiver.
         </p>
       </section>
 
@@ -254,10 +249,9 @@ export default function TermsPage() {
 
       <section className="mt-8 space-y-3">
         <h2 className="text-base font-medium text-neutral-950">10. Governing law</h2>
-        <p className="rounded-xl border border-dashed border-neutral-300 bg-neutral-50 px-3 py-2 text-sm leading-6 text-neutral-700">
-          <strong>[PLACEHOLDER — lawyer to decide]</strong> Governing law and venue are not set in
-          this draft. Do not treat any country as the default governing law until counsel fills this
-          in.
+        <p className="text-sm leading-6 text-neutral-700">
+          Applicable law and the courts or tribunals with jurisdiction govern disputes. These Terms
+          do not displace mandatory consumer protections or forum rights that apply to a user.
         </p>
       </section>
 
@@ -284,7 +278,7 @@ export default function TermsPage() {
           {operator.complete ? (
             <>{operator.name} · {operator.address}</>
           ) : (
-            <strong>[OPERATOR LEGAL NAME AND BUSINESS ADDRESS — configure before final legal approval]</strong>
+            <>Operator identity is not yet configured. Account acceptance remains disabled until it is. Support requests remain available through the <Link href="/contact" className="underline underline-offset-2">Contact page</Link>.</>
           )}
         </p>
       </section>
@@ -301,7 +295,7 @@ export default function TermsPage() {
               .
             </>
           ) : (
-            SUPPORT_CONTACT_PLACEHOLDER
+            <Link href="/contact" className="underline underline-offset-2">Submit a support request</Link>
           )}
         </p>
       </section>
