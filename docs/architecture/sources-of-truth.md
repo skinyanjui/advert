@@ -17,6 +17,10 @@ Use one authoritative owner for each concept. Caches, snapshots, UI state, and c
 | Reference provenance | `reference_imports` + reference manifest | Snapshot hash |
 | Listing | `board_listings` | Catalog entries are samples only |
 | Listing lifecycle | `board_listings.status` + lifecycle timestamps | Legacy payload `sold` is read-only compatibility |
+| Featured state and payment/review history | `board_listings.featured*` + `board_promotions` | Client cards use server fields and enforce end dates; sample badges have no authority |
+| Promotion statuses and events | `src/lib/promotions.ts` | Runtime schemas and SQL constraints are checked by authority-integrity tests |
+| Featured package, grants and analytics retention | `src/lib/marketplace-policy.ts` | Frozen SQL package constraints tested against the policy |
+| Featured placement consent version | `src/lib/policy-versions.ts` | Stored evidence retains the checkout version |
 | Listing business limits | `src/lib/marketplace-policy.ts` | None |
 | Category identity | `src/lib/category-registry.ts` | Localized labels in i18n |
 | Category posting schema | `src/lib/posting.ts` | Explicit field/option codes; versioned `src/data/taxonomy-v1.json` contract |

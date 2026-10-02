@@ -1,4 +1,5 @@
 import { z } from "zod"
+import { promotionStatuses, promotionEventTypes } from "@/lib/promotions"
 
 import { categories, currentTaxonomyVersion } from "@/lib/category-registry"
 import { contactEventTypes } from "@/lib/contact-event-types"
@@ -54,6 +55,9 @@ export const listingRecordSchema = z.object({
   image: z.string(),
   images: z.array(z.string()).optional(),
   featured: z.boolean().optional(),
+  featuredUntil: z.string().optional(),
+  featuredPaid: z.boolean().optional(),
+  featuredPromotionId: z.string().uuid().optional(),
   sponsored: z.boolean().optional(),
   sponsoredLocked: z.boolean().optional(),
   fairAccessAttested: z.boolean().optional(),
@@ -220,3 +224,14 @@ export async function readApiInput<S extends z.ZodType>(request: Request, schema
   const field = issue?.path.join(".")
   return { ok: false, reason: field ? `${field}: ${issue.message}` : issue?.message ?? "Check the request fields." }
 }
+
+const promotionIdSchema = z.string().uuid("Choose a promotion.")
+const promotionReasonSchema = z.string().trim().min(3).max(1500)
+export const promotionCheckoutSchema = z.object({ listingId: listingIdSchema, acceptTerms: z.literal(true) })
+export const promotionEventSchema = z.object({ promotionId: promotionIdSchema, type: z.enum(promotionEventTypes) })
+export const promotionListSchema = z.object({ page: z.coerce.number().int().min(0).max(100000).default(0), status: z.enum(["all", ...promotionStatuses]).default("all") })
+export const promotionDecisionSchema = z.discriminatedUnion("action", [
+  z.object({ action: z.literal("grant"), listingId: listingIdSchema, days: z.number().int().min(1).max(marketplacePolicy.promotions.maxGrantDays), reason: promotionReasonSchema }),
+  z.object({ action: z.enum(["approve", "reject", "remove"]), id: promotionIdSchema, reason: promotionReasonSchema }),
+  z.object({ action: z.literal("retry_refund"), id: promotionIdSchema }),
+])

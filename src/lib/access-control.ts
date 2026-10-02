@@ -14,6 +14,7 @@ export const appPermissions = [
   "moderation:review",
   "privacy:review",
   "compliance:manage",
+  "promotion:manage",
   "admin:access",
 ] as const
 export type AppPermission = (typeof appPermissions)[number]

@@ -1,3 +1,4 @@
+import { prioritizeFeatured } from "@/lib/promotions"
 import { distanceKm, listingPoint, type GeoPoint } from "@/lib/distance"
 import { fold, countryName } from "@/lib/countries"
 import { isPubliclyVisibleListing } from "@/lib/listing-status"
@@ -66,11 +67,12 @@ export function sortListings(
   preferredCurrency: string,
   query = "",
   origin?: GeoPoint | null,
+  now = Date.now(),
 ): Listing[] {
   const copy = [...listings]
   switch (sort) {
     case "relevant":
-      return sortByRelevance(copy, query, origin)
+      return prioritizeFeatured(sortByRelevance(copy, query, origin), now)
     case "newest":
       copy.sort((a, b) => hoursAgoOf(a) - hoursAgoOf(b))
       return copy

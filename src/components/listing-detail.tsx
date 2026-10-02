@@ -1,5 +1,8 @@
 "use client"
 
+import { useFeaturedClock } from "@/hooks/use-featured"
+import { isFeatured, promotionDisclosure } from "@/lib/promotions"
+
 import { ArrowLeft, ChevronLeft, ChevronRight, Flag, Heart, MapPin, MessageSquareText, MoreHorizontal, Phone, Share2 } from "lucide-react"
 import Image from "next/image"
 import Link from "next/link"
@@ -354,6 +357,7 @@ export function ListingDetail({ id }: { id: string }) {
           <div className="mt-5">
             <div className="flex items-start justify-between gap-3">
               <div className="min-w-0">
+                <FeaturedDisclosure listing={listing} />
                 <ListingStatus listing={listing} status={status} isSample={isSample} expired={expired} expiringSoon={expiringSoon} expiryLabel={expiryLabel} />
                 <p className="text-2xl font-semibold tracking-tight text-foreground"><ListingPrice listing={listing} /></p>
                 <h1 className="mt-1 text-xl font-semibold tracking-tight text-foreground">{listing.title}</h1>
@@ -868,4 +872,9 @@ function DetailSkeleton() {
       <div className="mt-2 h-5 w-72 rounded bg-muted/60" />
     </div>
   )
+}
+
+function FeaturedDisclosure({ listing }: { listing: Listing }) {
+  const now = useFeaturedClock([listing])
+  return isFeatured(listing, now) ? <p className="mb-2 text-sm text-muted-foreground">{listing.featuredPaid ? `Ad · Featured. ${promotionDisclosure}` : "Featured by the marketplace at no charge."}</p> : null
 }

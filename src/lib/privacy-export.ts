@@ -33,6 +33,7 @@ export async function exportPrivacyData(userId: string, email?: string | null) {
     privacyRequests,
     moderationDecisions,
     moderationAppeals,
+    promotions,
   ] = await Promise.all([
     getProfile(userId, email),
     db
@@ -94,6 +95,9 @@ export async function exportPrivacyData(userId: string, email?: string | null) {
       .select("id,moderation_action_id,reason,status,submitted_at,reviewed_at,resolution")
       .eq("appellant_user_id", userId)
       .order("submitted_at", { ascending: false }),
+    db.from("board_promotions")
+      .select("id,listing_id,status,paid,amount,currency,duration_days,created_at,starts_at,ends_at,decision_reason,checkout_terms_version,checkout_terms_accepted_at,decisions:board_promotion_decisions(action,reason,created_at)")
+      .eq("owner_id", userId).order("created_at", { ascending: false }),
   ])
 
   for (const result of [
@@ -112,6 +116,10 @@ export async function exportPrivacyData(userId: string, email?: string | null) {
   ]) {
     check(result.error)
   }
+
+  // The paid-feature migration is additive; keep existing exports available
+  // while an operator prepares it. Other failures must still surface.
+  if (promotions.error && !["42P01", "PGRST205"].includes(promotions.error.code)) check(promotions.error)
 
   const conversations = new Map<string, ConversationRow>()
   for (const row of [...(buyerThreads.data ?? []), ...(sellerThreads.data ?? [])] as ConversationRow[]) {
@@ -164,6 +172,7 @@ export async function exportPrivacyData(userId: string, email?: string | null) {
     privacyRequests: privacyRequests.data ?? [],
     moderationDecisions: moderationDecisions.data ?? [],
     moderationAppeals: moderationAppeals.data ?? [],
+    featuredPromotions: promotions.data ?? [],
     currentProcessingFacts: {
       sellsPersonalInformation: false,
       crossContextBehavioralAdvertising: false,
@@ -177,6 +186,7 @@ export async function exportPrivacyData(userId: string, email?: string | null) {
     serviceProvidersAndHandoffs: [
       "Supabase — authentication, database, and storage",
       "Vercel — hosting and delivery",
+      "Stripe — paid featured checkout and refunds when configured",
       "Resend — transactional email when configured",
       "WhatsApp / Meta — only when a user chooses an off-platform WhatsApp contact action or where the Business Platform is enabled",
     ],

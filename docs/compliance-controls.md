@@ -247,11 +247,12 @@ Applies when listings or content are paid, sponsored, endorsed, or otherwise com
 
 - Posting supports a Sponsored / paid promotion designation and sponsored listings receive an explicit visible label.
 - Undisclosed promotion is a report reason and moderators can mark a listing sponsored.
+- Paid featuring uses Stripe checkout followed by admin approval, a time-bounded priority placement under relevance sort, and a proximate Ad · Featured label plus ranking-effect explanation. Complimentary grants are distinguished from paid placements.
 
 **Operator actions**
 
 - Keep commercial disclosures clear, prominent, proximate, and in the language of the surrounding content.
-- Before adding ranking boosts or paid recommendation products, disclose the commercial nature and ranking effect clearly.
+- Review paid-placement terms, refund operation, Stripe onboarding, tax obligations, and the clarity of ranking disclosures before enabling checkout in production.
 
 ### U.S. Fair Housing Act and federal equal-employment advertising laws
 

@@ -308,12 +308,32 @@ export default function PrivacyPage() {
       </section>
 
       <section className="mt-8 space-y-3">
+        <h2 className="text-base font-medium text-neutral-950">Featured placements and payment</h2>
+        <p className="text-sm leading-6 text-neutral-700">
+          When you buy featured placement, Stripe hosts checkout and processes card details;
+          we do not store your card number. We keep the listing/account association, price,
+          payment and refund references, accepted placement terms, admin decision and promotion
+          dates to provide the placement, handle refunds and resolve disputes. Payment and
+          decision records may remain after listing or account deletion as reasonably needed
+          for refunds, disputes and financial-record obligations.
+        </p>
+        <p className="text-sm leading-6 text-neutral-700">
+          First-party featured-card statistics count visible impressions and clicks, excluding
+          seller activity. We deduplicate each event per board session/account per day using a
+          daily keyed hash; we do not collect card details, message contents, or raw account IDs
+          in these analytics records. Events are retained for up to 90 days and then removed
+          by the scheduled cleanup. These are approximate aggregate measurements, not
+          cross-site behavioral advertising or third-party advertising pixels.
+        </p>
+      </section>
+
+      <section className="mt-8 space-y-3">
         <h2 className="text-base font-medium text-neutral-950">Processors</h2>
         <p className="text-sm leading-6 text-neutral-700">
           We use <strong>Supabase</strong> (database, auth, and storage) and <strong>Vercel</strong>{" "}
           (hosting and edge delivery) as processors to run the service. When email sending is
           enabled, we also use <strong>Resend</strong> to deliver transactional email. They process
-          data on our instructions to provide those functions.
+          data on our instructions to provide those functions. Stripe processes payments when paid featuring is used; its privacy notice also applies to checkout.
         </p>
       </section>
 

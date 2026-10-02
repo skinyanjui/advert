@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server"
 
+import { expirePromotionsIfAvailable } from "@/lib/promotion-store"
 import { sendExpiryReminders } from "@/lib/board-store"
 
 export const dynamic = "force-dynamic"
@@ -17,8 +18,9 @@ export async function GET(request: Request) {
     return NextResponse.json({ ok: false, reason: "Unauthorized" }, { status: 401 })
   }
   try {
+    const featuredExpired = await expirePromotionsIfAvailable()
     const summary = await sendExpiryReminders()
-    return NextResponse.json({ ok: true, ...summary })
+    return NextResponse.json({ ok: true, ...summary, featuredExpired })
   } catch {
     return NextResponse.json({ ok: false, reason: "Expiry reminder run failed." }, { status: 500 })
   }

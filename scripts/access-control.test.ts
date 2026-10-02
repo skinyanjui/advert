@@ -57,3 +57,18 @@ test("protected mutations require RBAC and current legal acceptance", () => {
   assert.match(contributing, /role-based access control as a default requirement/i)
   assert.match(contributing, /UI visibility is never the security boundary/i)
 })
+
+
+test("promotion operations use persisted-role capability boundaries", async () => {
+  const { canOwner } = await import("../src/lib/access-control")
+  assert.equal(canOwner(undefined, "promotion:manage"), false)
+  assert.equal(canOwner({ id: "buyer", kind: "session" }, "promotion:manage"), false)
+  assert.equal(canOwner({ id: "member", kind: "auth", role: "member", email: "admin@example.com" }, "promotion:manage"), false)
+  assert.equal(canOwner({ id: "admin", kind: "auth", role: "admin" }, "promotion:manage"), true)
+  const route = readFileSync(new URL("../src/app/api/admin/promotions/route.ts", import.meta.url), "utf8")
+  assert.equal((route.match(/canOwner\(owner, "promotion:manage"\)/g) ?? []).length, 2)
+  assert.match(route, /resolveMutationOwner\(request\)/)
+  const page = readFileSync(new URL("../src/lib/promotion-page-access.ts", import.meta.url), "utf8")
+  assert.match(page, /resolvePersistedRole\(user.id, user.email\)/)
+  assert.doesNotMatch(page, /isAdminEmail/)
+})

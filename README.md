@@ -205,3 +205,79 @@ route still advances reminder markers as a no-op send.
 ## Production
 
 Production `adverts` targets `skinyanjui/advert` on `main`, and its dedicated Supabase project is attached only to the Production environment. Automatic Vercel Git deployments are restricted to `main`; pull requests use the GitHub quality gate instead of consuming a Vercel build for every intermediate branch commit. A merge to `main` is not considered deployed until the corresponding Vercel deployment is confirmed `READY`; Git integration can fail or stop creating production deployments even when preview builds and CI pass. The webhook secret is a Vercel Secret scoped to Production; after changing environment variables, redeploy for the new value to take effect. Reference tables are readable through RLS, while snapshot imports use the server-only key. Board listing rows are not readable with the publishable key after the lock-listings migration.
+
+## Featured ads (Stripe)
+
+Sellers use **My ads → Feature an ad** (`/my-ads/featured`) to buy seven days
+for **USD 10** through Stripe Checkout. The Sponsored checkbox still discloses
+outside sponsorship; it does not buy ranking. Payment submits a request for admin
+review. `/admin/promotions` (also linked from admin Profile) approves requests,
+rejects/refunds them, removes/refunds active paid promotions, grants complimentary
+placements for 1–30 days, and retries pending refunds. Every decision requires a
+seller-visible reason and is retained in append-only decision history. Complimentary grants do not create a Stripe charge.
+
+Apply `database/migrations/20261002_featured_promotions.sql` manually to the
+**development** Supabase project before running the new code, and to the target
+project before deployment. This adds server-only promotion history/events and RPCs,
+plus `featured`, `featured_until`, `featured_paid`, and `featured_promotion_id` on
+`board_listings`. Ordinary listing reads and the existing reminder cron remain compatible before
+the migration; checkout/admin promotion APIs require it. No schema changes
+or Stripe charges are made automatically during builds. The migration is repeatable.
+
+Configure `STRIPE_SECRET_KEY`, `STRIPE_WEBHOOK_SECRET`, and `APP_BASE_URL` securely
+alongside the existing Supabase public URL/key and server-only key. `APP_BASE_URL`
+is the trusted application origin (HTTPS except for localhost development). Use
+Stripe test mode first; checkout is unavailable without these bindings. Card details
+stay on Stripe's hosted checkout. The package uses server-owned inline Stripe price
+data, USD 1000 cents and seven days; clients cannot choose the amount or duration.
+No recurring subscription or automatic renewal is created. Configure your Stripe
+business, receipt, tax and refund settings before enabling real payments.
+
+Register `/api/webhooks/stripe` as a Stripe webhook destination for:
+
+- `checkout.session.completed` and `checkout.session.async_payment_succeeded`
+- `checkout.session.expired`
+- `refund.created`, `refund.updated`, and `charge.refunded`
+
+For local test mode, use the Stripe CLI's `stripe listen --forward-to
+localhost:3000/api/webhooks/stripe`, set its signing secret in local environment
+settings, and use Stripe's documented test cards. Test payment → pending queue →
+approval, and payment → rejection → refund, before enabling live mode. Success-page
+redirects do **not** confirm payment. Signed webhook processing checks the session,
+amount, currency and current PaymentIntent; database transactions prevent replayed
+payment events from granting another period or reviving a refunded promotion. A
+failed webhook returns non-2xx for Stripe retries. If checkout creation times out,
+retry with the same promotion; the server uses a stable idempotency key. Signed
+webhooks recover missing session bindings. After 23 hours an unbound checkout
+requires operator reconciliation in Stripe before retry, so a discarded idempotency
+key cannot create a second charge. Expired
+sessions are cancelled by webhook; do not pay twice while awaiting confirmation.
+
+Approved periods start at approval and last seven days. The listing must be active
+and have the full period remaining before expiry. Paused, sold, hidden or expired
+ads receive no boost while the clock continues. Eligible featured ads appear first
+among matching results under **relevance** sort; explicit price/newest order is
+preserved. Filters still apply. Cards/details distinguish `Ad · Featured` (paid)
+from complimentary `Featured`, and browse explains the paid ranking effect.
+The former hardcoded Land Cruiser featured label has been removed.
+
+End dates are enforced on reads and in the UI, independently of cron. The existing
+`/api/cron/expiry-reminders` daily job now also clears elapsed promotions and removes
+events older than 90 days; configure `CRON_SECRET` and keep the schedule enabled.
+Refund failure leaves an explicit `refund_pending` state for admin retry. Pending
+Stripe refunds remain pending until their succeeded webhook arrives. Full dashboard
+refunds remove ranking too. Failed refunds require operator attention in Stripe;
+never mark them completed manually without confirming payment-provider state.
+
+Stats are approximate first-party visible-card impressions (at least 50% visible
+for one second) and card-to-listing clicks, deduplicated per board session/account
+per day, excluding sellers and inactive placements. They are not fraud-audited or
+billing measurements. No raw account identifier, card details or message content
+is stored in event rows. Promotion/payment decision history survives listing deletion
+so pending refunds can still be resolved. Privacy exports include a seller's own
+promotion history. Terms/Privacy draft versions changed, so accounts must reaccept.
+
+`npm test` includes PostgreSQL-backed tests (PGlite) covering the actual migration,
+ownership, confirmed payment before approval, retries, refunds, expiry, event
+deduplication, access grants, and forged featured fields. External Stripe/Supabase
+integration still requires the test-mode validation above.

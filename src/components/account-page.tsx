@@ -83,6 +83,7 @@ export function AccountPage() {
             <p className="mt-1 text-sm text-muted-foreground">Operational tools are separate from personal account settings.</p>
           </div>
           <div className="flex flex-wrap gap-2">
+            <Button asChild variant="outline"><Link href="/admin/promotions">Featured promotions</Link></Button>
             <Button asChild variant="outline"><Link href="/admin/reports">{t("profile.reports")}</Link></Button>
             <Button asChild variant="outline"><Link href="/admin/privacy">{t("profile.privacyRequestsAdmin")}</Link></Button>
             <Button asChild variant="outline"><Link href="/admin/compliance">{t("profile.complianceAdmin")}</Link></Button>

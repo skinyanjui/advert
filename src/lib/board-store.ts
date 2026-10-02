@@ -40,14 +40,19 @@ type Row = {
   expiry_reminder_sent_at?: string | null
   status?: string | null
   sold_at?: string | null
+  featured?: boolean | null
+  featured_until?: string | null
+  featured_paid?: boolean | null
+  featured_promotion_id?: string | null
   sponsored?: boolean | null
   sponsored_locked?: boolean | null
 }
 const seedIds = new Set(seedListings.map((item) => item.id))
 const developmentSellerId = "00000000-0000-4000-8000-000000000001"
 const listingIdPattern = /^ad-[a-zA-Z0-9-]{1,64}$/
-const listingSelect =
-  "id,owner_id,posted_at,payload,hidden_at,hidden_reason,expires_at,status,sold_at"
+// Rows are read server-side and unpacked/redacted before serialization. Selecting
+// existing columns keeps ordinary listing flows working before additive migrations.
+const listingSelect = "*"
 let sponsoredColumnAvailable: boolean | null = null
 let sponsoredLockedColumnAvailable: boolean | null = null
 
@@ -94,7 +99,10 @@ function unpack(row: Row, owner?: string): Listing | undefined {
     postedAt: row.posted_at,
     hoursAgo: hoursAgoOf({ hoursAgo: listing.hoursAgo, postedAt: row.posted_at }),
     mine: Boolean(owner) && owner === row.owner_id,
-    featured: undefined,
+    featured: row.featured === true,
+    featuredUntil: row.featured_until ?? undefined,
+    featuredPaid: row.featured_paid === true,
+    featuredPromotionId: row.featured_promotion_id ?? undefined,
     sponsored: sponsoredLocked ? true : sponsored,
     sponsoredLocked,
     hidden: row.hidden_at ? true : undefined,
@@ -117,6 +125,9 @@ function payload(listing: Listing) {
     images: images.length > 0 ? images : undefined,
     mine: undefined,
     featured: undefined,
+    featuredUntil: undefined,
+    featuredPaid: undefined,
+    featuredPromotionId: undefined,
     sponsored: listing.sponsored === true || listing.sponsoredLocked === true ? true : undefined,
     sponsoredLocked: listing.sponsoredLocked === true ? true : undefined,
     hidden: undefined,
@@ -186,21 +197,25 @@ async function removePhoto(image: string) {
 }
 export async function listBoard(owner: string): Promise<BoardState> {
   const db = boardDb()
-  const [posted, saved, messages] = await Promise.all([
+  const [posted, featured, saved, messages] = await Promise.all([
     db
       .from("board_listings")
       .select(listingSelect)
       .order("posted_at", { ascending: false })
       .limit(500),
+    // Old paid listings must not fall out of browse merely because newer ads filled the window.
+    db.from("board_listings").select(listingSelect).eq("featured", true).gt("featured_until", new Date().toISOString()).eq("status", "active").is("hidden_at", null).limit(500),
     db.from("board_saves").select("listing_id").eq("owner_id", owner).order("created_at", { ascending: false }),
     listMessagesFor(owner),
   ])
   check(posted.error)
+  if (featured.error && !isMissingColumnError(featured.error)) check(featured.error)
   check(saved.error)
-  const ownerIds = (posted.data ?? []).map((row) => row.owner_id as string)
+  const boardRows = [...new Map([...(posted.data ?? []), ...(featured.data ?? [])].map(row => [row.id, row])).values()]
+  const ownerIds = boardRows.map((row) => row.owner_id as string)
   const profiles = await profilesByUserIds(ownerIds)
   return {
-    posted: (posted.data ?? []).flatMap((row) => {
+    posted: boardRows.flatMap((row) => {
       const item = unpack(row as Row, owner)
       if (!item) return []
       // Non-owners only see publicly active, non-expired, non-hidden ads.

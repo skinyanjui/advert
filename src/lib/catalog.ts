@@ -52,8 +52,6 @@ export const seedListings: Listing[] = [
     city: "Nairobi",
     hoursAgo: 2,
     image: "/listings/cruiser.jpg",
-    featured: true,
-    badge: "featured",
     description:
       "Single-owner 70-series Land Cruiser, diesel, with a steel bumper, snorkel, and roof rack. Service history is with the Toyota dealer in Nairobi. Tyres have plenty of tread and the body is straight. Viewing in Kilimani this week, cash or bank transfer.",
     condition: "Used",

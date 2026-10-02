@@ -40,7 +40,7 @@ export function applySafeAuthNext(target: URL, next: string): void {
 }
 
 /** Paths that require a signed-in Supabase user; guests are sent to /sign-in. */
-export const PROTECTED_AUTH_PREFIXES = ["/my-ads", "/messages", "/admin/reports"] as const
+export const PROTECTED_AUTH_PREFIXES = ["/my-ads", "/messages", "/admin/reports", "/admin/promotions"] as const
 
 export function isProtectedAuthPath(pathname: string): boolean {
   return PROTECTED_AUTH_PREFIXES.some(

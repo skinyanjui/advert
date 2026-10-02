@@ -10,6 +10,13 @@ export const marketplacePolicy = {
     maxLocationDetailLength: 120,
     maxDetailValueLength: 80,
   },
+  promotions: {
+    amount: 1000,
+    currency: "usd",
+    days: 7,
+    maxGrantDays: 30,
+    retentionDays: 90,
+  },
   photos: {
     maxCount: 6,
     maxUploadBytes: 12_000_000,

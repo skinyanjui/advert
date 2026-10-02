@@ -1,5 +1,7 @@
 import "server-only"
 
+import { paidFeaturingConfigured } from "@/lib/stripe"
+
 function envFlag(name: string, fallback = false): boolean {
   const value = process.env[name]?.trim()
   if (!value) return fallback
@@ -10,7 +12,7 @@ function envFlag(name: string, fallback = false): boolean {
 export function currentProductCapabilities() {
   return {
     accountMinimumAge: 18,
-    paymentProcessing: envFlag("CAPABILITY_PAYMENT_PROCESSING"),
+    paymentProcessing: envFlag("CAPABILITY_PAYMENT_PROCESSING") || paidFeaturingConfigured(),
     marketingEmail: envFlag("CAPABILITY_MARKETING_EMAIL"),
     marketingRobotexts: envFlag("CAPABILITY_MARKETING_ROBOTEXTS"),
     thirdPartyAdPixels: envFlag("CAPABILITY_THIRD_PARTY_AD_PIXELS"),

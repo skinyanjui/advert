@@ -192,7 +192,19 @@ export default function TermsPage() {
           If an ad is sponsored or is a paid promotion, you must tick{" "}
           <strong>Sponsored / paid promotion</strong> when you post or edit it. Do not make fake or
           misleading claims about products, prices, identity, or urgency. Undisclosed paid promotion
-          may be reported and moderated.
+          may be reported and moderated. Buying a featured placement from us is disclosed
+          automatically and does not replace your obligation to disclose outside sponsorship.
+        </p>
+        <p className="text-sm leading-6 text-neutral-700">
+          Featured placement costs USD 10 for seven days, paid through Stripe. Payment submits
+          the ad for admin review; it does not guarantee approval. The seven-day period starts
+          when approved. Rejected requests, or paid promotions removed by an admin, receive a
+          full refund to the original payment method; bank processing time varies. Featured ads
+          receive priority only among matching browse/search results under the default relevance
+          sort. Price and newest sorts are unchanged. Paid placements are marked “Ad · Featured”;
+          complimentary grants are marked “Featured”. Featuring is not an endorsement and does
+          not guarantee a particular position, impressions, clicks, leads or sales. Pausing,
+          selling, hiding or expiring an ad stops priority while the promotion clock continues.
         </p>
       </section>
 
