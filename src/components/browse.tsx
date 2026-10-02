@@ -1,7 +1,7 @@
 "use client"
 
 import Link from "next/link"
-import { useMemo } from "react"
+import { useEffect, useMemo, useState } from "react"
 
 import { usePrefs } from "@/components/prefs-provider"
 import { BoardCitySearch } from "@/components/board-place"
@@ -15,7 +15,8 @@ import { matchesQuery, sortListings } from "@/lib/board"
 import { isPubliclyVisibleListing } from "@/lib/listing-status"
 import { useHomePlace } from "@/lib/home-place"
 import { resolvePlace } from "@/lib/cities"
-import { useMarketplace } from "@/lib/marketplace"
+import { parseBoardState } from "@/lib/board-payload"
+import { seedListings } from "@/lib/catalog"
 import { countryName, fold, getCountry } from "@/lib/countries"
 import { type Listing } from "@/lib/types"
 import { findSubcategory } from "@/lib/posting"
@@ -23,20 +24,64 @@ import { boardSearch, useListingQuery } from "@/lib/use-listing-query"
 
 export function Browse() {
   const { t } = usePrefs()
-  const { listings } = useMarketplace()
-  const featuredNow = useFeaturedClock(listings)
   const { query, update, clear } = useListingQuery()
   const home = useHomePlace()
+  const [remoteListings, setRemoteListings] = useState<Listing[]>([])
+  const [nextCursor, setNextCursor] = useState<string | null>(null)
+  const [loading, setLoading] = useState(true)
+  const [loadError, setLoadError] = useState(false)
+
+  const searchKey = [query.country ?? "", query.city ?? "", query.category ?? "", query.type ?? "", query.q ?? ""].join("|")
+
+  useEffect(() => {
+    const controller = new AbortController()
+    const params = new URLSearchParams()
+    if (query.country) params.set("country", query.country)
+    if (query.city) params.set("city", query.city)
+    if (query.category) params.set("category", query.category)
+    if (query.type) params.set("type", query.type)
+    if (query.q) params.set("q", query.q)
+    params.set("limit", "25")
+    setLoading(true)
+    setLoadError(false)
+    void fetch(`/api/browse?${params}`, { cache: "no-store", signal: controller.signal })
+      .then(async (response) => {
+        if (!response.ok) throw new Error("browse")
+        const payload = await response.json() as { listings?: unknown; nextCursor?: string | null }
+        const parsed = parseBoardState({ posted: payload.listings, savedIds: [], messages: [] }).posted
+        setRemoteListings(parsed)
+        setNextCursor(typeof payload.nextCursor === "string" ? payload.nextCursor : null)
+      })
+      .catch((error) => {
+        if (error instanceof DOMException && error.name === "AbortError") return
+        setRemoteListings([])
+        setNextCursor(null)
+        setLoadError(true)
+      })
+      .finally(() => {
+        if (!controller.signal.aborted) setLoading(false)
+      })
+    return () => controller.abort()
+  }, [searchKey])
+
+  const listings = useMemo(() => {
+    const samples = seedListings.filter(
+      (listing) =>
+        (!query.country || listing.country === query.country) &&
+        (!query.city || fold(listing.city) === fold(query.city)) &&
+        (!query.category || listing.category === query.category) &&
+        (!query.type || listing.subcategory === query.type) &&
+        matchesQuery(listing, query.q),
+    )
+    const ids = new Set(remoteListings.map((listing) => listing.id))
+    return [...remoteListings, ...samples.filter((listing) => !ids.has(listing.id))]
+  }, [remoteListings, query.category, query.city, query.country, query.q, query.type])
+
+  const featuredNow = useFeaturedClock(listings)
 
   const inCountry = useMemo(
-    () =>
-      listings.filter(
-        (listing) =>
-          isPubliclyVisibleListing(listing) &&
-          (!query.country || listing.country === query.country) &&
-          matchesQuery(listing, query.q),
-      ),
-    [listings, query.country, query.q],
+    () => listings.filter((listing) => isPubliclyVisibleListing(listing)),
+    [listings],
   )
 
   const cityOptions = useMemo(() => {
@@ -64,6 +109,35 @@ export function Browse() {
     return sortListings(filtered, query.sort, preferred, query.q, homeOrigin(home, query.country), featuredNow)
   }, [home, inCity, query.category, query.country, query.q, query.sort, query.type, featuredNow])
 
+  async function loadMore() {
+    if (!nextCursor || loading) return
+    const params = new URLSearchParams()
+    if (query.country) params.set("country", query.country)
+    if (query.city) params.set("city", query.city)
+    if (query.category) params.set("category", query.category)
+    if (query.type) params.set("type", query.type)
+    if (query.q) params.set("q", query.q)
+    params.set("limit", "25")
+    params.set("cursor", nextCursor)
+    setLoading(true)
+    setLoadError(false)
+    try {
+      const response = await fetch(`/api/browse?${params}`, { cache: "no-store" })
+      if (!response.ok) throw new Error("browse")
+      const payload = await response.json() as { listings?: unknown; nextCursor?: string | null }
+      const page = parseBoardState({ posted: payload.listings, savedIds: [], messages: [] }).posted
+      setRemoteListings((current) => {
+        const ids = new Set(current.map((listing) => listing.id))
+        return [...current, ...page.filter((listing) => !ids.has(listing.id))]
+      })
+      setNextCursor(typeof payload.nextCursor === "string" ? payload.nextCursor : null)
+    } catch {
+      setLoadError(true)
+    } finally {
+      setLoading(false)
+    }
+  }
+
   const typeName = query.category && query.type ? findSubcategory(query.category, query.type)?.name : undefined
 
   const cityLabel = query.city
@@ -86,7 +160,14 @@ export function Browse() {
         {query.sort === "relevant" && visible.some(listing => isFeatured(listing, featuredNow)) ? (
           <p className="mb-3 text-xs text-muted-foreground">{t("promotion.browseDisclosure")}</p>
         ) : null}
-        {visible.length === 0 ? (
+        {loading && remoteListings.length === 0 ? (
+          <p role="status" className="py-12 text-center text-sm text-muted-foreground">Loading listings…</p>
+        ) : loadError && visible.length === 0 ? (
+          <div className="rounded-xl border border-border px-4 py-10 text-center">
+            <p className="text-sm text-muted-foreground">Listings could not be loaded.</p>
+            <Button type="button" variant="outline" className="mt-4 rounded-full" onClick={() => window.location.reload()}>Try again</Button>
+          </div>
+        ) : visible.length === 0 ? (
           <EmptyResults
             country={query.country}
             city={cityLabel}
@@ -100,15 +181,25 @@ export function Browse() {
             }}
           />
         ) : (
-          <div className={listingGridClassName}>
-            {visible.map((listing) => (
-              <ListingCard
-                key={listing.id}
-                listing={listing}
-                preserve={preserve}
-              />
-            ))}
-          </div>
+          <>
+            <div className={listingGridClassName}>
+              {visible.map((listing) => (
+                <ListingCard
+                  key={listing.id}
+                  listing={listing}
+                  preserve={preserve}
+                />
+              ))}
+            </div>
+            {nextCursor ? (
+              <div className="mt-6 flex justify-center">
+                <Button type="button" variant="outline" className="rounded-full" disabled={loading} onClick={() => void loadMore()}>
+                  {loading ? "Loading…" : "Load more"}
+                </Button>
+              </div>
+            ) : null}
+            {loadError && visible.length > 0 ? <p role="alert" className="mt-4 text-center text-sm text-destructive">More listings could not be loaded. Try again.</p> : null}
+          </>
         )}
       </section>
     </div>
