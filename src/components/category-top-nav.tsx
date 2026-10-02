@@ -6,6 +6,8 @@ import { usePathname, useSearchParams } from "next/navigation"
 
 import { CategoryNav } from "@/components/category-nav"
 import { LanguageCurrencyFields } from "@/components/language-currency-fields"
+import { MarketCountrySelect } from "@/components/market-country-select"
+import { usePrefs } from "@/components/prefs-provider"
 import { ThemeChoices } from "@/components/theme-choices"
 import { SiteFooter } from "@/components/site-footer"
 import { Button } from "@/components/ui/button"
@@ -31,6 +33,7 @@ function prefersReducedMotion(): boolean {
 
 export function CategorySidebar() {
   const { isMobile, setOpenMobile } = useSidebar()
+  const { t } = usePrefs()
   const pathname = usePathname()
 
   // Close the mobile categories sheet after any route change.
@@ -40,7 +43,9 @@ export function CategorySidebar() {
 
   return (
     <Sidebar
-      side="left"
+      side={isMobile ? "right" : "left"}
+      mobileTitle={t("nav.categories")}
+      mobileDescription={t("nav.categoriesDescription")}
       collapsible={isMobile ? "offcanvas" : "none"}
       className={
         isMobile
@@ -50,29 +55,32 @@ export function CategorySidebar() {
     >
       <CategorySidebarHeader />
       <CategorySidebarScroller />
-      <SidebarFooter className="p-0">
-        <CategorySidebarFooter />
-      </SidebarFooter>
+      {!isMobile ? (
+        <SidebarFooter className="p-0">
+          <CategorySidebarFooter />
+        </SidebarFooter>
+      ) : null}
     </Sidebar>
   )
 }
 
 function CategorySidebarHeader() {
   const { isMobile, setOpenMobile } = useSidebar()
+  const { t } = usePrefs()
   if (!isMobile) return null
 
   return (
-    <div className="flex shrink-0 items-center justify-between gap-2 border-b border-sidebar-border px-2 py-1.5">
-      <p className="px-2 font-heading text-base font-medium text-sidebar-foreground">Categories</p>
+    <div className="flex shrink-0 items-center justify-between gap-2 border-b border-sidebar-border px-2 pb-1.5 pt-[max(0.375rem,env(safe-area-inset-top))]">
+      <h2 className="px-2 font-heading text-base font-medium text-sidebar-foreground">{t("nav.categories")}</h2>
       <Button
         type="button"
         variant="ghost"
         size="icon"
         className="size-11 shrink-0 rounded-lg"
-        aria-label="Close categories"
+        aria-label={t("nav.closeCategories")}
         onClick={() => setOpenMobile(false)}
       >
-        <X className="size-5" />
+        <X className="size-5" aria-hidden />
       </Button>
     </div>
   )
@@ -80,16 +88,23 @@ function CategorySidebarHeader() {
 
 function CategorySidebarFooter() {
   const { isMobile, setOpenMobile } = useSidebar()
+  const { t } = usePrefs()
   return (
     <>
       {isMobile ? (
-        <div className="space-y-2 border-t border-sidebar-border px-2 py-2">
-          <LanguageCurrencyFields layout="menu" idPrefix="mobile-pref" />
-          <div className="flex items-center justify-between gap-3 px-2 py-1.5">
-            <span className="text-xs font-medium text-sidebar-foreground">Appearance</span>
-            <ThemeChoices />
+        <details className="group/preferences border-t border-sidebar-border px-2 py-1">
+          <summary className="flex min-h-11 cursor-pointer list-none items-center justify-between rounded-lg px-2 text-sm font-medium outline-none hover:bg-sidebar-accent focus-visible:ring-2 focus-visible:ring-ring [&::-webkit-details-marker]:hidden">
+            {t("prefs.preferences")}
+            <ChevronDown className="size-4 transition-transform group-open/preferences:rotate-180 motion-reduce:transition-none" aria-hidden />
+          </summary>
+          <div className="space-y-2 pb-2">
+            <LanguageCurrencyFields layout="menu" idPrefix="mobile-pref" />
+            <div className="flex items-center justify-between gap-3 px-2 py-1.5">
+              <span className="text-xs font-medium text-sidebar-foreground">{t("prefs.appearance")}</span>
+              <ThemeChoices />
+            </div>
           </div>
-        </div>
+        </details>
       ) : null}
       <SiteFooter onNavigate={() => setOpenMobile(false)} />
     </>
@@ -104,7 +119,8 @@ function CategorySidebarScroller() {
   const pathname = usePathname()
   const { ready, listings } = useMarketplace()
   const { top, bottom } = useScrollFades(scrollerRef)
-  const { isMobile, openMobile } = useSidebar()
+  const { isMobile, openMobile, setOpenMobile } = useSidebar()
+  const { t } = usePrefs()
   const listingCount = listings.length
 
   useEffect(() => {
@@ -165,12 +181,14 @@ function CategorySidebarScroller() {
       <div
         ref={scrollerRef}
         tabIndex={-1}
-        className="h-full min-h-0 overflow-y-auto px-2 py-2 outline-none [&_[aria-current=page]]:scroll-mb-10 [&_[aria-current=page]]:scroll-mt-2"
+        className="h-full min-h-0 overflow-y-auto overscroll-contain px-2 py-2 outline-none [&_[aria-current=page]]:scroll-mb-10 [&_[aria-current=page]]:scroll-mt-2"
       >
-        <div>
+        <div className="flex min-h-full flex-col">
           <Suspense fallback={<TopNavFallback />}>
+            {isMobile ? <MarketCountrySelect onNavigate={() => setOpenMobile(false)} /> : null}
             <CategoryTopNavLinks />
           </Suspense>
+          {isMobile ? <div className="mt-auto pt-3"><CategorySidebarFooter /></div> : null}
         </div>
       </div>
       <div
@@ -187,7 +205,7 @@ function CategorySidebarScroller() {
           bottom ? "opacity-100" : "opacity-0",
         )}
       />
-      <div className={cn("shrink-0 border-t border-sidebar-border px-2 py-2", bottom ? "block" : "hidden")}>
+      <div className={cn("shrink-0 border-t border-sidebar-border px-2 py-2", bottom && !isMobile ? "block" : "hidden")}>
       <button
         ref={moreChipRef}
         type="button"
@@ -199,7 +217,7 @@ function CategorySidebarScroller() {
           bottom ? "opacity-100" : "pointer-events-none opacity-0",
         )}
       >
-        More categories
+        {t("nav.moreCategories")}
         <ChevronDown className="size-3.5 shrink-0 opacity-70" aria-hidden />
       </button>
       </div>
@@ -209,14 +227,14 @@ function CategorySidebarScroller() {
 
 /** Mobile-only: desktop shows the categories sidebar persistently. */
 export function CategoryTopNav() {
+  const { t } = usePrefs()
   return (
     <SidebarTrigger
-      aria-label="Browse categories"
-      className="size-8 shrink-0 rounded-full border border-input bg-background md:hidden"
+      aria-label={t("nav.browseCategories")}
+      className="size-11 shrink-0 rounded-full border border-input bg-background md:hidden"
       size="icon-lg"
     >
-      <Menu className="size-4" />
-      <span className="sr-only">Browse categories</span>
+      <Menu className="size-5" aria-hidden />
     </SidebarTrigger>
   )
 }
@@ -226,6 +244,12 @@ function CategoryTopNavLinks() {
   const searchParams = useSearchParams()
   const { isMobile, setOpenMobile } = useSidebar()
   const { listings } = useMarketplace()
+  const routeKey = `${pathname}?${searchParams.toString()}`
+  const previousRoute = useRef(routeKey)
+  useEffect(() => {
+    if (previousRoute.current !== routeKey && isMobile) setOpenMobile(false)
+    previousRoute.current = routeKey
+  }, [routeKey, isMobile, setOpenMobile])
   const query = useMemo(
     () => readBoardQuery(pathname, searchParams),
     [pathname, searchParams],

@@ -11,11 +11,12 @@ import { signInHref } from "@/lib/auth-redirect"
 import { countryCodeOf, formatPlace } from "@/lib/format"
 import { isListingExpired } from "@/lib/expiry"
 import { useMarketplace } from "@/lib/marketplace"
+import type { PriceDisplayMode } from "@/lib/price-display"
 import { formatPostedDate, formatRelativePosted, hoursAgoOf, postedDateTime } from "@/lib/relative-time"
 import type { Listing } from "@/lib/types"
 import { cn } from "@/lib/utils"
 
-export function ListingCard({ listing, linked = true, saveable = true, preserve }: { listing: Listing; linked?: boolean; saveable?: boolean; preserve?: string }) {
+export function ListingCard({ listing, linked = true, saveable = true, preserve, priceMode = "market" }: { listing: Listing; linked?: boolean; saveable?: boolean; preserve?: string; priceMode?: PriceDisplayMode }) {
   const { isSaved, toggleSaved } = useMarketplace()
   const auth = useAuth()
   const router = useRouter()
@@ -32,7 +33,7 @@ export function ListingCard({ listing, linked = true, saveable = true, preserve 
         {status ? <span className="absolute top-2 left-2 rounded-sm bg-primary px-1.5 py-0.5 text-[9px] font-medium tracking-wide text-primary-foreground uppercase">{status}</span> : null}
       </div>
       <div className="px-2.5 py-2 sm:px-3 sm:py-2.5">
-        <p className="truncate text-[13px] leading-4 font-semibold tracking-tight text-foreground sm:text-sm"><ListingPrice listing={listing} /></p>
+        <p className="truncate text-[13px] leading-4 font-semibold tracking-tight text-foreground sm:text-sm"><ListingPrice listing={listing} mode={priceMode} /></p>
         <h3 className="mt-0.5 truncate text-xs leading-4 text-foreground/80 sm:text-[13px]">{listing.title}</h3>
         <p className="mt-1 truncate text-[10px] leading-4 text-muted-foreground sm:mt-1.5 sm:text-[11px]" title={placeFull} aria-label={placeFull}>{listing.city}, {countryCode} · <PostedLabel listing={listing} /></p>
       </div>

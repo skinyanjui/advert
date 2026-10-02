@@ -2,9 +2,22 @@ import type { Messages } from "@/lib/i18n/messages/en"
 
 /** Swahili product UI — same keys as en.ts. */
 export const sw: Messages = {
+  "prefs.followCountry": "Fuata nchi",
+  "prefs.automatic": "Kiotomatiki",
+  "prefs.preferences": "Mapendeleo",
+  "nav.categoriesDescription": "Chagua soko na uvinjari aina za matangazo.",
+  "nav.closeCategories": "Funga aina za matangazo",
+  "nav.browseCategories": "Vinjari aina za matangazo",
+  "nav.moreCategories": "Aina zaidi",
+  "nav.allListings": "Matangazo yote",
+  "nav.allTypes": "Aina zote",
+  "nav.market": "Soko",
+  "nav.help": "Msaada",
+  "price.converted": "Makadirio ya ubadilishaji hadi {currency}.",
+  "price.approximate": "Bei ya makadirio:",
   "prefs.language": "Lugha",
   "prefs.currency": "Sarafu",
-  "prefs.currencyHint": "Bei zinaonyeshwa kwa sarafu uliyochagua. Bei zilizobadilishwa ni makadirio.",
+  "prefs.currencyHint": "Bei za kuvinjari hufuata nchi au sarafu uliyochagua. Bei zilizobadilishwa ni makadirio.",
   "prefs.appearance": "Muonekano",
   "prefs.sectionTitle": "Lugha na sarafu",
   "prefs.sectionBody": "Inatumika kwenye kifaa hiki. Ukiingia, pia huhifadhiwa kwenye wasifu wako.",

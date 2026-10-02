@@ -5,7 +5,7 @@ import { isLocale, type Locale } from "@/lib/i18n/locales"
 export const languageStorageKey = "africa-classifieds-language"
 export const currencyStorageKey = "africa-classifieds-currency"
 
-/** Follow the active/default market country; fall back to the listing's posted country. */
+/** Follow the buyer's active/default market; with no market, show the posted currency. */
 export const defaultCurrencyPreference = "listing" as const
 
 export type CurrencyPreference = string

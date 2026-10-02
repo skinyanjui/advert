@@ -16,6 +16,7 @@ import { toast } from "sonner"
 import { EmptyPanel } from "@/components/empty-panel"
 import { ListingThumb } from "@/components/inbox/listing-thumb"
 import { usePrefs } from "@/components/prefs-provider"
+import { ListingPrice } from "@/components/listing-price"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import {
@@ -38,7 +39,7 @@ import { useAuth } from "@/lib/auth"
 import { signInHref } from "@/lib/auth-redirect"
 import { postAdHref } from "@/lib/active-place"
 import { daysUntilExpiry, isListingExpiringSoon } from "@/lib/expiry"
-import { formatPosted, formatPrice, hoursAgoOf } from "@/lib/format"
+import { formatPosted, hoursAgoOf } from "@/lib/format"
 import {
   effectiveListingStatus,
   listingStatuses,
@@ -453,7 +454,7 @@ function MyAdRow({
               <span className="shrink-0 text-[11px] text-neutral-500">Posted {formatPosted(hoursAgoOf(listing))}</span>
             </span>
             <span className="mt-0.5 flex min-w-0 flex-wrap items-center gap-1.5 text-xs text-neutral-600">
-              <span className="font-medium text-neutral-950">{formatPrice(listing)}</span>
+              <ListingPrice listing={listing} mode="posted" className="font-medium text-neutral-950" />
               <StatusBadge status={status} />
             </span>
             <span className="mt-1 block truncate text-xs text-neutral-500">{meta}</span>

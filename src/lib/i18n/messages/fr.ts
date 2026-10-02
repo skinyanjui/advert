@@ -2,9 +2,22 @@ import type { Messages } from "@/lib/i18n/messages/en"
 
 /** French product UI — same keys as en.ts. */
 export const fr: Messages = {
+  "prefs.followCountry": "Selon le pays",
+  "prefs.automatic": "Automatique",
+  "prefs.preferences": "Préférences",
+  "nav.categoriesDescription": "Choisissez un marché et parcourez les catégories d’annonces.",
+  "nav.closeCategories": "Fermer les catégories",
+  "nav.browseCategories": "Parcourir les catégories",
+  "nav.moreCategories": "Plus de catégories",
+  "nav.allListings": "Toutes les annonces",
+  "nav.allTypes": "Tous les types",
+  "nav.market": "Marché",
+  "nav.help": "Aide",
+  "price.converted": "Conversion estimée en {currency}.",
+  "price.approximate": "Prix approximatif :",
   "prefs.language": "Langue",
   "prefs.currency": "Devise",
-  "prefs.currencyHint": "Les prix sont affichés dans la devise sélectionnée. Les conversions sont approximatives.",
+  "prefs.currencyHint": "Les prix de navigation suivent le pays ou la devise choisis. Les conversions sont approximatives.",
   "prefs.appearance": "Apparence",
   "prefs.sectionTitle": "Langue et devise",
   "prefs.sectionBody": "S’applique sur cet appareil. Connecté, aussi enregistré sur votre profil.",

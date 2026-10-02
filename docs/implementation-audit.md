@@ -13,7 +13,7 @@ The pasted build failure was already corrected on main before this audit.
 
 | # | Requirement | Audit result and implementation evidence |
 | --- | --- | --- |
-| 1 | Country-driven currency default | Existing implementation verified; regression coverage now checks Uganda/UGX, explicit overrides, one displayed price, and unavailable-rate fallback. `prefs.ts`, `price-display.ts`. |
+| 1 | Country-driven currency default | Buyer browsing uses the active market, saved default, or explicit currency choice. Corrected seller-country conversion when the buyer has no market. Posting preview/review, My ads, and Messenger use the exact posted currency through the shared formatter. Regression coverage checks conversion, missing/invalid rates, localization, suffixes, and unchanged stored amounts. `prefs.ts`, `price-display.ts`. |
 | 2 | Shared location model | Existing `location.ts`/`cities.ts` resolution retained. Unknown typed cities now produce no map point or buyer distance; a specific public pickup description is still displayed. `distance.ts`, listing detail. |
 | 3 | Server profile authority | Signed-in profile resolution and cross-device preference behavior retained. Malformed profile patches return 400. Follow-up fixes automatic draft defaults blocking the current profile; deliberately chosen draft locations and edits are preserved. |
 | 4 | Persisted RBAC roles | Existing `board_user_roles` authority verified against the live database. Client grants remain revoked. Added an index for `assigned_by`. |
@@ -48,6 +48,7 @@ The pasted build failure was already corrected on main before this audit.
 | Specific location during posting | Required neighborhood, landmark, pickup point, or address; a map pin is optional. Device-location failures offer typed-location recovery. Public disclosure is shown before using location. Same-origin geolocation requests are permitted by the document policy so client navigation to Post works; browser permission and the posting button's explicit action remain required. |
 | Draft recovery | Drafts save and restore latitude, longitude, time zone, precision, pickup description, and whether location was chosen or inherited. Legacy drafts with pickup descriptions/specific pins retain their location; unfinished legacy defaults refresh from current Settings. Malformed pins are discarded while valid draft content is preserved. |
 | Inline contact and Messenger | Existing inline composer retained. No messaging modal added. Sign-in, send failure, disabled status, and unread behavior remain covered by existing tests. |
+| Compact mobile categories | Drawer opens from the hamburger's right side; compact touch targets, market selector, expandable preferences and legal links share one scroll area. Dialog labels and categories/types are localized; keyboard dismissal restores trigger focus. Market links preserve category/search/type and clear the old city. |
 | Help documentation | Replaced the abbreviated help page with complete English/French/Swahili help for posting, prices, location, buying, account/privacy, and recovery. Updated README, source/license attribution, and public-location privacy disclosure. |
 | Privacy policy versioning | The new location disclosure has a new Privacy/disclosure version and effective date; existing accounts use the established reacceptance flow. Existing acceptance evidence is not rewritten. |
 | Mobile and accessibility | New controls retain responsive layouts, 44px touch targets, accessible location-button labels, alert states, and city listbox semantics. |
@@ -71,11 +72,14 @@ public policies. The missing foreign-key indexes found during the audit were add
 
 ## Code verification
 
-`npm run ci` passes lint, typecheck, all 225 tests, and the Next.js production build.
+`npm run ci` passes lint, typecheck, all 235 tests, and the Next.js production build.
 The test suite includes request/form compatibility, taxonomy identity, provenance,
 country defaults, single-price conversion, unknown towns, and saved-pin recovery.
 Targeted test-name filtering and compliance-document generation also pass.
 Production deployment and public UI/API checks are reported in the task completion.
+The available cloud browser has a fixed desktop viewport. The mobile drawer's touch,
+short-screen scrolling, focus return, and breakpoint transitions still need a phone or
+resizable-browser check; they are not claimed as verified by the automated code checks.
 
 ## External operator work still outstanding
 

@@ -30,8 +30,9 @@ export function convertAmount(
   if (from === to) return amount
   const fromRate = from === base ? 1 : rates[from]
   const toRate = to === base ? 1 : rates[to]
-  if (!fromRate || !toRate || fromRate <= 0 || toRate <= 0) return null
+  if (!Number.isFinite(fromRate) || !Number.isFinite(toRate) || fromRate <= 0 || toRate <= 0) return null
   // rates are "units of currency per 1 base"
   const inBase = amount / fromRate
-  return inBase * toRate
+  const converted = inBase * toRate
+  return Number.isFinite(converted) ? converted : null
 }

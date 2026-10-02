@@ -12,7 +12,8 @@ test("mobile discovery header keeps search and categories touch-safe", () => {
   const categories = source("src/components/category-top-nav.tsx")
 
   assert.match(header, /<TopNavSearch/)
-  assert.match(categories, /aria-label="Browse categories"/)
+  assert.match(categories, /aria-label=\{t\("nav.browseCategories"\)\}/)
+  assert.match(categories, /className="size-11 shrink-0/)
   assert.match(css, /header\.sticky input[\s\S]*min-height: 44px;[\s\S]*font-size: 16px;/)
   assert.match(css, /header\.sticky \[data-sidebar="trigger"\][\s\S]*min-width: 44px;[\s\S]*min-height: 44px;/)
 })

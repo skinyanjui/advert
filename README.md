@@ -17,7 +17,7 @@ Open [http://localhost:3000](http://localhost:3000).
 
 - Browse, search, and sort. A selected country shows its capital, local time, time zone, currency, languages, and calling code. Search any city in that country, or filter to cities that already have ads. A city with no ads keeps the city filter selected and opens the post form with that place filled in. Price sort keeps each currency together.
 - The country control in the top bar searches by country, capital, or ISO code.
-- A category sidebar (desktop) and category sheet (mobile)
+- A category sidebar on desktop and a compact drawer from the right on mobile. The mobile drawer includes a market selector, expandable preferences, and legal/help links in one scrolling area.
 - Listing pages with inline Messenger, authenticated SMS/Text, Call and WhatsApp contact, and “Report this ad”
 - Post an ad with up to 6 photos (cover + gallery) or a category image; new ads default to the country saved during onboarding or in Settings, explicit location-specific Post links can override that default, automatic draft locations follow the current default, and deliberately chosen draft/edit locations are preserved; ads expire after 60 days and can be renewed
 - Seller accounts: email OTP / magic link, optional password, Profile settings, and session claim so guest cookie posts move onto the account
@@ -94,7 +94,7 @@ The chat-and-file implementation audit is in `docs/implementation-audit.md`.
 
 - **Countries.** ISO 3166-1 codes and names, snapshotted from the open [mledoze/countries](https://github.com/mledoze/countries) dataset (the historical source behind REST Countries). The public REST Countries API v3 is deprecated, and v5 needs a key. `REST_COUNTRIES_API_KEY` is reserved for a later refresh; the app ships the snapshot so it runs with no key.
 - **Cities.** GeoNames places with population over 15,000, each with an IANA time zone. A country’s default zone is its capital’s zone (Tanzania is `Africa/Dar_es_Salaam`).
-- **Currencies.** ISO 4217 codes. Display names come from Unicode CLDR through `Intl.DisplayNames`. Sample ads preserve their original currency. New ads use a currency accepted in their country. Display prices follow the selected country unless the member explicitly chooses another African currency; each listing shows one price. If exchange rates are unavailable, the original price stays visible.
+- **Currencies.** ISO 4217 codes. Display names come from Unicode CLDR through `Intl.DisplayNames`. Sample ads preserve their original currency. New ads use a currency accepted in their country. Browsing prices follow the buyer's selected market, then their saved default country, unless they choose another African currency. Each view shows one price; conversions use ≈. Without a buyer market or usable exchange rates, the posted price stays visible. Posting previews, Review, My ads, and Messenger show the exact posted amount and currency, formatted in the viewer's language.
 - **Languages.** ISO 639 codes, with CLDR display names through `Intl`.
 - **Time zones.** IANA Time Zone Database, formatted with `Intl.DateTimeFormat`.
 - **Map and search.** OpenStreetMap embeds on listing pages. City suggestions come from the bundled GeoNames snapshot and do not call the public Nominatim search service. Typed cities that do not match GeoNames are stored without a pin.

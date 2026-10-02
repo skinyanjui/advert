@@ -4,6 +4,8 @@ import { test } from "node:test"
 
 import { messageKeys, offeredLocales, translate, en, fr, sw } from "../src/lib/i18n"
 import { htmlLang, isLocale, locales } from "../src/lib/i18n/locales"
+import { categories } from "../src/lib/types"
+import { postingPlans } from "../src/lib/posting"
 
 test("fr and sw catalogs have every English key", () => {
   const keys = messageKeys()
@@ -30,6 +32,14 @@ test("translate interpolates values and falls back safely", () => {
   assert.equal(translate("en", "nav.unreadMessages", { count: 3 }), "3 unread")
   assert.equal(htmlLang("fr"), "fr")
   assert.equal(htmlLang("sw"), "sw")
+})
+
+test("category navigation has translated labels for every category and type", () => {
+  const keys = new Set<string>(messageKeys())
+  for (const category of categories) assert.ok(keys.has(`category.${category.id}`), category.id)
+  for (const plan of postingPlans()) {
+    for (const type of plan.subcategories) assert.ok(keys.has(`post.sub.${type.id}`), type.id)
+  }
 })
 
 test("language boot script sets documentElement.lang from localStorage", () => {

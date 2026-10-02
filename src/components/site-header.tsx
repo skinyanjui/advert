@@ -19,7 +19,7 @@ import { countries, countryName, fold, moreCountries, primaryCountries } from "@
 import { formatPlaceLabel } from "@/lib/format"
 import { clearBrowsingEverywhere, markBrowsingEverywhere, useHomePlace, writeHomePlace } from "@/lib/home-place"
 import { navItem } from "@/lib/nav"
-import { categoryFromPath, useListingQuery, type ListingQuery } from "@/lib/use-listing-query"
+import { locationHref, useListingQuery, type ListingQuery } from "@/lib/use-listing-query"
 import { cn } from "@/lib/utils"
 
 const summaryClass =
@@ -445,20 +445,6 @@ function filterCountries(query: string) {
   const needle = fold(query)
   if (!needle) return countries
   return countries.filter((country) => fold(country.name).includes(needle) || country.code.toLowerCase().includes(needle))
-}
-
-function locationHref(pathname: string, search: string, country: string | null, city?: string | null) {
-  const params = new URLSearchParams(search)
-  if (country) params.set("country", country)
-  else params.delete("country")
-  if (country && city) params.set("city", city)
-  else params.delete("city")
-  params.delete("page")
-  params.delete("view")
-  const category = categoryFromPath(pathname)
-  const path = category ? `/category/${encodeURIComponent(category)}` : "/"
-  const query = params.toString()
-  return query ? `${path}?${query}` : path
 }
 
 const headerPanelObservers = new WeakMap<HTMLDetailsElement, ResizeObserver>()

@@ -4,11 +4,12 @@ import { ArrowLeft, ArrowUpRight, MessageCircle } from "lucide-react"
 import Link from "next/link"
 
 import { ListingThumb } from "@/components/inbox/listing-thumb"
+import { ListingPrice } from "@/components/listing-price"
 import { usePrefs } from "@/components/prefs-provider"
 import { MessageHistory } from "@/components/inbox/message-history"
 import { ReplyForm } from "@/components/inbox/reply-form"
 import { Button } from "@/components/ui/button"
-import { formatPlace, formatPrice } from "@/lib/format"
+import { formatPlace } from "@/lib/format"
 import type { MessageThread } from "@/lib/messages"
 import type { Listing } from "@/lib/types"
 
@@ -62,7 +63,7 @@ function OfferContext({ thread, listing }: { thread: MessageThread; listing?: Li
       <span className="min-w-0 flex-1">
         <span className="block text-[11px] font-medium tracking-wide text-neutral-500 uppercase">{t("inbox.listing")}</span>
         <span className="mt-0.5 block truncate text-sm font-semibold text-neutral-950">{listing?.title ?? thread.listingTitle}</span>
-        <span className="mt-0.5 block truncate text-xs text-neutral-600">{listing ? `${formatPrice(listing)} · ${formatPlace(listing)}` : t("inbox.listingUnavailable")}</span>
+        <span className="mt-0.5 block truncate text-xs text-neutral-600">{listing ? <><ListingPrice listing={listing} mode="posted" /> · {formatPlace(listing)}</> : t("inbox.listingUnavailable")}</span>
       </span>
       {listing ? <ArrowUpRight className="size-4 shrink-0 text-neutral-500" aria-hidden="true" /> : null}
     </>

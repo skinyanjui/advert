@@ -7,7 +7,7 @@ import { Slot } from "radix-ui"
 
 import { PanelLeftIcon } from "lucide-react"
 
-import { useIsMobile } from "@/hooks/use-mobile"
+import { MOBILE_BREAKPOINT, useIsMobile } from "@/hooks/use-mobile"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Separator } from "@/components/ui/separator"
@@ -27,7 +27,7 @@ import {
 } from "@/components/ui/tooltip"
 
 const SIDEBAR_WIDTH = "15.5rem"
-const SIDEBAR_WIDTH_MOBILE = "18rem"
+const SIDEBAR_WIDTH_MOBILE = "min(20rem, calc(100vw - 3rem))"
 const SIDEBAR_WIDTH_ICON = "3rem"
 
 type SidebarContextProps = {
@@ -38,6 +38,8 @@ type SidebarContextProps = {
   setOpenMobile: (open: boolean) => void
   isMobile: boolean
   toggleSidebar: () => void
+  mobileId: string
+  triggerRef: React.RefObject<HTMLButtonElement | null>
 }
 
 const SidebarContext = React.createContext<SidebarContextProps | null>(null)
@@ -66,6 +68,18 @@ function SidebarProvider({
 }) {
   const isMobile = useIsMobile()
   const [openMobile, setOpenMobile] = React.useState(false)
+  const mobileId = React.useId()
+  const triggerRef = React.useRef<HTMLButtonElement>(null)
+
+  // A drawer opened on mobile must not reopen after a desktop round trip.
+  React.useEffect(() => {
+    const media = window.matchMedia(`(min-width: ${MOBILE_BREAKPOINT}px)`)
+    const closeOnDesktop = () => {
+      if (media.matches) setOpenMobile(false)
+    }
+    media.addEventListener("change", closeOnDesktop)
+    return () => media.removeEventListener("change", closeOnDesktop)
+  }, [])
 
   // This is the internal state of the sidebar.
   // We use openProp and setOpenProp for control from outside the component.
@@ -101,8 +115,10 @@ function SidebarProvider({
       openMobile,
       setOpenMobile,
       toggleSidebar,
+      mobileId,
+      triggerRef,
     }),
-    [state, open, setOpen, isMobile, openMobile, setOpenMobile, toggleSidebar]
+    [state, open, setOpen, isMobile, openMobile, setOpenMobile, toggleSidebar, mobileId]
   )
 
   return (
@@ -137,36 +153,49 @@ function Sidebar({
   className,
   children,
   dir,
+  mobileTitle = "Navigation",
+  mobileDescription = "Browse navigation links.",
   ...props
 }: React.ComponentProps<"div"> & {
   side?: "left" | "right"
   variant?: "sidebar" | "floating" | "inset"
   collapsible?: "offcanvas" | "icon" | "none"
+  mobileTitle?: string
+  mobileDescription?: string
 }) {
-  const { isMobile, state, openMobile, setOpenMobile } = useSidebar()
+  const { isMobile, state, openMobile, setOpenMobile, mobileId, triggerRef } = useSidebar()
 
   // Mobile always uses the sheet, even when desktop is non-collapsible.
   if (isMobile) {
     return (
       <Sheet open={openMobile} onOpenChange={setOpenMobile} {...props}>
         <SheetContent
+          id={mobileId}
           dir={dir}
           data-sidebar="sidebar"
           data-slot="sidebar"
           data-mobile="true"
-          className="w-(--sidebar-width) bg-sidebar p-0 text-sidebar-foreground [&>button]:hidden"
+          showCloseButton={false}
+          className="gap-0 overflow-hidden bg-sidebar p-0 text-sidebar-foreground motion-reduce:animate-none motion-reduce:transition-none"
           style={
             {
               "--sidebar-width": SIDEBAR_WIDTH_MOBILE,
+              width: SIDEBAR_WIDTH_MOBILE,
+              height: "100dvh",
             } as React.CSSProperties
           }
           side={side}
+          onCloseAutoFocus={(event) => {
+            event.preventDefault()
+            const trigger = triggerRef.current
+            if (trigger?.getClientRects().length) trigger.focus()
+          }}
         >
           <SheetHeader className="sr-only">
-            <SheetTitle>Categories</SheetTitle>
-            <SheetDescription>Browse listing categories.</SheetDescription>
+            <SheetTitle>{mobileTitle}</SheetTitle>
+            <SheetDescription>{mobileDescription}</SheetDescription>
           </SheetHeader>
-          <div className="flex h-full w-full flex-col">{children}</div>
+          <div className="flex h-full min-h-0 w-full flex-col">{children}</div>
         </SheetContent>
       </Sheet>
     )
@@ -239,20 +268,29 @@ function SidebarTrigger({
   className,
   onClick,
   children,
+  ref,
   ...props
 }: React.ComponentProps<typeof Button>) {
-  const { toggleSidebar } = useSidebar()
+  const { toggleSidebar, isMobile, openMobile, open, mobileId, triggerRef } = useSidebar()
 
   return (
     <Button
+      ref={(node) => {
+        triggerRef.current = node
+        if (typeof ref === "function") return ref(node)
+        if (ref) ref.current = node
+      }}
       data-sidebar="trigger"
       data-slot="sidebar-trigger"
       variant="ghost"
       size="icon-sm"
       className={cn(className)}
+      aria-expanded={isMobile ? openMobile : open}
+      aria-controls={isMobile ? mobileId : undefined}
+      aria-haspopup={isMobile ? "dialog" : undefined}
       onClick={(event) => {
         onClick?.(event)
-        toggleSidebar()
+        if (!event.defaultPrevented) toggleSidebar()
       }}
       {...props}
     >

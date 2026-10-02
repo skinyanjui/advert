@@ -13,7 +13,7 @@ import {
 } from "react"
 
 import { useAuth } from "@/lib/auth"
-import { listingPriceDisplay } from "@/lib/price-display"
+import { listingPriceDisplay, type PriceDisplayMode } from "@/lib/price-display"
 import { readHomePlace, writeHomePlace } from "@/lib/home-place"
 import { useRememberedPlace } from "@/lib/use-remembered-place"
 import { type FxRates } from "@/lib/fx"
@@ -102,6 +102,7 @@ type PrefsContextValue = {
   t: (key: MessageKey, values?: TranslateValues) => string
   formatListingPrice: (
     listing: Pick<Listing, "price" | "priceSuffix" | "currency" | "country">,
+    mode?: PriceDisplayMode,
   ) => ReturnType<typeof listingPriceDisplay>
 }
 
@@ -257,8 +258,8 @@ export function PrefsProvider({ children }: { children: ReactNode }) {
   )
 
   const formatListingPrice = useCallback(
-    (listing: Pick<Listing, "price" | "priceSuffix" | "currency" | "country">) => {
-      return listingPriceDisplay(listing, { currency, marketCountry: marketPlace?.country, rates: fx, locale: language })
+    (listing: Pick<Listing, "price" | "priceSuffix" | "currency" | "country">, mode: PriceDisplayMode = "market") => {
+      return listingPriceDisplay(listing, { currency, marketCountry: marketPlace?.country, rates: fx, locale: language, mode })
     },
     [currency, fx, language, marketPlace?.country],
   )

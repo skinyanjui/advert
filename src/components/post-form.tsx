@@ -14,6 +14,7 @@ import { ContactPhoneField } from "@/components/contact-phone-field"
 import { EmptyPanel } from "@/components/empty-panel"
 import { FormField } from "@/components/form-field"
 import { ListingCard } from "@/components/listing-card"
+import { ListingPrice } from "@/components/listing-price"
 import { usePrefs } from "@/components/prefs-provider"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -33,7 +34,6 @@ import {
   currencyLabel,
   getCountry,
 } from "@/lib/countries"
-import { formatPrice } from "@/lib/format"
 import { boardCurrencyCodes } from "@/lib/fx"
 import {
   FAIR_ACCESS_ATTESTATION_VERSION,
@@ -1055,7 +1055,7 @@ function AdForm({ existing }: { existing: Listing | null }) {
               </div>
               <div className="rounded-xl bg-neutral-50 px-3 py-3">
                 <p className="truncate text-sm font-medium">{title.trim() || "Add a title"}</p>
-                <p className="mt-0.5 text-sm text-neutral-700">{Number(price) > 0 ? formatPrice(preview) : "Add a price"}</p>
+                <p className="mt-0.5 text-sm text-neutral-700">{Number(price) > 0 ? <ListingPrice listing={preview} mode="posted" /> : t("post.error.priceRequired")}</p>
                 {choiceLine ? <p className="mt-0.5 truncate text-xs text-neutral-500">{choiceLine}</p> : null}
               </div>
               <div className="grid gap-2">
@@ -1165,7 +1165,7 @@ function AdForm({ existing }: { existing: Listing | null }) {
       {category ? (
         <aside className="lg:sticky lg:top-[85px] lg:self-start">
           <p className="mb-2 text-xs font-medium tracking-wide text-neutral-500 uppercase">Preview</p>
-          <ListingCard listing={preview} linked={false} saveable={false} />
+          <ListingCard listing={preview} linked={false} saveable={false} priceMode="posted" />
         </aside>
       ) : null}
     </div>

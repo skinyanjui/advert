@@ -3,9 +3,10 @@
 import { Check, Monitor, Moon, Sun } from "lucide-react"
 import { useLayoutEffect, useSyncExternalStore, type ReactNode } from "react"
 
+import { usePrefs } from "@/components/prefs-provider"
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
 import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group"
-import { isThemeChoice, themeChoices, themeLabel, themeStorageKey, type ThemeChoice } from "@/lib/theme"
+import { isThemeChoice, themeChoices, themeStorageKey, type ThemeChoice } from "@/lib/theme"
 
 const changeEvent = "africa-classifieds-theme"
 
@@ -83,14 +84,15 @@ export function ThemeSync() {
 export function ThemeMenu() {
   const choice = useThemeChoice()
   const resolved = useResolvedTheme()
+  const { t } = usePrefs()
 
   return (
     <Popover>
       <PopoverTrigger asChild>
         <button
           type="button"
-          aria-label="Appearance"
-          title="Appearance"
+          aria-label={t("prefs.appearance")}
+          title={t("prefs.appearance")}
           className="flex size-8 items-center justify-center rounded-full border border-transparent bg-transparent text-foreground outline-none transition-colors hover:bg-muted focus-visible:ring-2 focus-visible:ring-ring/40 focus-visible:ring-offset-2"
         >
           {resolved === "dark" ? <Moon className="size-4" aria-hidden="true" /> : <Sun className="size-4" aria-hidden="true" />}
@@ -100,10 +102,10 @@ export function ThemeMenu() {
         align="end"
         sideOffset={8}
         collisionPadding={12}
-        aria-label="Appearance"
+        aria-label={t("prefs.appearance")}
         className="w-fit min-w-32 gap-0 rounded-xl p-1.5 shadow-lg"
       >
-        <div role="menu" aria-label="Appearance">
+        <div role="menu" aria-label={t("prefs.appearance")}>
           {themeChoices.map((option) => (
             <button
               key={option}
@@ -116,7 +118,7 @@ export function ThemeMenu() {
               <span className="flex size-4 items-center justify-center" aria-hidden="true">
                 <ThemeIcon choice={option} />
               </span>
-              <span className="flex-1">{themeLabel(option)}</span>
+              <span className="flex-1">{t(`theme.${option}`)}</span>
               <span className="flex size-4 items-center justify-center">
                 {choice === option ? <Check className="size-4" aria-hidden="true" /> : null}
               </span>
@@ -130,13 +132,14 @@ export function ThemeMenu() {
 
 export function ThemeChoices({ className }: { className?: string }) {
   const choice = useThemeChoice()
+  const { t } = usePrefs()
   return (
     <ToggleGroup
       type="single"
       value={choice}
       variant="outline"
       spacing={0}
-      aria-label="Appearance"
+      aria-label={t("prefs.appearance")}
       className={className}
       onValueChange={(value) => {
         if (isThemeChoice(value)) writeTheme(value)
@@ -146,12 +149,12 @@ export function ThemeChoices({ className }: { className?: string }) {
         <ToggleGroupItem
           key={option}
           value={option}
-          aria-label={themeLabel(option)}
-          title={themeLabel(option)}
-          className="px-2.5 data-[state=on]:bg-primary data-[state=on]:text-primary-foreground"
+          aria-label={t(`theme.${option}`)}
+          title={t(`theme.${option}`)}
+          className="min-h-11 min-w-11 px-2.5 data-[state=on]:bg-primary data-[state=on]:text-primary-foreground md:min-h-0 md:min-w-0"
         >
           <ThemeIcon choice={option} />
-          <span className="sr-only">{themeLabel(option)}</span>
+          <span className="sr-only">{t(`theme.${option}`)}</span>
         </ToggleGroupItem>
       ))}
     </ToggleGroup>

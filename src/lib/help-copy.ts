@@ -23,9 +23,10 @@ export const helpCopy: Record<Locale, HelpCopy> = {
         `Review the title, country, local price, location, and contact choices before publishing. Ads expire after ${days} days. Use My ads to edit, pause, mark sold, or renew. Sold, paused, and expired ads do not accept new inquiries.`,
       ] },
       { id: "prices", title: "Countries and prices", steps: [
-        "Browsing starts in your saved default country. Selecting another country changes the market and, with Follow selected country enabled, its displayed currency. Uganda uses Ugandan shillings (UGX).",
+        "Browsing starts in your saved default country. Selecting another country changes the market and, with Follow country enabled, its displayed currency. Uganda uses Ugandan shillings (UGX). On mobile, open Categories and choose Market. Preferences at the bottom contains language, currency, and appearance.",
         "New ads use a currency supported by the country where they are posted. Prices use whole currency units. Changing the browsing country never rewrites a seller’s posted amount or currency.",
         "Each listing shows one price. Converted prices use ≈ because exchange rates are estimates. An explicit currency choice overrides the country rule. If exchange rates are unavailable, the posted price and currency remain visible.",
+        "With no selected or saved market, prices stay in the currency the seller posted. Posting previews, Review, My ads, and Messenger also show the posted amount and currency so the offer stays clear.",
       ] },
       { id: "location", title: "Location and distance", steps: [
         "Specific-location text and any coordinates chosen for an ad are public in its details. Use a pickup point instead of a private home address when appropriate. Use location only while at the intended pickup point.",
@@ -64,9 +65,10 @@ export const helpCopy: Record<Locale, HelpCopy> = {
         `Vérifiez le titre, le pays, le prix local, le lieu et les contacts avant publication. Les annonces expirent après ${days} jours. Mes annonces permet de modifier, suspendre, marquer vendu ou renouveler. Les annonces vendues, suspendues ou expirées n’acceptent pas de nouvelles demandes.`,
       ] },
       { id: "prices", title: "Pays et prix", steps: [
-        "La navigation commence dans le pays enregistré. Choisir un autre pays change le marché et sa devise lorsque Suivre le pays sélectionné est activé. L’Ouganda utilise le shilling ougandais (UGX).",
+        "La navigation commence dans le pays enregistré. Choisir un autre pays change le marché et sa devise lorsque Selon le pays est activé. L’Ouganda utilise le shilling ougandais (UGX). Sur mobile, ouvrez Catégories et choisissez Marché. Préférences, en bas, contient la langue, la devise et l’apparence.",
         "Une nouvelle annonce utilise une devise acceptée dans son pays. Les prix sont exprimés en unités entières. Changer de pays de navigation ne réécrit jamais le montant ou la devise du vendeur.",
         "Chaque annonce affiche un seul prix. ≈ indique une conversion estimative. Un choix explicite de devise remplace la règle du pays. Sans taux de change disponibles, le prix et la devise d’origine restent visibles.",
+        "Sans marché sélectionné ou enregistré, le prix reste dans la devise publiée. L’aperçu, la vérification, Mes annonces et Messenger affichent aussi le montant et la devise publiés pour garder l’offre claire.",
       ] },
       { id: "location", title: "Lieu et distance", steps: [
         "Le lieu précis et les coordonnées choisis sont publics dans les détails. Utilisez un lieu de retrait plutôt qu’une adresse privée si nécessaire. Utilisez la localisation seulement au lieu de retrait prévu.",
@@ -105,9 +107,10 @@ export const helpCopy: Record<Locale, HelpCopy> = {
         `Hakiki kichwa, nchi, bei ya hapa, eneo na mawasiliano kabla ya kuchapisha. Matangazo huisha baada ya siku ${days}. Matangazo yangu hukuruhusu kuhariri, kusitisha, kuonyesha imeuzwa au kuhuisha. Tangazo lililouzwa, lililositishwa au lililoisha halipokei maswali mapya.`,
       ] },
       { id: "prices", title: "Nchi na bei", steps: [
-        "Kuvinjari huanza katika nchi yako chaguomsingi. Kuchagua nchi nyingine hubadilisha soko na sarafu ikiwa Fuata nchi iliyochaguliwa imewashwa. Uganda hutumia shilingi za Uganda (UGX).",
+        "Kuvinjari huanza katika nchi yako chaguomsingi. Kuchagua nchi nyingine hubadilisha soko na sarafu ikiwa Fuata nchi imewashwa. Uganda hutumia shilingi za Uganda (UGX). Kwenye simu, fungua aina za matangazo na uchague Soko. Mapendeleo yaliyo chini yana lugha, sarafu na muonekano.",
         "Tangazo jipya hutumia sarafu inayokubalika katika nchi linapochapishwa. Bei hutumia vitengo kamili vya sarafu. Kubadilisha nchi ya kuvinjari hakubadilishi kiasi au sarafu aliyotangaza muuzaji.",
         "Kila tangazo linaonyesha bei moja. ≈ huonyesha ubadilishaji wa makadirio. Sarafu uliyochagua mwenyewe hutangulia sheria ya nchi. Viwango vikikosekana, bei na sarafu ya awali huendelea kuonekana.",
+        "Bila soko lililochaguliwa au kuhifadhiwa, bei hubaki katika sarafu ya muuzaji. Hakiki ya tangazo, Matangazo yangu na Messenger pia huonyesha kiasi na sarafu iliyotangazwa ili ofa iwe wazi.",
       ] },
       { id: "location", title: "Mahali na umbali", steps: [
         "Maelezo ya mahali na viwianishi unavyochagua vinaonekana hadharani kwenye maelezo. Tumia mahali pa kuchukua bidhaa badala ya anwani binafsi inapofaa. Tumia mahali ulipo ikiwa upo sehemu iliyokusudiwa ya kuchukua bidhaa.",

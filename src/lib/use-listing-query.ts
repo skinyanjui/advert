@@ -178,6 +178,20 @@ export function categoryFromPath(pathname: string): CategoryId | undefined {
   return isCategoryId(segment) ? segment : undefined
 }
 
+/** A market change preserves the category/search/type and clears the previous city's filter. */
+export function locationHref(pathname: string, search: string, country: string | null, city?: string | null): string {
+  const params = new URLSearchParams(search)
+  if (country) params.set("country", country)
+  else params.delete("country")
+  if (country && city) params.set("city", city)
+  else params.delete("city")
+  params.delete("page")
+  params.delete("view")
+  const category = categoryFromPath(pathname)
+  normalizeBoardParams(params, category)
+  return boardHref(category, params)
+}
+
 function boardHref(category: CategoryId | undefined, params: URLSearchParams): string {
   params.delete("category")
   const qs = params.toString()

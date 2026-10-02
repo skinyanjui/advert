@@ -11,7 +11,8 @@ Use one authoritative owner for each concept. Caches, snapshots, UI state, and c
 | Anonymous default country/city | localStorage home place | Temporary board selection |
 | Explicit posting location | `/post?country=&city=` action context | Profile/device fallback |
 | Draft posting location | Explicit action context, then a deliberately chosen draft location, then the current posting default | Draft `locationSource` distinguishes chosen locations from inherited defaults; legacy pickup descriptions/specific pins establish intent |
-| Display currency | Explicit profile/device override; otherwise country registry | `listing` means original listing currency |
+| Browsing display currency | Explicit profile/device override → active buyer market → saved default country, using the country registry | The persisted `listing` preference means Follow country. With no buyer market or usable rates, display the posted currency. |
+| Authoring/conversation price | Listing amount and currency | `ListingPrice` in `posted` mode applies viewer number formatting without conversion. Used by posting preview/review, My ads, and Messenger. |
 | Country/city/currency/language/time-zone reference data | Supabase reference tables | Versioned checked-in snapshots with manifest hashes |
 | Reference provenance | `reference_imports` + reference manifest | Snapshot hash |
 | Listing | `board_listings` | Catalog entries are samples only |
