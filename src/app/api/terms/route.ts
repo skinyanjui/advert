@@ -21,6 +21,7 @@ export async function GET(request: Request) {
       acceptedTermsVersion: status.acceptedTermsVersion,
       acceptedPrivacyVersion: status.acceptedPrivacyVersion,
       tableMissing: status.tableMissing,
+      publicationReady: status.publicationReady,
     })
   } catch {
     return fail("The board database did not respond.", 500)
@@ -43,7 +44,7 @@ export async function POST(request: Request) {
       privacyAcknowledged,
       locale: locale ?? null,
     })
-    if (!result.ok) return fail("Could not record Terms acceptance.")
+    if (!result.ok) return fail(result.reason, /not available|temporarily unavailable/i.test(result.reason) ? 503 : 400)
     const status = await getTermsStatus(owner.id)
     return ok({
       accepted: true,

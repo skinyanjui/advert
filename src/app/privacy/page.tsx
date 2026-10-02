@@ -2,31 +2,29 @@ import type { Metadata } from "next"
 import Link from "next/link"
 
 import { PRIVACY_EFFECTIVE_DATE, PRIVACY_VERSION, TERMS_VERSION } from "@/lib/legal"
-import { legalOperatorIdentity, privacyOfficerContacts } from "@/lib/legal-config"
-import { SUPPORT_CONTACT_PLACEHOLDER, site, siteSupportMailto } from "@/lib/site"
+import { privacyOfficerContacts, privacyPublicationConfiguration } from "@/lib/legal-config"
+import { site, siteSupportMailto } from "@/lib/site"
 
 export const metadata: Metadata = { title: "Privacy Policy" }
 
 export default function PrivacyPage() {
   const contactHref = siteSupportMailto()
-  const operator = legalOperatorIdentity()
+  const operator = privacyPublicationConfiguration()
   const privacyContacts = privacyOfficerContacts()
   return (
     <div className="w-full px-3 py-8 md:px-4">
-      <div
-        role="status"
-        className="rounded-xl border border-amber-200 bg-amber-50 px-3 py-2 text-sm text-amber-950"
-      >
-        Draft — pending legal review
-      </div>
-      <h1 className="mt-6 text-2xl font-semibold tracking-tight">Privacy Policy</h1>
+      <h1 className="text-2xl font-semibold tracking-tight">Privacy Policy</h1>
       <p className="mt-2 text-sm text-neutral-500">
         Version {PRIVACY_VERSION} · Effective {PRIVACY_EFFECTIVE_DATE} · Terms version {TERMS_VERSION}
       </p>
       <p className="mt-4 text-sm leading-6 text-neutral-700">
-        This Privacy Policy is a <strong>DRAFT</strong> for {site.name}. It describes how we handle
-        personal data in plain language. A lawyer will review it before it applies in production.
+        This Privacy Policy explains how {site.name} handles personal data when you browse, create an account, post listings, communicate, report content, contact support, or exercise privacy rights.
       </p>
+      {!operator.ready ? (
+        <div role="status" className="mt-4 rounded-xl border border-amber-200 bg-amber-50 p-4 text-sm leading-6 text-amber-950">
+          Operator publication details are incomplete. Protected account features remain unavailable until the reviewed legal package is published. Public privacy-request and support routes remain available.
+        </div>
+      ) : null}
 
       <section className="mt-8 space-y-3">
         <h2 className="text-base font-medium text-neutral-950">What we collect</h2>
@@ -95,9 +93,9 @@ export default function PrivacyPage() {
           {operator.complete ? (
             <strong>{operator.name} · {operator.address}</strong>
           ) : (
-            <strong>[OPERATOR LEGAL NAME AND BUSINESS ADDRESS — configure before final legal approval]</strong>
+            <>the operator identity published with the reviewed legal package</>
           )}
-          . The support contact below is also the privacy contact.
+          . The public support intake is also available for privacy contact.
           {privacyContacts.dpoEmail ? <> Data protection contact: <strong>{privacyContacts.dpoEmail}</strong>.</> : null}
           {privacyContacts.euRepresentative ? <> EU representative: <strong>{privacyContacts.euRepresentative}</strong>.</> : null}
         </p>
@@ -218,7 +216,7 @@ export default function PrivacyPage() {
           Service providers may process data in countries other than the country where you live. Where
           GDPR transfer rules apply, we will rely on an available lawful transfer mechanism and
           appropriate safeguards, such as an adequacy decision or contractual safeguards, as applicable.
-          This draft does not claim participation in any certification program unless separately verified.
+          This policy does not claim participation in any certification program unless separately verified.
         </p>
       </section>
 
@@ -382,7 +380,7 @@ export default function PrivacyPage() {
               .
             </>
           ) : (
-            SUPPORT_CONTACT_PLACEHOLDER
+            <Link href="/contact#support-request" className="underline underline-offset-2">Public support form</Link>
           )}
         </p>
       </section>

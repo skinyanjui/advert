@@ -20,36 +20,105 @@ export type BoardListingRow = {
   sponsored_locked?: boolean | null
 }
 
-/** Include the owner's entire inventory and only potentially public other ads. */
-export async function readBoardInventory(db: SupabaseClient, owner: string): Promise<BoardListingRow[]> {
-  const now = new Date().toISOString()
-  // The owner is an internally resolved UUID, never a request query parameter.
+export const publicBoardPageSize = 48
+export const ownerInventoryLimit = 200
+export const savedListingLimit = 500
+
+type PublicCursor = { postedAt: string; id: string }
+
+export type PublicBoardFilters = {
+  q?: string
+  country?: string
+  city?: string
+  category?: string
+  type?: string
+  cursor?: string
+}
+
+export type PublicBoardPage = {
+  rows: BoardListingRow[]
+  nextCursor: string | null
+}
+
+function encodeCursor(row: BoardListingRow): string {
+  return Buffer.from(JSON.stringify({ postedAt: row.posted_at, id: row.id } satisfies PublicCursor)).toString("base64url")
+}
+
+function decodeCursor(value: string | undefined): PublicCursor | null {
+  if (!value || value.length > 500) return null
+  try {
+    const parsed = JSON.parse(Buffer.from(value, "base64url").toString("utf8")) as Partial<PublicCursor>
+    if (
+      typeof parsed.postedAt !== "string" ||
+      !Number.isFinite(Date.parse(parsed.postedAt)) ||
+      typeof parsed.id !== "string" ||
+      !/^ad-[a-zA-Z0-9-]{1,64}$/.test(parsed.id)
+    ) return null
+    return { postedAt: parsed.postedAt, id: parsed.id }
+  } catch {
+    return null
+  }
+}
+
+/** Bounded private inventory for account-management surfaces only. */
+export async function readOwnedInventory(db: SupabaseClient, owner: string): Promise<BoardListingRow[]> {
   if (!/^[0-9a-f-]{36}$/i.test(owner)) throw new Error("Invalid inventory owner.")
-  const visible = `owner_id.eq.${owner},and(hidden_at.is.null,or(status.is.null,status.eq.active),or(expires_at.is.null,expires_at.gt.${now}))`
-  const rows = await readKeysetPages(async after => {
-    let query = db.from("board_listings").select("*").or(visible)
-      .order("id", { ascending: true }).limit(inventoryPageSize)
-    if (after) query = query.gt("id", after)
-    const { data, error } = await query.returns<BoardListingRow[]>()
-    if (error) throw new Error(error.message)
-    return data ?? []
-  }, row => row.id)
-  // Keyset traversal uses the immutable primary key, while presentation retains
-  // the board's newest-first ordering (including a deterministic tie breaker).
-  return rows.sort((a, b) => b.posted_at.localeCompare(a.posted_at) || a.id.localeCompare(b.id))
+  const { data, error } = await db.from("board_listings")
+    .select("*")
+    .eq("owner_id", owner)
+    .order("posted_at", { ascending: false })
+    .order("id", { ascending: false })
+    .limit(ownerInventoryLimit)
+    .returns<BoardListingRow[]>()
+  if (error) throw new Error(error.message)
+  return data ?? []
+}
+
+/** Public browse is server-filtered and cursor-paginated. */
+export async function readPublicBoardPage(db: SupabaseClient, filters: PublicBoardFilters): Promise<PublicBoardPage> {
+  const now = new Date().toISOString()
+  let query = db.from("board_listings")
+    .select("*")
+    .eq("status", "active")
+    .is("hidden_at", null)
+    .or(`expires_at.is.null,expires_at.gt.${now}`)
+    .order("posted_at", { ascending: false })
+    .order("id", { ascending: false })
+    .limit(publicBoardPageSize + 1)
+
+  if (filters.country) query = query.eq("country_code", filters.country)
+  if (filters.category) query = query.eq("payload->>category", filters.category)
+  if (filters.type) query = query.eq("payload->>subcategory", filters.type)
+  if (filters.city) query = query.ilike("payload->>city", filters.city)
+  if (filters.q) query = query.textSearch("search_document", filters.q, { type: "websearch", config: "simple" })
+
+  const cursor = decodeCursor(filters.cursor)
+  if (filters.cursor && !cursor) throw new Error("Invalid public listings cursor.")
+  if (cursor) {
+    query = query.or(`posted_at.lt.${cursor.postedAt},and(posted_at.eq.${cursor.postedAt},id.lt.${cursor.id})`)
+  }
+
+  const { data, error } = await query.returns<BoardListingRow[]>()
+  if (error) throw new Error(error.message)
+  const rows = data ?? []
+  const pageRows = rows.slice(0, publicBoardPageSize)
+  return {
+    rows: pageRows,
+    nextCursor: rows.length > publicBoardPageSize && pageRows.length > 0
+      ? encodeCursor(pageRows[pageRows.length - 1]!)
+      : null,
+  }
 }
 
 export async function readSavedListingIds(db: SupabaseClient, owner: string): Promise<string[]> {
-  const rows = await readKeysetPages(async after => {
-    let query = db.from("board_saves").select("listing_id,created_at").eq("owner_id", owner)
-      .order("listing_id", { ascending: true }).limit(inventoryPageSize)
-    if (after) query = query.gt("listing_id", after)
-    const { data, error } = await query.returns<{ listing_id: string; created_at: string }[]>()
-    if (error) throw new Error(error.message)
-    return data ?? []
-  }, row => row.listing_id)
-  return rows.sort((a, b) => b.created_at.localeCompare(a.created_at) || a.listing_id.localeCompare(b.listing_id))
-    .map(row => row.listing_id)
+  const { data, error } = await db.from("board_saves")
+    .select("listing_id,created_at")
+    .eq("owner_id", owner)
+    .order("created_at", { ascending: false })
+    .limit(savedListingLimit)
+    .returns<{ listing_id: string; created_at: string }[]>()
+  if (error) throw new Error(error.message)
+  return (data ?? []).map((row) => row.listing_id)
 }
 
 type SellerProfileRow = {
@@ -63,8 +132,6 @@ export async function readSellerProfileRows(db: SupabaseClient, userIds: string[
   const unique = [...new Set(userIds.filter(Boolean))]
   const rows: SellerProfileRow[] = []
   const profileBatchSize = 100
-  // Bound IN-list URL lengths as well as row counts. The service may cap each
-  // response below our chunk size, so each chunk also uses keyset traversal.
   for (let index = 0; index < unique.length; index += profileBatchSize) {
     const ids = unique.slice(index, index + profileBatchSize)
     rows.push(...await readKeysetPages(async after => {

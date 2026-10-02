@@ -67,9 +67,7 @@ export function PostingLocationFields({
       },
       (error) => {
         setLocating(false)
-        setLocationError(error.code === 1
-          ? t("post.locationDenied")
-          : t("post.locationFailed"))
+        setLocationError(error.code === 1 ? t("post.locationDenied") : t("post.locationFailed"))
       },
       { enableHighAccuracy: true, timeout: 10000, maximumAge: 60_000 },
     )
@@ -78,43 +76,85 @@ export function PostingLocationFields({
   return (
     <div className="grid gap-3">
       <div className="grid gap-3 sm:grid-cols-2">
-        <FormField label={t("post.country")} required>
-          <CountryField country={country} onChange={onCountryChange} />
+        <FormField id="post-country" label={t("post.country")} required>
+          {(control) => (
+            <CountryField
+              country={country}
+              onChange={onCountryChange}
+              id={control.id}
+              ariaDescribedBy={control.describedBy}
+            />
+          )}
         </FormField>
-        <FormField label={t("post.city")} required error={cityError}>
-          {country ? (
-            <CityField country={country} city={city} onCityChange={onCityChange} onPlace={onPlace} />
+        <FormField id="post-city" label={t("post.city")} required error={cityError}>
+          {(control) => country ? (
+            <CityField
+              country={country}
+              city={city}
+              onCityChange={onCityChange}
+              onPlace={onPlace}
+              id={control.id}
+              ariaDescribedBy={control.describedBy}
+              ariaErrorMessage={control.errorId}
+              invalid={control.invalid}
+            />
           ) : (
-            <Input disabled placeholder={t("post.chooseCountryFirst")} aria-disabled="true" className="h-11 bg-background sm:h-10" />
+            <Input
+              id={control.id}
+              disabled
+              placeholder={t("post.chooseCountryFirst")}
+              aria-disabled="true"
+              aria-describedby={control.describedBy}
+              aria-errormessage={control.errorId}
+              aria-invalid={control.invalid || undefined}
+              className="h-11 bg-background sm:h-10"
+            />
           )}
         </FormField>
       </div>
       <FormField
+        id="post-location-detail"
         label={t("post.specificLocation")}
         required
         error={locationDetailError}
         hint={t("post.specificLocationHint")}
       >
-        <div className="flex gap-2">
-          <Input
-            value={locationDetail}
-            onChange={(event) => onLocationDetailChange(event.target.value)}
-            placeholder={t("post.specificLocationPlaceholder")}
-            className="h-11 bg-background sm:h-10"
-            maxLength={marketplacePolicy.listing.maxLocationDetailLength}
-          />
-          <Button type="button" variant="outline" className="h-11 shrink-0 rounded-xl sm:h-10" onClick={useCurrentLocation} disabled={locating} aria-label={locating ? t("post.findingLocation") : t("post.useCurrentLocation")}>
-            <LocateFixed className="size-4" />
-            <span className="hidden sm:inline">{locating ? t("post.locating") : t("post.useLocation")}</span>
-          </Button>
-        </div>
+        {(control) => (
+          <div className="flex gap-2">
+            <Input
+              id={control.id}
+              value={locationDetail}
+              onChange={(event) => onLocationDetailChange(event.target.value)}
+              placeholder={t("post.specificLocationPlaceholder")}
+              className="h-11 bg-background sm:h-10"
+              maxLength={marketplacePolicy.listing.maxLocationDetailLength}
+              aria-describedby={control.describedBy}
+              aria-errormessage={control.errorId}
+              aria-invalid={control.invalid || undefined}
+            />
+            <Button type="button" variant="outline" className="h-11 shrink-0 rounded-xl sm:h-10" onClick={useCurrentLocation} disabled={locating} aria-label={locating ? t("post.findingLocation") : t("post.useCurrentLocation")}>
+              <LocateFixed className="size-4" />
+              <span className="hidden sm:inline">{locating ? t("post.locating") : t("post.useLocation")}</span>
+            </Button>
+          </div>
+        )}
       </FormField>
-      {locationError ? <p role="alert" className="text-sm text-destructive">{locationError}</p> : null}
+      {locationError ? <p role="alert" aria-live="assertive" className="text-sm text-destructive">{locationError}</p> : null}
     </div>
   )
 }
 
-function CountryField({ country, onChange }: { country: string; onChange: (code: string) => void }) {
+function CountryField({
+  country,
+  onChange,
+  id,
+  ariaDescribedBy,
+}: {
+  country: string
+  onChange: (code: string) => void
+  id: string
+  ariaDescribedBy?: string
+}) {
   const { t } = usePrefs()
   const inputRef = useRef<HTMLInputElement>(null)
   const [query, setQuery] = useState("")
@@ -124,6 +164,7 @@ function CountryField({ country, onChange }: { country: string; onChange: (code:
   const rest = filterCountries(moreCountries(), needle)
   const matches = [...featured, ...rest]
   const display = country ? countryName(country) : ""
+  const listId = `${id}-list`
 
   function pick(code: string) {
     onChange(code)
@@ -135,12 +176,14 @@ function CountryField({ country, onChange }: { country: string; onChange: (code:
   return (
     <div className="relative">
       <Input
+        id={id}
         ref={inputRef}
         value={open ? query : display}
         role="combobox"
         aria-expanded={open}
-        aria-controls="post-country-list"
+        aria-controls={listId}
         aria-autocomplete="list"
+        aria-describedby={ariaDescribedBy}
         placeholder={t("post.chooseCountry")}
         className="h-11 bg-background sm:h-10"
         onClick={() => setOpen(true)}
@@ -157,7 +200,7 @@ function CountryField({ country, onChange }: { country: string; onChange: (code:
         }}
       />
       {open ? (
-        <ul id="post-country-list" role="listbox" className="absolute z-30 mt-1 max-h-56 w-full overflow-auto rounded-xl border border-border bg-popover p-1 text-popover-foreground shadow-md">
+        <ul id={listId} role="listbox" className="absolute z-30 mt-1 max-h-56 w-full overflow-auto rounded-xl border border-border bg-popover p-1 text-popover-foreground shadow-md">
           {matches.length === 0 ? <li className="px-2 py-2 text-sm text-muted-foreground">{t("nav.noPlaceMatches")}</li> : (
             <>
               {featured.map((item) => <CountryOption key={item.code} item={item} selected={item.code === country} onPick={pick} />)}

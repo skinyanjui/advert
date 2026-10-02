@@ -56,6 +56,9 @@ export async function recordTermsAcceptance(
   }
   try {
     const status = await getTermsStatus(userId)
+    if (!status.publicationReady) {
+      return { ok: false, reason: "The published legal documents are not available for acceptance." }
+    }
     if (status.tableMissing) {
       return { ok: false, reason: "Legal acceptance records are temporarily unavailable." }
     }

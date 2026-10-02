@@ -21,7 +21,6 @@ export function ContactPhoneField({
 }: {
   value: string
   onChange: (value: string) => void
-  /** ISO country used only for the calling-code placeholder. */
   countryCode?: string | null
   error?: string
   required?: boolean
@@ -31,17 +30,21 @@ export function ContactPhoneField({
 }) {
   const callingCode = countryCode ? getCountry(countryCode)?.callingCode : undefined
   return (
-    <FormField label="Phone" required={required} error={error} hint={hint} htmlFor={id}>
-      <Input
-        id={id}
-        value={value}
-        inputMode="tel"
-        autoComplete="tel"
-        aria-invalid={Boolean(error)}
-        onChange={(event) => onChange(event.target.value)}
-        placeholder={contactPhonePlaceholder(callingCode)}
-        className={className ?? "h-11 bg-white sm:h-10"}
-      />
+    <FormField id={id} label="Phone" required={required} error={error} hint={hint}>
+      {(control) => (
+        <Input
+          id={control.id}
+          value={value}
+          inputMode="tel"
+          autoComplete="tel"
+          aria-invalid={control.invalid || undefined}
+          aria-describedby={control.describedBy}
+          aria-errormessage={control.errorId}
+          onChange={(event) => onChange(event.target.value)}
+          placeholder={contactPhonePlaceholder(callingCode)}
+          className={className ?? "h-11 bg-white sm:h-10"}
+        />
+      )}
     </FormField>
   )
 }

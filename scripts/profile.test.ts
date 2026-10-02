@@ -104,27 +104,26 @@ test("account page has no ProfileShortcuts hub", () => {
   assert.match(page, /from "@\/components\/empty-panel"/)
 })
 
-test("deleteAccount cleanup failure logs orphans and returns a plain message", () => {
+test("account deletion delegates to the durable deletion worker", () => {
   const store = readFileSync(new URL("../src/lib/profile-store.ts", import.meta.url), "utf8")
-  assert.match(store, /authDeleted/)
-  assert.match(store, /Account auth deleted but board cleanup incomplete/)
-  assert.match(store, /userId/)
-  assert.match(store, /listingIds/)
-  assert.match(store, /conversationIds/)
-  assert.match(
-    store,
-    /Your account was deleted, but some data couldn't be cleaned up\. We'll remove it\./,
-  )
-  assert.doesNotMatch(store, /userId=\$\{userId\}/)
+  const worker = readFileSync(new URL("../src/lib/account-deletion.ts", import.meta.url), "utf8")
+  const session = readFileSync(new URL("../src/lib/board-session.ts", import.meta.url), "utf8")
+  assert.match(store, /requestAccountDeletion\(userId\)/)
+  assert.doesNotMatch(store, /auth\.admin\.deleteUser/)
+  assert.ok(worker.indexOf('rpc("begin_board_account_deletion"') < worker.indexOf('rpc("cleanup_board_account_data"'))
+  assert.ok(worker.indexOf('storage\.from("listing-photos")'.replace("\\.", ".")) < worker.indexOf("auth.admin.deleteUser"))
+  assert.match(worker, /runAccountDeletionRetries/)
+  assert.match(session, /isAccountDeletionPending\(data\.user\.id\)/)
 })
 
-test("deleteAccount auth failure returns a plain message and logs the raw error", () => {
-  const store = readFileSync(new URL("../src/lib/profile-store.ts", import.meta.url), "utf8")
-  assert.match(store, /Could not delete auth user during account deletion/)
-  assert.match(store, /We couldn't delete your account\. Please try again\./)
-  assert.doesNotMatch(store, /reason: authError\.message/)
+test("account deletion migration supplies durable claims and write barriers", () => {
+  const sql = readFileSync(new URL("../database/migrations/20261002_audit_f06_f10_hardening.sql", import.meta.url), "utf8")
+  assert.match(sql, /claim_board_account_deletion/)
+  assert.match(sql, /for update skip locked/i)
+  assert.match(sql, /reject_board_write_for_deleting_account/)
+  assert.match(sql, /board_listings_deletion_barrier/)
+  assert.match(sql, /terms_acceptances_deletion_barrier/)
 })
-
 
 test("profile menu stays compact while preserving mobile touch ergonomics", () => {
   const menu = readFileSync(new URL("../src/components/profile-menu.tsx", import.meta.url), "utf8")

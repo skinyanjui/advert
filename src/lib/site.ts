@@ -25,7 +25,4 @@ export function siteEmailFrom(fallback = "onboarding@resend.dev"): string {
 export function siteSupportMailto(): string | undefined {
   return site.supportEmail ? `mailto:${site.supportEmail}` : undefined
 }
-
-/** Shared placeholder for Terms/Privacy while no public support address is set. */
-export const SUPPORT_CONTACT_PLACEHOLDER =
-  "Contact: [support address to be added]. Until then, use Report on any listing."
+\n\nexport function siteSupportHref(): string {\n  return siteSupportMailto() ?? "/contact#support-request"\n}\n

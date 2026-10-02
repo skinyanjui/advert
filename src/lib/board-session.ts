@@ -3,8 +3,7 @@ import "server-only"
 import { createHmac, randomUUID, timingSafeEqual } from "node:crypto"
 import { NextResponse } from "next/server"
 
-import { resolvePersistedRole, type PersistedAppRole } from "@/lib/rbac-store"
-import { createServerSupabase } from "@/lib/supabase/server"
+import { resolvePersistedRole, type PersistedAppRole } from "@/lib/rbac-store"\nimport { isAccountDeletionPending } from "@/lib/account-deletion"\nimport { createServerSupabase } from "@/lib/supabase/server"
 
 const cookieName = "board_session"
 const uuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i
@@ -59,6 +58,7 @@ async function authOwner(): Promise<BoardOwner | undefined> {
     const supabase = await createServerSupabase()
     const { data, error } = await supabase.auth.getUser()
     if (error || !data.user) return undefined
+    if (await isAccountDeletionPending(data.user.id)) return undefined
     const email = data.user.email ?? undefined
     const role = await resolvePersistedRole(data.user.id, email)
     return { id: data.user.id, kind: "auth", email, role }

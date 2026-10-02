@@ -1,7 +1,7 @@
 "use client"
 
 import Link from "next/link"
-import { useMemo } from "react"
+import { useEffect, useMemo, useState } from "react"
 
 import { usePrefs } from "@/components/prefs-provider"
 import { BoardCitySearch } from "@/components/board-place"
@@ -12,10 +12,11 @@ import { postAdHref } from "@/lib/active-place"
 import { useFeaturedClock } from "@/hooks/use-featured"
 import { isFeatured } from "@/lib/promotions"
 import { matchesQuery, sortListings } from "@/lib/board"
+import { cleanListing } from "@/lib/board-payload"
+import { seedListings } from "@/lib/catalog"
 import { isPubliclyVisibleListing } from "@/lib/listing-status"
 import { useHomePlace } from "@/lib/home-place"
 import { resolvePlace } from "@/lib/cities"
-import { useMarketplace } from "@/lib/marketplace"
 import { countryName, fold, getCountry } from "@/lib/countries"
 import { type Listing } from "@/lib/types"
 import { findSubcategory } from "@/lib/posting"
@@ -23,53 +24,116 @@ import { boardSearch, useListingQuery } from "@/lib/use-listing-query"
 
 export function Browse() {
   const { t } = usePrefs()
-  const { listings } = useMarketplace()
-  const featuredNow = useFeaturedClock(listings)
   const { query, update, clear } = useListingQuery()
   const home = useHomePlace()
+  const [remoteListings, setRemoteListings] = useState<Listing[]>([])
+  const [nextCursor, setNextCursor] = useState<string | null>(null)
+  const [loading, setLoading] = useState(true)
+  const [loadingMore, setLoadingMore] = useState(false)
+  const [error, setError] = useState("")
+  const [retry, setRetry] = useState(0)
 
-  const inCountry = useMemo(
-    () =>
-      listings.filter(
-        (listing) =>
-          isPubliclyVisibleListing(listing) &&
-          (!query.country || listing.country === query.country) &&
-          matchesQuery(listing, query.q),
-      ),
-    [listings, query.country, query.q],
+  const filterKey = JSON.stringify({
+    q: query.q,
+    country: query.country,
+    city: query.city,
+    category: query.category,
+    type: query.type,
+  })
+
+  useEffect(() => {
+    const controller = new AbortController()
+    const params = listingSearchParams(query)
+    setLoading(true)
+    setError("")
+    void (async () => {
+      try {
+        const response = await fetch(`/api/listings?${params}`, { cache: "no-store", signal: controller.signal })
+        const payload = (await response.json()) as { ok?: boolean; listings?: unknown[]; nextCursor?: string | null; reason?: string }
+        if (!response.ok || !payload.ok) throw new Error(payload.reason ?? "Could not load listings.")
+        const listings = (payload.listings ?? []).flatMap((item) => {
+          const listing = cleanListing(item)
+          return listing ? [listing] : []
+        })
+        setRemoteListings(listings)
+        setNextCursor(typeof payload.nextCursor === "string" ? payload.nextCursor : null)
+      } catch (cause) {
+        if (controller.signal.aborted) return
+        setRemoteListings([])
+        setNextCursor(null)
+        setError(cause instanceof Error ? cause.message : "Could not load listings.")
+      } finally {
+        if (!controller.signal.aborted) setLoading(false)
+      }
+    })()
+    return () => controller.abort()
+  }, [filterKey, retry])
+
+  async function loadMore() {
+    if (!nextCursor || loadingMore) return
+    setLoadingMore(true)
+    setError("")
+    try {
+      const params = listingSearchParams(query)
+      params.set("cursor", nextCursor)
+      const response = await fetch(`/api/listings?${params}`, { cache: "no-store" })
+      const payload = (await response.json()) as { ok?: boolean; listings?: unknown[]; nextCursor?: string | null; reason?: string }
+      if (!response.ok || !payload.ok) throw new Error(payload.reason ?? "Could not load more listings.")
+      const incoming = (payload.listings ?? []).flatMap((item) => {
+        const listing = cleanListing(item)
+        return listing ? [listing] : []
+      })
+      setRemoteListings((current) => {
+        const map = new Map(current.map((listing) => [listing.id, listing]))
+        for (const listing of incoming) map.set(listing.id, listing)
+        return [...map.values()]
+      })
+      setNextCursor(typeof payload.nextCursor === "string" ? payload.nextCursor : null)
+    } catch (cause) {
+      setError(cause instanceof Error ? cause.message : "Could not load more listings.")
+    } finally {
+      setLoadingMore(false)
+    }
+  }
+
+  const samples = useMemo(
+    () => seedListings.filter((listing) =>
+      (!query.country || listing.country === query.country) &&
+      (!query.city || fold(listing.city) === fold(query.city)) &&
+      (!query.category || listing.category === query.category) &&
+      (!query.type || listing.subcategory === query.type) &&
+      matchesQuery(listing, query.q),
+    ),
+    [query.country, query.city, query.category, query.type, query.q],
   )
 
-  const cityOptions = useMemo(() => {
-    if (!query.country) return []
-    const pool = inCountry.filter((listing) => {
-      if (query.category && listing.category !== query.category) return false
-      if (query.type && listing.subcategory !== query.type) return false
-      return true
-    })
-    return citiesIn(pool)
-  }, [inCountry, query.category, query.country, query.type])
+  const loaded = useMemo(() => {
+    const map = new Map<string, Listing>()
+    for (const listing of remoteListings) map.set(listing.id, listing)
+    for (const listing of samples) if (!map.has(listing.id)) map.set(listing.id, listing)
+    return [...map.values()]
+  }, [remoteListings, samples])
 
-  const inCity = useMemo(() => {
-    if (!query.city) return inCountry
-    const needle = fold(query.city)
-    return inCountry.filter((listing) => fold(listing.city) === needle)
-  }, [inCountry, query.city])
-
+  const featuredNow = useFeaturedClock(loaded)
+  const cityOptions = useMemo(() => query.country ? citiesIn(loaded) : [], [loaded, query.country])
   const visible = useMemo(() => {
-    const inCategory = query.category
-      ? inCity.filter((listing) => listing.category === query.category)
-      : inCity
-    const filtered = query.type ? inCategory.filter((listing) => listing.subcategory === query.type) : inCategory
     const preferred = getCountry(query.country ?? "")?.currencies[0]?.code ?? "USD"
-    return sortListings(filtered, query.sort, preferred, query.q, homeOrigin(home, query.country), featuredNow)
-  }, [home, inCity, query.category, query.country, query.q, query.sort, query.type, featuredNow])
+    return sortListings(
+      loaded.filter(isPubliclyVisibleListing),
+      query.sort,
+      preferred,
+      query.q,
+      homeOrigin(home, query.country),
+      featuredNow,
+    )
+  }, [featuredNow, home, loaded, query.country, query.q, query.sort])
 
   const typeName = query.category && query.type ? findSubcategory(query.category, query.type)?.name : undefined
-
   const cityLabel = query.city
     ? (cityOptions.find((city) => fold(city.name) === fold(query.city ?? ""))?.name ?? query.city)
     : undefined
   const preserve = boardSearch(query)
+
   return (
     <div className="w-full">
       <section className="min-w-0 px-2.5 pt-2.5 pb-24 sm:px-3 sm:pt-3 md:px-4 md:pb-16">
@@ -83,10 +147,23 @@ export function Browse() {
             />
           </div>
         ) : null}
-        {query.sort === "relevant" && visible.some(listing => isFeatured(listing, featuredNow)) ? (
+
+        {query.sort === "relevant" && visible.some((listing) => isFeatured(listing, featuredNow)) ? (
           <p className="mb-3 text-xs text-muted-foreground">{t("promotion.browseDisclosure")}</p>
         ) : null}
-        {visible.length === 0 ? (
+
+        {loading ? (
+          <div role="status" className="rounded-xl border border-border px-4 py-10 text-center text-sm text-muted-foreground">
+            Loading listings…
+          </div>
+        ) : error && visible.length === 0 ? (
+          <div role="alert" className="rounded-xl border border-border px-4 py-10 text-center">
+            <p className="text-sm text-muted-foreground">{error}</p>
+            <Button type="button" variant="outline" className="mt-4 rounded-full" onClick={() => setRetry((value) => value + 1)}>
+              Try again
+            </Button>
+          </div>
+        ) : visible.length === 0 ? (
           <EmptyResults
             country={query.country}
             city={cityLabel}
@@ -100,19 +177,35 @@ export function Browse() {
             }}
           />
         ) : (
-          <div className={listingGridClassName}>
-            {visible.map((listing) => (
-              <ListingCard
-                key={listing.id}
-                listing={listing}
-                preserve={preserve}
-              />
-            ))}
-          </div>
+          <>
+            <div className={listingGridClassName}>
+              {visible.map((listing) => (
+                <ListingCard key={listing.id} listing={listing} preserve={preserve} />
+              ))}
+            </div>
+            {error ? <p role="alert" className="mt-4 text-sm text-destructive">{error}</p> : null}
+            {nextCursor ? (
+              <div className="mt-6 flex justify-center">
+                <Button type="button" variant="outline" className="rounded-full" disabled={loadingMore} onClick={() => void loadMore()}>
+                  {loadingMore ? "Loading…" : "Load more"}
+                </Button>
+              </div>
+            ) : null}
+          </>
         )}
       </section>
     </div>
   )
+}
+
+function listingSearchParams(query: ReturnType<typeof useListingQuery>["query"]): URLSearchParams {
+  const params = new URLSearchParams()
+  if (query.q.trim()) params.set("q", query.q.trim())
+  if (query.country) params.set("country", query.country)
+  if (query.city) params.set("city", query.city)
+  if (query.category) params.set("category", query.category)
+  if (query.type) params.set("type", query.type)
+  return params
 }
 
 function EmptyResults({

@@ -11,7 +11,7 @@ import {
   TERMS_VERSION,
   isTermsAcceptanceContext,
 } from "../src/lib/legal"
-import { site, siteSupportMailto, SUPPORT_CONTACT_PLACEHOLDER } from "../src/lib/site"
+import { site, siteSupportHref, siteSupportMailto } from "../src/lib/site"
 
 test("legal versions and effective date are set", () => {
   assert.ok(TERMS_VERSION.length > 0)
@@ -38,11 +38,24 @@ test("terms outdated message matches the product copy", () => {
   assert.equal(TERMS_OUTDATED_MESSAGE, "Accept the updated Terms to continue.")
 })
 
-test("support contact is unset until a public address is configured", () => {
+test("support always has a public intake even without a configured mailbox", () => {
   assert.equal(site.supportEmail, undefined)
   assert.equal(siteSupportMailto(), undefined)
-  assert.match(SUPPORT_CONTACT_PLACEHOLDER, /support address to be added/i)
-  assert.match(SUPPORT_CONTACT_PLACEHOLDER, /Report on any listing/i)
+  assert.equal(siteSupportHref(), "/contact#support-request")
+  const contact = readFileSync(new URL("../src/app/contact/page.tsx", import.meta.url), "utf8")
+  assert.match(contact, /SupportRequestForm/)
+  assert.doesNotMatch(contact, /support unavailable/i)
+})
+
+test("legal acceptance fails closed until reviewed publication details are configured", () => {
+  const config = readFileSync(new URL("../src/lib/legal-config.ts", import.meta.url), "utf8")
+  const gate = readFileSync(new URL("../src/lib/terms-gate.ts", import.meta.url), "utf8")
+  const terms = readFileSync(new URL("../src/app/terms/page.tsx", import.meta.url), "utf8")
+  assert.match(config, /LEGAL_DOCUMENTS_APPROVED/)
+  assert.match(config, /LEGAL_GOVERNING_LAW/)
+  assert.match(config, /LEGAL_VENUE/)
+  assert.match(gate, /publicationReady/)
+  assert.doesNotMatch(terms, /\[PLACEHOLDER|LAWYER TO CONFIRM|DRAFT/)
 })
 
 test("terms acceptance migration is append-only with RLS and no public grants", () => {

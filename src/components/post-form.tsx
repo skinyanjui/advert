@@ -12,7 +12,7 @@ import { PostingLocationFields } from "@/components/posting/location-fields"
 import { PostPhotoGallery } from "@/components/posting/photo-gallery"
 import { ContactPhoneField } from "@/components/contact-phone-field"
 import { EmptyPanel } from "@/components/empty-panel"
-import { FormField } from "@/components/form-field"
+import { FormField, type FormFieldControl } from "@/components/form-field"
 import { ListingCard } from "@/components/listing-card"
 import { ListingPrice } from "@/components/listing-price"
 import { usePrefs } from "@/components/prefs-provider"
@@ -136,7 +136,7 @@ function AdForm({ existing }: { existing: Listing | null }) {
   const [defaultsReady, setDefaultsReady] = useState(Boolean(existing))
   const locationTouched = useRef(false)
   const restoredDraft = useRef(false)
-  const omittedPhotosToastShown = useRef(false)
+  const omittedPhotosToastShown = useRef(false)\n  const errorSummaryRef = useRef<HTMLDivElement>(null)
 
   useEffect(() => {
     if (existing || !auth.ready) return
@@ -481,7 +481,8 @@ function AdForm({ existing }: { existing: Listing | null }) {
   function showErrors(next: FieldErrors) {
     setErrors(next)
     requestAnimationFrame(() => {
-      document.querySelector("[data-field-error]")?.scrollIntoView({ block: "center", behavior: "smooth" })
+      errorSummaryRef.current?.focus()
+      errorSummaryRef.current?.scrollIntoView({ block: "center", behavior: "smooth" })
     })
   }
 
@@ -635,6 +636,7 @@ function AdForm({ existing }: { existing: Listing | null }) {
   const summaryLine = [choiceLine, placeLine].filter(Boolean).join(" · ")
   const needsSignIn = auth.ready && auth.configured && !auth.signedIn
   const showForm = !needsSignIn || draftUnlocked || Boolean(existing)
+  const errorEntries = Object.entries(errors).filter((entry): entry is [string, string] => Boolean(entry[1]))
 
   if (needsSignIn && !showForm) {
     return (
@@ -722,13 +724,37 @@ function AdForm({ existing }: { existing: Listing | null }) {
             else void submit()
           }}
         >
+          {errorEntries.length > 0 ? (
+            <div
+              ref={errorSummaryRef}
+              id="post-error-summary"
+              role="alert"
+              aria-live="assertive"
+              tabIndex={-1}
+              className="rounded-xl border border-destructive/30 bg-destructive/5 px-3 py-3 text-sm text-destructive outline-none focus-visible:ring-2 focus-visible:ring-ring"
+            >
+              <p className="font-medium">Check the highlighted fields.</p>
+              <ul className="mt-1 list-disc space-y-1 pl-5">
+                {errorEntries.map(([key, message]) => {
+                  const target = postErrorTarget(key)
+                  return (
+                    <li key={key}>
+                      {target ? (
+                        <a className="underline underline-offset-2" href={`#${target}`}>{message}</a>
+                      ) : message}
+                    </li>
+                  )
+                })}
+              </ul>
+            </div>
+          ) : null}
           {step === 0 ? (
-            <div className="grid gap-3">
+            <fieldset id="post-category" className="grid gap-3">
               <div>
-                <h2 className="text-base font-medium">What are you listing?</h2>
+                <legend className="text-base font-medium">What are you listing?</legend>
                 <p className="text-sm text-neutral-500">Choose a category. The type comes next.</p>
               </div>
-              <div aria-label="Category" className="grid grid-cols-2 gap-2 sm:grid-cols-3">
+              <div className="grid grid-cols-2 gap-2 sm:grid-cols-3">
                 {postingPlans().map((item) => {
                   const Icon = categoryIcons[item.id]
                   const selected = category === item.id
@@ -760,16 +786,16 @@ function AdForm({ existing }: { existing: Listing | null }) {
                     )
                 })}
               </div>
-            </div>
+            </fieldset>
           ) : null}
 
           {step === 1 && plan && category ? (
-            <section className="grid gap-3">
+            <fieldset id="post-type" className="grid gap-3">
               <div>
-                <h2 className="text-base font-medium">{categoryName(category)}</h2>
+                <legend className="text-base font-medium">{categoryName(category)}</legend>
                 <p className="text-sm text-muted-foreground">{plan.prompt}</p>
               </div>
-              <div aria-label={plan.prompt} className="grid gap-2">
+              <div className="grid gap-2">
                 {plan.subcategories.map((item) => {
                   const selected = subcategoryId === item.id
                   return (
@@ -802,7 +828,7 @@ function AdForm({ existing }: { existing: Listing | null }) {
                   )
                 })}
               </div>
-            </section>
+            </fieldset>
           ) : null}
 
           {step === 2 && plan && subcategory ? (
@@ -811,6 +837,12 @@ function AdForm({ existing }: { existing: Listing | null }) {
                 <h2 className="text-base font-medium">{plan.detailHeading}</h2>
                 <p className="mt-1 text-sm text-neutral-500">{plan.intro}</p>
               </div>
+              <div
+                id="post-photos"
+                tabIndex={errors.image ? -1 : undefined}
+                aria-describedby={errors.image ? "post-photos-error" : "post-photos-hint"}
+                aria-invalid={errors.image ? true : undefined}
+              >
               <PostPhotoGallery
                 photos={photos}
                 invalid={Boolean(errors.image)}
@@ -836,25 +868,29 @@ function AdForm({ existing }: { existing: Listing | null }) {
                   })
                 }
               />
-              <p className="-mt-3 text-xs text-neutral-500">
+              <p id="post-photos-hint" className="mt-2 text-xs text-neutral-500">
                 {plan.photoHint} Up to {maxListingPhotos} photos. Phone photos are optimized and metadata is removed before saving. The first photo is the cover.
               </p>
               {errors.image ? (
-                <span data-field-error className="-mt-3 text-xs text-destructive">
+                <span id="post-photos-error" role="alert" data-field-error className="mt-1 block text-xs text-destructive">
                   {errors.image}
                 </span>
               ) : null}
-              <Field label="Title" required error={errors.title}>
-                <Input
+              </div>
+              <Field id="post-title" label="Title" required error={errors.title}>
+                {(control) => <Input
+                  id={control.id}
                   value={title}
-                  aria-invalid={Boolean(errors.title)}
+                  aria-invalid={control.invalid || undefined}
+                  aria-describedby={control.describedBy}
+                  aria-errormessage={control.errorId}
                   onChange={(event) => {
                     setTitle(event.target.value)
                     setErrors((current) => ({ ...current, title: undefined }))
                   }}
                   placeholder={subcategory.titlePlaceholder}
                   className="h-10 bg-white"
-                />
+                />}
               </Field>
               {suggestListingTitle({ category, subcategory, details, city }) &&
               suggestListingTitle({ category, subcategory, details, city }) !== title.trim() ? (
@@ -930,21 +966,28 @@ function AdForm({ existing }: { existing: Listing | null }) {
               </div>
 
               <div className="grid gap-5 sm:grid-cols-2">
-                <Field label={`${subcategory.priceLabel} (${currency})`} required error={errors.price}>
-                  <Input
+                <Field id="post-price" label={`${subcategory.priceLabel} (${currency})`} required error={errors.price}>
+                  {(control) => <Input
+                    id={control.id}
                     inputMode="numeric"
                     value={price}
-                    aria-invalid={Boolean(errors.price)}
+                    aria-invalid={control.invalid || undefined}
+                    aria-describedby={control.describedBy}
+                    aria-errormessage={control.errorId}
                     onChange={(event) => {
                       setPrice(event.target.value)
                       setErrors((current) => ({ ...current, price: undefined }))
                     }}
                     placeholder={subcategory.pricePlaceholder}
                     className="h-10 bg-white"
-                  />
+                  />}
                 </Field>
-                <Field label="Currency" error={errors.currency}>
-                  <ChoiceRow
+                <Field id="post-currency" label="Currency" error={errors.currency} group>
+                  {(control) => <ChoiceRow
+                    id={control.id}
+                    labelledBy={control.labelId}
+                    describedBy={control.describedBy}
+                    invalid={control.invalid}
                     value={currency}
                     options={currencies.map((code) => ({
                       id: code,
@@ -955,18 +998,22 @@ function AdForm({ existing }: { existing: Listing | null }) {
                       if (currencies.includes(code)) setCurrency(code)
                       setErrors((current) => ({ ...current, currency: undefined }))
                     }}
-                  />
+                  />}
                 </Field>
               </div>
               {subcategory.periods.length > 1 ? (
-                <Field label="Charged" error={errors.priceSuffix}>
-                  <ChoiceRow
+                <Field id="post-price-period" label="Charged" error={errors.priceSuffix} group>
+                  {(control) => <ChoiceRow
+                    id={control.id}
+                    labelledBy={control.labelId}
+                    describedBy={control.describedBy}
+                    invalid={control.invalid}
                     value={activePeriod}
                     options={subcategory.periods.map((id) => ({ id, label: pricePeriod(id).label }))}
                     onChange={(id) => {
                       if (isPricePeriodId(id) && subcategory.periods.includes(id)) setPeriod(id)
                     }}
-                  />
+                  />}
                 </Field>
               ) : null}
               <div className="grid gap-5 sm:grid-cols-2">
@@ -993,8 +1040,9 @@ function AdForm({ existing }: { existing: Listing | null }) {
                       : "border-neutral-200 bg-neutral-50 text-neutral-700",
                   )}
                   data-field-error={errors.fairAccess ? true : undefined}
+                  aria-invalid={errors.fairAccess ? true : undefined}
                 >
-                  <p className="font-medium text-neutral-900">{t("post.fairAccessTitle")}</p>
+                  <p id="post-fair-access-label" className="font-medium text-neutral-900">{t("post.fairAccessTitle")}</p>
                   <p className="mt-1 leading-5">
                     {category === "property"
                       ? t("post.fairAccessHousing")
@@ -1002,18 +1050,22 @@ function AdForm({ existing }: { existing: Listing | null }) {
                   </p>
                   <label className="mt-3 flex items-start gap-2">
                     <input
+                      id="post-fair-access"
                       type="checkbox"
                       className="mt-0.5 size-4 shrink-0 rounded border-neutral-300"
                       checked={fairAccessAttested}
+                      aria-labelledby="post-fair-access-label post-fair-access-confirm"
+                      aria-describedby={errors.fairAccess ? "post-fair-access-error" : undefined}
+                      aria-invalid={errors.fairAccess ? true : undefined}
                       onChange={(event) => {
                         setFairAccessAttested(event.target.checked)
                         setErrors((current) => ({ ...current, fairAccess: undefined }))
                       }}
                     />
-                    <span>{t("post.fairAccessConfirm")}</span>
+                    <span id="post-fair-access-confirm">{t("post.fairAccessConfirm")}</span>
                   </label>
                   {errors.fairAccess ? (
-                    <p className="mt-2 text-xs">{t("post.fairAccessRequired")}</p>
+                    <p id="post-fair-access-error" role="alert" className="mt-2 text-xs">{t("post.fairAccessRequired")}</p>
                   ) : null}
                 </div>
               ) : null}
@@ -1027,14 +1079,18 @@ function AdForm({ existing }: { existing: Listing | null }) {
                 </ul>
               </div>
               <Field
+                id="post-description"
                 label={plan.descriptionLabel}
                 required
                 error={errors.description}
                 hint={descriptionHint(description)}
               >
-                <Textarea
+                {(control) => <Textarea
+                  id={control.id}
                   value={description}
-                  aria-invalid={Boolean(errors.description)}
+                  aria-invalid={control.invalid || undefined}
+                  aria-describedby={control.describedBy}
+                  aria-errormessage={control.errorId}
                   onChange={(event) => {
                     setDescription(event.target.value)
                     setErrors((current) => ({ ...current, description: undefined }))
@@ -1042,7 +1098,7 @@ function AdForm({ existing }: { existing: Listing | null }) {
                   rows={5}
                   placeholder={subcategory.descriptionPlaceholder ?? plan.descriptionPlaceholder}
                   className="bg-white"
-                />
+                />}
               </Field>
             </section>
           ) : null}
@@ -1125,12 +1181,6 @@ function AdForm({ existing }: { existing: Listing | null }) {
             </section>
           ) : null}
 
-          {errors.form ? (
-            <p data-field-error className="text-sm text-destructive">
-              {errors.form}
-            </p>
-          ) : null}
-
           <div className="fixed inset-x-0 bottom-0 z-[45] flex flex-col gap-2 border-t border-neutral-200 bg-background/95 px-4 py-3 backdrop-blur md:static md:inset-auto md:z-auto md:border-0 md:bg-transparent md:px-0 md:py-0 md:backdrop-blur-none">
             <div className="flex items-center gap-3">
             {step === 0 ? (
@@ -1173,16 +1223,28 @@ function AdForm({ existing }: { existing: Listing | null }) {
 }
 
 function ChoiceRow({
+  id,
+  labelledBy,
+  describedBy,
+  invalid,
   value,
   options,
   onChange,
 }: {
+  id?: string
+  labelledBy?: string
+  describedBy?: string
+  invalid?: boolean
   value: string
   options: readonly { id: string; label: string; title?: string }[]
   onChange: (id: string) => void
 }) {
   return (
     <ToggleGroup
+      id={id}
+      aria-labelledby={labelledBy}
+      aria-describedby={describedBy}
+      aria-invalid={invalid || undefined}
       type="single"
       value={value}
       variant="outline"
@@ -1221,24 +1283,31 @@ function DetailControl({
   switch (field.kind) {
     case "select":
       return (
-        <Field label={field.label} required={field.required} error={error}>
-          <ChoiceRow
+        <Field id={`post-detail-${field.id}`} label={field.label} required={field.required} error={error} group>
+          {(control) => <ChoiceRow
+            id={control.id}
+            labelledBy={control.labelId}
+            describedBy={control.describedBy}
+            invalid={control.invalid}
             value={normalizeDetailFieldValue(field, value) ?? ""}
             options={detailFieldOptions(field)}
             onChange={onChange}
-          />
+          />}
         </Field>
       )
     case "text":
       return (
-        <Field label={field.label} required={field.required} error={error} hint={field.hint}>
-          <Input
+        <Field id={`post-detail-${field.id}`} label={field.label} required={field.required} error={error} hint={field.hint}>
+          {(control) => <Input
+            id={control.id}
             value={value}
-            aria-invalid={Boolean(error)}
+            aria-invalid={control.invalid || undefined}
+            aria-describedby={control.describedBy}
+            aria-errormessage={control.errorId}
             onChange={(event) => onChange(event.target.value)}
             placeholder={field.placeholder}
             className="h-10 bg-white"
-          />
+          />}
         </Field>
       )
     default: {
@@ -1314,21 +1383,40 @@ function descriptionHint(value: string): string {
   return `${count} / 20 characters`
 }
 
+function postErrorTarget(key: string): string | undefined {
+  if (key === "form") return "post-error-summary"
+  if (key === "image") return "post-photos"
+  if (key === "title") return "post-title"
+  if (key === "price") return "post-price"
+  if (key === "currency") return "post-currency"
+  if (key === "priceSuffix") return "post-price-period"
+  if (key === "city") return "post-city"
+  if (key === "locationDetail") return "post-location-detail"
+  if (key === "description") return "post-description"
+  if (key === "phone") return "listing-phone"
+  if (key === "fairAccess") return "post-fair-access"
+  return `post-detail-${key}`
+}
+
 function Field({
+  id,
   label,
   error,
   required,
   hint,
+  group,
   children,
 }: {
+  id?: string
   label: string
   error?: string
   required?: boolean
   hint?: string
-  children: ReactNode
+  group?: boolean
+  children: ReactNode | ((control: FormFieldControl) => ReactNode)
 }) {
   return (
-    <FormField label={label} error={error} required={required} hint={hint}>
+    <FormField id={id} label={label} error={error} required={required} hint={hint} group={group}>
       {children}
     </FormField>
   )

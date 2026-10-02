@@ -2,7 +2,6 @@ import "server-only"
 import { readSellerProfileRows } from "@/lib/board-inventory"
 
 import { boardDb } from "@/lib/board-db"
-import { cleanListing } from "@/lib/board-payload"
 import {
   acceptAvatarUrlUpdate,
   normalizeProfileUpdate,
@@ -11,20 +10,11 @@ import {
   type ProfileUpdateInput,
 } from "@/lib/profile"
 import type { Listing } from "@/lib/types"
+import { requestAccountDeletion } from "@/lib/account-deletion"
 
 type Result<T> = { ok: true; value: T } | { ok: false; reason: string }
 
-export type DeleteAccountResult =
-  | { ok: true; value: true }
-  | { ok: false; reason: string; authDeleted?: boolean }
-
-type CleanupIssue = {
-  step: string
-  message: string
-  ids?: string[]
-}
-
-export type ProfilePublic = {
+export type DeleteAccountResult =\n  | { ok: true; value: { completed: boolean } }\n  | { ok: false; reason: string }\n\nexport type ProfilePublic = {
   displayName: string | null
   avatarUrl: string | null
   createdAt: string | null
@@ -67,14 +57,6 @@ function unpackProfile(row: ProfileRow): BoardProfile {
 
 function avatarStoragePath(image: string) {
   const marker = "/storage/v1/object/public/avatars/"
-  const index = image.indexOf(marker)
-  if (index < 0) return undefined
-  const path = image.slice(index + marker.length)
-  return /^[0-9a-f-]{36}\/[0-9a-f-]{36}\.(jpg|png|webp)$/i.test(path) ? path : undefined
-}
-
-function listingPhotoPath(image: string) {
-  const marker = "/storage/v1/object/public/listing-photos/"
   const index = image.indexOf(marker)
   if (index < 0) return undefined
   const path = image.slice(index + marker.length)
@@ -243,168 +225,16 @@ export async function updateProfile(
   return { ok: true, value: profile }
 }
 
-async function removeListingPhotos(listing: Listing): Promise<string | null> {
-  const images =
-    Array.isArray(listing.images) && listing.images.length > 0
-      ? listing.images
-      : listing.image
-        ? [listing.image]
-        : []
-  const db = boardDb()
-  for (const image of images) {
-    const path = listingPhotoPath(image)
-    if (!path) continue
-    const { error } = await db.storage.from("listing-photos").remove([path])
-    if (error) {
-      console.error("Could not remove listing photo", error)
-      return error.message
-    }
-  }
-  return null
-}
-
 /**
- * Delete the account and owned board data.
- * Auth user is removed first so a failed auth delete leaves the account intact.
- * board_profiles and board_session_claims cascade from auth.users; listings,
- * saves, messages, and conversations have no FK and are cleaned up after.
- * Cleanup failures after auth delete return identifiers so orphans can be found.
+ * Tombstone the account before cleanup and hand destructive work to the durable,
+ * idempotent deletion worker. A pending tombstone blocks authenticated access.
  */
 export async function deleteAccount(userId: string): Promise<DeleteAccountResult> {
-  const db = boardDb()
-
-  const { data: profileRow, error: profileReadError } = await db
-    .from("board_profiles")
-    .select("avatar_url")
-    .eq("user_id", userId)
-    .maybeSingle()
-  check(profileReadError)
-  const avatar =
-    typeof profileRow?.avatar_url === "string" ? profileRow.avatar_url : null
-
-  const { data: listings, error: listingsError } = await db
-    .from("board_listings")
-    .select("id,payload")
-    .eq("owner_id", userId)
-  check(listingsError)
-  const listingIds = (listings ?? []).map((row) => row.id as string)
-
-  const { data: conversations, error: conversationsError } = await db
-    .from("board_conversations")
-    .select("id")
-    .or(`buyer_id.eq.${userId},listing_owner_id.eq.${userId}`)
-  check(conversationsError)
-  const conversationIds = (conversations ?? []).map((row) => row.id as string)
-
-  const { error: authError } = await db.auth.admin.deleteUser(userId)
-  if (authError) {
-    console.error("Could not delete auth user during account deletion", { userId, error: authError })
-    return { ok: false, reason: "We couldn't delete your account. Please try again." }
+  try {
+    const result = await requestAccountDeletion(userId)
+    return { ok: true, value: { completed: result.completed } }
+  } catch (error) {
+    console.error("Could not create durable account deletion request", { userId, error })
+    return { ok: false, reason: "We couldn't start account deletion. Please try again." }
   }
-
-  const issues: CleanupIssue[] = []
-  const { error: noticesError } = await db.from("board_promotion_notifications").delete().eq("owner_id", userId)
-  if (noticesError && !["42P01", "PGRST205"].includes(noticesError.code)) {
-    issues.push({ step: "promotion_notifications", message: noticesError.message, ids: [userId] })
-  }
-
-  for (const row of listings ?? []) {
-    const listingId = row.id as string
-    const listing = cleanListing(row.payload)
-    if (listing) {
-      const photoError = await removeListingPhotos(listing)
-      if (photoError) {
-        issues.push({ step: "listing_photos", message: photoError, ids: [listingId] })
-      }
-    }
-    const { error: saveError } = await db.from("board_saves").delete().eq("listing_id", listingId)
-    if (saveError) {
-      issues.push({ step: "listing_saves", message: saveError.message, ids: [listingId] })
-    }
-  }
-
-  const { error: deleteListingsError } = await db.from("board_listings").delete().eq("owner_id", userId)
-  if (deleteListingsError) {
-    issues.push({ step: "board_listings", message: deleteListingsError.message, ids: listingIds })
-  }
-
-  const { error: savesError } = await db.from("board_saves").delete().eq("owner_id", userId)
-  if (savesError) {
-    issues.push({ step: "board_saves", message: savesError.message, ids: [userId] })
-  }
-
-  const { error: legacyMessagesError } = await db.from("board_messages").delete().eq("owner_id", userId)
-  if (legacyMessagesError) {
-    issues.push({ step: "board_messages", message: legacyMessagesError.message, ids: [userId] })
-  }
-
-  const { error: reportsError } = await db.from("board_reports").delete().eq("reporter_id", userId)
-  if (reportsError) {
-    issues.push({ step: "board_reports", message: reportsError.message, ids: [userId] })
-  }
-
-  const { error: reviewedByError } = await db
-    .from("board_reports")
-    .update({ reviewed_by: null })
-    .eq("reviewed_by", userId)
-  if (reviewedByError) {
-    issues.push({ step: "board_reports_reviewed_by", message: reviewedByError.message, ids: [userId] })
-  }
-
-  const { error: contactEventsError } = await db
-    .from("board_contact_events")
-    .delete()
-    .eq("actor_id", userId)
-    .eq("actor_kind", "auth")
-  if (contactEventsError) {
-    issues.push({ step: "board_contact_events", message: contactEventsError.message, ids: [userId] })
-  }
-
-  const { error: whatsappConsentsError } = await db
-    .from("board_whatsapp_consents")
-    .delete()
-    .or(`buyer_id.eq.${userId},seller_id.eq.${userId}`)
-  if (whatsappConsentsError) {
-    issues.push({ step: "board_whatsapp_consents", message: whatsappConsentsError.message, ids: [userId] })
-  }
-
-  if (conversationIds.length > 0) {
-    const { error: deleteConversationsError } = await db
-      .from("board_conversations")
-      .delete()
-      .in("id", conversationIds)
-    if (deleteConversationsError) {
-      issues.push({
-        step: "board_conversations",
-        message: deleteConversationsError.message,
-        ids: conversationIds,
-      })
-    }
-  }
-
-  const avatarPath = avatar ? ownedAvatarPath(avatar, userId) : undefined
-  if (avatar && avatarPath) {
-    const avatarError = await removeAvatar(avatar)
-    if (avatarError) {
-      issues.push({ step: "avatar", message: avatarError, ids: [avatarPath] })
-    }
-  }
-
-  if (issues.length > 0) {
-    const orphan = {
-      userId,
-      listingIds,
-      conversationIds,
-      avatarPath: avatarPath ?? null,
-      issues,
-    }
-    console.error("Account auth deleted but board cleanup incomplete", orphan)
-    return {
-      ok: false,
-      authDeleted: true,
-      reason: "Your account was deleted, but some data couldn't be cleaned up. We'll remove it.",
-    }
-  }
-
-  return { ok: true, value: true }
 }
