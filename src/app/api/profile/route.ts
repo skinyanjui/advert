@@ -1,5 +1,3 @@
-import { NextResponse } from "next/server"
-
 import { canOwner } from "@/lib/access-control"
 import { fail, ok } from "@/lib/api"
 import { resolveMutationOwner, resolveOwner } from "@/lib/board-session"
@@ -48,14 +46,12 @@ export async function DELETE(request: Request) {
     const parsed = await readApiInput(request, accountDeletionSchema)
     if (!parsed.ok) return fail(parsed.reason)
     const result = await deleteAccount(owner.id)
-    if (!result.ok) {
-      if (result.authDeleted) {
-        return NextResponse.json(
-          { ok: false, authDeleted: true, reason: result.reason },
-          { status: 500 },
-        )
-      }
-      return fail(result.reason, 500)
+    if (!result.ok) return fail(result.reason, 503)
+    if (!result.completed) {
+      return Response.json(
+        { ok: true, deletionQueued: true, reason: result.reason },
+        { status: 202 },
+      )
     }
     return ok({ deleted: true })
   } catch {
