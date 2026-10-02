@@ -18,15 +18,22 @@ type Suggestion = ChosenPlace & {
 }
 
 export function CityField({
+  id,
   country,
   city,
   onCityChange,
   onPlace,
+  ...a11y
 }: {
+  id?: string
   country: string
   city: string
   onCityChange: (city: string) => void
   onPlace: (place: ChosenPlace | null) => void
+  "aria-describedby"?: string
+  "aria-errormessage"?: string
+  "aria-invalid"?: true
+  "aria-required"?: true
 }) {
   const listId = useId()
   const inputRef = useRef<HTMLInputElement>(null)
@@ -61,6 +68,8 @@ export function CityField({
   return (
     <div className="relative">
       <Input
+        id={id}
+        {...a11y}
         ref={inputRef}
         value={city}
         onChange={(event) => {
