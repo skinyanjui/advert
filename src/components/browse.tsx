@@ -40,8 +40,12 @@ export function Browse() {
     if (query.type) params.set("type", query.type)
     if (query.q) params.set("q", query.q)
     params.set("limit", "25")
-    setLoading(true)
-    setLoadError(false)
+    queueMicrotask(() => {
+      if (!controller.signal.aborted) {
+        setLoading(true)
+        setLoadError(false)
+      }
+    })
     void fetch(`/api/browse?${params}`, { cache: "no-store", signal: controller.signal })
       .then(async (response) => {
         if (!response.ok) throw new Error("browse")
