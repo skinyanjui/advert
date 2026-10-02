@@ -165,6 +165,10 @@ async function cleanupDatabase(userId: string, resources: DeletionResources, iss
   record("reports", (await db.from("board_reports").delete().eq("reporter_id", userId)).error, [userId])
   record("reports_reviewed_by", (await db.from("board_reports").update({ reviewed_by: null }).eq("reviewed_by", userId)).error, [userId])
   record("contact_events", (await db.from("board_contact_events").delete().eq("actor_id", userId).eq("actor_kind", "auth")).error, [userId])
+  record("contact_reveals_viewer", (await db.from("board_contact_reveals").delete().eq("viewer_id", userId)).error, [userId])
+  if (resources.listingIds.length > 0) {
+    record("contact_reveals_listings", (await db.from("board_contact_reveals").delete().in("listing_id", resources.listingIds)).error, resources.listingIds)
+  }
   record("whatsapp_consents", (await db.from("board_whatsapp_consents").delete().or(`buyer_id.eq.${userId},seller_id.eq.${userId}`)).error, [userId])
 
   if (resources.conversationIds.length > 0) {
