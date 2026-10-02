@@ -527,7 +527,7 @@ export const fr: Messages = {
   "post.fairAccessRequired": "Confirmez la règle d’accès équitable avant de continuer.",
   "report.reason.other": "Autre chose",
   "legal.languageNoticeTitle": "Langue des documents juridiques",
-  "legal.languageNoticeBody": "Les projets juridiques complets sont actuellement disponibles uniquement en anglais. Les traductions juridiques française et swahilie attendent la validation d’un conseil juridique. Le formulaire de droits à la vie privée est disponible dans la langue sélectionnée de l’application.",
+  "legal.languageNoticeBody": "Les documents juridiques complets sont actuellement publiés en anglais. Les traductions française et swahilie ne sont pas encore disponibles. Le formulaire de droits à la vie privée est disponible dans la langue sélectionnée de l’application.",
   "terms.reacceptTitle": "Terminer l’accès au compte",
   "terms.reacceptBody": "Consultez la version {terms} / {privacy} (en vigueur le {date}) et complétez les deux confirmations avant d’utiliser les fonctions protégées. La consultation publique reste disponible.",
   "terms.reacceptRead": "Consultez",
