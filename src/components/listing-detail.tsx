@@ -7,7 +7,7 @@ import { ArrowLeft, ChevronLeft, ChevronRight, Flag, Heart, MapPin, MessageSquar
 import Image from "next/image"
 import Link from "next/link"
 import { useRouter, useSearchParams } from "next/navigation"
-import { useEffect, useRef, useState } from "react"
+import { useEffect, useMemo, useRef, useState } from "react"
 import { toast } from "sonner"
 
 import { ListingCard } from "@/components/listing-card"
@@ -70,8 +70,16 @@ export function ListingDetail({ id, initialListing }: { id: string; initialListi
   const { listings, ready, isSaved, toggleSaved, messages, sendMessage, setListingSold, setListingPaused, renewListing, removeListing } =
     useMarketplace()
   const baseListing = listings.find((item) => item.id === id) ?? initialListing
-  const [directContact, setDirectContact] = useState<{ phone: string; contactPhone: boolean; contactWhatsApp: boolean } | null>(null)
-  const listing = baseListing && directContact ? { ...baseListing, ...directContact } : baseListing
+  const [directContact, setDirectContact] = useState<{ listingId: string; phone: string; contactPhone: boolean; contactWhatsApp: boolean } | null>(null)
+  const listing = useMemo(() => {
+    if (!baseListing || directContact?.listingId !== baseListing.id) return baseListing
+    return {
+      ...baseListing,
+      phone: directContact.phone,
+      contactPhone: directContact.contactPhone,
+      contactWhatsApp: directContact.contactWhatsApp,
+    }
+  }, [baseListing, directContact])
   const [phoneVisible, setPhoneVisible] = useState(false)
   const [messageOpen, setMessageOpen] = useState(false)
   const [message, setMessage] = useState("")
@@ -103,7 +111,6 @@ export function ListingDetail({ id, initialListing }: { id: string; initialListi
   }, [listing])
 
   useEffect(() => {
-    setDirectContact(null)
     if (!auth.ready || !auth.signedIn || !baseListing || isSampleListing(baseListing.id)) return
     const controller = new AbortController()
     void fetch(`/api/listings/${encodeURIComponent(baseListing.id)}/contact`, {
@@ -117,6 +124,7 @@ export function ListingDetail({ id, initialListing }: { id: string; initialListi
       .then((payload) => {
         if (!payload || controller.signal.aborted) return
         setDirectContact({
+          listingId: baseListing.id,
           phone: typeof payload.phone === "string" ? payload.phone : "",
           contactPhone: payload.contactPhone === true,
           contactWhatsApp: payload.contactWhatsApp === true,
@@ -124,7 +132,7 @@ export function ListingDetail({ id, initialListing }: { id: string; initialListi
       })
       .catch(() => undefined)
     return () => controller.abort()
-  }, [auth.ready, auth.signedIn, baseListing?.id])
+  }, [auth.ready, auth.signedIn, baseListing])
 
   if (!listing) {
     if (!ready) return <DetailSkeleton />
