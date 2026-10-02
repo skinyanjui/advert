@@ -20,23 +20,34 @@ export type BoardListingRow = {
   sponsored_locked?: boolean | null
 }
 
-/** Include the owner's entire inventory and only potentially public other ads. */
-export async function readBoardInventory(db: SupabaseClient, owner: string): Promise<BoardListingRow[]> {
-  const now = new Date().toISOString()
-  // The owner is an internally resolved UUID, never a request query parameter.
+/** Load only account-scoped inventory: the owner's ads plus explicitly saved ads. */
+export async function readBoardInventory(
+  db: SupabaseClient,
+  owner: string,
+  savedIds: string[] = [],
+): Promise<BoardListingRow[]> {
   if (!/^[0-9a-f-]{36}$/i.test(owner)) throw new Error("Invalid inventory owner.")
-  const visible = `owner_id.eq.${owner},and(hidden_at.is.null,or(status.is.null,status.eq.active),or(expires_at.is.null,expires_at.gt.${now}))`
-  const rows = await readKeysetPages(async after => {
-    let query = db.from("board_listings").select("*").or(visible)
+
+  const owned = await readKeysetPages(async after => {
+    let query = db.from("board_listings").select("*").eq("owner_id", owner)
       .order("id", { ascending: true }).limit(inventoryPageSize)
     if (after) query = query.gt("id", after)
     const { data, error } = await query.returns<BoardListingRow[]>()
     if (error) throw new Error(error.message)
     return data ?? []
   }, row => row.id)
-  // Keyset traversal uses the immutable primary key, while presentation retains
-  // the board's newest-first ordering (including a deterministic tie breaker).
-  return rows.sort((a, b) => b.posted_at.localeCompare(a.posted_at) || a.id.localeCompare(b.id))
+
+  const byId = new Map(owned.map((row) => [row.id, row]))
+  const uniqueSaved = [...new Set(savedIds.filter(Boolean))].filter((id) => !byId.has(id))
+  const chunkSize = 100
+  for (let index = 0; index < uniqueSaved.length; index += chunkSize) {
+    const ids = uniqueSaved.slice(index, index + chunkSize)
+    const { data, error } = await db.from("board_listings").select("*").in("id", ids).returns<BoardListingRow[]>()
+    if (error) throw new Error(error.message)
+    for (const row of data ?? []) byId.set(row.id, row)
+  }
+
+  return [...byId.values()].sort((a, b) => b.posted_at.localeCompare(a.posted_at) || b.id.localeCompare(a.id))
 }
 
 export async function readSavedListingIds(db: SupabaseClient, owner: string): Promise<string[]> {
