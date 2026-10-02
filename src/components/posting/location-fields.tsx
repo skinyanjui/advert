@@ -79,13 +79,13 @@ export function PostingLocationFields({
     <div className="grid gap-3">
       <div className="grid gap-3 sm:grid-cols-2">
         <FormField label={t("post.country")} required>
-          <CountryField country={country} onChange={onCountryChange} />
+          {(controlProps) => <CountryField {...controlProps} country={country} onChange={onCountryChange} />}
         </FormField>
         <FormField label={t("post.city")} required error={cityError}>
-          {country ? (
-            <CityField country={country} city={city} onCityChange={onCityChange} onPlace={onPlace} />
+          {(controlProps) => country ? (
+            <CityField {...controlProps} country={country} city={city} onCityChange={onCityChange} onPlace={onPlace} />
           ) : (
-            <Input disabled placeholder={t("post.chooseCountryFirst")} aria-disabled="true" className="h-11 bg-background sm:h-10" />
+            <Input {...controlProps} disabled placeholder={t("post.chooseCountryFirst")} aria-disabled="true" className="h-11 bg-background sm:h-10" />
           )}
         </FormField>
       </div>
@@ -95,8 +95,9 @@ export function PostingLocationFields({
         error={locationDetailError}
         hint={t("post.specificLocationHint")}
       >
-        <div className="flex gap-2">
+        {(controlProps) => <div className="flex gap-2">
           <Input
+            {...controlProps}
             value={locationDetail}
             onChange={(event) => onLocationDetailChange(event.target.value)}
             placeholder={t("post.specificLocationPlaceholder")}
@@ -107,14 +108,27 @@ export function PostingLocationFields({
             <LocateFixed className="size-4" />
             <span className="hidden sm:inline">{locating ? t("post.locating") : t("post.useLocation")}</span>
           </Button>
-        </div>
+        </div>}
       </FormField>
       {locationError ? <p role="alert" className="text-sm text-destructive">{locationError}</p> : null}
     </div>
   )
 }
 
-function CountryField({ country, onChange }: { country: string; onChange: (code: string) => void }) {
+function CountryField({
+  id,
+  country,
+  onChange,
+  ...a11y
+}: {
+  id: string
+  country: string
+  onChange: (code: string) => void
+  "aria-describedby"?: string
+  "aria-errormessage"?: string
+  "aria-invalid"?: true
+  "aria-required"?: true
+}) {
   const { t } = usePrefs()
   const inputRef = useRef<HTMLInputElement>(null)
   const [query, setQuery] = useState("")
@@ -135,6 +149,8 @@ function CountryField({ country, onChange }: { country: string; onChange: (code:
   return (
     <div className="relative">
       <Input
+        id={id}
+        {...a11y}
         ref={inputRef}
         value={open ? query : display}
         role="combobox"
