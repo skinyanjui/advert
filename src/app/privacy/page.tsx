@@ -3,7 +3,7 @@ import Link from "next/link"
 
 import { PRIVACY_EFFECTIVE_DATE, PRIVACY_VERSION, TERMS_VERSION } from "@/lib/legal"
 import { legalOperatorIdentity, privacyOfficerContacts } from "@/lib/legal-config"
-import { SUPPORT_CONTACT_PLACEHOLDER, site, siteSupportMailto } from "@/lib/site"
+import { site, siteSupportMailto } from "@/lib/site"
 
 export const metadata: Metadata = { title: "Privacy Policy" }
 
@@ -13,21 +13,10 @@ export default function PrivacyPage() {
   const privacyContacts = privacyOfficerContacts()
   return (
     <div className="w-full px-3 py-8 md:px-4">
-      <div
-        role="status"
-        className="rounded-xl border border-amber-200 bg-amber-50 px-3 py-2 text-sm text-amber-950"
-      >
-        Draft — pending legal review
-      </div>
-      <h1 className="mt-6 text-2xl font-semibold tracking-tight">Privacy Policy</h1>
+      <h1 className="text-2xl font-semibold tracking-tight">Privacy Policy</h1>
       <p className="mt-2 text-sm text-neutral-500">
         Version {PRIVACY_VERSION} · Effective {PRIVACY_EFFECTIVE_DATE} · Terms version {TERMS_VERSION}
       </p>
-      <p className="mt-4 text-sm leading-6 text-neutral-700">
-        This Privacy Policy is a <strong>DRAFT</strong> for {site.name}. It describes how we handle
-        personal data in plain language. A lawyer will review it before it applies in production.
-      </p>
-
       <section className="mt-8 space-y-3">
         <h2 className="text-base font-medium text-neutral-950">What we collect</h2>
         <ul className="list-disc space-y-1 pl-5 text-sm leading-6 text-neutral-700">
@@ -95,7 +84,7 @@ export default function PrivacyPage() {
           {operator.complete ? (
             <strong>{operator.name} · {operator.address}</strong>
           ) : (
-            <strong>[OPERATOR LEGAL NAME AND BUSINESS ADDRESS — configure before final legal approval]</strong>
+            <>Operator identity is not yet configured, so account acceptance remains disabled. Privacy and support requests remain available through the <Link href="/contact" className="underline underline-offset-2">Contact page</Link>.</>
           )}
           . The support contact below is also the privacy contact.
           {privacyContacts.dpoEmail ? <> Data protection contact: <strong>{privacyContacts.dpoEmail}</strong>.</> : null}
@@ -218,7 +207,7 @@ export default function PrivacyPage() {
           Service providers may process data in countries other than the country where you live. Where
           GDPR transfer rules apply, we will rely on an available lawful transfer mechanism and
           appropriate safeguards, such as an adequacy decision or contractual safeguards, as applicable.
-          This draft does not claim participation in any certification program unless separately verified.
+          This policy does not claim participation in any certification program unless separately verified.
         </p>
       </section>
 
@@ -382,7 +371,7 @@ export default function PrivacyPage() {
               .
             </>
           ) : (
-            SUPPORT_CONTACT_PLACEHOLDER
+            <Link href="/contact" className="underline underline-offset-2">Submit a privacy or support request</Link>
           )}
         </p>
       </section>
